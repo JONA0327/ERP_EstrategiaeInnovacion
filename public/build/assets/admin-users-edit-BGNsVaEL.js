@@ -1,1 +1,0 @@
-document.addEventListener("DOMContentLoaded",()=>{const t=document.querySelector("[data-admin-user-edit]");if(!t)return;const e=t.querySelector("#email");e&&e.addEventListener("input",function(){const r=e.value.trim();e.classList.remove("border-red-500","border-green-500"),r&&(e.validity.valid?e.classList.add("border-green-500"):e.classList.add("border-red-500"))})});

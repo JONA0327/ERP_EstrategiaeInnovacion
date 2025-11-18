@@ -22,7 +22,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-Cf001lPW.css",
+    "file": "assets/app-e_-AoU9F.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -31,87 +31,44 @@
     ]
   },
   "resources/js/Logistica/index.js": {
-    "file": "assets/index-DgBawHpX.js",
+    "file": "assets/index-YN-tdC4X.js",
     "name": "index",
     "src": "resources/js/Logistica/index.js",
     "isEntry": true,
     "imports": [
-      "resources/js/app.js"
+      "resources/js/app.js",
+      "resources/js/Sistemas_IT/components/notifications.js"
     ]
   },
   "resources/js/Recursos_Humanos/index.js": {
-    "file": "assets/index-fnGRSExA.js",
+    "file": "assets/index-COwFtWvo.js",
     "name": "index",
     "src": "resources/js/Recursos_Humanos/index.js",
     "isEntry": true,
     "imports": [
-      "resources/js/app.js"
+      "resources/js/app.js",
+      "resources/js/Sistemas_IT/components/notifications.js"
     ]
   },
-  "resources/js/Sistemas_IT/admin-users-edit.js": {
-    "file": "assets/admin-users-edit-BGNsVaEL.js",
-    "name": "admin-users-edit",
-    "src": "resources/js/Sistemas_IT/admin-users-edit.js",
+  "resources/js/Sistemas_IT/components/admin-notification-center.js": {
+    "file": "assets/admin-notification-center-COccVH5N.js",
+    "name": "admin-notification-center",
+    "src": "resources/js/Sistemas_IT/components/admin-notification-center.js",
     "isEntry": true
   },
-  "resources/js/Sistemas_IT/admin-users-index.js": {
-    "file": "assets/admin-users-index-C-4Xku0o.js",
-    "name": "admin-users-index",
-    "src": "resources/js/Sistemas_IT/admin-users-index.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/discos-uso-create.js": {
-    "file": "assets/discos-uso-create-BpnDqAj0.js",
-    "name": "discos-uso-create",
-    "src": "resources/js/Sistemas_IT/discos-uso-create.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/discos-uso-retirar.js": {
-    "file": "assets/discos-uso-retirar-DQmlBUN-.js",
-    "name": "discos-uso-retirar",
-    "src": "resources/js/Sistemas_IT/discos-uso-retirar.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/help-index.js": {
-    "file": "assets/help-index-CpB9BBSU.js",
-    "name": "help-index",
-    "src": "resources/js/Sistemas_IT/help-index.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/inventario-create.js": {
-    "file": "assets/inventario-create-BibaK2yF.js",
-    "name": "inventario-create",
-    "src": "resources/js/Sistemas_IT/inventario-create.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/inventario-edit.js": {
-    "file": "assets/inventario-edit-BIw3sDuv.js",
-    "name": "inventario-edit",
-    "src": "resources/js/Sistemas_IT/inventario-edit.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/prestamos-create.js": {
-    "file": "assets/prestamos-create-jYzCqM1p.js",
-    "name": "prestamos-create",
-    "src": "resources/js/Sistemas_IT/prestamos-create.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/tickets-create.js": {
-    "file": "assets/tickets-create-97rxocLv.js",
-    "name": "tickets-create",
-    "src": "resources/js/Sistemas_IT/tickets-create.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/tickets-my.js": {
-    "file": "assets/tickets-my-Bf7ktHzq.js",
-    "name": "tickets-my",
-    "src": "resources/js/Sistemas_IT/tickets-my.js",
+  "resources/js/Sistemas_IT/components/notifications.js": {
+    "file": "assets/notifications-BusGTi29.js",
+    "name": "notifications",
+    "src": "resources/js/Sistemas_IT/components/notifications.js",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-C0r0pgea.js",
+    "file": "assets/app-BA-Yc0Zy.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "resources/js/Sistemas_IT/components/notifications.js"
+    ]
   }
 }

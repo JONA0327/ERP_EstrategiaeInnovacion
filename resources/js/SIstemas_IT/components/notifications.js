@@ -1,39 +1,19 @@
 // Notifications dropdown behavior (modular)
-// Assumes Alpine present; adds graceful fallback if Alpine directives removed.
-
+// Normalized path under resources/js/Sistemas_IT/components
 (function() {
   const SELECTOR_TRIGGER = 'button[aria-label="Abrir notificaciones"]';
   const SELECTOR_PANEL = 'button[aria-label="Abrir notificaciones"] + div';
 
   function initPlainToggle(trigger, panel) {
     if (!trigger || !panel) return;
-    // Ensure panel starts hidden if Alpine not controlling visibility
     if (!panel.hasAttribute('x-show')) {
       panel.style.display = 'none';
-      const open = () => {
-        panel.style.display = 'block';
-        trigger.setAttribute('aria-expanded', 'true');
-      };
-      const close = () => {
-        panel.style.display = 'none';
-        trigger.setAttribute('aria-expanded', 'false');
-      };
+      const open = () => { panel.style.display = 'block'; trigger.setAttribute('aria-expanded', 'true'); };
+      const close = () => { panel.style.display = 'none'; trigger.setAttribute('aria-expanded', 'false'); };
       const toggle = () => panel.style.display === 'none' ? open() : close();
-
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggle();
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && !trigger.contains(e.target)) {
-          close();
-        }
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') close();
-      });
+      trigger.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+      document.addEventListener('click', (e) => { if (!panel.contains(e.target) && !trigger.contains(e.target)) { close(); } });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     }
   }
 

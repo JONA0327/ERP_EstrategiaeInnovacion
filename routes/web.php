@@ -61,6 +61,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
     Route::post('/tickets/{ticket}/change-maintenance-date', [TicketController::class, 'changeMaintenanceDate'])->name('tickets.change-maintenance-date');
     Route::get('/maintenance-slots/available', [TicketController::class, 'getAvailableMaintenanceSlots'])->name('maintenance-slots.available');
+    // Maintenance management (routes added to resolve missing references)
+    Route::get('/maintenance', [MaintenanceController::class, 'adminIndex'])->name('maintenance.index');
+    Route::get('/maintenance/computers/{computerProfile}', [MaintenanceController::class, 'showComputer'])->name('maintenance.computers.show');
     // Inventory removed from admin panel
 
     // Se mantienen solo tickets y usuarios en el panel admin

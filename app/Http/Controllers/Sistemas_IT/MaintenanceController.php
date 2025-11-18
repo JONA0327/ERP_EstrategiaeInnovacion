@@ -143,6 +143,22 @@ class MaintenanceController extends Controller
         ]);
     }
 
+    public function showComputer(ComputerProfile $computerProfile): View
+    {
+        $tickets = Ticket::query()
+            ->where('tipo_problema', 'mantenimiento')
+            ->where('computer_profile_id', $computerProfile->id)
+            ->with(['maintenanceSlot'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('admin.maintenance.computers.show', [
+            'computerProfile' => $computerProfile,
+            'tickets' => $tickets,
+            'componentOptions' => $this->getReplacementComponentOptions(),
+        ]);
+    }
+
     private function getReplacementComponentOptions(): array
     {
         return [

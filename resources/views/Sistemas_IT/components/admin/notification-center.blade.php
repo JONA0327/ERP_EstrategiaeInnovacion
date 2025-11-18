@@ -112,6 +112,6 @@
 
 @once
     @push('scripts')
-        @vite('resources/js/components/admin-notification-center.js')
+        @vite('resources/js/Sistemas_IT/components/admin-notification-center.js')
     @endpush
 @endonce

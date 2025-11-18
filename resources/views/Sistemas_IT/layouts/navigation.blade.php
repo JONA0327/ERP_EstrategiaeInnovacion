@@ -23,13 +23,7 @@
             'active' => request()->routeIs('tickets.*'),
             'visible' => true,
         ],
-        [
-            'label' => 'Archivo Problemas',
-            'icon' => 'archive-box',
-            'route' => route('archivo-problemas.index'),
-            'active' => request()->routeIs('archivo-problemas.*'),
-            'visible' => $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false,
-        ],
+        // Archivo de problemas removido
         
     ];
 

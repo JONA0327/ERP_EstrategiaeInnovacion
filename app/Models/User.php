@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Sistemas_IT\Ticket;
+use App\Models\Empleado;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -80,6 +81,11 @@ class User extends Authenticatable
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function empleado()
+    {
+        return $this->hasOne(Empleado::class);
     }
 
     /**
