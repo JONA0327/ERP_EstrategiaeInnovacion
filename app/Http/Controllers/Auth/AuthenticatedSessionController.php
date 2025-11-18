@@ -30,11 +30,43 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        if ($user !== null && method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+        // Seguridad: si por alguna razón no hay usuario autenticado, vuelve a login
+        if (!$user) {
+            return redirect()->route('login');
         }
 
-        return redirect()->route('welcome');
+        // Normaliza el área desde el perfil de empleado (si existe)
+        $areaRaw = optional($user->empleado)->area;
+        $area = $areaRaw ? mb_strtolower(preg_replace('/\s+/u', ' ', $areaRaw), 'UTF-8') : null;
+
+        // Invitados: solo portada ERP/Tickets
+        if ($user->role === 'invitado') {
+            return redirect()->route('welcome');
+        }
+
+        // Redirecciones por área con prioridad a vistas propias
+        if ($area === 'rh' || $area === 'recursos humanos') {
+            return redirect()->route('recursos-humanos.index');
+        }
+
+        if ($area === 'logistica' || $area === 'logística') {
+            return redirect()->route('logistica.index');
+        }
+
+        if ($area === 'sistemas') {
+            if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+                return redirect()->route('admin.dashboard');
+            }
+            return redirect()->route('tickets.mis-tickets');
+        }
+
+        // Comercio Exterior
+        if ($area === 'comercio exterior') {
+            return redirect()->route('tickets.mis-tickets');
+        }
+
+        // Cualquier otra área aprobada o sin área: ir al centro de tickets
+        return redirect()->route('tickets.mis-tickets');
     }
 
     /**

@@ -4,7 +4,18 @@
     $isRHContext = request()->routeIs('recursos-humanos.index');
     $isLogisticaContext = request()->routeIs('logistica.index');
 
-    if ($isRHContext) {
+    // Determinar ruta de regreso al panel del área (si aplica)
+    $backToPanelRoute = null;
+    if ($area) {
+        $areaNorm = mb_strtolower(preg_replace('/\s+/u', ' ', $area), 'UTF-8');
+        if ($areaNorm === 'rh' || $areaNorm === 'recursos humanos') {
+            $backToPanelRoute = route('recursos-humanos.index');
+        } elseif ($areaNorm === 'logistica' || $areaNorm === 'logística') {
+            $backToPanelRoute = route('logistica.index');
+        }
+    }
+
+    if ($isRHContext || $isLogisticaContext) {
         // RH context: only soporte técnico
         $navItems = [
             [
@@ -18,6 +29,14 @@
     } else {
         $navItems = [
             [
+                'label' => 'Regresar a Panel',
+                'icon' => 'arrow-uturn-left',
+                'route' => $backToPanelRoute ?? '#',
+                'active' => false,
+                // visible cuando no estamos ya en el panel del área y existe ruta
+                'visible' => !$isRHContext && !$isLogisticaContext && !is_null($backToPanelRoute),
+            ],
+            [
                 'label' => 'Inicio',
                 'icon' => 'home',
                 'route' => route('welcome'),
@@ -29,7 +48,7 @@
                 'icon' => 'cog-6-tooth',
                 'route' => route('admin.dashboard'),
                 'active' => request()->routeIs('admin.*'),
-                'visible' => $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false,
+                'visible' => $user && method_exists($user, 'isAdmin') && $user->isAdmin() && optional($user->empleado)->area === 'Sistemas',
             ],
             [
                 'label' => 'Mis Tickets',
@@ -101,7 +120,7 @@
                         @endforeach
                     </div>
 
-                    @if (!$isRHContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin())
+                    @if (!$isRHContext && !$isLogisticaContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin() && optional($user->empleado)->area === 'Sistemas')
                         <x-admin.notification-center class="hidden xl:flex text-blue-600" />
                     @endif
 
@@ -164,7 +183,7 @@
 
             @auth
                 <div class="flex items-center gap-2.5 lg:hidden text-blue-600">
-                    @if (!$isRHContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin())
+                    @if (!$isRHContext && !$isLogisticaContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin() && optional($user->empleado)->area === 'Sistemas')
                         <x-admin.notification-center />
                     @endif
 

@@ -68,7 +68,8 @@ class AuthController extends Controller
         if ($user && Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            $area = optional($user->empleado)->area;
+            $areaRaw = optional($user->empleado)->area;
+            $area = $areaRaw ? mb_strtolower($areaRaw, 'UTF-8') : null; // normalizado
 
             // Invitados no ingresan a módulos; redirige a portada
             if ($user->role === 'invitado') {
@@ -76,24 +77,22 @@ class AuthController extends Controller
             }
 
             // Área Sistemas: distingue admin vs resto (tickets panel separado)
-            if ($area === 'Sistemas') {
+            // Prioridad: áreas con vista propia
+            if ($area === 'rh') {
+                return redirect()->route('recursos-humanos.index')->with('success', 'Acceso Recursos Humanos');
+            }
+            if ($area === 'logistica') {
+                return redirect()->route('logistica.index')->with('success', 'Acceso Logística');
+            }
+            // Sistemas: distingue rol admin
+            if ($area === 'sistemas') {
                 if ($user->role === 'admin') {
                     return redirect()->route('admin.dashboard')->with('success', 'Acceso administrativo Sistemas');
                 }
                 return redirect()->route('tickets.mis-tickets')->with('success', 'Centro de tickets');
             }
-
-            // Áreas con vista dedicada
-            if ($area === 'Logistica') {
-                return redirect()->route('logistica.index')->with('success', 'Acceso Logística');
-            }
-
-            if ($area === 'RH') {
-                return redirect()->route('recursos-humanos.index')->with('success', 'Acceso Recursos Humanos');
-            }
-
-            // Área Comercio Exterior u otras: por ahora tickets si existe módulo mantenimiento; fallback welcome
-            if ($area === 'Comercio Exterior') {
+            // Comercio Exterior (normalizado sin acentos) => tickets por ahora
+            if ($area === 'comercio exterior' || $area === 'comercio exterior') { // incluye posible espacio no-break
                 return redirect()->route('tickets.mis-tickets')->with('success', 'Acceso módulo de tickets');
             }
 

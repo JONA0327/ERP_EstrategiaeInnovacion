@@ -9,23 +9,31 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Sistemas_IT\TicketController;
 use App\Http\Controllers\Sistemas_IT\MaintenanceController;
 use App\Http\Controllers\Users\UsersController;
+use App\Http\Controllers\RH\ExpedienteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
 
-Route::get('/erp-menu', function () {
-    return view('erp_menu');
-})->name('erp.menu');
 
-// Áreas adicionales (placeholders)
-Route::get('/recursos-humanos', function () {
-    return view('Recursos_Humanos.index');
-})->name('recursos-humanos.index');
-Route::get('/logistica', function () {
-    return view('Logistica.index');
-})->name('logistica.index');
+// Áreas adicionales (requieren autenticación)
+// Áreas bajo autenticación y control de área
+Route::middleware(['auth','area.rh'])->group(function () {
+    Route::get('/recursos-humanos', function () { return view('Recursos_Humanos.index'); })->name('recursos-humanos.index');
+    Route::prefix('recursos-humanos/expedientes')->name('rh.expedientes.')->group(function () {
+        Route::get('/', [ExpedienteController::class, 'index'])->name('index');
+        Route::post('/refresh', [ExpedienteController::class, 'refresh'])->name('refresh');
+        Route::get('/{empleado}', [ExpedienteController::class, 'show'])->name('show');
+        Route::get('/{empleado}/editar', [ExpedienteController::class, 'edit'])->name('edit');
+        Route::put('/{empleado}', [ExpedienteController::class, 'update'])->name('update');
+        Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
+    });
+});
+
+Route::middleware(['auth','area.logistica'])->group(function () {
+    Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
+});
 
 // Rutas de autenticación
 Route::middleware('guest')->group(function () {
