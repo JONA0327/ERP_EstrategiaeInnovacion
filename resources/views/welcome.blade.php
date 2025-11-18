@@ -11,7 +11,6 @@
         </div>
 
         <div class="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-10">
-            <!-- Success Message -->
             @if(session('success'))
                 <div class="bg-white/70 backdrop-blur border-l-4 border-green-400 rounded-2xl shadow-md p-5 mb-8 mx-auto max-w-4xl">
                     <div class="flex items-start space-x-3">
@@ -27,7 +26,6 @@
                 </div>
             @endif
 
-            <!-- Info Message -->
             @if(session('info'))
                 <div class="bg-white/70 backdrop-blur border-l-4 border-blue-400 rounded-2xl shadow-md p-5 mb-8 mx-auto max-w-4xl">
                     <div class="flex items-start space-x-3">
@@ -43,14 +41,12 @@
                 </div>
             @endif
 
-            <!-- Hero/banner removed as requested; show a simple header instead -->
             <div class="mb-6 text-center">
                 <h1 class="text-2xl font-bold text-slate-900">Centro de Soporte Técnico</h1>
                 <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Gestiona y crea tus solicitudes de soporte técnico.</p>
             </div>
 
             @guest
-                <!-- Login/Register Section for Non-Authenticated Users -->
                 <section id="acceso" class="relative mb-14">
                     <div class="max-w-3xl mx-auto">
                         <div class="relative overflow-hidden rounded-3xl border border-blue-200/60 bg-white/80 backdrop-blur shadow-xl">
@@ -86,7 +82,7 @@
                         </div>
                     </div>
                     <div class="text-center mt-6">
-                        <a href="{{ route('help.public') }}" class="inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-900 transition-colors">
+                        <a href="mailto:soporte@estrategiaeinnovacion.com.mx" class="inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-900 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3.063h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -97,7 +93,6 @@
             @endguest
 
             @auth
-                <!-- Cards Grid -->
                 <section id="acciones" class="relative">
                     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         @php
@@ -153,7 +148,6 @@
                     </div>
                 </section>
 
-                <!-- Sección de Ayuda -->
                 <section class="relative mt-16 max-w-5xl mx-auto">
                     <div class="relative overflow-hidden rounded-3xl border border-blue-200/70 bg-white/90 backdrop-blur shadow-2xl shadow-blue-500/10">
                         <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-blue-100/60 to-transparent"></div>
@@ -164,20 +158,13 @@
                                 </div>
                                 <h2 class="mb-4 text-3xl font-bold text-slate-900">¿Necesitas ayuda?</h2>
                                 <p class="text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                                    Accede a nuestro manual con guías paso a paso, preguntas frecuentes y recomendaciones prácticas para resolver incidentes comunes antes de solicitar soporte.
+                                    Contacta al equipo de soporte para orientación rápida y efectiva.
                                 </p>
                                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <a href="{{ route('help.public') }}" class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-colors hover:from-blue-700 hover:to-blue-800">
-                                        <x-ui.icon name="book-open" class="mr-2 h-5 w-5" />
-                                        Ver manual de ayuda
-                                    </a>
-                                    <a href="mailto:soporte@estrategiaeinnovacion.com.mx" class="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50">
+                                    <a href="mailto:soporte@estrategiaeinnovacion.com.mx" class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-colors hover:from-blue-700 hover:to-blue-800">
                                         <x-ui.icon name="envelope" class="mr-2 h-5 w-5" />
                                         Contacto directo
                                     </a>
-                                </div>
-                                <div class="mt-6 text-sm text-slate-500">
-                                    <p>💡 <strong>Tip:</strong> Antes de crear un ticket, consulta el manual para encontrar soluciones rápidas a problemas comunes.</p>
                                 </div>
                             </div>
                         </div>
@@ -187,7 +174,6 @@
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t border-blue-100">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="text-center text-slate-500 text-sm">

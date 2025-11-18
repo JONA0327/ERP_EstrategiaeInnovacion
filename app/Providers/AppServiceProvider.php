@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Ticket;
+use App\Models\Sistemas_IT\Ticket;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;

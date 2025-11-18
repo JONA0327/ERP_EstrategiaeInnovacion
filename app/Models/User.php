@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Sistemas_IT\Ticket;
+use App\Models\Empleado;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -80,27 +83,23 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class);
     }
 
+    public function empleado()
+    {
+        return $this->hasOne(Empleado::class);
+    }
+
     /**
      * Relación con préstamos activos de inventario
      */
-    public function prestamosActivos()
-    {
-        return $this->hasMany(PrestamoInventario::class, 'user_id')->where('estado_prestamo', 'activo');
-    }
+    // Feature removed
 
     /**
      * Relación con todos los préstamos de inventario
      */
-    public function prestamosInventario()
-    {
-        return $this->hasMany(PrestamoInventario::class, 'user_id');
-    }
+    // Feature removed
 
     /**
      * Relación con inventarios creados por el usuario
      */
-    public function inventariosCreados()
-    {
-        return $this->hasMany(Inventario::class, 'created_by');
-    }
+    // Feature removed
 }

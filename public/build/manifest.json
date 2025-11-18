@@ -1,16 +1,74 @@
 {
+  "resources/css/Logistica/index.css": {
+    "file": "assets/index-DAwJ79uZ.css",
+    "src": "resources/css/Logistica/index.css",
+    "isEntry": true,
+    "name": "index",
+    "names": [
+      "index.css"
+    ]
+  },
+  "resources/css/Recursos_Humanos/index.css": {
+    "file": "assets/index-D4-IQbh6.css",
+    "src": "resources/css/Recursos_Humanos/index.css"
+  },
+  "resources/css/Sistemas_IT/inventario-index.css": {
+    "file": "assets/inventario-index-BLYMpEBQ.css",
+    "src": "resources/css/Sistemas_IT/inventario-index.css",
+    "isEntry": true,
+    "name": "inventario-index",
+    "names": [
+      "inventario-index.css"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-DLLYtFb9.css",
+    "file": "assets/app-e_-AoU9F.css",
     "src": "resources/css/app.css",
     "isEntry": true,
+    "name": "app",
     "names": [
       "app.css"
     ]
   },
+  "resources/js/Logistica/index.js": {
+    "file": "assets/index-YN-tdC4X.js",
+    "name": "index",
+    "src": "resources/js/Logistica/index.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "resources/js/Sistemas_IT/components/notifications.js"
+    ]
+  },
+  "resources/js/Recursos_Humanos/index.js": {
+    "file": "assets/index-COwFtWvo.js",
+    "name": "index",
+    "src": "resources/js/Recursos_Humanos/index.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "resources/js/Sistemas_IT/components/notifications.js"
+    ]
+  },
+  "resources/js/Sistemas_IT/components/admin-notification-center.js": {
+    "file": "assets/admin-notification-center-COccVH5N.js",
+    "name": "admin-notification-center",
+    "src": "resources/js/Sistemas_IT/components/admin-notification-center.js",
+    "isEntry": true
+  },
+  "resources/js/Sistemas_IT/components/notifications.js": {
+    "file": "assets/notifications-BusGTi29.js",
+    "name": "notifications",
+    "src": "resources/js/Sistemas_IT/components/notifications.js",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-CXDpL9bK.js",
+    "file": "assets/app-BA-Yc0Zy.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "resources/js/Sistemas_IT/components/notifications.js"
+    ]
   }
 }
