@@ -70,6 +70,11 @@ class AuthController extends Controller
 
             $area = optional($user->empleado)->area;
 
+            // Invitados no ingresan a módulos; redirige a portada
+            if ($user->role === 'invitado') {
+                return redirect()->route('welcome')->with('success', 'Acceso como invitado');
+            }
+
             // Área Sistemas: distingue admin vs resto (tickets panel separado)
             if ($area === 'Sistemas') {
                 if ($user->role === 'admin') {
@@ -78,12 +83,11 @@ class AuthController extends Controller
                 return redirect()->route('tickets.mis-tickets')->with('success', 'Centro de tickets');
             }
 
-            // Área Logística: siempre a su index
+            // Áreas con vista dedicada
             if ($area === 'Logistica') {
                 return redirect()->route('logistica.index')->with('success', 'Acceso Logística');
             }
 
-            // Área Recursos Humanos: siempre a su index
             if ($area === 'RH') {
                 return redirect()->route('recursos-humanos.index')->with('success', 'Acceso Recursos Humanos');
             }
@@ -93,8 +97,13 @@ class AuthController extends Controller
                 return redirect()->route('tickets.mis-tickets')->with('success', 'Acceso módulo de tickets');
             }
 
-            // Sin área definida: portal general
-            return redirect()->route('welcome')->with('success', 'Bienvenido al ERP');
+            // Otras áreas aprobadas sin interfaz o sin área definida: tickets
+            if ($area) {
+                return redirect()->route('tickets.mis-tickets')->with('success', 'Centro de tickets');
+            }
+
+            // Sin área asignada: tickets
+            return redirect()->route('tickets.mis-tickets')->with('success', 'Centro de tickets');
         }
 
         return back()->withErrors(['email' => 'Credenciales inválidas.'])->onlyInput('email');
