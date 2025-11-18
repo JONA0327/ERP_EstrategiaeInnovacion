@@ -172,4 +172,189 @@ class MaintenanceController extends Controller
             'cargador' => 'Cargador',
         ];
     }
+
+    // ================== ADMIN CRUD FOR MAINTENANCE SLOTS ==================
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'date' => ['required', 'date_format:Y-m-d'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'capacity' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $date = Carbon::createFromFormat('Y-m-d', $data['date']);
+        $start = Carbon::createFromFormat('H:i', $data['start_time']);
+        $end = Carbon::createFromFormat('H:i', $data['end_time']);
+
+        MaintenanceSlot::firstOrCreate([
+            'date' => $date->format('Y-m-d'),
+            'start_time' => $start->format('H:i:s'),
+            'end_time' => $end->format('H:i:s'),
+        ], [
+            'capacity' => $data['capacity'],
+            'booked_count' => 0,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', 'Horario creado correctamente.');
+    }
+
+    // Store a new computer profile (ficha técnica)
+    public function storeComputer(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'identifier' => ['nullable', 'string', 'max:255'],
+            'maintenance_ticket_id' => ['nullable', 'integer', 'exists:tickets,id'],
+            'brand' => ['nullable', 'string', 'max:255'],
+            'model' => ['nullable', 'string', 'max:255'],
+            'disk_type' => ['nullable', 'string', 'max:255'],
+            'ram_capacity' => ['nullable', 'string', 'max:255'],
+            'battery_status' => ['nullable', 'in:functional,partially_functional,damaged'],
+            'aesthetic_observations' => ['nullable', 'string'],
+            'replacement_components' => ['nullable', 'array'],
+            'replacement_components.*' => ['string'],
+            'last_maintenance_at' => ['nullable', 'date'],
+            'is_loaned' => ['nullable', 'boolean'],
+            'loaned_to_name' => ['nullable', 'string', 'max:255'],
+            'loaned_to_email' => ['nullable', 'email', 'max:255'],
+            'loaned_to_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $profile = \App\Models\Sistemas_IT\ComputerProfile::create([
+            'identifier' => $data['identifier'] ?? null,
+            'brand' => $data['brand'] ?? null,
+            'model' => $data['model'] ?? null,
+            'disk_type' => $data['disk_type'] ?? null,
+            'ram_capacity' => $data['ram_capacity'] ?? null,
+            'battery_status' => $data['battery_status'] ?? null,
+            'aesthetic_observations' => $data['aesthetic_observations'] ?? null,
+            'replacement_components' => $data['replacement_components'] ?? null,
+            'last_maintenance_at' => $data['last_maintenance_at'] ?? null,
+            'is_loaned' => isset($data['is_loaned']) ? (bool)$data['is_loaned'] : false,
+            'loaned_to_name' => $data['loaned_to_name'] ?? null,
+            'loaned_to_email' => $data['loaned_to_email'] ?? null,
+            'last_ticket_id' => $data['maintenance_ticket_id'] ?? null,
+        ]);
+
+        if (!empty($data['maintenance_ticket_id'])) {
+            Ticket::where('id', $data['maintenance_ticket_id'])->update([
+                'computer_profile_id' => $profile->id,
+            ]);
+        }
+
+        return back()->with('success', 'Ficha técnica registrada correctamente.');
+    }
+
+    public function storeBulk(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'start_date' => ['required', 'date_format:Y-m-d'],
+            'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'days' => ['required', 'array', 'min:1'],
+            'days.*' => ['in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'],
+            'bulk_start_time' => ['required', 'date_format:H:i'],
+            'bulk_end_time' => ['required', 'date_format:H:i', 'after:bulk_start_time'],
+            'total_capacity' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $startDate = Carbon::createFromFormat('Y-m-d', $data['start_date']);
+        $endDate = Carbon::createFromFormat('Y-m-d', $data['end_date']);
+        $startTime = Carbon::createFromFormat('H:i', $data['bulk_start_time']);
+        $endTime = Carbon::createFromFormat('H:i', $data['bulk_end_time']);
+        $diffMinutes = $startTime->diffInMinutes($endTime);
+        $segments = (int) $data['total_capacity'];
+
+        if ($diffMinutes < $segments) {
+            return back()->withErrors(['total_capacity' => 'La capacidad excede la duración disponible.'])->withInput();
+        }
+
+        $slotMinutes = intdiv($diffMinutes, $segments);
+        if ($slotMinutes < 1) {
+            return back()->withErrors(['bulk_start_time' => 'Duración por horario inválida. Ajusta los valores.'])->withInput();
+        }
+
+        $daysMap = [
+            'sunday' => 0,
+            'monday' => 1,
+            'tuesday' => 2,
+            'wednesday' => 3,
+            'thursday' => 4,
+            'friday' => 5,
+            'saturday' => 6,
+        ];
+
+        $selectedDaysNumbers = collect($data['days'])->map(fn ($d) => $daysMap[$d])->all();
+        $created = 0;
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            if (!in_array($date->dayOfWeek, $selectedDaysNumbers, true)) {
+                continue;
+            }
+            for ($i = 0; $i < $segments; $i++) {
+                $slotStart = $startTime->copy()->addMinutes($i * $slotMinutes);
+                $slotEnd = $i === $segments - 1 ? $endTime->copy() : $slotStart->copy()->addMinutes($slotMinutes);
+                if ($slotEnd->gt($endTime)) {
+                    break;
+                }
+                $exists = MaintenanceSlot::where('date', $date->format('Y-m-d'))
+                    ->where('start_time', $slotStart->format('H:i:s'))
+                    ->where('end_time', $slotEnd->format('H:i:s'))
+                    ->exists();
+                if ($exists) {
+                    continue;
+                }
+                MaintenanceSlot::create([
+                    'date' => $date->format('Y-m-d'),
+                    'start_time' => $slotStart->format('H:i:s'),
+                    'end_time' => $slotEnd->format('H:i:s'),
+                    'capacity' => 1,
+                    'booked_count' => 0,
+                    'is_active' => true,
+                ]);
+                $created++;
+            }
+        }
+
+        return back()->with('success', "Se crearon {$created} horarios en lote correctamente.");
+    }
+
+    public function updateSlot(Request $request, MaintenanceSlot $slot): RedirectResponse
+    {
+        $data = $request->validate([
+            'capacity' => ['required', 'integer', 'min:1', 'max:20'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+        $slot->update([
+            'capacity' => $data['capacity'],
+            'is_active' => array_key_exists('is_active', $data) ? (bool) $data['is_active'] : false,
+        ]);
+        return back()->with('success', 'Horario actualizado.');
+    }
+
+    public function destroySlot(MaintenanceSlot $slot): RedirectResponse
+    {
+        $slot->delete();
+        return back()->with('success', 'Horario eliminado.');
+    }
+
+    public function destroyPastSlots(): RedirectResponse
+    {
+        $now = Carbon::now('America/Mexico_City');
+        $today = $now->toDateString();
+        $timeNow = $now->format('H:i:s');
+
+        $toDelete = MaintenanceSlot::where(function ($q) use ($today, $timeNow) {
+            $q->where('date', '<', $today)
+              ->orWhere(function ($qq) use ($today, $timeNow) {
+                  $qq->where('date', $today)->where('end_time', '<=', $timeNow);
+              });
+        })->get();
+
+        $count = $toDelete->count();
+        if ($count > 0) {
+            MaintenanceSlot::whereIn('id', $toDelete->pluck('id'))->delete();
+        }
+        return back()->with('success', "Se eliminaron {$count} horarios pasados.");
+    }
 }

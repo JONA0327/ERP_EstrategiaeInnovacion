@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Users;
 use App\Http\Controllers\Controller;
 use App\Models\BlockedEmail;
 use App\Models\User;
+use App\Models\Empleado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -31,7 +32,10 @@ class UsersController extends Controller
 
     public function create()
     {
-        return view('admin.users.create');
+        $subdepartamentosCE = \App\Models\Subdepartamento::where('area', 'Comercio Exterior')->where('activo', true)->orderBy('nombre')->get();
+        return view('admin.users.create', [
+            'subdepartamentosCE' => $subdepartamentosCE,
+        ]);
     }
 
     public function store(Request $request)
@@ -40,10 +44,16 @@ class UsersController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required','string','email','max:255','unique:users'],
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:user,admin',
+            'role' => 'required|in:user,admin,invitado,colaborador',
+            'area' => 'required|in:Legal,Logistica,RH,Comercio Exterior,Sistemas,Socio',
+            'subdepartamento_id' => 'nullable|integer|exists:subdepartamentos,id',
         ]);
 
-        User::create([
+        if ($request->area === 'Comercio Exterior' && !$request->filled('subdepartamento_id')) {
+            return back()->withErrors(['subdepartamento_id' => 'Debes seleccionar un subdepartamento para Comercio Exterior'])->withInput();
+        }
+
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -52,6 +62,17 @@ class UsersController extends Controller
             'status' => User::STATUS_APPROVED,
             'approved_at' => now(),
         ]);
+
+        // Crear registro empleado asociado
+        Empleado::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'nombre' => $user->name,
+                'correo' => $user->email,
+                'area' => $request->area,
+                'subdepartamento_id' => $request->area === 'Comercio Exterior' ? $request->subdepartamento_id : null,
+            ]
+        );
 
         return redirect()->route('admin.users')->with('success', 'Usuario creado exitosamente.');
     }
@@ -72,7 +93,11 @@ class UsersController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $subdepartamentosCE = \App\Models\Subdepartamento::where('area', 'Comercio Exterior')->where('activo', true)->orderBy('nombre')->get();
+        return view('admin.users.edit', [
+            'user' => $user,
+            'subdepartamentosCE' => $subdepartamentosCE,
+        ]);
     }
 
     public function update(Request $request, User $user)
@@ -81,18 +106,36 @@ class UsersController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required','string','email','max:255'],
             'password' => 'nullable|string|min:8|confirmed',
+            'role' => 'required|in:user,admin,invitado,colaborador',
+            'area' => 'required|in:Legal,Logistica,RH,Comercio Exterior,Sistemas,Socio',
+            'subdepartamento_id' => 'nullable|integer|exists:subdepartamentos,id',
         ]);
+
+        if ($request->area === 'Comercio Exterior' && !$request->filled('subdepartamento_id')) {
+            return back()->withErrors(['subdepartamento_id' => 'Debes seleccionar un subdepartamento para Comercio Exterior'])->withInput();
+        }
 
         if ($request->email !== $user->email && User::where('email', $request->email)->exists()) {
             return back()->withErrors(['email' => 'Este correo electrónico ya está registrado.'])->withInput();
         }
 
-        $data = ['name' => $request->name, 'email' => $request->email];
+        $data = ['name' => $request->name, 'email' => $request->email, 'role' => $request->role];
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
         $user->update($data);
+
+        // Sincronizar registro empleado
+        Empleado::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'nombre' => $user->name,
+                'correo' => $user->email,
+                'area' => $request->area,
+                'subdepartamento_id' => $request->area === 'Comercio Exterior' ? $request->subdepartamento_id : null,
+            ]
+        );
 
         return redirect()->route('admin.users.show', $user)->with('success', 'Usuario actualizado exitosamente.');
     }

@@ -47,6 +47,41 @@
                         @enderror
                     </div>
 
+                    <!-- Área + Subdepartamento (condicional) -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="area" class="block text-sm font-medium text-gray-700 mb-2">
+                                Área <span class="text-red-500">*</span>
+                            </label>
+                            <select name="area" id="area" required class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 @error('area') border-red-300 @enderror">
+                                <option value="">Selecciona un área</option>
+                                @php($areas = ['Legal','Logistica','RH','Comercio Exterior','Sistemas','Socio'])
+                                @foreach($areas as $a)
+                                    <option value="{{ $a }}" {{ old('area') === $a ? 'selected' : '' }}>{{ $a }}</option>
+                                @endforeach
+                            </select>
+                            @error('area')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-sm text-gray-500">Define el área organizacional del empleado</p>
+                        </div>
+                        <div id="subdepartamentoWrapper" class="hidden">
+                            <label for="subdepartamento_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                Subdepartamento (Comercio Exterior) <span class="text-red-500">*</span>
+                            </label>
+                            <select name="subdepartamento_id" id="subdepartamento_id" class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 @error('subdepartamento_id') border-red-300 @enderror">
+                                <option value="">Selecciona un subdepartamento</option>
+                                @foreach($subdepartamentosCE as $sd)
+                                    <option value="{{ $sd->id }}" {{ (string)old('subdepartamento_id') === (string)$sd->id ? 'selected' : '' }}>{{ $sd->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @error('subdepartamento_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-sm text-gray-500">Selecciona el subdepartamento dentro de Comercio Exterior</p>
+                        </div>
+                    </div>
+
                     <!-- Email -->
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -76,13 +111,15 @@
                                 required
                                 class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 @error('role') border-red-300 @enderror">
                             <option value="">Selecciona un rol</option>
-                            <option value="user" {{ old('role') === 'user' ? 'selected' : '' }}>Usuario Normal</option>
+                            <option value="user" {{ old('role') === 'user' ? 'selected' : '' }}>Usuario</option>
+                            <option value="colaborador" {{ old('role') === 'colaborador' ? 'selected' : '' }}>Colaborador</option>
+                            <option value="invitado" {{ old('role') === 'invitado' ? 'selected' : '' }}>Invitado</option>
                             <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Administrador</option>
                         </select>
                         @error('role')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-sm text-gray-500">Los administradores tienen acceso completo al sistema</p>
+                        <p class="mt-1 text-sm text-gray-500">Invitado: acceso limitado · Colaborador: acceso extendido a módulos colaborativos · Administrador: gestión avanzada por área.</p>
                     </div>
 
                     <!-- Contraseña -->
@@ -131,6 +168,25 @@
                 </form>
             </div>
         </main>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const areaSelect = document.getElementById('area');
+                const wrapper = document.getElementById('subdepartamentoWrapper');
+                function toggleSub() {
+                    if (!areaSelect || !wrapper) return;
+                    if (areaSelect.value === 'Comercio Exterior') {
+                        wrapper.classList.remove('hidden');
+                    } else {
+                        wrapper.classList.add('hidden');
+                        const subSelect = document.getElementById('subdepartamento_id');
+                        if (subSelect) subSelect.value = '';
+                    }
+                }
+                toggleSub();
+                areaSelect.addEventListener('change', toggleSub);
+            });
+        </script>
 
         <!-- Footer -->
         <footer class="bg-white border-t border-blue-100 mt-16">

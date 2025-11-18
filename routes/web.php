@@ -54,7 +54,7 @@ Route::middleware('auth')->group(function () {
 // Archivo de problemas: rutas eliminadas
 
 // Rutas de administración
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
@@ -63,7 +63,18 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/maintenance-slots/available', [TicketController::class, 'getAvailableMaintenanceSlots'])->name('maintenance-slots.available');
     // Maintenance management (routes added to resolve missing references)
     Route::get('/maintenance', [MaintenanceController::class, 'adminIndex'])->name('maintenance.index');
+    // Alias: legacy link target to computers index redirects to maintenance index for now
+    Route::get('/maintenance/computers', function () {
+        return redirect()->route('admin.maintenance.index');
+    })->name('maintenance.computers.index');
     Route::get('/maintenance/computers/{computerProfile}', [MaintenanceController::class, 'showComputer'])->name('maintenance.computers.show');
+    Route::post('/maintenance/computers', [MaintenanceController::class, 'storeComputer'])->name('maintenance.computers.store');
+    // Slots management
+    Route::post('/maintenance/slots', [MaintenanceController::class, 'store'])->name('maintenance.slots.store');
+    Route::post('/maintenance/slots/bulk', [MaintenanceController::class, 'storeBulk'])->name('maintenance.slots.store-bulk');
+    Route::put('/maintenance/slots/{slot}', [MaintenanceController::class, 'updateSlot'])->name('maintenance.slots.update');
+    Route::delete('/maintenance/slots/{slot}', [MaintenanceController::class, 'destroySlot'])->name('maintenance.slots.destroy');
+    Route::delete('/maintenance/slots/destroy-past', [MaintenanceController::class, 'destroyPastSlots'])->name('maintenance.slots.destroy-past');
     // Inventory removed from admin panel
 
     // Se mantienen solo tickets y usuarios en el panel admin

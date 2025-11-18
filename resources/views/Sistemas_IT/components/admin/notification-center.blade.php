@@ -110,8 +110,4 @@
     </div>
 </div>
 
-@once
-    @push('scripts')
-        @vite('resources/js/Sistemas_IT/components/admin-notification-center.js')
-    @endpush
-@endonce
+{{-- Script now imported globally via resources/js/app.js --}}

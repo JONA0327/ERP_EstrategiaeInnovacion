@@ -15,7 +15,7 @@
             </a>
             <div>
                 <h1 class="text-3xl font-bold text-gray-900">✏️ Editar Usuario</h1>
-                <p class="text-gray-600 mt-1">Solo se permite modificar email y contraseña para preservar el historial</p>
+                <p class="text-gray-600 mt-1">Puedes modificar nombre, correo, contraseña, rol y área.</p>
             </div>
         </div>
     </div>
@@ -88,6 +88,41 @@
                     </p>
                 </div>
 
+                <!-- Área + Subdepartamento -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="area" class="block text-sm font-medium text-gray-700 mb-2">
+                            🗂️ Área *
+                        </label>
+                        @php($areas = ['Legal','Logistica','RH','Comercio Exterior','Sistemas','Socio'])
+                        <select id="area" name="area" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('area') border-red-500 @enderror">
+                            <option value="">Selecciona un área</option>
+                            @foreach($areas as $a)
+                                <option value="{{ $a }}" {{ old('area', optional($user->empleado)->area) === $a ? 'selected' : '' }}>{{ $a }}</option>
+                            @endforeach
+                        </select>
+                        @error('area')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-sm text-gray-500">Área organizacional asociada al empleado</p>
+                    </div>
+                    <div id="subdepartamentoWrapper" class="{{ old('area', optional($user->empleado)->area) === 'Comercio Exterior' ? '' : 'hidden' }}">
+                        <label for="subdepartamento_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Subdepartamento (Comercio Exterior) <span class="text-red-500">*</span>
+                        </label>
+                        <select id="subdepartamento_id" name="subdepartamento_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('subdepartamento_id') border-red-500 @enderror">
+                            <option value="">Selecciona un subdepartamento</option>
+                            @foreach($subdepartamentosCE as $sd)
+                                <option value="{{ $sd->id }}" {{ (string)old('subdepartamento_id', optional($user->empleado)->subdepartamento_id) === (string)$sd->id ? 'selected' : '' }}>{{ $sd->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('subdepartamento_id')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-sm text-gray-500">Selecciona subdepartamento si el área es Comercio Exterior</p>
+                    </div>
+                </div>
+
                 <!-- Contraseña -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
@@ -119,21 +154,17 @@
                     </p>
                 </div>
 
-                <!-- Advertencia de Integridad -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div>
-                            <h3 class="text-sm font-medium text-blue-800">Información de Edición</h3>
-                            <p class="mt-1 text-sm text-blue-700">
-                                Puedes editar el <strong>nombre</strong> y <strong>correo</strong> del usuario. 
-                                El <strong>rol</strong> no puede modificarse por seguridad.
-                                Todos los tickets y préstamos permanecen vinculados al ID único del usuario (#{{ $user->id }}).
-                            </p>
-                        </div>
-                    </div>
+                <!-- Rol -->
+                <div>
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">🎚️ Rol *</label>
+                    <select id="role" name="role" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('role') border-red-500 @enderror">
+                        @php($roles = ['user' => 'Usuario','colaborador' => 'Colaborador','invitado' => 'Invitado','admin' => 'Administrador'])
+                        @foreach($roles as $value => $label)
+                            <option value="{{ $value }}" {{ old('role', $user->role) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('role')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    <p class="mt-1 text-sm text-gray-500">Invitado: acceso mínimo · Colaborador: funciones extendidas · Administrador: gestión avanzada.</p>
                 </div>
 
                 <!-- Botones -->
@@ -175,7 +206,7 @@
             </div>
             <div>
                 <span class="text-gray-600">📦 Préstamos Realizados:</span>
-                <span class="font-medium text-gray-900 ml-2">{{ $user->prestamosInventario()->count() }}</span>
+                <span class="font-medium text-gray-900 ml-2">—</span>
             </div>
         </div>
         <p class="mt-4 text-xs text-gray-500">
@@ -186,6 +217,24 @@
 
 @push('scripts')
     @vite('resources/js/Sistemas_IT/admin-users-edit.js')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const areaSelect = document.getElementById('area');
+            const wrapper = document.getElementById('subdepartamentoWrapper');
+            function toggleSub() {
+                if (!areaSelect || !wrapper) return;
+                if (areaSelect.value === 'Comercio Exterior') {
+                    wrapper.classList.remove('hidden');
+                } else {
+                    wrapper.classList.add('hidden');
+                    const subSelect = document.getElementById('subdepartamento_id');
+                    if (subSelect) subSelect.value = '';
+                }
+            }
+            toggleSub();
+            areaSelect.addEventListener('change', toggleSub);
+        });
+    </script>
 @endpush
 
 @endsection

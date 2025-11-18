@@ -16,12 +16,18 @@ class Empleado extends Model
         'nombre',
         'correo',
         'area',
+        'subdepartamento_id',
         'posicion',
         'telefono',
         'direccion',
         'correo_personal',
         'foto_path',
     ];
+
+    public function subdepartamento()
+    {
+        return $this->belongsTo(Subdepartamento::class);
+    }
 
     public function user(): BelongsTo
     {

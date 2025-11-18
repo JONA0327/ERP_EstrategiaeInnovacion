@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Iniciar Sesión - E&I Sistema de Tickets</title>
+        <title>Iniciar Sesión - ERP E&I</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -26,8 +26,8 @@
                 <div class="flex items-center gap-4">
                     <img src="{{ asset('images/logo-ei.png') }}" alt="E&I Logo" class="h-12 w-auto">
                     <div>
-                        <h1 class="text-lg font-semibold text-slate-900 sm:text-xl">Sistema de Tickets</h1>
-                        <p class="text-sm text-slate-500">E&I - Tecnología</p>
+                        <h1 class="text-lg font-semibold text-slate-900 sm:text-xl">ERP E&I</h1>
+                        <p class="text-sm text-slate-500">Acceso Unificado</p>
                     </div>
                 </div>
                 <a href="{{ route('welcome') }}" class="inline-flex items-center justify-center rounded-2xl border border-blue-100 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-50">
@@ -54,7 +54,7 @@
                                     </div>
                                     <h2 class="mb-4 text-3xl font-bold text-slate-900">Bienvenido de vuelta</h2>
                                     <p class="mx-auto max-w-md text-sm text-slate-600 lg:mx-0 lg:text-base">
-                                        Accede con tu correo corporativo para monitorear solicitudes, recibir actualizaciones y colaborar con el equipo de soporte.
+                                        Accede con tu correo corporativo para gestionar módulos y colaborar según tu área (Sistemas, Logística, Recursos Humanos, Comercio Exterior).
                                     </p>
                                 </div>
                                 <div class="mt-10 space-y-4 text-left text-sm text-slate-600">

@@ -1,5 +1,9 @@
-document.addEventListener('alpine:init', () => {
-    Alpine.data('adminNotificationCenter', () => ({
+function registerAdminNotificationCenter() {
+    if (!window.Alpine || typeof window.Alpine.data !== 'function') {
+        return false;
+    }
+
+    window.Alpine.data('adminNotificationCenter', () => ({
         open: false,
         unreadCount: 0,
         notifications: [],
@@ -103,4 +107,21 @@ document.addEventListener('alpine:init', () => {
             }, 3000);
         },
     }));
+
+    return true;
+}
+
+// Register immediately if Alpine already started, otherwise on alpine:init
+if (!registerAdminNotificationCenter()) {
+    document.addEventListener('alpine:init', () => {
+        registerAdminNotificationCenter();
+    });
+}
+
+// Safety: hide any orphaned panel if Alpine fails to init
+document.addEventListener('DOMContentLoaded', () => {
+    const orphanPanel = document.querySelector('[x-data="adminNotificationCenter()"] [x-cloak]');
+    if (orphanPanel && !window.Alpine) {
+        orphanPanel.style.display = 'none';
+    }
 });

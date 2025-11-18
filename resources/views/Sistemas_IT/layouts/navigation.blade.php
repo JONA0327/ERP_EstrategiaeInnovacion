@@ -1,35 +1,58 @@
 @php
     $user = Auth::user();
+    $area = optional($user?->empleado)->area;
+    $isRHContext = request()->routeIs('recursos-humanos.index');
+    $isLogisticaContext = request()->routeIs('logistica.index');
 
-    $navItems = [
-        [
-            'label' => 'Inicio',
-            'icon' => 'home',
-            'route' => route('welcome'),
-            'active' => request()->routeIs('welcome'),
-            'visible' => true,
-        ],
-        [
-            'label' => 'Panel Admin',
-            'icon' => 'cog-6-tooth',
-            'route' => route('admin.dashboard'),
-            'active' => request()->routeIs('admin.*'),
-            'visible' => $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false,
-        ],
-        [
-            'label' => 'Mis Tickets',
-            'icon' => 'clipboard-document-list',
-            'route' => route('tickets.mis-tickets'),
-            'active' => request()->routeIs('tickets.*'),
-            'visible' => true,
-        ],
-        // Archivo de problemas removido
-        
-    ];
+    if ($isRHContext) {
+        // RH context: only soporte técnico
+        $navItems = [
+            [
+                'label' => 'Soporte Técnico',
+                'icon' => 'lifebuoy',
+                'route' => route('tickets.mis-tickets'),
+                'active' => request()->routeIs('tickets.*'),
+                'visible' => true,
+            ],
+        ];
+    } else {
+        $navItems = [
+            [
+                'label' => 'Inicio',
+                'icon' => 'home',
+                'route' => route('welcome'),
+                'active' => request()->routeIs('welcome'),
+                'visible' => true,
+            ],
+            [
+                'label' => 'Panel Admin',
+                'icon' => 'cog-6-tooth',
+                'route' => route('admin.dashboard'),
+                'active' => request()->routeIs('admin.*'),
+                'visible' => $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false,
+            ],
+            [
+                'label' => 'Mis Tickets',
+                'icon' => 'clipboard-document-list',
+                'route' => route('tickets.mis-tickets'),
+                'active' => request()->routeIs('tickets.*'),
+                'visible' => true,
+            ],
+        ];
+    }
 
     $filteredItems = array_filter($navItems, fn ($item) => $item['visible']);
     $initials = $user ? strtoupper(mb_substr($user->name, 0, 1, 'UTF-8')) : 'U';
-    $roleLabel = ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) ? 'Administrador TI' : 'Usuario';
+    if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        $roleLabel = match ($area) {
+            'Sistemas' => 'Administrador Sistemas',
+            'Logistica' => 'Administrador Logística',
+            'RH' => 'Administrador RH',
+            default => 'Administrador',
+        };
+    } else {
+        $roleLabel = 'Usuario';
+    }
 @endphp
 
 <nav x-data="{ mobileOpen: false }" class="relative z-50 border-b border-slate-200 bg-white text-slate-700 shadow-md shadow-slate-200/70">
@@ -42,8 +65,16 @@
                         <img src="{{ asset('images/logo-ei.png') }}?v={{ filemtime(public_path('images/logo-ei.png')) }}" alt="E&I Logo" class="h-10 w-auto">
                     </span>
                     <div class="min-w-0 leading-tight">
-                        <p class="text-sm sm:text-base font-semibold text-slate-800 truncate" style="max-width:240px">Sistema de Tickets</p>
-                        <p class="text-xs sm:text-sm font-medium text-slate-500 truncate" style="max-width:240px">E&amp;I - Tecnología</p>
+                        @if($isRHContext)
+                            <p class="text-sm sm:text-base font-semibold text-slate-800 truncate" style="max-width:240px">Administración de RH</p>
+                            <p class="text-xs sm:text-sm font-medium text-slate-500 truncate" style="max-width:240px">E&amp;I - Recursos Humanos</p>
+                        @elseif($isLogisticaContext)
+                            <p class="text-sm sm:text-base font-semibold text-slate-800 truncate" style="max-width:240px">Administración Logística</p>
+                            <p class="text-xs sm:text-sm font-medium text-slate-500 truncate" style="max-width:240px">E&amp;I - Logística</p>
+                        @else
+                            <p class="text-sm sm:text-base font-semibold text-slate-800 truncate" style="max-width:240px">Sistema de Tickets</p>
+                            <p class="text-xs sm:text-sm font-medium text-slate-500 truncate" style="max-width:240px">E&amp;I - Tecnología</p>
+                        @endif
                     </div>
                 </a>
             </div>
@@ -70,7 +101,7 @@
                         @endforeach
                     </div>
 
-                    @if ($user && method_exists($user, 'isAdmin') && $user->isAdmin())
+                    @if (!$isRHContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin())
                         <x-admin.notification-center class="hidden xl:flex text-blue-600" />
                     @endif
 
@@ -133,7 +164,7 @@
 
             @auth
                 <div class="flex items-center gap-2.5 lg:hidden text-blue-600">
-                    @if ($user && method_exists($user, 'isAdmin') && $user->isAdmin())
+                    @if (!$isRHContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin())
                         <x-admin.notification-center />
                     @endif
 

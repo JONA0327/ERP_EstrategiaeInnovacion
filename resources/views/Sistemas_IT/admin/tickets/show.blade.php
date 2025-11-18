@@ -560,18 +560,7 @@ Referente a su ticket {{ $ticket->folio }}..."
                                 Contactar Solicitante
                             </a>
 
-                            <!-- Archivar Problema (solo para tickets cerrados) -->
-                            @if($ticket->estado === 'cerrado')
-                                <div class="mt-3">
-                                    <a href="{{ route('archivo-problemas.create', $ticket->id) }}"
-                                       class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center border border-gray-300">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                                        </svg>
-                                        📚 Archivar en Base de Conocimiento
-                                    </a>
-                                </div>
-                            @endif
+                            
                         </div>
                     </div>
                 </div>
