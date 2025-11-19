@@ -6,6 +6,7 @@ use App\Models\Empleado;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -48,7 +49,7 @@ class ProcesarAsistenciaService
     * @param bool $persist Si es true persiste en BD, de lo contrario solo colecta los registros.
     * @return array{total_registros:int, empleados_procesados:int, hojas_procesadas:int, periodo:array|null, registros:array}
     */
-    public function process(string $path, bool $persist = true): array
+    public function process(string $path, bool $persist = true, callable $onSheetProgress = null): array
     {
         $this->persistRegistros = $persist;
         $this->collectedRegistros = [];
@@ -56,14 +57,31 @@ class ProcesarAsistenciaService
         $spreadsheet = IOFactory::load($path);
         $sheets = $spreadsheet->getAllSheets();
 
+        // Evento temprano para establecer total de hojas antes de procesar la primera.
+        if ($onSheetProgress) {
+            $onSheetProgress([
+                'evento' => 'preparando',
+                'total' => count($sheets),
+                'titulo' => $sheets ? ($sheets[0]->getTitle()) : null,
+            ]);
+        }
+
         $totalRegistros = 0;
         $empleadosProcesados = 0;
         $hojasProcesadas = 0;
         $periodoGlobal = null;
 
-        foreach ($sheets as $sheet) {
+        foreach ($sheets as $index => $sheet) {
             /** @var Worksheet $sheet */
             $hojasProcesadas++;
+            if ($onSheetProgress) {
+                $onSheetProgress([
+                    'evento' => 'inicio_hoja',
+                    'indice' => $index + 1,
+                    'total' => count($sheets),
+                    'titulo' => $sheet->getTitle(),
+                ]);
+            }
 
             // 1. Detectar periodo por hoja (se usa como global si es el primero encontrado).
             $periodoHoja = $this->parsePeriodo($sheet);
@@ -88,23 +106,23 @@ class ProcesarAsistenciaService
 
             for ($row = 1; $row <= $highestRow; $row++) {
                 $rowValues = $this->getRowValues($sheet, $row);
-
+                // 1. Cabecera de empleado (puede contener también el nombre en la misma fila)
                 if ($this->isEmpleadoHeader($rowValues)) {
                     if ($empleadoActual) {
                         $empleadosProcesados++;
                     }
                     $empleadoActual = [
                         'no' => $this->extraerValorPosterior($rowValues, 'No') ?? '',
-                        'nombre' => null,
+                        'nombre' => $this->extraerValorPosterior($rowValues, 'Nombre') ?? null,
                     ];
-                    continue;
+                    continue; // Pasamos a siguientes filas (checadas o nombre complementario)
                 }
-
+                // 2. Nombre en fila separada (cuando no vino junto con 'No :')
                 if ($empleadoActual && !$empleadoActual['nombre'] && $this->isNombreHeader($rowValues)) {
                     $empleadoActual['nombre'] = $this->extraerValorPosterior($rowValues, 'Nombre') ?? 'DESCONOCIDO';
                     continue;
                 }
-
+                // 3. Fila de checadas
                 if ($empleadoActual && $this->filaTieneChecadas($rowValues)) {
                     $totalRegistros += $this->procesarFilaDeChecadas($rowValues, $dayColumns, $periodo, $empleadoActual);
                 }
@@ -112,6 +130,16 @@ class ProcesarAsistenciaService
 
             if ($empleadoActual) {
                 $empleadosProcesados++;
+            }
+
+            if ($onSheetProgress) {
+                $onSheetProgress([
+                    'evento' => 'fin_hoja',
+                    'indice' => $index + 1,
+                    'total' => count($sheets),
+                    'titulo' => $sheet->getTitle(),
+                    'registros_acumulados' => $totalRegistros,
+                ]);
             }
         }
 
@@ -130,35 +158,25 @@ class ProcesarAsistenciaService
     public function parsePeriodo(Worksheet $sheet): ?array
     {
         $maxRow = min($sheet->getHighestDataRow(), $this->maxPeriodoScanRows);
-        $maxColIndex = Coordinate::columnIndexFromString(
-            min($sheet->getHighestDataColumn(), $this->columnIndexToLetter($this->maxPeriodoScanCols))
-        );
-
         for ($row = 1; $row <= $maxRow; $row++) {
-            for ($col = 1; $col <= $maxColIndex; $col++) {
-                $value = (string) $sheet->getCellByColumnAndRow($col, $row)->getValue();
-                if (!Str::contains(Str::lower($value), 'periodo')) {
-                    continue;
-                }
-
-                if (preg_match('/(\\d{4})\\/(\\d{2})\\/(\\d{2}).*?~.*?(\\d{2})\\/(\\d{2})/u', $value, $matches)) {
-                    $year = (int) $matches[1];
-                    $monthStart = (int) $matches[2];
-                    $dayStart = (int) $matches[3];
-                    $monthEnd = (int) $matches[4];
-                    $dayEnd = (int) $matches[5];
-
-                    $start = Carbon::create($year, $monthStart, $dayStart, 0, 0, 0);
-                    $end = Carbon::create($year, $monthEnd ?: $monthStart, $dayEnd, 0, 0, 0);
-
-                    return [
-                        'inicio' => $start,
-                        'fin' => $end,
-                    ];
-                }
+            $rowValues = $this->getRowValues($sheet, $row);
+            $joinedLower = Str::lower(implode(' ', $rowValues));
+            if (!Str::contains($joinedLower, 'periodo')) {
+                continue;
+            }
+            // Tomar varias celdas por si el rango está separado en columnas distintas.
+            $extended = implode(' ', array_slice($rowValues, 0, 15));
+            if (preg_match('/(\d{4})\/(\d{2})\/(\d{2}).*?~.*?(\d{2})\/(\d{2})/u', $extended, $m)) {
+                $year = (int) $m[1];
+                $monthStart = (int) $m[2];
+                $dayStart = (int) $m[3];
+                $monthEnd = (int) $m[4];
+                $dayEnd = (int) $m[5];
+                $start = Carbon::create($year, $monthStart, $dayStart);
+                $end = Carbon::create($year, $monthEnd ?: $monthStart, $dayEnd);
+                return ['inicio' => $start, 'fin' => $end];
             }
         }
-
         return null;
     }
 
@@ -173,7 +191,7 @@ class ProcesarAsistenciaService
         for ($row = 1; $row <= $highestRow; $row++) {
             $map = [];
             for ($col = 1; $col <= $highestCol; $col++) {
-                $value = trim((string) $sheet->getCellByColumnAndRow($col, $row)->getValue());
+                $value = trim((string) $this->getCellValue($sheet, $col, $row));
                 if ($value === '' || !ctype_digit($value)) {
                     continue;
                 }
@@ -329,7 +347,7 @@ class ProcesarAsistenciaService
         $highestCol = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
         $values = [];
         for ($col = 1; $col <= $highestCol; $col++) {
-            $values[] = (string) $sheet->getCellByColumnAndRow($col, $row)->getValue();
+            $values[] = (string) $this->getCellValue($sheet, $col, $row);
         }
 
         return $values;
@@ -377,12 +395,20 @@ class ProcesarAsistenciaService
     /** Busca un empleado por número oficial o código alterno. */
     protected function buscarEmpleadoPorNumero(string $empleadoNo): ?Empleado
     {
+        $columns = Schema::getColumnListing('empleados');
         return Empleado::query()
             ->when($this->areaObjetivo, fn ($q) => $q->where('area', $this->areaObjetivo))
-            ->where(function ($q) use ($empleadoNo) {
-                $q->where('id_empleado', $empleadoNo)
-                    ->orWhere('numero', $empleadoNo)
-                    ->orWhere('user_id', $empleadoNo);
+            ->where(function ($q) use ($empleadoNo, $columns) {
+                if (in_array('id_empleado', $columns, true)) {
+                    $q->orWhere('id_empleado', $empleadoNo);
+                }
+                // Algunas instalaciones podrían tener un campo alterno, lo revisamos solo si existe.
+                if (in_array('numero', $columns, true)) {
+                    $q->orWhere('numero', $empleadoNo);
+                }
+                if (in_array('user_id', $columns, true) && ctype_digit($empleadoNo)) {
+                    $q->orWhere('user_id', (int) $empleadoNo);
+                }
             })
             ->first();
     }
@@ -501,5 +527,12 @@ class ProcesarAsistenciaService
         }
 
         return $columnName;
+    }
+
+    /** Obtiene valor de celda por índice de columna y fila. */
+    protected function getCellValue(Worksheet $sheet, int $col, int $row): mixed
+    {
+        $coord = Coordinate::stringFromColumnIndex($col) . $row; // Ej: A1
+        return $sheet->getCell($coord)->getValue();
     }
 }
