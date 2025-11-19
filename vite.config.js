@@ -8,10 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/css/Sistemas_IT/inventario-index.css', // Sistemas_IT page styles
-                // Sistemas_IT page scripts
-                // Removed deprecated feature scripts; only keeping active components
-                'resources/js/Sistemas_IT/components/notifications.js',
-                'resources/js/Sistemas_IT/components/admin-notification-center.js',
+                // Component scripts ya se importan dentro de app.js (evita entradas redundantes en build)
                 // Area: Recursos Humanos
                 'resources/css/Recursos_Humanos/index.css',
                 'resources/js/Recursos_Humanos/index.js',
