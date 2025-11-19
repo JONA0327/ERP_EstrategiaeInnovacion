@@ -24,13 +24,15 @@
                         'description' => 'Administra expedientes y documentación del personal.',
                         'href' => route('rh.expedientes.index'),
                         'cta' => 'Abrir módulo',
+                        'status' => 'Disponible',
                         'icon' => 'M3 7.5A2.25 2.25 0 015.25 5.25h4.379c.597 0 1.17.237 1.59.659l1.872 1.872A2.25 2.25 0 0114.34 9.372L9.75 9.375H5.25A2.25 2.25 0 003 11.625v6.375A2.25 2.25 0 005.25 20.25h13.5A2.25 2.25 0 0021 18V9a.75.75 0 00-1.5 0v9a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75V11.625A.75.75 0 015.25 10.875H9.75',
                     ],
                     [
                         'title' => 'Reloj Checador',
                         'description' => 'Control de asistencia y registro de entradas/salidas.',
-                        'href' => route('recursos-humanos.index') . '#checar',
-                        'cta' => 'En construcción',
+                        'href' => route('rh.reloj.index'),
+                        'cta' => 'Abrir módulo',
+                        'status' => 'Disponible',
                         'icon' => 'M12 6v6h4.5m3 0a9 9 0 11-18 0 9 9 0 0118 0z',
                     ],
                     [
@@ -61,7 +63,7 @@
                                 </svg>
                                 {{ $card['cta'] }}
                             </a>
-                            <p class="mt-3 text-center text-[11px] text-slate-400">En construcción</p>
+                            <p class="mt-3 text-center text-[11px] text-slate-400">{{ $card['status'] ?? 'En construcción' }}</p>
                         </div>
                     </div>
                 @endforeach
