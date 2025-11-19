@@ -32,14 +32,27 @@ class ProcesarAsistenciaService
     /** @var string|null Área objetivo para resolver empleados (se prioriza Recursos Humanos). */
     protected ?string $areaObjetivo = 'Recursos Humanos';
 
+    /** @var bool Determina si los registros se persisten o solo se devuelven. */
+    protected bool $persistRegistros = true;
+
+    /**
+     * @var array<array<string,mixed>> Colección temporal de registros procesados
+     *                                  (solo cuando no se persisten).
+     */
+    protected array $collectedRegistros = [];
+
     /**
     * Procesa un archivo Excel de asistencias.
     *
     * @param string $path Ruta absoluta al archivo.
-    * @return array{total_registros:int, empleados_procesados:int, hojas_procesadas:int, periodo:array|null}
+    * @param bool $persist Si es true persiste en BD, de lo contrario solo colecta los registros.
+    * @return array{total_registros:int, empleados_procesados:int, hojas_procesadas:int, periodo:array|null, registros:array}
     */
-    public function process(string $path): array
+    public function process(string $path, bool $persist = true): array
     {
+        $this->persistRegistros = $persist;
+        $this->collectedRegistros = [];
+
         $spreadsheet = IOFactory::load($path);
         $sheets = $spreadsheet->getAllSheets();
 
@@ -107,6 +120,7 @@ class ProcesarAsistenciaService
             'empleados_procesados' => $empleadosProcesados,
             'hojas_procesadas' => $hojasProcesadas,
             'periodo' => $periodoGlobal,
+            'registros' => $persist ? [] : $this->collectedRegistros,
         ];
     }
 
@@ -258,13 +272,13 @@ class ProcesarAsistenciaService
             $empleadoId = $this->resolverEmpleadoId($empleado['no'], $empleado['nombre']);
 
             foreach ($parsed['pairs'] as $pair) {
-                DB::table('asistencias')->insert([
+                $this->guardarRegistro([
                     'empleado_no' => $empleado['no'],
                     'nombre' => $empleado['nombre'] ?? 'DESCONOCIDO',
                     'fecha' => $fecha->toDateString(),
                     'entrada' => $this->formatearHora($pair['entrada']),
                     'salida' => $this->formatearHora($pair['salida']),
-                    'checadas' => json_encode($parsed['all']),
+                    'checadas' => $parsed['all'],
                     'empleado_id' => $empleadoId,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -274,6 +288,23 @@ class ProcesarAsistenciaService
         }
 
         return $total;
+    }
+
+    /**
+     * Guarda o colecta un registro dependiendo del modo de operación actual.
+     */
+    protected function guardarRegistro(array $registro): void
+    {
+        if ($this->persistRegistros) {
+            $payload = $registro;
+            $payload['checadas'] = json_encode($registro['checadas']);
+            DB::table('asistencias')->insert($payload);
+
+            return;
+        }
+
+        $registro['checadas'] = array_values($registro['checadas'] ?? []);
+        $this->collectedRegistros[] = $registro;
     }
 
     /** Construye la fecha combinando el periodo detectado con el número de día. */

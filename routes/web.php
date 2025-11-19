@@ -10,6 +10,7 @@ use App\Http\Controllers\Sistemas_IT\TicketController;
 use App\Http\Controllers\Sistemas_IT\MaintenanceController;
 use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
+use App\Http\Controllers\RH\RelojChecadorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,6 +22,8 @@ Route::get('/', function () {
 // Áreas bajo autenticación y control de área
 Route::middleware(['auth','area.rh'])->group(function () {
     Route::get('/recursos-humanos', function () { return view('Recursos_Humanos.index'); })->name('recursos-humanos.index');
+    Route::get('/recursos-humanos/reloj-checador', [RelojChecadorController::class, 'index'])->name('rh.reloj.index');
+    Route::post('/recursos-humanos/reloj-checador', [RelojChecadorController::class, 'procesar'])->name('rh.reloj.procesar');
     Route::prefix('recursos-humanos/expedientes')->name('rh.expedientes.')->group(function () {
         Route::get('/', [ExpedienteController::class, 'index'])->name('index');
         Route::post('/refresh', [ExpedienteController::class, 'refresh'])->name('refresh');
