@@ -45,6 +45,12 @@
     "src": "resources/js/Recursos_Humanos/index.js",
     "isEntry": true
   },
+  "resources/js/Sistemas_IT/tickets-my.js": {
+    "file": "assets/tickets-my-C4_EzQoA.js",
+    "name": "tickets-my",
+    "src": "resources/js/Sistemas_IT/tickets-my.js",
+    "isEntry": true
+  },
   "resources/js/app.js": {
     "file": "assets/app-CrbEGIr3.js",
     "name": "app",

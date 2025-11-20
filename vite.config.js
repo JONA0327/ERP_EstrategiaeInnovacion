@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/css/Sistemas_IT/inventario-index.css', // Sistemas_IT page styles
+                'resources/js/Sistemas_IT/tickets-my.js', // Tickets page script
                 // Component scripts ya se importan dentro de app.js (evita entradas redundantes en build)
                 // Area: Recursos Humanos
                 'resources/css/Recursos_Humanos/index.css',
