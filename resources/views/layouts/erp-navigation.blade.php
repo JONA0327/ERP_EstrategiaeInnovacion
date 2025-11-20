@@ -15,15 +15,15 @@
                     <p class="text-sm font-semibold text-slate-800">Administración Logística</p>
                     <p class="text-xs text-slate-500">E&I - Logística</p>
                 @else
-                    <p class="text-sm font-semibold text-slate-800">ERP E&I</p>
-                    <p class="text-xs text-slate-500">Portal Corporativo</p>
+                    <p class="text-sm font-semibold text-slate-800">SISTEMA ERP ESTRATEGIA E INNOVACIÓN</p>
+                    <p class="text-xs text-slate-500">Portal Corporativo Integrado</p>
                 @endif
             </div>
         </a>
         <div class="flex items-center gap-4">
             <a href="{{ route('tickets.mis-tickets') }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-medium shadow hover:bg-blue-700">
                 <x-ui.icon name="lifebuoy" class="h-4 w-4" />
-                Soporte Técnico
+                Centro de Soporte
             </a>
             @auth
             <div class="relative" x-data="{ profile:false }">

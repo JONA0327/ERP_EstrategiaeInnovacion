@@ -1,6 +1,6 @@
-@extends('layouts.master')
+@extends('layouts.erp')
 
-@section('title', 'Sistema de Tickets - E&I Tecnología')
+@section('title', 'SISTEMA ERP ESTRATEGIA E INNOVACIÓN')
 
 @section('content')
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100">
@@ -42,8 +42,8 @@
             @endif
 
             <div class="mb-6 text-center">
-                <h1 class="text-2xl font-bold text-slate-900">Centro de Soporte Técnico</h1>
-                <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Gestiona y crea tus solicitudes de soporte técnico.</p>
+                <h1 class="text-2xl font-bold text-slate-900">SISTEMA ERP ESTRATEGIA E INNOVACIÓN</h1>
+                <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Portal corporativo integrado para la gestión empresarial.</p>
             </div>
 
             @guest
@@ -57,9 +57,9 @@
                                 <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/40 mx-auto mb-6">
                                         <x-ui.icon-box name="squares-2x2" boxClass="h-16 w-16 rounded-2xl" iconClass="h-8 w-8" />
                                 </div>
-                                <h2 class="text-2xl sm:text-3xl font-bold text-center text-slate-900 mb-4">¡Bienvenido al Sistema de Tickets!</h2>
+                                <h2 class="text-2xl sm:text-3xl font-bold text-center text-slate-900 mb-4">¡Bienvenido al Sistema ERP!</h2>
                                 <p class="text-center text-slate-600 mb-8 text-sm sm:text-base max-w-xl mx-auto">
-                                    Inicia sesión con tu correo corporativo para crear solicitudes, monitorear avances y comunicarte directamente con el equipo de soporte técnico.
+                                    Inicia sesión con tu correo corporativo para acceder al portal empresarial y gestionar tus recursos, procesos y solicitudes de soporte.
                                 </p>
                                 <div class="flex flex-col sm:flex-row justify-center gap-3 mb-4">
                                     <a href="{{ route('login') }}" class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:from-blue-700 hover:to-blue-800 transition-colors">
@@ -177,7 +177,7 @@
     <footer class="bg-white border-t border-blue-100">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="text-center text-slate-500 text-sm">
-                <p>&copy; {{ date('Y') }} E&I - Comercio Exterior, Logística y Tecnología. Todos los derechos reservados.</p>
+                <p>&copy; {{ date('Y') }} Estrategia e Innovación - Sistema ERP Corporativo. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
