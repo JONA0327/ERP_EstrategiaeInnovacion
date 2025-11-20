@@ -6,10 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeTicketCreate() {
-    console.log('🎫 Inicializando funcionalidad de Crear Ticket');
-    
     const ticketType = getTicketType();
-    console.log(`📝 Tipo de ticket: ${ticketType}`);
     
     // Inicializar funcionalidades básicas
     initializeFormHandling();
@@ -18,7 +15,6 @@ function initializeTicketCreate() {
     
     // Solo inicializar calendario si es mantenimiento
     if (ticketType === 'mantenimiento') {
-        console.log('🔧 Es ticket de mantenimiento, inicializando calendario...');
         initializeSimpleCalendar();
         // addCalendarDebugButton(); // Comentado temporalmente
     }
@@ -28,7 +24,6 @@ function initializeTicketCreate() {
 function initializeSimpleCalendar() {
     const scheduling = document.getElementById('maintenanceScheduling');
     if (!scheduling) {
-        console.log('❌ No hay elemento de scheduling');
         return;
     }
     
@@ -51,18 +46,15 @@ function initializeSimpleCalendar() {
         return;
     }
     
-    console.log('✅ Elementos encontrados, inicializando calendario con disponibilidad...');
-    console.log('🔗 URLs:', { availabilityUrl, slotsUrl });
+
     
     let currentDate = new Date();
     let availabilityData = {};
     
     async function loadAvailability() {
         try {
-            console.log('🔄 Cargando disponibilidad...');
             const month = currentDate.toISOString().substr(0, 7); // YYYY-MM format
             const url = `${availabilityUrl}?month=${month}`;
-            console.log('📡 Consultando API:', url);
             
             const response = await fetch(url);
             
@@ -72,9 +64,7 @@ function initializeSimpleCalendar() {
                     showNotification(`Error de API: ${response.status} - ${response.statusText}`, 'error');
                     return;
                 }
-                console.warn('Usando datos de prueba como fallback');
                 availabilityData = getTestAvailabilityData();
-                console.log('📊 Usando datos de prueba:', availabilityData);
                 renderMonth();
                 return;
             }
@@ -160,7 +150,6 @@ function initializeSimpleCalendar() {
     }
     
     function renderMonth() {
-        console.log('🎨 Renderizando mes con disponibilidad...');
         
         // Actualizar título
         const monthName = currentDate.toLocaleDateString('es-ES', { 
@@ -231,13 +220,10 @@ function initializeSimpleCalendar() {
             
             calendar.appendChild(button);
         }
-        
-        console.log('📅 Calendario renderizado con disponibilidad');
     }
     
     async function selectDate(dateKey, cellDate) {
         try {
-            console.log('📅 Cargando horarios para:', dateKey);
             
             const response = await fetch(`${slotsUrl}?date=${dateKey}`);
             if (!response.ok) {
@@ -364,11 +350,9 @@ function initializeSimpleCalendar() {
         });
         
         timeSlotsWrapper.classList.remove('hidden');
-        console.log('⏰ Horarios mostrados:', slots.length);
     }
     
     function selectTimeSlot(slot, dateKey) {
-        console.log('⏰ Horario seleccionado:', slot);
         
         // Actualizar inputs ocultos
         const slotIdInput = document.getElementById('maintenance_slot_id');
@@ -398,7 +382,6 @@ function initializeSimpleCalendar() {
     // Event listeners para navegación
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
-            console.log('⬅️ Mes anterior');
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderMonth();
             hideTimeSlots();
@@ -407,7 +390,6 @@ function initializeSimpleCalendar() {
     
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            console.log('➡️ Mes siguiente');
             currentDate.setMonth(currentDate.getMonth() + 1);
             renderMonth();
             hideTimeSlots();
@@ -1137,5 +1119,3 @@ export {
 window.initializeTicketCreate = initializeTicketCreate;
 window.showNotification = showNotification;
 window.closeExpandedImage = closeExpandedImage;
-
-console.log('✅ Tickets-create.js cargado correctamente');
