@@ -68,7 +68,7 @@ function createImageModal() {
 }
 
 // Función global para expandir imagen (llamada desde onclick en Blade)
-window.expandImage = function(img) {
+function expandImage(img) {
     const modal = document.getElementById('imageModal');
     const modalImage = document.getElementById('modalImage');
     const modalImageName = document.getElementById('modalImageName');
@@ -84,15 +84,15 @@ window.expandImage = function(img) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
-};
+}
 
-window.closeImageModal = function() {
+function closeImageModal() {
     const modal = document.getElementById('imageModal');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
-};
+}
 
 // ===== CANCELACIÓN DE TICKETS =====
 function initializeCancelTicketModal() {
@@ -121,6 +121,9 @@ function initializeCancelTicketModal() {
                 if (!checkResponse.ok) {
                     if (checkResponse.status === 404) {
                         showNotification(`El ticket ${currentTicketFolio} no fue encontrado.`, 'error');
+                        return;
+                    } else if (checkResponse.status === 403) {
+                        showNotification(`No tienes permisos para cancelar el ticket ${currentTicketFolio}. Solo el propietario o un administrador pueden hacerlo.`, 'error');
                         return;
                     }
                     throw new Error(`HTTP ${checkResponse.status}: ${checkResponse.statusText}`);

@@ -56,9 +56,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/ticket/create/{tipo}', [TicketController::class, 'create'])->name('tickets.create');
     Route::post('/ticket', [TicketController::class, 'store'])->name('tickets.store');
     Route::get('/mis-tickets', [TicketController::class, 'misTickets'])->name('tickets.mis-tickets');
-    Route::delete('/ticket/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
+    Route::delete('/ticket/{id}', [TicketController::class, 'destroy'])->name('tickets.destroy');
     Route::get('/ticket/{id}/can-cancel', [TicketController::class, 'canCancel'])->name('tickets.can-cancel');
-    Route::post('/ticket/{ticket}/acknowledge-update', [TicketController::class, 'acknowledgeUpdate'])->name('tickets.acknowledge');
+    Route::post('/ticket/{id}/acknowledge-update', [TicketController::class, 'acknowledgeUpdate'])->name('tickets.acknowledge');
     Route::post('/tickets/acknowledge-all', [TicketController::class, 'acknowledgeAllUpdates'])->name('tickets.acknowledge-all');
 
     Route::get('/maintenance/availability', [MaintenanceController::class, 'availability'])->name('maintenance.availability');

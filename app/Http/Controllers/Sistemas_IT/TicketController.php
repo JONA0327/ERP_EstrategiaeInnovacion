@@ -475,9 +475,19 @@ class TicketController extends Controller
         ));
     }
 
-    public function acknowledgeUpdate(Request $request, Ticket $ticket)
+    public function acknowledgeUpdate(Request $request, $ticketId)
     {
-        abort_if($ticket->user_id !== auth()->id(), 403);
+        $user = auth()->user();
+        $ticket = Ticket::where('id', $ticketId)
+                       ->where('user_id', $user->id)
+                       ->first();
+                       
+        if (!$ticket) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Ticket no encontrado'], 404);
+            }
+            abort(404);
+        }
 
         $ticket->forceFill([
             'user_has_updates' => false,
@@ -518,12 +528,30 @@ class TicketController extends Controller
                 : 'No tienes notificaciones pendientes.');
     }
 
-    public function destroy(Ticket $ticket)
+    public function destroy($ticketId)
     {
         $user = auth()->user();
+        
+        // Buscar el ticket manualmente con permisos
+        $isAdmin = $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
+        
+        if ($isAdmin) {
+            $ticket = Ticket::find($ticketId);
+        } else {
+            $ticket = Ticket::where('id', $ticketId)
+                           ->where('user_id', $user->id)
+                           ->first();
+        }
+        
+        if (!$ticket) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Ticket no encontrado o sin permisos'], 404);
+            }
+            return redirect()->back()->with('error', 'Ticket no encontrado o sin permisos para eliminarlo.');
+        }
+        
         $folio = $ticket->folio;
         $solicitante = $ticket->nombre_solicitante;
-        $isAdmin = $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
 
         if ($ticket->tipo_problema === 'mantenimiento' && $ticket->maintenance_slot_id) {
             $this->releaseMaintenanceSlot($ticket);
@@ -601,22 +629,48 @@ class TicketController extends Controller
             return response()->json(['can_cancel' => false, 'reason' => 'Usuario no autenticado'], 401);
         }
         
-        // Buscar el ticket con scope de usuario o admin
+
+        
+        // Buscar el ticket usando consulta directa para debugging
+        try {
+            $ticket = \DB::table('tickets')->where('id', $ticketId)->first();
+            
+            if (!$ticket) {
+                return response()->json([
+                    'can_cancel' => false, 
+                    'reason' => 'Ticket no encontrado en base de datos',
+                    'debug' => ['query_table' => 'tickets', 'searched_id' => $ticketId]
+                ], 404);
+            }
+            
+            // Convertir a modelo si encontramos el registro
+            $ticket = Ticket::find($ticketId);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'can_cancel' => false, 
+                'reason' => 'Error de base de datos: ' . $e->getMessage()
+            ], 500);
+        }
+        
+        // Verificar permisos
         $isAdmin = method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
         
-        if ($isAdmin) {
-            // Admin puede ver cualquier ticket
-            $ticket = Ticket::find($ticketId);
-        } else {
-            // Usuario normal solo puede ver sus propios tickets
-            $ticket = Ticket::where('id', $ticketId)
-                           ->where('user_id', $user->id)
-                           ->first();
+        // Solo el propietario del ticket o un admin pueden cancelarlo
+        if (!$isAdmin && $ticket->user_id !== $user->id) {
+            return response()->json([
+                'can_cancel' => false, 
+                'reason' => 'No tienes permisos para cancelar este ticket. Solo el propietario o un administrador pueden hacerlo.',
+                'debug' => [
+                    'ticket_owner_id' => $ticket->user_id,
+                    'current_user_id' => $user->id,
+                    'is_admin' => $isAdmin,
+                    'ticket_folio' => $ticket->folio
+                ]
+            ], 403);
         }
         
-        if (!$ticket) {
-            return response()->json(['can_cancel' => false, 'reason' => 'Ticket no encontrado o sin permisos'], 404);
-        }
+
         
         $nowMexico = now('America/Mexico_City');
         

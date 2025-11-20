@@ -753,14 +753,14 @@ function createImageModal() {
     return modal;
 }
 
-window.closeExpandedImage = function() {
+function closeExpandedImage() {
     const modal = document.getElementById('imageExpandModal');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         document.body.style.overflow = '';
     }
-};
+}
 
 // ===== PROGRAMACIÓN DE MANTENIMIENTO =====
 function initializeMaintenanceScheduling_OLD() {
