@@ -80,8 +80,6 @@ function initializeSimpleCalendar() {
             }
             
             const apiData = await response.json();
-            console.log('📊 Datos de API recibidos:', apiData);
-            
             // Convertir formato de API a formato esperado por el calendario
             availabilityData = {};
             if (apiData.days && Array.isArray(apiData.days)) {
@@ -89,7 +87,6 @@ function initializeSimpleCalendar() {
                     availabilityData[day.date] = day;
                 });
             }
-            console.log('📊 Disponibilidad procesada:', availabilityData);
             
             // Re-renderizar calendario con disponibilidad
             renderMonth();
@@ -248,11 +245,9 @@ function initializeSimpleCalendar() {
             }
             
             const slotsData = await response.json();
-            console.log('⏰ Horarios cargados:', slotsData);
             
             // Extraer el array de slots del objeto de respuesta
             const slots = slotsData.slots || [];
-            console.log('📋 Slots procesados:', slots);
             
             displayTimeSlots(slots, dateKey, cellDate);
         } catch (error) {
@@ -310,12 +305,8 @@ function initializeSimpleCalendar() {
             return;
         }
         
-        console.log('✅ Creando botones para', slots.length, 'horarios');
-        
         // Crear botones de horarios
         slots.forEach(slot => {
-        console.log('🕒 Procesando horario (primera función):', slot);
-        
         const slotButton = document.createElement('button');
         slotButton.type = 'button';
         
@@ -323,6 +314,29 @@ function initializeSimpleCalendar() {
         const available = slot.available > 0 || slot.status === 'available';
         const startTime = slot.start || slot.start_time || 'N/D';
         const endTime = slot.end || slot.end_time || 'N/D';
+        
+        // Determinar estado y color inline
+        let statusText = 'Desconocido';
+        let statusColor = 'text-red-600';
+        
+        switch(slot.status) {
+            case 'available':
+                statusText = 'Disponible';
+                statusColor = 'text-green-600';
+                break;
+            case 'partial':
+                statusText = 'Parcial';
+                statusColor = 'text-yellow-600';
+                break;
+            case 'full':
+                statusText = 'Ocupado';
+                statusColor = 'text-blue-600';
+                break;
+            case 'past':
+                statusText = 'Pasado';
+                statusColor = 'text-gray-600';
+                break;
+        }
         
         slotButton.className = `p-4 rounded-2xl border-2 transition-all text-left hover:scale-105 ${
                 available 
@@ -336,7 +350,7 @@ function initializeSimpleCalendar() {
                     Disponibles: ${slot.available || 0}/${slot.capacity || 1}
                 </div>
                 <div class="text-xs mt-1">
-                    Estado: <span class="${getStatusColor(slot.status)}">${getStatusText(slot.status)}</span>
+                    Estado: <span class="${statusColor}">${statusText}</span>
                 </div>
             `;
             
@@ -541,26 +555,6 @@ function initializeProgramSelection() {
                 otroInput.required = false;
                 otroInput.value = '';
         }
-    }
-}
-
-function getStatusText(status) {
-    switch(status) {
-        case 'available': return 'Disponible';
-        case 'partial': return 'Parcial';
-        case 'full': return 'Ocupado';
-        case 'past': return 'Pasado';
-        default: return 'Desconocido';
-    }
-}
-
-function getStatusColor(status) {
-    switch(status) {
-        case 'available': return 'text-green-600';
-        case 'partial': return 'text-yellow-600';
-        case 'full': return 'text-blue-600';
-        case 'past': return 'text-gray-600';
-        default: return 'text-red-600';
     }
 }
 
@@ -950,8 +944,6 @@ function initializeMaintenanceScheduling_OLD() {
             }
             
             const apiData = await response.json();
-            console.log('📅 Datos de API recibidos:', apiData);
-            
             // Convertir formato de API a formato esperado por el calendario
             availabilityData = {};
             if (apiData.days && Array.isArray(apiData.days)) {
@@ -959,7 +951,6 @@ function initializeMaintenanceScheduling_OLD() {
                     availabilityData[day.date] = day;
                 });
             }
-            console.log('📅 Disponibilidad procesada:', availabilityData);
             
             // Re-renderizar con disponibilidad
             generateCalendarDays();
@@ -1040,21 +1031,7 @@ function initializeMaintenanceScheduling_OLD() {
             noSlotsMessage.classList.add('hidden');
         }
         
-        console.log('✅ Procesando', slots.length, 'horarios');
-        
         slots.forEach(slot => {
-        console.log('🕒 Procesando horario:', slot);
-        console.log('🔍 Campos del slot:', {
-            id: slot.id,
-            start: slot.start,
-            end: slot.end,
-            start_time: slot.start_time,
-            end_time: slot.end_time,
-            available: slot.available,
-            capacity: slot.capacity,
-            status: slot.status
-        });
-        
         const slotButton = document.createElement('button');
         slotButton.type = 'button';
         
@@ -1063,7 +1040,28 @@ function initializeMaintenanceScheduling_OLD() {
         const startTime = slot.start || slot.start_time || 'N/D';
         const endTime = slot.end || slot.end_time || 'N/D';
         
-        console.log('🕰️ Horarios procesados:', { startTime, endTime, available });            slotButton.className = `p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+        // Determinar estado y color inline
+        let statusText = 'Desconocido';
+        let statusColor = 'text-red-600';
+        
+        switch(slot.status) {
+            case 'available':
+                statusText = 'Disponible';
+                statusColor = 'text-green-600';
+                break;
+            case 'partial':
+                statusText = 'Parcial';
+                statusColor = 'text-yellow-600';
+                break;
+            case 'full':
+                statusText = 'Ocupado';
+                statusColor = 'text-blue-600';
+                break;
+            case 'past':
+                statusText = 'Pasado';
+                statusColor = 'text-gray-600';
+                break;
+        }            slotButton.className = `p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-105 ${
                 available 
                     ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
                     : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
@@ -1075,7 +1073,7 @@ function initializeMaintenanceScheduling_OLD() {
                     Disponibles: ${slot.available || 0}/${slot.capacity || 1}
                 </div>
                 <div class="text-xs mt-1">
-                    Estado: <span class="${getStatusColor(slot.status)}">${getStatusText(slot.status)}</span>
+                    Estado: <span class="${statusColor}">${statusText}</span>
                 </div>
             `;
             
