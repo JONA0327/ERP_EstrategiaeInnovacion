@@ -11,15 +11,109 @@ function initializeTicketCreate() {
     const ticketType = getTicketType();
     console.log(`📝 Tipo de ticket: ${ticketType}`);
     
-    // Inicializar funcionalidades base
+    // Inicializar funcionalidades básicas
     initializeFormHandling();
     initializeImageUpload();
     initializeProgramSelection();
     
-    // Inicializar funcionalidades específicas del tipo
+    // Solo inicializar calendario si es mantenimiento
     if (ticketType === 'mantenimiento') {
-        initializeMaintenanceScheduling();
+        console.log('🔧 Es ticket de mantenimiento, inicializando calendario...');
+        initializeSimpleCalendar();
     }
+}
+
+// Función simplificada del calendario
+function initializeSimpleCalendar() {
+    const scheduling = document.getElementById('maintenanceScheduling');
+    if (!scheduling) {
+        console.log('❌ No hay elemento de scheduling');
+        return;
+    }
+    
+    const calendar = document.getElementById('calendarGrid');
+    const monthLabel = document.getElementById('calendarMonthLabel');
+    const prevBtn = document.getElementById('calendarPrev');
+    const nextBtn = document.getElementById('calendarNext');
+    
+    if (!calendar || !monthLabel) {
+        console.error('❌ Elementos del calendario no encontrados');
+        return;
+    }
+    
+    console.log('✅ Elementos encontrados, renderizando calendario básico...');
+    
+    let currentDate = new Date();
+    
+    function renderMonth() {
+        // Actualizar título
+        const monthName = currentDate.toLocaleDateString('es-ES', { 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        monthLabel.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        
+        // Limpiar calendario
+        calendar.innerHTML = '';
+        
+        // Calcular fechas
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Generar días
+        for (let i = 0; i < 35; i++) {
+            const cellDate = new Date(startDate);
+            cellDate.setDate(startDate.getDate() + i);
+            
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = cellDate.getDate();
+            button.className = 'h-10 w-full rounded-lg text-sm font-medium';
+            
+            const isCurrentMonth = cellDate.getMonth() === currentDate.getMonth();
+            const isPast = cellDate < today;
+            
+            if (!isCurrentMonth) {
+                button.className += ' text-gray-300 bg-gray-50 cursor-not-allowed';
+                button.disabled = true;
+            } else if (isPast) {
+                button.className += ' text-gray-400 bg-gray-100 cursor-not-allowed';
+                button.disabled = true;
+            } else {
+                button.className += ' text-gray-700 bg-white border hover:bg-green-100';
+                button.addEventListener('click', () => {
+                    console.log('Fecha seleccionada:', cellDate.toISOString().split('T')[0]);
+                    showNotification(`Fecha seleccionada: ${cellDate.toLocaleDateString('es-ES')}`, 'success');
+                });
+            }
+            
+            calendar.appendChild(button);
+        }
+        
+        console.log('📅 Calendario renderizado');
+    }
+    
+    // Event listeners
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderMonth();
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderMonth();
+        });
+    }
+    
+    // Renderizar inicial
+    renderMonth();
 }
 
 // ===== UTILIDADES =====
@@ -324,17 +418,22 @@ window.closeExpandedImage = function() {
 };
 
 // ===== PROGRAMACIÓN DE MANTENIMIENTO =====
-function initializeMaintenanceScheduling() {
+function initializeMaintenanceScheduling_OLD() {
     console.log('🔧 Inicializando calendario de mantenimiento');
     
     const scheduling = document.getElementById('maintenanceScheduling');
-    if (!scheduling) return;
+    if (!scheduling) {
+        console.error('❌ Elemento maintenanceScheduling no encontrado');
+        return;
+    }
     
     const availabilityUrl = scheduling.getAttribute('data-availability-url');
     const slotsUrl = scheduling.getAttribute('data-slots-url');
     
+    console.log('🔗 URLs configuradas:', { availabilityUrl, slotsUrl });
+    
     if (!availabilityUrl || !slotsUrl) {
-        console.error('URLs de mantenimiento no configuradas');
+        console.error('❌ URLs de mantenimiento no configuradas');
         return;
     }
     
@@ -343,10 +442,10 @@ function initializeMaintenanceScheduling() {
     let availabilityData = {};
     
     // Elementos del DOM
-    const calendar = document.getElementById('maintenanceCalendar');
+    const calendar = document.getElementById('calendarGrid');
     const prevButton = document.getElementById('calendarPrev');
     const nextButton = document.getElementById('calendarNext');
-    const currentMonthSpan = document.getElementById('currentMonth');
+    const currentMonthSpan = document.getElementById('calendarMonthLabel');
     const timeSlotsWrapper = document.getElementById('timeSlotsWrapper');
     const timeSlotsList = document.getElementById('timeSlotsList');
     const selectedDateLabel = document.getElementById('selectedDateLabel');
@@ -355,108 +454,134 @@ function initializeMaintenanceScheduling() {
     const slotIdInput = document.getElementById('maintenance_slot_id');
     const selectedDateInput = document.getElementById('maintenance_selected_date');
     
-    // Inicializar
+    console.log('🎯 Elementos DOM encontrados:', {
+        calendar: !!calendar,
+        prevButton: !!prevButton,
+        nextButton: !!nextButton,
+        currentMonthSpan: !!currentMonthSpan,
+        timeSlotsWrapper: !!timeSlotsWrapper
+    });
+    
+    // Inicializar calendario básico primero
+    renderBasicCalendar();
+    
+    // Luego cargar disponibilidad
     loadAvailability();
     
     // Event listeners
     if (prevButton) prevButton.addEventListener('click', () => changeMonth(-1));
     if (nextButton) nextButton.addEventListener('click', () => changeMonth(1));
     
-    async function loadAvailability() {
-        try {
-            const response = await fetch(availabilityUrl);
-            if (!response.ok) throw new Error('Error al cargar disponibilidad');
-            
-            availabilityData = await response.json();
-            renderCalendar();
-        } catch (error) {
-            console.error('Error loading availability:', error);
-            showNotification('Error al cargar la disponibilidad del calendario', 'error');
+    function renderBasicCalendar() {
+        console.log('🎨 Renderizando calendario básico...');
+        
+        if (!calendar || !currentMonthSpan) {
+            console.error('❌ Elementos del calendario no encontrados');
+            return;
         }
-    }
-    
-    function changeMonth(delta) {
-        currentDate.setMonth(currentDate.getMonth() + delta);
-        renderCalendar();
-        hideTimeSlots();
-    }
-    
-    function renderCalendar() {
-        if (!calendar || !currentMonthSpan) return;
         
         // Actualizar título del mes
+        updateMonthLabel();
+        
+        // Limpiar y generar días
+        calendar.innerHTML = '';
+        generateCalendarDays();
+    }
+    
+    function updateMonthLabel() {
         const monthName = currentDate.toLocaleDateString('es-ES', { 
             month: 'long', 
             year: 'numeric' 
         });
-        currentMonthSpan.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        const formattedName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        currentMonthSpan.textContent = formattedName;
+        console.log('📅 Mes mostrado:', formattedName);
+    }
+    
+    function generateCalendarDays() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        // Limpiar calendario
-        calendar.innerHTML = '';
-        
-        // Días de la semana
-        const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        weekDays.forEach(day => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'p-2 text-center text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg';
-            dayHeader.textContent = day;
-            calendar.appendChild(dayHeader);
-        });
-        
-        // Obtener primer y último día del mes
         const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
         const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay());
         
-        // Generar días del calendario
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        for (let i = 0; i < 42; i++) { // 6 semanas x 7 días
+        for (let i = 0; i < 35; i++) {
             const cellDate = new Date(startDate);
             cellDate.setDate(startDate.getDate() + i);
             
             const dayElement = document.createElement('button');
             dayElement.type = 'button';
-            dayElement.className = 'h-12 w-full rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105';
+            dayElement.className = 'h-10 w-full rounded-lg text-sm font-medium transition-all';
             dayElement.textContent = cellDate.getDate();
             
             const dateKey = cellDate.toISOString().split('T')[0];
-            const availability = availabilityData[dateKey];
             const isCurrentMonth = cellDate.getMonth() === currentDate.getMonth();
             const isPast = cellDate < today;
             
-            // Estilos basados en disponibilidad
+            // Aplicar estilos básicos
             if (!isCurrentMonth) {
                 dayElement.className += ' text-slate-300 cursor-not-allowed bg-slate-50';
                 dayElement.disabled = true;
             } else if (isPast) {
                 dayElement.className += ' text-slate-400 cursor-not-allowed bg-slate-100';
                 dayElement.disabled = true;
-            } else if (availability) {
-                if (availability.available_slots > 0) {
-                    dayElement.className += ' bg-green-100 text-green-800 hover:bg-green-200 border border-green-200';
-                } else if (availability.total_slots > 0) {
-                    dayElement.className += ' bg-yellow-100 text-yellow-800 cursor-not-allowed border border-yellow-200';
-                    dayElement.disabled = true;
-                } else {
-                    dayElement.className += ' text-slate-400 cursor-not-allowed bg-slate-100';
-                    dayElement.disabled = true;
-                }
             } else {
-                dayElement.className += ' bg-red-100 text-red-800 cursor-not-allowed border border-red-200';
-                dayElement.disabled = true;
-            }
-            
-            // Event listener para fechas válidas
-            if (!dayElement.disabled) {
-                dayElement.addEventListener('click', () => selectDate(dateKey));
+                // Aplicar disponibilidad si existe
+                const availability = availabilityData[dateKey];
+                if (availability) {
+                    if (availability.available_slots > 0) {
+                        dayElement.className += ' bg-green-100 text-green-800 hover:bg-green-200 border border-green-200';
+                        dayElement.addEventListener('click', () => selectDate(dateKey));
+                    } else if (availability.total_slots > 0) {
+                        dayElement.className += ' bg-yellow-100 text-yellow-800 cursor-not-allowed border border-yellow-200';
+                        dayElement.disabled = true;
+                    } else {
+                        dayElement.className += ' text-slate-400 cursor-not-allowed bg-slate-100';
+                        dayElement.disabled = true;
+                    }
+                } else {
+                    // Sin datos de disponibilidad - hacer clickeable para debugging
+                    dayElement.className += ' bg-gray-100 text-gray-700 hover:bg-gray-200 border';
+                    dayElement.addEventListener('click', () => selectDate(dateKey));
+                }
             }
             
             calendar.appendChild(dayElement);
         }
+        
+        console.log(`📊 Generados ${calendar.children.length} días`);
     }
+    
+    async function loadAvailability() {
+        try {
+            console.log('🔄 Cargando disponibilidad desde:', availabilityUrl);
+            const response = await fetch(availabilityUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            availabilityData = await response.json();
+            console.log('📅 Datos de disponibilidad cargados:', availabilityData);
+            
+            // Re-renderizar con disponibilidad
+            generateCalendarDays();
+        } catch (error) {
+            console.error('❌ Error loading availability:', error);
+            showNotification('Error al cargar la disponibilidad del calendario', 'error');
+        }
+    }
+    
+    function changeMonth(delta) {
+        console.log(`📅 Cambiando mes: ${delta > 0 ? 'siguiente' : 'anterior'}`);
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        updateMonthLabel();
+        generateCalendarDays();
+        hideTimeSlots();
+    }
+
     
     async function selectDate(dateKey) {
         try {
