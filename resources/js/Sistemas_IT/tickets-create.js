@@ -243,8 +243,12 @@ function initializeSimpleCalendar() {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            const slots = await response.json();
-            console.log('⏰ Horarios cargados:', slots);
+            const slotsData = await response.json();
+            console.log('⏰ Horarios cargados:', slotsData);
+            
+            // Extraer el array de slots del objeto de respuesta
+            const slots = slotsData.slots || [];
+            console.log('📋 Slots procesados:', slots);
             
             displayTimeSlots(slots, dateKey, cellDate);
         } catch (error) {
@@ -292,24 +296,47 @@ function initializeSimpleCalendar() {
             noSlotsMessage.classList.add('hidden');
         }
         
+        // Verificar que slots sea un array válido
+        if (!Array.isArray(slots)) {
+            console.error('❌ slots no es un array:', typeof slots, slots);
+            if (noSlotsMessage) {
+                noSlotsMessage.classList.remove('hidden');
+            }
+            timeSlotsWrapper.classList.add('hidden');
+            return;
+        }
+        
+        console.log('✅ Creando botones para', slots.length, 'horarios');
+        
         // Crear botones de horarios
         slots.forEach(slot => {
+            console.log('🕒 Procesando slot (primera función):', slot);
+            
             const slotButton = document.createElement('button');
             slotButton.type = 'button';
+            
+            // Usar estructura correcta del slot
+            const available = slot.available > 0 || slot.status === 'available';
+            const startTime = slot.start || slot.start_time;
+            const endTime = slot.end || slot.end_time;
+            
             slotButton.className = `p-4 rounded-2xl border-2 transition-all text-left hover:scale-105 ${
-                slot.available_capacity > 0 
+                available 
                     ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
                     : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
             }`;
             
             slotButton.innerHTML = `
-                <div class="font-semibold text-slate-900">${slot.start_time} - ${slot.end_time}</div>
+                <div class="font-semibold text-slate-900">${startTime} - ${endTime}</div>
                 <div class="text-sm text-slate-600 mt-1">
-                    Disponibles: ${slot.available_capacity}/${slot.capacity}
+                    Disponibles: ${slot.available || 0}/${slot.capacity || 1}
+                </div>
+                <div class="text-xs mt-1">
+                    Estado: <span class="${slot.status === 'available' ? 'text-green-600' : slot.status === 'partial' ? 'text-yellow-600' : 'text-red-600'}">${slot.status || 'unknown'}</span>
                 </div>
             `;
             
-            if (slot.available_capacity > 0) {
+            if (available) {
                 slotButton.addEventListener('click', () => selectTimeSlot(slot, dateKey));
             } else {
                 slotButton.disabled = true;
