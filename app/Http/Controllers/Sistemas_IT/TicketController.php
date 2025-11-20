@@ -567,14 +567,18 @@ class TicketController extends Controller
         }
 
         if (!$user || $ticket->user_id !== $user->id) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'No tienes permiso para cancelar este ticket.'], 403);
+            }
             return redirect()->back()->with('error', 'No tienes permiso para cancelar este ticket.');
         }
 
         if ($ticket->estado === 'cerrado' && $ticket->closed_by_user) {
-            return redirect()->back()->with(
-                'info',
-                "El ticket {$folio} ya había sido cancelado anteriormente."
-            );
+            $message = "El ticket {$folio} ya había sido cancelado anteriormente.";
+            if (request()->expectsJson()) {
+                return response()->json(['error' => $message], 409);
+            }
+            return redirect()->back()->with('info', $message);
         }
 
         // Verificar si es un ticket de mantenimiento con fecha ya pasada
@@ -585,10 +589,11 @@ class TicketController extends Controller
                 $slotDateTime = $slot->start_date_time;
                 
                 if ($slotDateTime && $slotDateTime->lessThanOrEqualTo($nowMexico)) {
-                    return redirect()->back()->with(
-                        'error',
-                        "No se puede cancelar el ticket {$folio} porque la fecha de mantenimiento ({$slotDateTime->format('d/m/Y H:i')}) ya ha pasado."
-                    );
+                    $message = "No se puede cancelar el ticket {$folio} porque la fecha de mantenimiento ({$slotDateTime->format('d/m/Y H:i')}) ya ha pasado.";
+                    if (request()->expectsJson()) {
+                        return response()->json(['error' => $message], 422);
+                    }
+                    return redirect()->back()->with('error', $message);
                 }
             }
         }
@@ -612,6 +617,16 @@ class TicketController extends Controller
         $message = "Ticket {$folio} cancelado exitosamente. El equipo de TI ha sido notificado.";
         if ($ticket->tipo_problema === 'mantenimiento') {
             $message .= " El horario de mantenimiento ha sido liberado para que otros usuarios puedan agendarlo.";
+        }
+
+        // Responder según el tipo de petición
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'ticket_id' => $ticketId,
+                'folio' => $folio
+            ]);
         }
 
         return redirect()->back()->with('success', $message);
