@@ -592,8 +592,15 @@ class TicketController extends Controller
     /**
      * Verificar si un ticket puede ser cancelado
      */
-    public function canCancel(Ticket $ticket)
+    public function canCancel($ticketId)
     {
+        // Buscar el ticket manualmente para mejor debugging
+        $ticket = Ticket::find($ticketId);
+        
+        if (!$ticket) {
+            return response()->json(['can_cancel' => false, 'reason' => 'Ticket no encontrado'], 404);
+        }
+        
         $user = auth()->user();
         $nowMexico = now('America/Mexico_City');
         

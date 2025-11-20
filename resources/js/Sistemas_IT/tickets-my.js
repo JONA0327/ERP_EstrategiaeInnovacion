@@ -117,6 +117,15 @@ function initializeCancelTicketModal() {
             // Verificar si se puede cancelar
             try {
                 const checkResponse = await fetch(`${window.location.origin}/ticket/${currentTicketId}/can-cancel`);
+                
+                if (!checkResponse.ok) {
+                    if (checkResponse.status === 404) {
+                        showNotification(`El ticket ${currentTicketFolio} no fue encontrado.`, 'error');
+                        return;
+                    }
+                    throw new Error(`HTTP ${checkResponse.status}: ${checkResponse.statusText}`);
+                }
+                
                 const canCancelData = await checkResponse.json();
                 
                 if (!canCancelData.can_cancel) {
@@ -214,9 +223,6 @@ function initializeCancelTicketModal() {
                 // Cerrar modal
                 closeCancelModal();
                 
-                // Obtener mensaje de respuesta si está disponible
-                const responseText = await response.text();
-                
                 // Mostrar mensaje de éxito
                 showNotification('Ticket cancelado exitosamente', 'success');
                 
@@ -225,7 +231,13 @@ function initializeCancelTicketModal() {
                     window.location.reload();
                 }, 1500);
             } else {
-                throw new Error('Error al cancelar el ticket');
+                if (response.status === 404) {
+                    showNotification('El ticket no fue encontrado.', 'error');
+                } else if (response.status === 403) {
+                    showNotification('No tienes permisos para cancelar este ticket.', 'error');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
             }
         } catch (error) {
             console.error('Error:', error);
