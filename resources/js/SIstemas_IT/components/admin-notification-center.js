@@ -1,4 +1,4 @@
-function registerAdminNotificationCenter() {
+export function registerAdminNotificationCenter() {
     if (!window.Alpine || typeof window.Alpine.data !== 'function') {
         return false;
     }
@@ -125,3 +125,5 @@ document.addEventListener('DOMContentLoaded', () => {
         orphanPanel.style.display = 'none';
     }
 });
+
+export default { registerAdminNotificationCenter };
