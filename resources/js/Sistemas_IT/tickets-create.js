@@ -314,17 +314,17 @@ function initializeSimpleCalendar() {
         
         // Crear botones de horarios
         slots.forEach(slot => {
-            console.log('🕒 Procesando slot (primera función):', slot);
-            
-            const slotButton = document.createElement('button');
-            slotButton.type = 'button';
-            
-            // Usar estructura correcta del slot
-            const available = slot.available > 0 || slot.status === 'available';
-            const startTime = slot.start || slot.start_time;
-            const endTime = slot.end || slot.end_time;
-            
-            slotButton.className = `p-4 rounded-2xl border-2 transition-all text-left hover:scale-105 ${
+        console.log('🕒 Procesando horario (primera función):', slot);
+        
+        const slotButton = document.createElement('button');
+        slotButton.type = 'button';
+        
+        // Usar estructura correcta del slot
+        const available = slot.available > 0 || slot.status === 'available';
+        const startTime = slot.start || slot.start_time || 'N/D';
+        const endTime = slot.end || slot.end_time || 'N/D';
+        
+        slotButton.className = `p-4 rounded-2xl border-2 transition-all text-left hover:scale-105 ${
                 available 
                     ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
                     : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
@@ -336,7 +336,7 @@ function initializeSimpleCalendar() {
                     Disponibles: ${slot.available || 0}/${slot.capacity || 1}
                 </div>
                 <div class="text-xs mt-1">
-                    Estado: <span class="${slot.status === 'available' ? 'text-green-600' : slot.status === 'partial' ? 'text-yellow-600' : 'text-red-600'}">${slot.status || 'unknown'}</span>
+                    Estado: <span class="${getStatusColor(slot.status)}">${getStatusText(slot.status)}</span>
                 </div>
             `;
             
@@ -541,6 +541,26 @@ function initializeProgramSelection() {
                 otroInput.required = false;
                 otroInput.value = '';
         }
+    }
+}
+
+function getStatusText(status) {
+    switch(status) {
+        case 'available': return 'Disponible';
+        case 'partial': return 'Parcial';
+        case 'full': return 'Ocupado';
+        case 'past': return 'Pasado';
+        default: return 'Desconocido';
+    }
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'available': return 'text-green-600';
+        case 'partial': return 'text-yellow-600';
+        case 'full': return 'text-blue-600';
+        case 'past': return 'text-gray-600';
+        default: return 'text-red-600';
     }
 }
 
@@ -985,7 +1005,7 @@ function initializeMaintenanceScheduling_OLD() {
     }
     
     function displayTimeSlots(slots, dateKey) {
-        console.log('🕐 Mostrando horarios para:', dateKey, 'Slots recibidos:', slots);
+        console.log('🕐 Mostrando horarios para:', dateKey, 'Horarios recibidos:', slots);
         
         if (!timeSlotsList || !timeSlotsWrapper) {
             console.error('❌ Elementos de horarios no encontrados');
@@ -1023,17 +1043,27 @@ function initializeMaintenanceScheduling_OLD() {
         console.log('✅ Procesando', slots.length, 'horarios');
         
         slots.forEach(slot => {
-            console.log('🕒 Procesando slot:', slot);
-            
-            const slotButton = document.createElement('button');
-            slotButton.type = 'button';
-            
-            // Usar la estructura correcta del slot según la API
-            const available = slot.available > 0;
-            const startTime = slot.start || slot.start_time;
-            const endTime = slot.end || slot.end_time;
-            
-            slotButton.className = `p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+        console.log('🕒 Procesando horario:', slot);
+        console.log('🔍 Campos del slot:', {
+            id: slot.id,
+            start: slot.start,
+            end: slot.end,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            available: slot.available,
+            capacity: slot.capacity,
+            status: slot.status
+        });
+        
+        const slotButton = document.createElement('button');
+        slotButton.type = 'button';
+        
+        // Usar la estructura correcta del slot según la API
+        const available = slot.available > 0;
+        const startTime = slot.start || slot.start_time || 'N/D';
+        const endTime = slot.end || slot.end_time || 'N/D';
+        
+        console.log('🕰️ Horarios procesados:', { startTime, endTime, available });            slotButton.className = `p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-105 ${
                 available 
                     ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
                     : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
@@ -1045,7 +1075,7 @@ function initializeMaintenanceScheduling_OLD() {
                     Disponibles: ${slot.available || 0}/${slot.capacity || 1}
                 </div>
                 <div class="text-xs mt-1">
-                    Estado: <span class="${slot.status === 'available' ? 'text-green-600' : slot.status === 'partial' ? 'text-yellow-600' : 'text-red-600'}">${slot.status || 'unknown'}</span>
+                    Estado: <span class="${getStatusColor(slot.status)}">${getStatusText(slot.status)}</span>
                 </div>
             `;
             
