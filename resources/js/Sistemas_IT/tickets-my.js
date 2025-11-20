@@ -106,7 +106,7 @@ function initializeCancelTicketModal() {
     let currentTicketFolio = null;
     
     // Manejar botones de cancelar ticket
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', async function(e) {
         const cancelButton = e.target.closest('[data-cancel-ticket]');
         if (cancelButton) {
             e.preventDefault();
@@ -114,6 +114,37 @@ function initializeCancelTicketModal() {
             // Obtener datos del ticket
             currentTicketId = cancelButton.dataset.ticketId;
             currentTicketFolio = cancelButton.dataset.ticketFolio;
+            
+            // Verificar si se puede cancelar
+            try {
+                const checkResponse = await fetch(`/ticket/${currentTicketId}/can-cancel`);
+                const canCancelData = await checkResponse.json();
+                
+                if (!canCancelData.can_cancel) {
+                    let errorMessage = `No se puede cancelar el ticket ${currentTicketFolio}.`;
+                    
+                    switch(canCancelData.reason) {
+                        case 'Sin permisos':
+                            errorMessage += ' No tienes permisos suficientes.';
+                            break;
+                        case 'Ya cancelado':
+                            errorMessage += ' El ticket ya fue cancelado anteriormente.';
+                            break;
+                        case 'Fecha ya pasó':
+                            errorMessage += ` La fecha de mantenimiento (${canCancelData.maintenance_date}) ya ha pasado.`;
+                            break;
+                        default:
+                            errorMessage += ` Razón: ${canCancelData.reason}`;
+                    }
+                    
+                    showNotification(errorMessage, 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error verificando si se puede cancelar:', error);
+                showNotification('Error al verificar el ticket. Intenta nuevamente.', 'error');
+                return;
+            }
             
             if (cancelModalMessage) {
                 cancelModalMessage.textContent = `¿Estás seguro que deseas cancelar el ticket ${currentTicketFolio}? Esta acción no se puede deshacer.`;
@@ -183,6 +214,9 @@ function initializeCancelTicketModal() {
             if (response.ok) {
                 // Cerrar modal
                 closeCancelModal();
+                
+                // Obtener mensaje de respuesta si está disponible
+                const responseText = await response.text();
                 
                 // Mostrar mensaje de éxito
                 showNotification('Ticket cancelado exitosamente', 'success');

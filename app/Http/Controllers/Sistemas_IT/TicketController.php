@@ -549,7 +549,28 @@ class TicketController extends Controller
             );
         }
 
+        // Verificar si es un ticket de mantenimiento con fecha ya pasada
+        if ($ticket->tipo_problema === 'mantenimiento' && $ticket->maintenance_slot_id) {
+            $slot = MaintenanceSlot::find($ticket->maintenance_slot_id);
+            if ($slot) {
+                $nowMexico = now('America/Mexico_City');
+                $slotDateTime = $slot->start_date_time;
+                
+                if ($slotDateTime && $slotDateTime->lessThanOrEqualTo($nowMexico)) {
+                    return redirect()->back()->with(
+                        'error',
+                        "No se puede cancelar el ticket {$folio} porque la fecha de mantenimiento ({$slotDateTime->format('d/m/Y H:i')}) ya ha pasado."
+                    );
+                }
+            }
+        }
+
         $nowMexico = now('America/Mexico_City');
+
+        // Liberar slot de mantenimiento si es necesario ANTES de cerrar el ticket
+        if ($ticket->tipo_problema === 'mantenimiento' && $ticket->maintenance_slot_id) {
+            $this->releaseMaintenanceSlot($ticket);
+        }
 
         $ticket->forceFill([
             'estado' => 'cerrado',
@@ -568,27 +589,120 @@ class TicketController extends Controller
         return redirect()->back()->with('success', $message);
     }
 
+    /**
+     * Verificar si un ticket puede ser cancelado
+     */
+    public function canCancel(Ticket $ticket)
+    {
+        $user = auth()->user();
+        $nowMexico = now('America/Mexico_City');
+        
+        // Verificar permisos básicos
+        $isAdmin = $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
+        if (!$isAdmin && (!$user || $ticket->user_id !== $user->id)) {
+            return response()->json(['can_cancel' => false, 'reason' => 'Sin permisos']);
+        }
+        
+        // Si ya está cerrado
+        if ($ticket->estado === 'cerrado' && $ticket->closed_by_user) {
+            return response()->json(['can_cancel' => false, 'reason' => 'Ya cancelado']);
+        }
+        
+        // Verificar fecha de mantenimiento
+        if ($ticket->tipo_problema === 'mantenimiento' && $ticket->maintenance_slot_id) {
+            $slot = MaintenanceSlot::find($ticket->maintenance_slot_id);
+            if ($slot) {
+                $slotDateTime = $slot->start_date_time;
+                if ($slotDateTime && $slotDateTime->lessThanOrEqualTo($nowMexico)) {
+                    return response()->json([
+                        'can_cancel' => false, 
+                        'reason' => 'Fecha ya pasó',
+                        'maintenance_date' => $slotDateTime->format('d/m/Y H:i')
+                    ]);
+                }
+            }
+        }
+        
+        return response()->json(['can_cancel' => true]);
+    }
+
     private function releaseMaintenanceSlot(Ticket $ticket)
     {
         try {
+            $nowMexico = now('America/Mexico_City');
+            
+            // Intentar liberar por MaintenanceBooking primero
             $booking = MaintenanceBooking::where('ticket_id', $ticket->id)->first();
             if ($booking) {
                 $slot = $booking->slot;
-                if ($slot && $slot->booked_count > 0) {
-                    $slot->decrement('booked_count');
+                if ($slot) {
+                    $slotDateTime = $slot->start_date_time;
+                    
+                    // Solo liberar si la fecha del mantenimiento aún no ha pasado
+                    if ($slotDateTime && $slotDateTime->greaterThan($nowMexico)) {
+                        if ($slot->booked_count > 0) {
+                            $slot->decrement('booked_count');
+                        }
+                        
+                        \Log::info('MaintenanceSlot liberado via booking', [
+                            'ticket_id' => $ticket->id,
+                            'slot_id' => $slot->id,
+                            'fecha' => $slot->date->format('Y-m-d'),
+                            'hora' => $slot->start_time,
+                            'fecha_mantenimiento' => $slotDateTime->format('Y-m-d H:i:s'),
+                            'ahora' => $nowMexico->format('Y-m-d H:i:s'),
+                            'booked_count_despues' => $slot->booked_count
+                        ]);
+                    } else {
+                        \Log::info('MaintenanceSlot NO liberado - fecha ya pasó', [
+                            'ticket_id' => $ticket->id,
+                            'slot_id' => $slot->id,
+                            'fecha_mantenimiento' => $slotDateTime?->format('Y-m-d H:i:s') ?? 'null',
+                            'ahora' => $nowMexico->format('Y-m-d H:i:s')
+                        ]);
+                    }
                 }
                 $booking->delete();
-                \Log::info('MaintenanceSlot liberado', [
-                    'ticket_id' => $ticket->id,
-                    'slot_id' => $slot->id ?? 'no encontrado',
-                    'fecha' => $slot->date ?? 'no disponible',
-                    'hora' => $slot->start_time ?? 'no disponible'
-                ]);
+                return;
             }
+            
+            // Fallback: buscar por maintenance_slot_id directo
+            if ($ticket->maintenance_slot_id) {
+                $slot = MaintenanceSlot::find($ticket->maintenance_slot_id);
+                if ($slot) {
+                    $slotDateTime = $slot->start_date_time;
+                    
+                    // Solo liberar si la fecha del mantenimiento aún no ha pasado
+                    if ($slotDateTime && $slotDateTime->greaterThan($nowMexico)) {
+                        if ($slot->booked_count > 0) {
+                            $slot->decrement('booked_count');
+                        }
+                        
+                        \Log::info('MaintenanceSlot liberado via slot_id directo', [
+                            'ticket_id' => $ticket->id,
+                            'slot_id' => $slot->id,
+                            'fecha' => $slot->date->format('Y-m-d'),
+                            'hora' => $slot->start_time,
+                            'fecha_mantenimiento' => $slotDateTime->format('Y-m-d H:i:s'),
+                            'ahora' => $nowMexico->format('Y-m-d H:i:s'),
+                            'booked_count_despues' => $slot->booked_count
+                        ]);
+                    } else {
+                        \Log::info('MaintenanceSlot NO liberado - fecha ya pasó (directo)', [
+                            'ticket_id' => $ticket->id,
+                            'slot_id' => $slot->id,
+                            'fecha_mantenimiento' => $slotDateTime?->format('Y-m-d H:i:s') ?? 'null',
+                            'ahora' => $nowMexico->format('Y-m-d H:i:s')
+                        ]);
+                    }
+                }
+            }
+            
         } catch (\Exception $e) {
             \Log::error('Error al liberar MaintenanceSlot', [
                 'ticket_id' => $ticket->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
