@@ -22,7 +22,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-B_GAT894.css",
+    "file": "assets/app-2M6TOzpd.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -46,13 +46,13 @@
     "isEntry": true
   },
   "resources/js/Sistemas_IT/tickets-create.js": {
-    "file": "assets/tickets-create-CTOFaTiW.js",
+    "file": "assets/tickets-create-DKdxVZ4p.js",
     "name": "tickets-create",
     "src": "resources/js/Sistemas_IT/tickets-create.js",
     "isEntry": true
   },
   "resources/js/Sistemas_IT/tickets-my.js": {
-    "file": "assets/tickets-my-Bjew_qsc.js",
+    "file": "assets/tickets-my-bsGDU2iG.js",
     "name": "tickets-my",
     "src": "resources/js/Sistemas_IT/tickets-my.js",
     "isEntry": true
