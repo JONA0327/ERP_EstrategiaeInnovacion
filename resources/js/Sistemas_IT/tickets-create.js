@@ -60,30 +60,50 @@ function initializeSimpleCalendar() {
     async function loadAvailability() {
         try {
             console.log('🔄 Cargando disponibilidad...');
-            const response = await fetch(availabilityUrl);
+            const month = currentDate.toISOString().substr(0, 7); // YYYY-MM format
+            const url = `${availabilityUrl}?month=${month}`;
+            console.log('📡 Consultando API:', url);
+            
+            const response = await fetch(url);
             
             if (!response.ok) {
-                console.warn('API no disponible, usando datos de prueba');
+                console.error('❌ API Error. Status:', response.status, response.statusText);
+                if (window.forceRealAPI) {
+                    showNotification(`Error de API: ${response.status} - ${response.statusText}`, 'error');
+                    return;
+                }
+                console.warn('Usando datos de prueba como fallback');
                 availabilityData = getTestAvailabilityData();
                 console.log('📊 Usando datos de prueba:', availabilityData);
                 renderMonth();
                 return;
             }
             
-            availabilityData = await response.json();
-            console.log('📊 Disponibilidad cargada:', availabilityData);
+            const apiData = await response.json();
+            console.log('📊 Datos de API recibidos:', apiData);
+            
+            // Convertir formato de API a formato esperado por el calendario
+            availabilityData = {};
+            if (apiData.days && Array.isArray(apiData.days)) {
+                apiData.days.forEach(day => {
+                    availabilityData[day.date] = day;
+                });
+            }
+            console.log('📊 Disponibilidad procesada:', availabilityData);
             
             // Re-renderizar calendario con disponibilidad
             renderMonth();
         } catch (error) {
             console.error('❌ Error cargando disponibilidad:', error);
-            console.log('Usando datos de prueba en lugar de API');
             
-            // Usar datos de prueba si la API falla
+            if (window.forceRealAPI) {
+                showNotification(`Error de conexión: ${error.message}`, 'error');
+                return;
+            }
+            
+            console.log('Usando datos de prueba como fallback');
             availabilityData = getTestAvailabilityData();
-            showNotification('Usando datos de prueba para el calendario', 'info');
-            
-            // Renderizar calendario con datos de prueba
+            showNotification('Usando datos de prueba (API no disponible)', 'info');
             renderMonth();
         }
     }
@@ -516,9 +536,11 @@ function addCalendarDebugButton() {
             console.log(`- ${name}: ${element ? '✅ OK' : '❌ Missing'}`);
         });
         
-        // Forzar recarga con datos de prueba
+        // Forzar recarga de disponibilidad real
         if (typeof loadAvailability === 'function') {
-            console.log('🔄 Recargando disponibilidad con datos de prueba...');
+            console.log('🔄 Recargando disponibilidad de la API...');
+            // Forzar uso de API real (no datos de prueba)
+            window.forceRealAPI = true;
             loadAvailability();
         }
         
@@ -850,31 +872,50 @@ function initializeMaintenanceScheduling_OLD() {
     
     async function loadAvailability() {
         try {
-            console.log('🔄 Cargando disponibilidad desde:', availabilityUrl);
-            const response = await fetch(availabilityUrl);
+            const month = currentDate.toISOString().substr(0, 7); // YYYY-MM format
+            const url = `${availabilityUrl}?month=${month}`;
+            console.log('🔄 Cargando disponibilidad desde:', url);
+            
+            const response = await fetch(url);
             
             if (!response.ok) {
-                console.warn('API no disponible, usando datos de prueba');
+                console.error('❌ API Error. Status:', response.status, response.statusText);
+                if (window.forceRealAPI) {
+                    showNotification(`Error de API: ${response.status} - ${response.statusText}`, 'error');
+                    return;
+                }
+                console.warn('Usando datos de prueba como fallback');
                 availabilityData = getTestAvailabilityData();
                 console.log('📅 Usando datos de prueba:', availabilityData);
                 generateCalendarDays();
                 return;
             }
             
-            availabilityData = await response.json();
-            console.log('📅 Datos de disponibilidad cargados:', availabilityData);
+            const apiData = await response.json();
+            console.log('📅 Datos de API recibidos:', apiData);
+            
+            // Convertir formato de API a formato esperado por el calendario
+            availabilityData = {};
+            if (apiData.days && Array.isArray(apiData.days)) {
+                apiData.days.forEach(day => {
+                    availabilityData[day.date] = day;
+                });
+            }
+            console.log('📅 Disponibilidad procesada:', availabilityData);
             
             // Re-renderizar con disponibilidad
             generateCalendarDays();
         } catch (error) {
             console.error('❌ Error loading availability:', error);
-            console.log('Usando datos de prueba en lugar de API');
             
-            // Usar datos de prueba si la API falla
+            if (window.forceRealAPI) {
+                showNotification(`Error de conexión: ${error.message}`, 'error');
+                return;
+            }
+            
+            console.log('Usando datos de prueba como fallback');
             availabilityData = getTestAvailabilityData();
-            showNotification('Usando datos de prueba para demostración', 'info');
-            
-            // Re-renderizar con disponibilidad
+            showNotification('Usando datos de prueba (API no disponible)', 'info');
             generateCalendarDays();
         }
     }
