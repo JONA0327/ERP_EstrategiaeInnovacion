@@ -594,21 +594,31 @@ class TicketController extends Controller
      */
     public function canCancel($ticketId)
     {
-        // Buscar el ticket manualmente para mejor debugging
-        $ticket = Ticket::find($ticketId);
+        $user = auth()->user();
+        
+        // Primero verificar que el usuario esté autenticado
+        if (!$user) {
+            return response()->json(['can_cancel' => false, 'reason' => 'Usuario no autenticado'], 401);
+        }
+        
+        // Buscar el ticket con scope de usuario o admin
+        $isAdmin = method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
+        
+        if ($isAdmin) {
+            // Admin puede ver cualquier ticket
+            $ticket = Ticket::find($ticketId);
+        } else {
+            // Usuario normal solo puede ver sus propios tickets
+            $ticket = Ticket::where('id', $ticketId)
+                           ->where('user_id', $user->id)
+                           ->first();
+        }
         
         if (!$ticket) {
-            return response()->json(['can_cancel' => false, 'reason' => 'Ticket no encontrado'], 404);
+            return response()->json(['can_cancel' => false, 'reason' => 'Ticket no encontrado o sin permisos'], 404);
         }
         
-        $user = auth()->user();
         $nowMexico = now('America/Mexico_City');
-        
-        // Verificar permisos básicos
-        $isAdmin = $user && method_exists($user, 'isAdmin') ? $user->isAdmin() : false;
-        if (!$isAdmin && (!$user || $ticket->user_id !== $user->id)) {
-            return response()->json(['can_cancel' => false, 'reason' => 'Sin permisos']);
-        }
         
         // Si ya está cerrado
         if ($ticket->estado === 'cerrado' && $ticket->closed_by_user) {
