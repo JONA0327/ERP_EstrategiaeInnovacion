@@ -213,9 +213,13 @@ function initializeSimpleCalendar() {
                     // Verde: Disponible
                     button.className += ' bg-green-100 text-green-800 hover:bg-green-200 border border-green-200';
                     button.addEventListener('click', () => selectDate(dateKey, cellDate));
+                } else if (availability.total_slots > 0 && availability.booked > 0 && availability.booked < availability.total_capacity) {
+                    // Amarillo: Día parcialmente reservado (algunos slots ocupados, otros disponibles)
+                    button.className += ' bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-200';
+                    button.addEventListener('click', () => selectDate(dateKey, cellDate));
                 } else if (availability.total_slots > 0) {
-                    // Amarillo: Reservado (sin espacios disponibles)
-                    button.className += ' bg-yellow-100 text-yellow-800 cursor-not-allowed border border-yellow-200';
+                    // Azul: Completamente ocupado (sin espacios disponibles)
+                    button.className += ' bg-blue-100 text-blue-800 cursor-not-allowed border border-blue-200';
                     button.disabled = true;
                 } else {
                     // Gris: Sin slots configurados
@@ -360,7 +364,9 @@ function initializeSimpleCalendar() {
         if (slotIdInput) slotIdInput.value = slot.id;
         if (selectedDateInput) selectedDateInput.value = dateKey;
         if (selectedSlotLabel) {
-            selectedSlotLabel.textContent = `Horario: ${slot.start_time} - ${slot.end_time}`;
+            const startTime = slot.start || slot.start_time || 'N/A';
+            const endTime = slot.end || slot.end_time || 'N/A';
+            selectedSlotLabel.textContent = `Horario: ${startTime} - ${endTime}`;
         }
         
         // Actualizar estilos de botones
@@ -877,8 +883,13 @@ function initializeMaintenanceScheduling_OLD() {
                     if (availability.available_slots > 0) {
                         dayElement.className += ' bg-green-100 text-green-800 hover:bg-green-200 border border-green-200';
                         dayElement.addEventListener('click', () => selectDate(dateKey));
+                    } else if (availability.total_slots > 0 && availability.booked > 0 && availability.booked < availability.total_capacity) {
+                        // Amarillo: Día parcialmente reservado
+                        dayElement.className += ' bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-200';
+                        dayElement.addEventListener('click', () => selectDate(dateKey));
                     } else if (availability.total_slots > 0) {
-                        dayElement.className += ' bg-yellow-100 text-yellow-800 cursor-not-allowed border border-yellow-200';
+                        // Azul: Completamente ocupado
+                        dayElement.className += ' bg-blue-100 text-blue-800 cursor-not-allowed border border-blue-200';
                         dayElement.disabled = true;
                     } else {
                         dayElement.className += ' text-slate-400 cursor-not-allowed bg-slate-100';
@@ -1060,7 +1071,9 @@ function initializeMaintenanceScheduling_OLD() {
         
         // Actualizar label de slot seleccionado
         if (selectedSlotLabel) {
-            selectedSlotLabel.textContent = `Horario: ${slot.start_time} - ${slot.end_time}`;
+            const startTime = slot.start || slot.start_time || 'N/A';
+            const endTime = slot.end || slot.end_time || 'N/A';
+            selectedSlotLabel.textContent = `Horario: ${startTime} - ${endTime}`;
         }
         
         // Actualizar estilos de botones
