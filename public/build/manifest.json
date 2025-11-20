@@ -22,7 +22,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-Cc-PqJ_f.css",
+    "file": "assets/app-B_GAT894.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -31,14 +31,12 @@
     ]
   },
   "resources/js/Logistica/index.js": {
-    "file": "assets/index-DQj8xzBl.js",
+    "file": "assets/index-C5DaEoQ7.js",
     "name": "index",
     "src": "resources/js/Logistica/index.js",
     "isEntry": true,
     "imports": [
-      "resources/js/app.js",
-      "resources/js/Sistemas_IT/components/notifications.js",
-      "resources/js/Sistemas_IT/components/admin-notification-center.js"
+      "resources/js/app.js"
     ]
   },
   "resources/js/Recursos_Humanos/index.js": {
@@ -47,26 +45,10 @@
     "src": "resources/js/Recursos_Humanos/index.js",
     "isEntry": true
   },
-  "resources/js/Sistemas_IT/components/admin-notification-center.js": {
-    "file": "assets/admin-notification-center-o0RGuh1N.js",
-    "name": "admin-notification-center",
-    "src": "resources/js/Sistemas_IT/components/admin-notification-center.js",
-    "isEntry": true
-  },
-  "resources/js/Sistemas_IT/components/notifications.js": {
-    "file": "assets/notifications-BusGTi29.js",
-    "name": "notifications",
-    "src": "resources/js/Sistemas_IT/components/notifications.js",
-    "isEntry": true
-  },
   "resources/js/app.js": {
-    "file": "assets/app-CtJxNpLt.js",
+    "file": "assets/app-Dxt3IK-b.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true,
-    "imports": [
-      "resources/js/Sistemas_IT/components/notifications.js",
-      "resources/js/Sistemas_IT/components/admin-notification-center.js"
-    ]
+    "isEntry": true
   }
 }
