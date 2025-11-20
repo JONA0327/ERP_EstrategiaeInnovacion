@@ -103,6 +103,8 @@ function initializeCancelTicketModal() {
     
     let currentTicketId = null;
     let currentTicketFolio = null;
+    let currentCanCancelUrl = null;
+    let currentCancelUrl = null;
     
     // Manejar botones de cancelar ticket
     document.addEventListener('click', async function(e) {
@@ -113,10 +115,14 @@ function initializeCancelTicketModal() {
             // Obtener datos del ticket
             currentTicketId = cancelButton.dataset.ticketId;
             currentTicketFolio = cancelButton.dataset.ticketFolio;
+            currentCanCancelUrl = cancelButton.dataset.canCancelUrl || `${window.location.origin}/ticket/${currentTicketId}/can-cancel`;
+            currentCancelUrl = cancelButton.dataset.cancelUrl || `${window.location.origin}/ticket/${currentTicketId}`;
             
             // Verificar si se puede cancelar
             try {
-                const checkResponse = await fetch(`${window.location.origin}/ticket/${currentTicketId}/can-cancel`);
+                const checkResponse = await fetch(currentCanCancelUrl, {
+                    credentials: 'same-origin',
+                });
                 
                 if (!checkResponse.ok) {
                     if (checkResponse.status === 404) {
@@ -204,8 +210,10 @@ function initializeCancelTicketModal() {
         }
         currentTicketId = null;
         currentTicketFolio = null;
+        currentCanCancelUrl = null;
+        currentCancelUrl = null;
     }
-    
+
     async function cancelTicket(ticketId) {
         try {
             // Mostrar loading
@@ -214,12 +222,13 @@ function initializeCancelTicketModal() {
                 cancelModalConfirm.textContent = 'Cancelando...';
             }
             
-            const response = await fetch(`${window.location.origin}/ticket/${ticketId}`, {
+            const response = await fetch(currentCancelUrl || `${window.location.origin}/ticket/${ticketId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
+                credentials: 'same-origin',
             });
             
             if (response.ok) {
