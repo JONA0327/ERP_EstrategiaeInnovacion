@@ -20,7 +20,7 @@ function initializeTicketCreate() {
     if (ticketType === 'mantenimiento') {
         console.log('🔧 Es ticket de mantenimiento, inicializando calendario...');
         initializeSimpleCalendar();
-        addCalendarDebugButton();
+        // addCalendarDebugButton(); // Comentado temporalmente
     }
 }
 
@@ -934,16 +934,25 @@ function initializeMaintenanceScheduling_OLD() {
             const response = await fetch(`${slotsUrl}?date=${dateKey}`);
             if (!response.ok) throw new Error('Error al cargar horarios');
             
-            const slots = await response.json();
+            const slotsData = await response.json();
+            console.log('⏰ Horarios cargados:', slotsData);
+            
+            // Extraer el array de slots del objeto de respuesta
+            const slots = slotsData.slots || [];
             displayTimeSlots(slots, dateKey);
         } catch (error) {
-            console.error('Error loading slots:', error);
+            console.error('❌ Error cargando horarios:', error);
             showNotification('Error al cargar los horarios disponibles', 'error');
         }
     }
     
     function displayTimeSlots(slots, dateKey) {
-        if (!timeSlotsList || !timeSlotsWrapper) return;
+        console.log('🕐 Mostrando horarios para:', dateKey, 'Slots recibidos:', slots);
+        
+        if (!timeSlotsList || !timeSlotsWrapper) {
+            console.error('❌ Elementos de horarios no encontrados');
+            return;
+        }
         
         const date = new Date(dateKey);
         const dateStr = date.toLocaleDateString('es-ES', { 
@@ -959,7 +968,9 @@ function initializeMaintenanceScheduling_OLD() {
         
         timeSlotsList.innerHTML = '';
         
-        if (slots.length === 0) {
+        // Verificar que slots sea un array
+        if (!Array.isArray(slots) || slots.length === 0) {
+            console.log('⚠️ No hay slots disponibles o formato incorrecto');
             if (noSlotsMessage) {
                 noSlotsMessage.classList.remove('hidden');
             }
@@ -971,23 +982,37 @@ function initializeMaintenanceScheduling_OLD() {
             noSlotsMessage.classList.add('hidden');
         }
         
+        console.log('✅ Procesando', slots.length, 'horarios');
+        
         slots.forEach(slot => {
+            console.log('🕒 Procesando slot:', slot);
+            
             const slotButton = document.createElement('button');
             slotButton.type = 'button';
+            
+            // Usar la estructura correcta del slot según la API
+            const available = slot.available > 0;
+            const startTime = slot.start || slot.start_time;
+            const endTime = slot.end || slot.end_time;
+            
             slotButton.className = `p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-105 ${
-                slot.available_capacity > 0 
+                available 
                     ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
                     : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
             }`;
             
             slotButton.innerHTML = `
-                <div class="font-semibold text-slate-900">${slot.start_time} - ${slot.end_time}</div>
+                <div class="font-semibold text-slate-900">${startTime} - ${endTime}</div>
                 <div class="text-sm text-slate-600 mt-1">
-                    Disponibles: ${slot.available_capacity}/${slot.capacity}
+                    Disponibles: ${slot.available || 0}/${slot.capacity || 1}
+                </div>
+                <div class="text-xs mt-1">
+                    Estado: <span class="${slot.status === 'available' ? 'text-green-600' : slot.status === 'partial' ? 'text-yellow-600' : 'text-red-600'}">${slot.status || 'unknown'}</span>
                 </div>
             `;
             
-            if (slot.available_capacity > 0) {
+            // Usar la estructura correcta para verificar disponibilidad
+            if (available && (slot.available > 0 || slot.status === 'available')) {
                 slotButton.addEventListener('click', () => selectTimeSlot(slot, dateKey));
             } else {
                 slotButton.disabled = true;
