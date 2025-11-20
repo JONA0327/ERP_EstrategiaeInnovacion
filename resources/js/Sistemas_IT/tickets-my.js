@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeMyTickets() {
-    console.log('🎫 Inicializando funcionalidad de Mis Tickets');
     
     // Inicializar funcionalidad de imágenes
     initializeImageModal();
@@ -117,7 +116,7 @@ function initializeCancelTicketModal() {
             
             // Verificar si se puede cancelar
             try {
-                const checkResponse = await fetch(`/ticket/${currentTicketId}/can-cancel`);
+                const checkResponse = await fetch(`${window.location.origin}/ticket/${currentTicketId}/can-cancel`);
                 const canCancelData = await checkResponse.json();
                 
                 if (!canCancelData.can_cancel) {
@@ -203,7 +202,7 @@ function initializeCancelTicketModal() {
                 cancelModalConfirm.textContent = 'Cancelando...';
             }
             
-            const response = await fetch(`/ticket/${ticketId}`, {
+            const response = await fetch(`${window.location.origin}/ticket/${ticketId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -272,7 +271,7 @@ function initializeUpdateNotifications() {
             button.disabled = true;
             button.textContent = 'Marcando...';
             
-            const response = await fetch(`/ticket/${ticketId}/acknowledge-update`, {
+            const response = await fetch(`${window.location.origin}/ticket/${ticketId}/acknowledge-update`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -315,7 +314,7 @@ function initializeUpdateNotifications() {
             button.disabled = true;
             button.textContent = 'Marcando todos...';
             
-            const response = await fetch('/tickets/acknowledge-all', {
+            const response = await fetch(`${window.location.origin}/tickets/acknowledge-all`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -401,5 +400,3 @@ window.initializeMyTickets = initializeMyTickets;
 window.expandImage = expandImage;
 window.closeImageModal = closeImageModal;
 window.showNotification = showNotification;
-
-console.log('✅ Tickets-my.js cargado correctamente');
