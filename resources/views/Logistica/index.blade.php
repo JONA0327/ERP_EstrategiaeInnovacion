@@ -28,6 +28,14 @@
                         'icon' => 'M3 7V5a2 2 0 012-2h9a2 2 0 012 2v2M3 7v10a2 2 0 002 2h9a2 2 0 002-2V7M3 7h13M8 9h4m-4 4h4m-4 4h4',
                     ],
                     [
+                        'title' => 'Catálogos',
+                        'description' => 'Administra clientes, agentes aduanales, transportes y ejecutivos del área logística.',
+                        'href' => route('logistica.catalogos'),
+                        'cta' => 'Administrar catálogos',
+                        'status' => 'Disponible',
+                        'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+                    ],
+                    [
                         'title' => 'Evaluación de Desempeño',
                         'description' => 'Monitorea el rendimiento del equipo y evalúa el cumplimiento de metas logísticas.',
                         'href' => route('logistica.index') . '#evaluacion-desempeno',
@@ -38,7 +46,7 @@
                 ];
             @endphp
 
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 @foreach($cards as $card)
                     <div class="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-white/90 backdrop-blur shadow-lg shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
                         <div class="absolute -top-20 -right-16 w-40 h-40 bg-gradient-to-br from-blue-200/50 to-transparent blur-3xl"></div>

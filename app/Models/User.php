@@ -76,6 +76,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Verificar si el usuario tiene un rol específico
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
      * Relación con tickets
      */
     public function tickets()
