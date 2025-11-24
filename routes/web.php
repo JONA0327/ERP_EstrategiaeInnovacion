@@ -11,6 +11,7 @@ use App\Http\Controllers\Sistemas_IT\MaintenanceController;
 use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
 use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con barra de progreso
+use App\Http\Controllers\Logistica\OperacionLogisticaController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,14 @@ Route::middleware(['auth','area.rh'])->group(function () {
 
 Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
+    Route::get('/logistica/matriz-seguimiento', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'index'])->name('logistica.matriz-seguimiento');
+    Route::get('/logistica/operaciones/create', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'create'])->name('logistica.operaciones.create');
+    Route::post('/logistica/operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'store'])->name('logistica.operaciones.store');
+    Route::get('/logistica/transportes-por-tipo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getTransportesPorTipo'])->name('logistica.transportes-por-tipo');
+    
+    // Rutas para crear clientes y agentes dinámicamente
+    Route::post('/logistica/clientes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeCliente'])->name('logistica.clientes.store');
+    Route::post('/logistica/agentes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeAgente'])->name('logistica.agentes.store');
 });
 
 // Rutas de autenticación

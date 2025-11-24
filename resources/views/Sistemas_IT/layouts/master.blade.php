@@ -16,7 +16,7 @@
     @stack('styles')
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-    @include('layouts.navigation')
+    @include('Sistemas_IT.layouts.navigation')
 
     @yield('header')
 

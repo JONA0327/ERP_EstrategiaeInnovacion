@@ -39,7 +39,7 @@
             [
                 'label' => 'Inicio',
                 'icon' => 'home',
-                'route' => route('welcome'),
+                'route' => route('welcome', ['from' => 'tickets']),
                 'active' => request()->routeIs('welcome'),
                 'visible' => true,
             ],
@@ -79,7 +79,7 @@
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-20 items-center justify-between">
             <div class="flex items-center gap-4">
-                <a href="{{ route('welcome') }}" class="relative flex items-center gap-4 px-2 py-2">
+                <a href="{{ route('welcome', ['from' => 'tickets']) }}" class="relative flex items-center gap-4 px-2 py-2">
                     <span class="flex flex-shrink-0 items-center">
                         <img src="{{ asset('images/logo-ei.png') }}?v={{ filemtime(public_path('images/logo-ei.png')) }}" alt="E&I Logo" class="h-10 w-auto">
                     </span>

@@ -22,7 +22,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-2M6TOzpd.css",
+    "file": "assets/app-CmYEWxKz.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -52,7 +52,7 @@
     "isEntry": true
   },
   "resources/js/Sistemas_IT/tickets-my.js": {
-    "file": "assets/tickets-my-bsGDU2iG.js",
+    "file": "assets/tickets-my-CL89XqRy.js",
     "name": "tickets-my",
     "src": "resources/js/Sistemas_IT/tickets-my.js",
     "isEntry": true

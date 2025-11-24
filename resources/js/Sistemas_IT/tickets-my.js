@@ -222,14 +222,63 @@ function initializeCancelTicketModal() {
                 cancelModalConfirm.textContent = 'Cancelando...';
             }
             
-            const response = await fetch(currentCancelUrl || `${window.location.origin}/ticket/${ticketId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                credentials: 'same-origin',
+            const url = currentCancelUrl || `${window.location.origin}/ticket/${ticketId}`;
+            console.log('Attempting DELETE request to:', url);
+            console.log('currentCancelUrl:', currentCancelUrl);
+            console.log('ticketId:', ticketId);
+            
+            // Crear un formulario oculto para manejar la petición DELETE
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            form.style.display = 'none';
+            
+            // Token CSRF
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            form.appendChild(csrfInput);
+            
+            // Method spoofing para DELETE
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            form.appendChild(methodInput);
+            
+            document.body.appendChild(form);
+            
+            // Usar XMLHttpRequest en lugar de fetch para mejor compatibilidad
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+            
+            const formData = new FormData();
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+            formData.append('_method', 'DELETE');
+            
+            const response = await new Promise((resolve, reject) => {
+                xhr.onload = function() {
+                    resolve({
+                        ok: xhr.status >= 200 && xhr.status < 300,
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        json: () => {
+                            try {
+                                return Promise.resolve(JSON.parse(xhr.responseText));
+                            } catch (e) {
+                                return Promise.resolve({});
+                            }
+                        }
+                    });
+                };
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send(formData);
             });
+            
+            document.body.removeChild(form);
             
             if (response.ok) {
                 // Cerrar modal

@@ -1,6 +1,6 @@
-@extends('layouts.erp')
+@extends(request()->get('from') === 'tickets' ? 'Sistemas_IT.layouts.master' : 'layouts.erp')
 
-@section('title', 'SISTEMA ERP ESTRATEGIA E INNOVACIÓN')
+@section('title', request()->get('from') === 'tickets' ? 'Inicio - Sistema de Tickets' : 'SISTEMA ERP ESTRATEGIA E INNOVACIÓN')
 
 @section('content')
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100">
@@ -42,8 +42,13 @@
             @endif
 
             <div class="mb-6 text-center">
-                <h1 class="text-2xl font-bold text-slate-900">SISTEMA ERP ESTRATEGIA E INNOVACIÓN</h1>
-                <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Portal corporativo integrado para la gestión empresarial.</p>
+                @if(request()->get('from') === 'tickets')
+                    <h1 class="text-2xl font-bold text-slate-900">SISTEMA DE TICKETS</h1>
+                    <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Portal de soporte técnico - Estrategia e Innovación</p>
+                @else
+                    <h1 class="text-2xl font-bold text-slate-900">SISTEMA ERP ESTRATEGIA E INNOVACIÓN</h1>
+                    <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Portal corporativo integrado para la gestión empresarial.</p>
+                @endif
             </div>
 
             @guest
