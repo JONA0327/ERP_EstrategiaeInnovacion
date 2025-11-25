@@ -69,6 +69,26 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica/operaciones/{id}/historial', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'obtenerHistorial']);
     Route::put('/logistica/operaciones/{id}/status', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateStatus']);
     Route::delete('/logistica/operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroy']);
+    
+    // Rutas para Post-Operaciones por Operación
+    Route::get('/logistica/operaciones/{id}/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getPostOperacionesByOperacion']);
+    Route::post('/logistica/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacion']);
+    Route::put('/logistica/post-operaciones/{id}/estado', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updatePostOperacionEstado']);
+    Route::put('/logistica/operaciones/{id}/post-operaciones/actualizar-estados', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'actualizarEstadosPostOperaciones']);
+    Route::delete('/logistica/post-operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyPostOperacion']);
+    
+    // Rutas para Post-Operaciones Globales
+    Route::get('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'indexPostOperacionesGlobales']);
+    Route::post('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacionGlobal']);
+    Route::delete('/logistica/post-operaciones-globales/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyPostOperacionGlobal']);
+    
+    // Ruta para recalcular status
+    Route::post('/logistica/operaciones/recalcular-status', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'recalcularStatus']);
+    
+    // Rutas para Comentarios
+    Route::get('/logistica/operaciones/{id}/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getComentariosByOperacion']);
+    Route::post('/logistica/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeComentario']);
+    Route::put('/logistica/comentarios/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateComentario']);
 });
 
 // Rutas de autenticación

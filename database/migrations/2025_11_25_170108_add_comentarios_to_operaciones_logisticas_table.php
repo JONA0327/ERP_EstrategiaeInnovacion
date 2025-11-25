@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('operaciones_logisticas', function (Blueprint $table) {
-            // Solo agregar el campo ejecutivo, los demás ya existen
-            $table->string('ejecutivo')->nullable()->after('ejecutivo_empleado_id')->comment('Nombre del ejecutivo');
+            $table->text('comentarios')->nullable()->after('fecha_ultimo_calculo');
         });
     }
 
@@ -23,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('operaciones_logisticas', function (Blueprint $table) {
-            $table->dropColumn('ejecutivo');
+            $table->dropColumn('comentarios');
         });
     }
 };

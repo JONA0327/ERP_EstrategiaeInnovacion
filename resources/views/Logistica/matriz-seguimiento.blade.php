@@ -33,7 +33,7 @@
                     </a>
                 </div>
                 <h1 class="text-3xl font-bold text-slate-900">Matriz de Seguimiento</h1>
-                <p class="text-slate-600 mt-2">Control y seguimiento de operaciones logísticas con status automático</p>
+                <p class="text-slate-600 mt-2">Control y seguimiento de operaciones logísticas con cálculo automático de días de tránsito</p>
             </div>
 
             <!-- Controles -->
@@ -57,6 +57,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
                             Recalcular Status
+                        </button>
+                        <button onclick="abrirModalPostOperaciones()" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            Gestionar Post-Operaciones
                         </button>
                     </div>
                     <div class="flex gap-2">
@@ -93,20 +99,20 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Transporte</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Aduana</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Guía //BL</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Status Manual</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Status Automático</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Días Transcurridos</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Status</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Modulación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Planta</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Resultado</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">Target</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Días en Tránsito</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Post-Operaciones</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Comentarios</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200" id="operacionesTable">
                             @forelse($operaciones as $operacion)
-                            <tr class="table-row">
+                            <tr class="table-row" data-operacion-id="{{ $operacion->id }}">
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->id }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-900 font-medium">{{ $operacion->ejecutivo ?? 'Sin asignar' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->operacion ?? '-' }}</td>
@@ -125,40 +131,48 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200">
-                                    <span class="status-badge status-sin-fecha">
-                                        {{ $operacion->status_enum ?? '-' }}
-                                    </span>
-                                </td>
-                                <td class="px-3 py-4 border-r border-slate-200">
                                     <span class="status-badge {{ 
                                         $operacion->color_status === 'verde' ? 'status-verde' : 
                                         ($operacion->color_status === 'amarillo' ? 'status-amarillo' : 
                                         ($operacion->color_status === 'rojo' ? 'status-rojo' : 'status-sin-fecha')) 
                                     }}">
-                                        {{ 
-                                            $operacion->color_status === 'verde' ? 'Completado' : 
-                                            ($operacion->color_status === 'amarillo' ? 'En Proceso' : 
-                                            ($operacion->color_status === 'rojo' ? 'Fuera de Métrica' : 'Sin Fecha')) 
-                                        }}
+                                        {{ $operacion->status_calculado ?? 'In Process' }}
                                     </span>
-                                </td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    @if($operacion->dias_transcurridos_calculados !== null)
-                                        <span class="dias-indicator {{ 
-                                            $operacion->color_status === 'verde' ? 'dias-verde' : 
-                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo') 
-                                        }}">
-                                            {{ $operacion->dias_transcurridos_calculados }} días
-                                        </span>
-                                    @else
-                                        <span class="text-slate-400">-</span>
-                                    @endif
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->resultado ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->target ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->dias_transito ?? '-' }}</td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-center">
+                                    @if($operacion->dias_transito !== null)
+                                        <span class="dias-indicator {{ 
+                                            $operacion->color_status === 'verde' ? 'dias-verde' : 
+                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo') 
+                                        }}">
+                                            {{ abs($operacion->dias_transito) }} días
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-center">
+                                    <button onclick="verPostOperaciones({{ $operacion->id }})" 
+                                            class="action-button btn-view" 
+                                            title="Ver post-operaciones">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                        </svg>
+                                    </button>
+                                </td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-center">
+                                    <button onclick="verComentarios({{ $operacion->id }})" 
+                                            class="action-button btn-view" 
+                                            title="Ver comentarios">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                        </svg>
+                                    </button>
+                                </td>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
                                         <button onclick="verHistorial({{ $operacion->id }})" 
@@ -170,7 +184,7 @@
                                             </svg>
                                         </button>
                                         @if($operacion->status_calculado !== 'Done')
-                                        <button onclick="editarOperacion({{ $operacion->id }})" 
+                                        <button onclick="marcarComoDone({{ $operacion->id }})" 
                                                 class="action-button btn-edit" 
                                                 title="Marcar como Done">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,6 +192,7 @@
                                             </svg>
                                         </button>
                                         @endif
+
                                         <button onclick="eliminarOperacion({{ $operacion->id }})" 
                                                 class="action-button btn-delete" 
                                                 title="Eliminar">
@@ -190,7 +205,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="26" class="px-3 py-8 text-center text-slate-500">
+                                <td colspan="25" class="px-3 py-8 text-center text-slate-500">
                                     <div class="flex flex-col items-center space-y-2">
                                         <i class="fas fa-inbox text-3xl text-slate-400"></i>
                                         <p class="text-sm font-medium">No hay operaciones registradas</p>
@@ -204,11 +219,13 @@
                 </div>
             </div>
 
+
+
             <!-- Footer/Paginación -->
             <div class="mt-6 bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg p-4">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-slate-600">
-                        Mostrando operaciones con status automático calculado
+                        Mostrando operaciones con días de tránsito calculados automáticamente
                     </div>
                     <div class="flex gap-2 text-xs">
                         <span class="status-badge status-verde">Verde: Completado</span>
@@ -242,6 +259,77 @@
                         <p class="text-slate-500 mt-2">Cargando historial...</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Añadir Post-Operación -->
+    <div id="modalPostOperacion" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <!-- Header fijo -->
+            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <span class="text-green-600 mr-2 text-xl">➕</span>
+                    Añadir Post-Operación
+                </h2>
+                <button onclick="cerrarModalPostOperacion()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <span>&times;</span>
+                </button>
+            </div>
+            
+            <!-- Contenido del formulario -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <form id="formPostOperacion" onsubmit="guardarPostOperacion(event)" class="space-y-4">
+                    @csrf
+                    
+                    <!-- Nombre de Post-Operación -->
+                    <div>
+                        <label for="nombre_post_operacion" class="block text-sm font-medium text-slate-700 mb-1">
+                            Nombre de Post-Operación <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="nombre" id="nombre_post_operacion" required
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ej: Entrega de documentos, Revisión final...">
+                    </div>
+
+                    <!-- Operación Relacionada -->
+                    <div>
+                        <label for="operacion_relacionada" class="block text-sm font-medium text-slate-700 mb-1">
+                            Operación Relacionada
+                        </label>
+                        <select name="operacion_logistica_id" id="operacion_relacionada"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Sin operación específica</option>
+                            @foreach($operaciones as $operacion)
+                                <option value="{{ $operacion->id }}">
+                                    {{ $operacion->operacion ?? 'Operación #' . $operacion->id }} - {{ $operacion->cliente ?? 'Sin cliente' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div>
+                        <label for="descripcion_post_operacion" class="block text-sm font-medium text-slate-700 mb-1">
+                            Descripción
+                        </label>
+                        <textarea name="descripcion" id="descripcion_post_operacion" rows="3"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Descripción detallada de la post-operación..."></textarea>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="cerrarModalPostOperacion()" 
+                                class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Guardar Post-Operación
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -289,7 +377,7 @@
                                 </div>
                                 <div>
                                     <div class="bg-blue-50 p-3 rounded-lg">
-                                        <p class="text-sm text-blue-700 font-medium">📊 Status Automático</p>
+                                        <p class="text-sm text-blue-700 font-medium">📊 Control de Status</p>
                                         <p class="text-xs text-blue-600">El status se calculará automáticamente según las fechas ingresadas</p>
                                     </div>
                                 </div>
@@ -339,65 +427,46 @@
                             </div>
                         </div>
 
-                        <!-- Fechas Importantes -->
+                        <!-- Fechas Iniciales -->
                         <div class="form-section" style="background: #f0fdf4;">
-                            <h3>Fechas Importantes (Afectan el cálculo automático)</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <h3>📅 Fechas Iniciales (Solo la obligatoria)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-1 gap-3">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Embarque *</label>
                                     <input type="date" name="fecha_embarque" required class="form-input">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo Aduana *</label>
-                                    <input type="date" name="fecha_arribo_aduana" onchange="calcularResultado()" class="form-input">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Modulación</label>
-                                    <input type="date" name="fecha_modulacion" onchange="calcularResultado()" class="form-input">
+                                    <p class="text-xs text-green-600 mt-1">✓ Esta es la única fecha obligatoria al crear la operación</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Información Adicional -->
-                        <div class="form-section">
-                            <h3>Información Adicional</h3>
+                        <!-- Información Inicial Obligatoria -->
+                        <div class="form-section" style="background: #fef3c7;">
+                            <h3>📋 Información Inicial Obligatoria</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Proveedor/Cliente</label>
-                                    <input type="text" name="proveedor_o_cliente" class="form-input">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Proveedor/Cliente *</label>
+                                    <input type="text" name="proveedor_o_cliente" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Factura</label>
-                                    <input type="text" name="no_factura" class="form-input">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Factura *</label>
+                                    <input type="text" name="no_factura" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Clave</label>
-                                    <input type="text" name="clave" class="form-input">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Clave *</label>
+                                    <input type="text" name="clave" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia Interna</label>
-                                    <input type="text" name="referencia_interna" class="form-input">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia Interna *</label>
+                                    <input type="text" name="referencia_interna" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Aduana</label>
-                                    <input type="text" name="aduana" class="form-input">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia A.A</label>
-                                    <input type="text" name="referencia_aa" class="form-input">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Pedimento</label>
-                                    <input type="text" name="no_pedimento" class="form-input">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Guía/BL</label>
-                                    <input type="text" name="guia_bl" class="form-input">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Aduana *</label>
+                                    <input type="text" name="aduana" required class="form-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Target (días)</label>
                                     <input type="number" name="target" min="0" readonly class="form-input bg-gray-100" title="Se calcula automáticamente según el tipo de operación">
-                                    <p class="text-xs text-gray-600 mt-1">Se asigna automáticamente: Terrestre/Aérea/Tren=2-3 días, Marítima=5-7 días</p>
+                                    <p class="text-xs text-gray-600 mt-1">✓ Automático: Terrestre/Aérea/Tren=3 días, Marítima=7 días</p>
                                 </div>
                             </div>
                         </div>
@@ -468,29 +537,52 @@
                             </div>
                         </div>
 
-                        <!-- Fechas Adicionales -->
-                        <div class="form-section" style="background: #f3e8ff;">
-                            <h3>Fechas Adicionales</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Información Posterior (NO OBLIGATORIA AL INICIO) -->
+                        <div class="form-section" style="background: #f3e8ff; border: 2px dashed #a855f7;">
+                            <h3>🔄 Información Posterior (Opcional al crear)</h3>
+                            <div class="bg-purple-50 p-3 rounded-lg mb-4">
+                                <p class="text-sm text-purple-700 font-medium">ℹ️ Estos campos se llenan durante el proceso</p>
+                                <p class="text-xs text-purple-600">Puede crear la operación sin estos datos y actualizarlos después</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo Aduana</label>
+                                    <input type="date" name="fecha_arribo_aduana" class="form-input">
+                                    <p class="text-xs text-gray-500">Se llena cuando llega la carga</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Modulación</label>
+                                    <input type="date" name="fecha_modulacion" class="form-input">
+                                    <p class="text-xs text-gray-500">Cuando A.A procesa pedimento</p>
+                                </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo a Planta</label>
-                                    <input type="date" name="fecha_arribo_planta" onchange="calcularDiasTransito()" class="form-input">
+                                    <input type="date" name="fecha_arribo_planta" class="form-input">
+                                    <p class="text-xs text-gray-500">Cuando se entrega al cliente</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Días en Tránsito</label>
-                                    <input type="number" name="dias_transito" min="0" readonly class="form-input bg-gray-100" title="Se calcula automáticamente">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Pedimento</label>
+                                    <input type="text" name="no_pedimento" class="form-input">
+                                    <p class="text-xs text-gray-500">Solo después de modulación</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia A.A</label>
+                                    <input type="text" name="referencia_aa" class="form-input">
+                                    <p class="text-xs text-gray-500">Referencia del agente</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Guía/BL</label>
+                                    <input type="text" name="guia_bl" class="form-input">
+                                    <p class="text-xs text-gray-500">Documento de transporte</p>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Resultados y Métricas -->
-                        <div class="form-section" style="background: #fef2f2;">
-                            <h3>Resultados y Métricas</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Resultado (días)</label>
-                                    <input type="number" name="resultado" min="0" readonly class="form-input bg-gray-100" title="Se calcula automáticamente entre arribo aduana y modulación">
-                                </div>
+                            
+                            <!-- Campo de Comentarios -->
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Comentarios Iniciales</label>
+                                <textarea name="comentarios" rows="2" class="form-input w-full" 
+                                         placeholder="Comentarios opcionales al crear la operación..."></textarea>
                             </div>
                         </div>
                         
@@ -506,6 +598,177 @@
                             </button>
                         </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver Post-Operaciones -->
+    <div id="modalPostOperaciones" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <!-- Header fijo -->
+            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <span class="text-purple-600 mr-2 text-xl">📋</span>
+                    Post-Operaciones - Operación #<span id="operacionIdPostOp"></span>
+                </h2>
+                <button onclick="cerrarModalPostOperaciones()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <span>&times;</span>
+                </button>
+            </div>
+            
+            <!-- Contenido -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Información -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                        <div>
+                            <h4 class="text-blue-800 font-semibold mb-1">Gestión de Post-Operaciones</h4>
+                            <p class="text-blue-700 text-sm">
+                                Aquí puede actualizar el estado de las post-operaciones asignadas a esta operación específica. 
+                                Los cambios se guardan por operación usando el número de pedimento.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="contenidoPostOperaciones">
+                    <!-- Se carga dinámicamente -->
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="bg-slate-50 border-t border-slate-200 p-4 flex justify-between items-center rounded-b-xl">
+                <button onclick="cerrarModalPostOperaciones()" class="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors">
+                    Cerrar
+                </button>
+                <button id="guardarCambiosPostOperaciones" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver/Editar Comentarios -->
+    <div id="modalComentarios" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <!-- Header fijo -->
+            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <span class="text-green-600 mr-2 text-xl">💬</span>
+                    Comentarios - Operación #<span id="operacionIdComentarios"></span>
+                </h2>
+                <button onclick="cerrarModalComentarios()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <span>&times;</span>
+                </button>
+            </div>
+            
+            <!-- Contenido -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Comentarios actuales -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-slate-800 mb-3">Comentarios Actuales</h3>
+                    <div id="listaComentarios" class="space-y-3">
+                        <!-- Se carga dinámicamente -->
+                    </div>
+                </div>
+                
+                <!-- Formulario para añadir/editar comentario -->
+                <div class="p-4 border-t border-slate-200">
+                    <h3 class="text-md font-semibold text-slate-800 mb-3">
+                        <span id="tituloComentario">Añadir Comentario</span>
+                    </h3>
+                    <form id="formComentario">
+                        <input type="hidden" id="comentarioId" value="">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">
+                                Comentario <span class="text-red-500">*</span>
+                            </label>
+                            <textarea id="textoComentario" 
+                                     name="comentario" 
+                                     rows="4" 
+                                     required
+                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                     placeholder="Escriba su comentario aquí..."></textarea>
+                        </div>
+                        <div class="flex justify-end mt-4 space-x-3">
+                            <button type="button" onclick="cancelarEdicionComentario()" id="btnCancelarComentario" class="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors hidden">
+                                <i class="fas fa-times mr-2"></i>
+                                Cancelar
+                            </button>
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-comment mr-2"></i>
+                                <span id="textoBotonComentario">Guardar Comentario</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Global para Gestionar Post-Operaciones -->
+    <div id="modalGestionPostOp" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <!-- Header fijo -->
+            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <span class="text-purple-600 mr-2 text-xl">🔧</span>
+                    Gestionar Post-Operaciones Globales
+                </h2>
+                <button onclick="cerrarModalGestionPostOp()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <span>&times;</span>
+                </button>
+            </div>
+            
+            <!-- Contenido -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <p class="text-slate-600 mb-4">Desde aquí puede crear post-operaciones estándar que estarán disponibles para todas las operaciones.</p>
+                
+                <!-- Lista de post-operaciones globales -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-slate-800 mb-3">Post-Operaciones Disponibles</h3>
+                    <div id="listaPostOpGlobales" class="space-y-2">
+                        <!-- Se carga dinámicamente -->
+                    </div>
+                </div>
+                
+                <!-- Formulario para crear nueva post-operación global -->
+                <div class="p-4 border-t border-slate-200">
+                    <h3 class="text-md font-semibold text-slate-800 mb-3">Crear Nueva Post-Operación</h3>
+                    <form id="formPostOpGlobal">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">
+                                    Nombre <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="nombrePostOpGlobal" 
+                                       name="nombre" 
+                                       required 
+                                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                       placeholder="Ej: Revisión de documentos">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">
+                                    Descripción
+                                </label>
+                                <textarea id="descripcionPostOpGlobal" 
+                                         name="descripcion" 
+                                         rows="3" 
+                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                         placeholder="Descripción detallada..."></textarea>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-4">
+                            <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>
+                                Crear Post-Operación
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
