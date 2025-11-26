@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Logistica;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\AduanaImportService;
 use App\Models\Logistica\Aduana;

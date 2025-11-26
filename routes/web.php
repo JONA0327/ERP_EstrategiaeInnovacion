@@ -91,10 +91,10 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::put('/logistica/comentarios/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateComentario']);
 
     // Rutas para Aduanas
-    Route::get('/logistica/aduanas', [\App\Http\Controllers\AduanaImportController::class, 'index']);
-    Route::post('/logistica/aduanas/import', [\App\Http\Controllers\AduanaImportController::class, 'import']);
-    Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\AduanaImportController::class, 'destroy']);
-    Route::delete('/logistica/aduanas', [\App\Http\Controllers\AduanaImportController::class, 'clear']);
+    Route::get('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'index']);
+    Route::post('/logistica/aduanas/import', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'import']);
+    Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'destroy']);
+    Route::delete('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'clear']);
 });
 
 // Rutas de autenticación

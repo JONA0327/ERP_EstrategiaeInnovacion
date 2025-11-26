@@ -17,37 +17,28 @@ class AduanaImportService
     public function import(string $filePath): array
     {
         try {
+            // Verificar que el archivo existe
+            if (!file_exists($filePath)) {
+                throw new \Exception("El archivo no existe: {$filePath}");
+            }
+
             // Cargar el documento Word
             $doc = IOFactory::load($filePath);
             $rows = [];
 
             // Expresión regular para extraer información de aduanas
-            // Formato esperado: "99 9 Denominación de la aduana"
-            $regex = '/^(\d{2})\s+(\d)?\s+(.+)$/u';
+            // Formato esperado: "99 9 Denominación de la aduana" o "99 Denominación"
+            $regex = '/^(\d{2})\s+(\d{1})?\s*(.+)$/u';
 
             // Procesar todas las secciones del documento
             foreach ($doc->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
-                    // Verificar si el elemento tiene texto
-                    if (method_exists($element, 'getText')) {
-                        $text = $element->getText();
-
-                        // Procesar cada línea del texto
-                        foreach (explode("\n", $text) as $line) {
-                            $line = trim($line);
-
-                            // Aplicar regex para extraer datos
-                            if (preg_match($regex, $line, $matches)) {
-                                $rows[] = [
-                                    'aduana' => $matches[1],
-                                    'seccion' => $matches[2] ?? '0',
-                                    'denominacion' => trim($matches[3])
-                                ];
-                            }
-                        }
-                    }
+                    $this->processElement($element, $regex, $rows);
                 }
             }
+
+            // Filtrar y validar los datos extraídos
+            $rows = $this->validateAndCleanRows($rows);
 
             // Insertar los datos en la base de datos usando transacción
             $totalImported = 0;
@@ -94,6 +85,91 @@ class AduanaImportService
                 'rows' => []
             ];
         }
+    }
+
+    /**
+     * Procesar elemento del documento Word recursivamente
+     */
+    private function processElement($element, $regex, &$rows)
+    {
+        // Si el elemento tiene método getText
+        if (method_exists($element, 'getText')) {
+            $text = $element->getText();
+            $this->extractDataFromText($text, $regex, $rows);
+        }
+        
+        // Si el elemento tiene elementos hijos
+        if (method_exists($element, 'getElements')) {
+            foreach ($element->getElements() as $childElement) {
+                $this->processElement($childElement, $regex, $rows);
+            }
+        }
+        
+        // Procesar tablas si existen
+        if (method_exists($element, 'getRows')) {
+            foreach ($element->getRows() as $row) {
+                foreach ($row->getCells() as $cell) {
+                    $this->processElement($cell, $regex, $rows);
+                }
+            }
+        }
+    }
+
+    /**
+     * Extraer datos del texto usando regex
+     */
+    private function extractDataFromText($text, $regex, &$rows)
+    {
+        // Procesar cada línea del texto
+        foreach (explode("\n", $text) as $line) {
+            $line = trim($line);
+            
+            // Saltar líneas vacías o muy cortas
+            if (empty($line) || strlen($line) < 3) {
+                continue;
+            }
+
+            // Aplicar regex para extraer datos
+            if (preg_match($regex, $line, $matches)) {
+                $rows[] = [
+                    'aduana' => $matches[1],
+                    'seccion' => $matches[2] ?? '0',
+                    'denominacion' => trim($matches[3])
+                ];
+            }
+        }
+    }
+
+    /**
+     * Validar y limpiar los datos extraídos
+     */
+    private function validateAndCleanRows($rows)
+    {
+        $cleanRows = [];
+        
+        foreach ($rows as $row) {
+            // Validar que los campos requeridos existan
+            if (empty($row['aduana']) || empty($row['denominacion'])) {
+                continue;
+            }
+            
+            // Limpiar y normalizar datos
+            $cleanRow = [
+                'aduana' => str_pad($row['aduana'], 2, '0', STR_PAD_LEFT),
+                'seccion' => $row['seccion'] ?: '0',
+                'denominacion' => trim(preg_replace('/\s+/', ' ', $row['denominacion'])),
+                'patente' => null, // Se puede completar manualmente después
+                'pais' => null     // Se puede completar manualmente después
+            ];
+            
+            // Evitar duplicados
+            $key = $cleanRow['aduana'] . '_' . $cleanRow['seccion'];
+            if (!isset($cleanRows[$key])) {
+                $cleanRows[$key] = $cleanRow;
+            }
+        }
+        
+        return array_values($cleanRows);
     }
 
     /**

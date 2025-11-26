@@ -741,19 +741,33 @@ async function importAduanas() {
             body: formData
         });
 
-        const data = await response.json();
-
         // Progreso final
         if (progressBar) {
             progressBar.style.width = '100%';
             progressText.textContent = 'Finalizando importación...';
         }
 
-        if (data.success) {
+        // Verificar si la respuesta es JSON válida
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            // Si no es JSON, probablemente es una página de error HTML
+            const text = await response.text();
+            console.error('Respuesta no JSON:', text);
+            throw new Error('El servidor devolvió una respuesta inválida (no JSON)');
+        }
+
+        if (response.ok && data.success) {
             showAlert(`Importación exitosa: ${data.total_imported} aduanas importadas, ${data.total_skipped || 0} omitidas.`, 'success');
-            closeImportAduanasModal();
-            updateAduanasStats(data);
-            refreshAduanasTable();
+            // Cerrar modal inmediatamente después del éxito
+            setTimeout(() => {
+                closeImportAduanasModal();
+                updateAduanasStats(data);
+                refreshAduanasTable();
+            }, 500);
         } else {
             showAlert(data.message || 'Error en la importación.', 'error');
         }
