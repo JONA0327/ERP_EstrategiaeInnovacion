@@ -45,7 +45,7 @@ class CatalogosMaestros {
         // Mostrar el tab seleccionado
         const activeContent = document.getElementById(`${tabId}-content`);
         const activeButton = document.querySelector(`[data-tab="${tabId}"]`);
-        
+
         if (activeContent && activeButton) {
             activeContent.classList.remove('hidden');
             activeButton.classList.add('active');
@@ -58,7 +58,7 @@ class CatalogosMaestros {
         const editModal = document.getElementById('editModal');
         const deleteModal = document.getElementById('deleteModal');
         const assignModal = document.getElementById('assignExecutiveModal');
-        
+
         // Cerrar modales al hacer clic en overlay
         if (editModal) {
             editModal.addEventListener('click', (e) => {
@@ -190,17 +190,17 @@ class CatalogosMaestros {
     openAddModal(type) {
         this.currentEditId = null;
         this.currentEditType = type;
-        
+
         const modal = document.getElementById('editModal');
         const title = document.getElementById('modalTitle');
         const nameInput = document.getElementById('editName');
         const ejecutivoField = document.getElementById('ejecutivoField');
         const ejecutivoSelect = document.getElementById('editEjecutivo');
-        
+
         title.textContent = `Agregar ${this.getTypeLabel(type)}`;
         nameInput.value = '';
         nameInput.focus();
-        
+
         // Mostrar campo de ejecutivo solo para clientes
         if (type === 'clientes' && ejecutivoField) {
             ejecutivoField.classList.remove('hidden');
@@ -210,25 +210,25 @@ class CatalogosMaestros {
         } else if (ejecutivoField) {
             ejecutivoField.classList.add('hidden');
         }
-        
+
         this.showModal(modal);
     }
 
     openEditModal(id, type, name, ejecutivoId = null) {
         this.currentEditId = id;
         this.currentEditType = type;
-        
+
         const modal = document.getElementById('editModal');
         const title = document.getElementById('modalTitle');
         const nameInput = document.getElementById('editName');
         const ejecutivoField = document.getElementById('ejecutivoField');
         const ejecutivoSelect = document.getElementById('editEjecutivo');
-        
+
         title.textContent = `Editar ${this.getTypeLabel(type)}`;
         nameInput.value = name;
         nameInput.focus();
         nameInput.select();
-        
+
         // Mostrar campo de ejecutivo solo para clientes
         if (type === 'clientes' && ejecutivoField) {
             ejecutivoField.classList.remove('hidden');
@@ -238,19 +238,19 @@ class CatalogosMaestros {
         } else if (ejecutivoField) {
             ejecutivoField.classList.add('hidden');
         }
-        
+
         this.showModal(modal);
     }
 
     openDeleteModal(id, type, name) {
         this.currentEditId = id;
         this.currentEditType = type;
-        
+
         const modal = document.getElementById('deleteModal');
         const message = document.getElementById('deleteMessage');
-        
+
         message.innerHTML = `¿Estás seguro de que deseas eliminar ${this.getTypeLabel(type).toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer.</span>`;
-        
+
         this.showModal(modal);
     }
 
@@ -270,7 +270,7 @@ class CatalogosMaestros {
             modal.classList.remove('hidden');
             modal.classList.add('show');
             document.body.style.overflow = 'hidden';
-            
+
             setTimeout(() => {
                 modal.querySelector('.modal-content').style.transform = 'scale(1)';
             }, 10);
@@ -281,7 +281,7 @@ class CatalogosMaestros {
         if (modal) {
             modal.classList.remove('show');
             modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
-            
+
             setTimeout(() => {
                 modal.classList.add('hidden');
                 document.body.style.overflow = 'auto';
@@ -301,7 +301,7 @@ class CatalogosMaestros {
     async submitEdit() {
         const nameInput = document.getElementById('editName');
         const name = nameInput.value.trim();
-        
+
         if (!name) {
             this.showAlert('Por favor, ingresa un nombre válido.', 'error');
             return;
@@ -310,11 +310,11 @@ class CatalogosMaestros {
         const isEditing = this.currentEditId !== null;
         const url = this.getApiUrl(this.currentEditType, isEditing);
         const method = isEditing ? 'PUT' : 'POST';
-        
+
         const formData = new FormData();
         formData.append(this.getFieldName(this.currentEditType), name);
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-        
+
         // Agregar ejecutivo asignado si es un cliente
         if (this.currentEditType === 'clientes') {
             const ejecutivoSelect = document.getElementById('editEjecutivo');
@@ -322,21 +322,21 @@ class CatalogosMaestros {
                 formData.append('ejecutivo_asignado_id', ejecutivoSelect.value || '');
             }
         }
-        
+
         if (isEditing) {
             formData.append('_method', 'PUT');
         }
 
         try {
             this.showLoading(true);
-            
+
             const response = await fetch(url, {
                 method: 'POST', // Siempre POST debido a Laravel form method spoofing
                 body: formData
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showAlert(data.message, 'success');
                 this.closeEditModal();
@@ -354,21 +354,21 @@ class CatalogosMaestros {
 
     async confirmDelete() {
         const url = this.getApiUrl(this.currentEditType, true);
-        
+
         const formData = new FormData();
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
         formData.append('_method', 'DELETE');
 
         try {
             this.showLoading(true);
-            
+
             const response = await fetch(url, {
                 method: 'POST',
                 body: formData
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showAlert(data.message, 'success');
                 this.closeDeleteModal();
@@ -387,16 +387,16 @@ class CatalogosMaestros {
     getApiUrl(type, isEditing) {
         const baseUrls = {
             'clientes': '/logistica/clientes',
-            'agentes': '/logistica/agentes', 
+            'agentes': '/logistica/agentes',
             'transportes': '/logistica/transportes',
             'ejecutivos': '/logistica/ejecutivos'
         };
-        
+
         let url = baseUrls[type];
         if (isEditing && this.currentEditId) {
             url += `/${this.currentEditId}`;
         }
-        
+
         return url;
     }
 
@@ -407,7 +407,7 @@ class CatalogosMaestros {
             'transportes': 'transporte',
             'ejecutivos': 'nombre'
         };
-        
+
         return fieldNames[type];
     }
 
@@ -415,10 +415,10 @@ class CatalogosMaestros {
         const labels = {
             'clientes': 'Cliente',
             'agentes': 'Agente Aduanal',
-            'transportes': 'Transporte', 
+            'transportes': 'Transporte',
             'ejecutivos': 'Ejecutivo'
         };
-        
+
         return labels[type];
     }
 
@@ -430,17 +430,17 @@ class CatalogosMaestros {
     showLoading(show) {
         const submitBtn = document.getElementById('submitEditBtn');
         const deleteBtn = document.getElementById('confirmDeleteBtn');
-        
+
         if (submitBtn) {
             submitBtn.disabled = show;
-            submitBtn.innerHTML = show ? 
+            submitBtn.innerHTML = show ?
                 '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Procesando...' :
                 'Guardar';
         }
-        
+
         if (deleteBtn) {
             deleteBtn.disabled = show;
-            deleteBtn.innerHTML = show ? 
+            deleteBtn.innerHTML = show ?
                 '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Eliminando...' :
                 'Eliminar';
         }
@@ -505,11 +505,11 @@ class CatalogosMaestros {
         const checkboxes = document.querySelectorAll('.cliente-checkbox');
         const checkedBoxes = document.querySelectorAll('.cliente-checkbox:checked');
         const assignBtn = document.getElementById('assignExecutiveBtn');
-        
+
         if (assignBtn) {
             assignBtn.disabled = checkedBoxes.length === 0;
-            assignBtn.textContent = checkedBoxes.length > 0 
-                ? `Asignar Ejecutivo (${checkedBoxes.length})` 
+            assignBtn.textContent = checkedBoxes.length > 0
+                ? `Asignar Ejecutivo (${checkedBoxes.length})`
                 : 'Asignar Ejecutivo';
         }
 
@@ -531,15 +531,15 @@ class CatalogosMaestros {
         const modal = document.getElementById('assignExecutiveModal');
         const countElement = document.getElementById('selectedClientsCount');
         const ejecutivoSelect = document.getElementById('selectEjecutivo');
-        
+
         if (countElement) {
             countElement.textContent = checkedBoxes.length;
         }
-        
+
         if (ejecutivoSelect) {
             ejecutivoSelect.value = '';
         }
-        
+
         this.showModal(modal);
     }
 
@@ -551,7 +551,7 @@ class CatalogosMaestros {
     async submitExecutiveAssignment() {
         const checkedBoxes = document.querySelectorAll('.cliente-checkbox:checked');
         const ejecutivoSelect = document.getElementById('selectEjecutivo');
-        
+
         if (checkedBoxes.length === 0) {
             this.showAlert('No hay clientes seleccionados.', 'error');
             return;
@@ -563,7 +563,7 @@ class CatalogosMaestros {
         }
 
         const clienteIds = Array.from(checkedBoxes).map(checkbox => checkbox.value);
-        
+
         const formData = new FormData();
         clienteIds.forEach(id => {
             formData.append('cliente_ids[]', id);
@@ -573,14 +573,14 @@ class CatalogosMaestros {
 
         try {
             this.showLoading(true);
-            
+
             const response = await fetch('/logistica/clientes/asignar-ejecutivo', {
                 method: 'POST',
                 body: formData
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showAlert(data.message, 'success');
                 this.closeAssignModal();
@@ -600,16 +600,16 @@ class CatalogosMaestros {
     clearSelection() {
         const checkboxes = document.querySelectorAll('.cliente-checkbox');
         const selectAll = document.getElementById('selectAllClientes');
-        
+
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
         });
-        
+
         if (selectAll) {
             selectAll.checked = false;
             selectAll.indeterminate = false;
         }
-        
+
         this.updateAssignButtonState();
     }
 }
@@ -637,3 +637,275 @@ function openDeleteModal(id, type, name) {
         window.catalogosMaestros.openDeleteModal(id, type, name);
     }
 }
+
+// ===================================
+// FUNCIONES ESPECÍFICAS PARA ADUANAS
+// ===================================
+
+// Abrir modal de importación
+function openImportAduanasModal() {
+    const modal = document.getElementById('importAduanasModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        setTimeout(() => {
+            modal.querySelector('.modal-content').style.transform = 'scale(1)';
+        }, 10);
+    }
+}
+
+// Cerrar modal de importación
+function closeImportAduanasModal() {
+    const modal = document.getElementById('importAduanasModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+
+        // Limpiar formulario
+        const form = document.getElementById('importAduanasForm');
+        if (form) {
+            form.reset();
+            document.getElementById('selectedFileName').classList.add('hidden');
+        }
+    }
+}
+
+// Manejar selección de archivo
+function initFileHandling() {
+    const fileInput = document.getElementById('aduanasFile');
+    const fileName = document.getElementById('selectedFileName');
+
+    if (fileInput && fileName) {
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                fileName.textContent = `Archivo seleccionado: ${file.name}`;
+                fileName.classList.remove('hidden');
+            } else {
+                fileName.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// Importar aduanas
+async function importAduanas() {
+    const form = document.getElementById('importAduanasForm');
+    const fileInput = document.getElementById('aduanasFile');
+    const importBtn = document.getElementById('importBtn');
+    const progressContainer = document.getElementById('importProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    if (!fileInput.files[0]) {
+        showAlert('Por favor, selecciona un archivo.', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    try {
+        // Mostrar progress bar
+        if (progressContainer) {
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '20%';
+            progressText.textContent = 'Subiendo archivo...';
+        }
+
+        // Deshabilitar botón
+        if (importBtn) {
+            importBtn.disabled = true;
+            importBtn.querySelector('.import-text').classList.add('hidden');
+            importBtn.querySelector('.loading-text').classList.remove('hidden');
+        }
+
+        // Actualizar progreso
+        setTimeout(() => {
+            if (progressBar) {
+                progressBar.style.width = '60%';
+                progressText.textContent = 'Procesando contenido del archivo...';
+            }
+        }, 500);
+
+        const response = await fetch('/logistica/aduanas/import', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        // Progreso final
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Finalizando importación...';
+        }
+
+        if (data.success) {
+            showAlert(`Importación exitosa: ${data.total_imported} aduanas importadas, ${data.total_skipped || 0} omitidas.`, 'success');
+            closeImportAduanasModal();
+            updateAduanasStats(data);
+            refreshAduanasTable();
+        } else {
+            showAlert(data.message || 'Error en la importación.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión durante la importación.', 'error');
+    } finally {
+        // Ocultar progress bar
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+        }
+
+        // Habilitar botón
+        if (importBtn) {
+            importBtn.disabled = false;
+            importBtn.querySelector('.import-text').classList.remove('hidden');
+            importBtn.querySelector('.loading-text').classList.add('hidden');
+        }
+    }
+}
+
+// Eliminar aduana individual
+async function eliminarAduana(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta aduana?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/logistica/aduanas/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert(data.message, 'success');
+            refreshAduanasTable();
+        } else {
+            showAlert(data.message || 'Error al eliminar la aduana.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al eliminar la aduana.', 'error');
+    }
+}
+
+// Limpiar todas las aduanas
+async function clearAllAduanas() {
+    const totalAduanas = document.getElementById('totalAduanas').textContent;
+
+    if (!confirm(`¿Estás seguro de que deseas eliminar TODAS las ${totalAduanas} aduanas? Esta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/logistica/aduanas', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert(data.message, 'success');
+            updateAduanasStats({ total_imported: 0 });
+            refreshAduanasTable();
+        } else {
+            showAlert(data.message || 'Error al limpiar las aduanas.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al limpiar las aduanas.', 'error');
+    }
+}
+
+// Actualizar estadísticas de aduanas
+function updateAduanasStats(data) {
+    const totalElement = document.getElementById('totalAduanas');
+    const ultimaElement = document.getElementById('ultimaImportacion');
+    const estadoElement = document.getElementById('estadoImportacion');
+
+    if (totalElement && data.total_imported !== undefined) {
+        totalElement.textContent = data.total_imported;
+    }
+
+    if (ultimaElement) {
+        ultimaElement.textContent = new Date().toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    if (estadoElement) {
+        estadoElement.textContent = data.success ? 'Actualizado' : 'Error en importación';
+    }
+}
+
+// Refrescar tabla de aduanas
+function refreshAduanasTable() {
+    // Recargar la página para mostrar los cambios
+    window.location.reload();
+}
+
+// Función auxiliar para mostrar alertas
+function showAlert(message, type = 'info') {
+    if (window.catalogosMaestros) {
+        window.catalogosMaestros.showAlert(message, type);
+    } else {
+        alert(message); // Fallback
+    }
+}
+
+// Inicializar eventos específicos de aduanas cuando se cargue el DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Botón de importar aduanas
+    const importAduanasBtn = document.getElementById('importAduanasBtn');
+    if (importAduanasBtn) {
+        importAduanasBtn.addEventListener('click', openImportAduanasModal);
+    }
+
+    // Botón de limpiar aduanas
+    const clearAduanasBtn = document.getElementById('clearAduanasBtn');
+    if (clearAduanasBtn) {
+        clearAduanasBtn.addEventListener('click', clearAllAduanas);
+    }
+
+    // Formulario de importación
+    const importForm = document.getElementById('importAduanasForm');
+    if (importForm) {
+        importForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            importAduanas();
+        });
+    }
+
+    // Cerrar modales con botones cancel
+    const cancelButtons = document.querySelectorAll('.btn-cancel');
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            closeImportAduanasModal();
+        });
+    });
+
+    // Inicializar manejo de archivos
+    initFileHandling();
+});

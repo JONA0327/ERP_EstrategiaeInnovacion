@@ -19,7 +19,7 @@ class OperacionLogisticaController extends Controller
     {
         // *** VERIFICACIÓN AUTOMÁTICA DE STATUS AL CONSULTAR ***
         $this->verificarYActualizarStatusOperaciones();
-        
+
         $operaciones = OperacionLogistica::with(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte', 'postOperacion'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
@@ -28,7 +28,7 @@ class OperacionLogisticaController extends Controller
         // Filtrar clientes por ejecutivo asignado (solo mostrar los del ejecutivo logueado)
         $usuarioActual = auth()->user();
         $empleadoActual = null;
-        
+
         // Buscar el empleado actual en la tabla empleados
         if ($usuarioActual) {
             $empleadoActual = Empleado::where('correo', $usuarioActual->email)
@@ -47,7 +47,7 @@ class OperacionLogisticaController extends Controller
             $clientes = Cliente::whereNull('ejecutivo_asignado_id')
                 ->orderBy('cliente')->get();
         }
-        
+
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->get();
         // Solo empleados del área de logística
         $empleados = Empleado::where(function($query) {
@@ -69,7 +69,10 @@ class OperacionLogisticaController extends Controller
         $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->paginate(15, ['*'], 'clientes_page');
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->paginate(15, ['*'], 'agentes_page');
         $transportes = Transporte::orderBy('transporte')->paginate(15, ['*'], 'transportes_page');
-        
+
+        // Agregar aduanas
+        $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->paginate(15, ['*'], 'aduanas_page');
+
         // Solo empleados del área de logística
         $ejecutivos = Empleado::where(function($query) {
                 $query->where('area', 'like', '%Logística%')
@@ -90,7 +93,7 @@ class OperacionLogisticaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos'));
+        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas'));
     }
 
     public function create()
@@ -99,7 +102,7 @@ class OperacionLogisticaController extends Controller
         $clientes = Cliente::orderBy('cliente')->get();
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->get();
         $ejecutivos = Empleado::where('area', 'LIKE', '%Logist%')->orderBy('nombre')->get();
-        
+
         return response()->json([
             'clientes' => $clientes,
             'agentesAduanales' => $agentesAduanales,
@@ -115,18 +118,18 @@ class OperacionLogisticaController extends Controller
         // VALIDACIÓN SEGÚN FLUJO CORPORATIVO - Solo campos obligatorios al crear
         $request->validate([
             // === CAMPOS OBLIGATORIOS AL INICIO (12 máximo) ===
-            
+
             // A. Información Básica
             'operacion' => 'required|in:EXPORTACION,IMPORTACION',
             'tipo_operacion_enum' => 'required|in:Terrestre,Aerea,Maritima,Ferrocarril',
-            
+
             // B. Cliente y Ejecutivo
             'cliente' => 'required|string|max:255',
             'ejecutivo' => 'required|string|max:255',
-            
+
             // C. Fecha Inicial (la única obligatoria)
             'fecha_embarque' => 'required|date',
-            
+
             // D. Información Inicial Adicional
             'proveedor_o_cliente' => 'required|string|max:255',
             'no_factura' => 'required|string|max:255',
@@ -134,7 +137,7 @@ class OperacionLogisticaController extends Controller
             'referencia_interna' => 'required|string|max:255',
             'aduana' => 'required|string|max:255',
             'agente_aduanal' => 'required|string|max:255',
-            
+
             // === CAMPOS OPCIONALES (se llenan después) ===
             'referencia_aa' => 'nullable|string|max:255',
             'no_pedimento' => 'nullable|string|max:255',
@@ -172,6 +175,8 @@ class OperacionLogisticaController extends Controller
             'comentarios' => $request->comentarios,
             // Target se calcula automáticamente basado en tipo_operacion_enum
             'target' => null, // Se calculará automáticamente
+            // Status manual inicial
+            'status_manual' => 'In Process',
             // status_calculado y color_status se calculan automáticamente en el modelo
         ]);
 
@@ -183,9 +188,15 @@ class OperacionLogisticaController extends Controller
 
         // *** GUARDAR PRIMERO, LUEGO CALCULAR STATUS ***
         $operacion->save();
-        
-        // Ahora calcular status (ya que created_at existe)
-        $operacion->actualizarStatusAutomaticamente(true);
+
+        // Ahora calcular status (ya que created_at existe) y generar historial inicial
+        $resultado = $operacion->calcularStatusPorDias();
+        $operacion->generarHistorialCambioStatus(
+            $resultado,
+            false, // No es acción manual
+            null
+        );
+        $operacion->saveQuietly(); // Guardar sin disparar eventos otra vez
 
         return response()->json([
             'success' => true,
@@ -207,7 +218,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             \Log::info('Datos recibidos para cliente:', $request->all());
-            
+
             $request->validate([
                 'cliente' => 'required|string|max:255|unique:clientes,cliente'
             ]);
@@ -249,7 +260,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             \Log::info('Datos recibidos para agente:', $request->all());
-            
+
             $request->validate([
                 'agente_aduanal' => 'required|string|max:255|unique:agentes_aduanales,agente_aduanal'
             ]);
@@ -291,7 +302,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $cliente = Cliente::findOrFail($id);
-            
+
             $request->validate([
                 'cliente' => 'required|string|max:255|unique:clientes,cliente,' . $id
             ]);
@@ -319,7 +330,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $agente = AgenteAduanal::findOrFail($id);
-            
+
             $request->validate([
                 'agente_aduanal' => 'required|string|max:255|unique:agentes_aduanales,agente_aduanal,' . $id
             ]);
@@ -346,7 +357,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $transporte = Transporte::findOrFail($id);
-            
+
             $request->validate([
                 'transporte' => 'required|string|max:255'
             ]);
@@ -374,7 +385,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $cliente = Cliente::findOrFail($id);
-            
+
             // Verificar si tiene operaciones asociadas
             if ($cliente->operaciones()->count() > 0) {
                 return response()->json([
@@ -402,7 +413,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $agente = AgenteAduanal::findOrFail($id);
-            
+
             // Verificar si tiene operaciones asociadas
             if ($agente->operaciones()->count() > 0) {
                 return response()->json([
@@ -430,7 +441,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $transporte = Transporte::findOrFail($id);
-            
+
             // Verificar si tiene operaciones asociadas
             if ($transporte->operaciones()->count() > 0) {
                 return response()->json([
@@ -458,7 +469,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             \Log::info('Datos recibidos para transporte:', $request->all());
-            
+
             $request->validate([
                 'transporte' => 'required|string|max:255',
                 'tipo_operacion' => 'required|in:Aerea,Terrestre,Maritima,Ferrocarril'
@@ -546,7 +557,7 @@ class OperacionLogisticaController extends Controller
         try {
             $usuarioActual = auth()->user();
             $empleadoActual = null;
-            
+
             if ($usuarioActual) {
                 $empleadoActual = Empleado::where('correo', $usuarioActual->email)
                     ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
@@ -597,7 +608,7 @@ class OperacionLogisticaController extends Controller
             ]);
 
             \Log::info("Historial inicial generado para operación ID: {$operacion->id}");
-            
+
         } catch (\Exception $e) {
             \Log::error("Error generando historial inicial: " . $e->getMessage());
         }
@@ -631,9 +642,9 @@ class OperacionLogisticaController extends Controller
             $historial = $historialRecords->map(function ($registro) {
                     return [
                         'id' => $registro->id,
-                        'fecha_registro' => $registro->fecha_registro ? 
+                        'fecha_registro' => $registro->fecha_registro ?
                             (is_string($registro->fecha_registro) ? $registro->fecha_registro : $registro->fecha_registro->format('d/m/Y')) : null,
-                        'fecha_arribo_aduana' => $registro->fecha_arribo_aduana ? 
+                        'fecha_arribo_aduana' => $registro->fecha_arribo_aduana ?
                             (is_string($registro->fecha_arribo_aduana) ? $registro->fecha_arribo_aduana : $registro->fecha_arribo_aduana->format('d/m/Y')) : null,
                         'dias_transcurridos' => $registro->dias_transcurridos ?? 0,
                         'target_dias' => $registro->target_dias ?? 0,
@@ -684,13 +695,13 @@ class OperacionLogisticaController extends Controller
                 }),
                 'message' => $historial->count() > 0 ? 'Historial cargado correctamente' : 'Historial generado automáticamente'
             ];
-            
+
             return response()->json($response);
 
         } catch (\Exception $e) {
             \Log::error("Error en obtenerHistorial: " . $e->getMessage());
             \Log::error("Stack trace: " . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener el historial: ' . $e->getMessage()
@@ -699,30 +710,37 @@ class OperacionLogisticaController extends Controller
     }
 
     /**
-     * Actualizar solo el status de una operación (solo se puede cambiar a 'Done')
+     * Actualizar solo el status manual de una operación (solo se puede cambiar a 'Done')
      */
     public function updateStatus(Request $request, $id)
     {
         try {
             $operacion = OperacionLogistica::findOrFail($id);
-            
+
             $request->validate([
                 'status' => 'required|in:Done'
             ]);
 
-            // Marcar como Done y establecer fecha de arribo a planta si no existe
-            if (!$operacion->fecha_arribo_planta) {
-                $operacion->fecha_arribo_planta = now();
-            }
-            $operacion->status_calculado = 'Done';
-            $operacion->color_status = 'verde';
-            
-            // Usar nueva lógica para generar historial automático
-            $operacion->actualizarStatusAutomaticamente(true);
-            
+            // NUEVA LÓGICA: Solo actualizar el status MANUAL, no el automático
+            $operacion->status_manual = 'Done';
+            $operacion->fecha_status_manual = now();
+
+            // Recalcular el status automático (que tomará en cuenta el status manual)
+            $resultado = $operacion->calcularStatusPorDias();
+
+            // Generar historial específico para acción manual
+            $operacion->generarHistorialCambioStatus(
+                $resultado,
+                true, // Es acción manual
+                'Operación marcada como completada manualmente por el usuario'
+            );
+
+            // Guardar cambios
+            $operacion->save();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Status actualizado exitosamente',
+                'message' => 'Operación marcada como completada exitosamente',
                 'operacion' => $operacion->load(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte', 'postOperacion'])
             ]);
 
@@ -741,10 +759,10 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $operacion = OperacionLogistica::findOrFail($id);
-            
+
             // Eliminar registros del historial primero (por integridad referencial)
             $operacion->historicoMatrizSgm()->delete();
-            
+
             // Eliminar la operación
             $operacion->delete();
 
@@ -781,7 +799,7 @@ class OperacionLogisticaController extends Controller
                     'nombre' => $postOp->nombre,
                     'descripcion' => $postOp->descripcion,
                     'status' => $postOp->status ?? 'Pendiente',
-                    'operacion_relacionada' => $postOp->operacionLogistica 
+                    'operacion_relacionada' => $postOp->operacionLogistica
                         ? ($postOp->operacionLogistica->operacion ?? 'Operación #' . $postOp->operacionLogistica->id)
                         : 'Sin operación específica',
                     'fecha_creacion' => $postOp->created_at ? $postOp->created_at->format('d/m/Y') : '-',
@@ -849,7 +867,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $postOperacion = PostOperacion::findOrFail($id);
-            
+
             $postOperacion->update([
                 'status' => 'Completado',
                 'fecha_completado' => now()
@@ -902,29 +920,29 @@ class OperacionLogisticaController extends Controller
         try {
             // Obtener información de la operación
             $operacion = OperacionLogistica::find($operacionId);
-            
+
             if (!$operacion) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Operación no encontrada'
                 ], 404);
             }
-            
+
             // Obtener TODAS las post-operaciones globales (plantillas)
             $postOperacionesGlobales = PostOperacion::where('status', 'Plantilla')
                 ->orderBy('created_at', 'desc')
                 ->get();
-            
+
             // Obtener las asignaciones específicas de esta operación
             $asignacionesEspecificas = PostOperacionOperacion::where('operacion_logistica_id', $operacionId)
                 ->with('postOperacion')
                 ->get()
                 ->keyBy('post_operacion_id'); // Indexar por ID de post-operación para búsqueda rápida
-            
+
             // Combinar datos: todas las plantillas + estados específicos si existen
             $postOperacionesData = $postOperacionesGlobales->map(function($postOpGlobal) use ($asignacionesEspecificas, $operacion) {
                 $asignacion = $asignacionesEspecificas->get($postOpGlobal->id);
-                
+
                 return [
                     'id_global' => $postOpGlobal->id,
                     'id_asignacion' => $asignacion ? $asignacion->id : null,
@@ -963,7 +981,7 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $postOperacion = PostOperacion::findOrFail($id);
-            
+
             $validatedData = $request->validate([
                 'estado' => 'required|in:Completado,No Aplica,Pendiente'
             ]);
@@ -1095,7 +1113,7 @@ class OperacionLogisticaController extends Controller
         try {
             // Primero obtenemos la operación
             $operacion = OperacionLogistica::findOrFail($operacionId);
-            
+
             // Por ahora usamos el campo comentarios de la operación
             // En el futuro se puede crear una tabla separada de comentarios
             $comentarios = [];
@@ -1133,12 +1151,12 @@ class OperacionLogisticaController extends Controller
             ]);
 
             $operacion = OperacionLogistica::findOrFail($validatedData['operacion_logistica_id']);
-            
+
             // Por ahora guardamos en el campo comentarios de la operación
             // Concatenamos si ya hay comentarios previos
             $comentarioExistente = $operacion->comentarios;
             $nuevoComentario = $validatedData['comentario'];
-            
+
             if ($comentarioExistente) {
                 $nuevoComentario = $comentarioExistente . "\n---\n" . $nuevoComentario . " (" . now()->format('d/m/Y H:i') . ")";
             } else {
@@ -1175,7 +1193,7 @@ class OperacionLogisticaController extends Controller
             // Para simplicidad, actualizamos directamente el campo comentarios
             // En una implementación más compleja se usaría una tabla separada
             $operacion = OperacionLogistica::where('id', $request->operacion_logistica_id)->first();
-            
+
             if ($operacion) {
                 $operacion->update([
                     'comentarios' => $validatedData['comentario'] . " (Editado: " . now()->format('d/m/Y H:i') . ")"
@@ -1208,7 +1226,7 @@ class OperacionLogisticaController extends Controller
             ]);
 
             $cambios = $validatedData['cambios'];
-            
+
             $actualizados = 0;
             $creados = 0;
 
@@ -1216,25 +1234,25 @@ class OperacionLogisticaController extends Controller
                 $estado = $cambioData['estado'];
                 $esPlantilla = $cambioData['es_plantilla'] ?? false;
                 $idGlobal = $cambioData['id_global'] ?? null;
-                
+
                 // Usar ID global si es plantilla, sino usar el ID directo
                 $postOperacionId = $esPlantilla ? $idGlobal : $postOpId;
-                
+
                 if (!$postOperacionId) {
                     continue;
                 }
-                
+
                 // Verificar que la post-operación global existe
                 $postOperacionGlobal = PostOperacion::find($postOperacionId);
                 if (!$postOperacionGlobal) {
                     continue;
                 }
-                
+
                 // Buscar si ya existe una asignación para esta operación
                 $asignacionExistente = PostOperacionOperacion::where('post_operacion_id', $postOperacionId)
                     ->where('operacion_logistica_id', $operacionId)
                     ->first();
-                
+
                 if ($estado === 'Pendiente') {
                     // Si se marca como pendiente y existe asignación, eliminarla
                     if ($asignacionExistente) {
@@ -1296,7 +1314,7 @@ class OperacionLogisticaController extends Controller
             foreach ($operaciones as $operacion) {
                 // Usar la nueva lógica de cálculo por días
                 $resultado = $operacion->actualizarStatusAutomaticamente(false); // No guardar aún
-                
+
                 if ($resultado['cambio']) {
                     $operacion->save(); // Guardar cambios
                     $actualizadas++;
@@ -1347,7 +1365,7 @@ class OperacionLogisticaController extends Controller
         }
 
         $fechaInicio = \Carbon\Carbon::parse($operacion->fecha_embarque);
-        $fechaFin = $operacion->fecha_arribo_planta 
+        $fechaFin = $operacion->fecha_arribo_planta
             ? \Carbon\Carbon::parse($operacion->fecha_arribo_planta)
             : \Carbon\Carbon::now();
 
@@ -1367,7 +1385,7 @@ class OperacionLogisticaController extends Controller
 
         // Para operaciones en curso
         $target = $operacion->target ?? $operacion->dias_transito ?? 30;
-        
+
         if ($diasTranscurridos > $target) {
             return 'red'; // Fuera de métrica
         } elseif ($diasTranscurridos >= ($target * 0.8)) {

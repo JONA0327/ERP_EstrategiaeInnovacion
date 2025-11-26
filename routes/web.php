@@ -45,50 +45,56 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica/operaciones/create', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'create'])->name('logistica.operaciones.create');
     Route::post('/logistica/operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'store'])->name('logistica.operaciones.store');
     Route::get('/logistica/transportes-por-tipo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getTransportesPorTipo'])->name('logistica.transportes-por-tipo');
-    
+
     // Rutas para CRUD de clientes
     Route::post('/logistica/clientes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeCliente'])->name('logistica.clientes.store');
     Route::put('/logistica/clientes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateCliente'])->name('logistica.clientes.update');
     Route::delete('/logistica/clientes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyCliente'])->name('logistica.clientes.destroy');
-    
+
     // Rutas para CRUD de agentes
     Route::post('/logistica/agentes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeAgente'])->name('logistica.agentes.store');
     Route::put('/logistica/agentes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateAgente'])->name('logistica.agentes.update');
     Route::delete('/logistica/agentes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyAgente'])->name('logistica.agentes.destroy');
-    
+
     // Rutas para CRUD de transportes
     Route::post('/logistica/transportes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeTransporte'])->name('logistica.transportes.store');
     Route::put('/logistica/transportes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateTransporte'])->name('logistica.transportes.update');
     Route::delete('/logistica/transportes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyTransporte'])->name('logistica.transportes.destroy');
-    
+
     // Rutas para asignación de clientes a ejecutivos
     Route::post('/logistica/clientes/asignar-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'asignarClientesEjecutivo'])->name('logistica.clientes.asignar-ejecutivo');
     Route::get('/logistica/clientes/por-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getClientesPorEjecutivo'])->name('logistica.clientes.por-ejecutivo');
-    
+
     // Rutas para historial y eliminación de operaciones
     Route::get('/logistica/operaciones/{id}/historial', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'obtenerHistorial']);
     Route::put('/logistica/operaciones/{id}/status', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateStatus']);
     Route::delete('/logistica/operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroy']);
-    
+
     // Rutas para Post-Operaciones por Operación
     Route::get('/logistica/operaciones/{id}/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getPostOperacionesByOperacion']);
     Route::post('/logistica/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacion']);
     Route::put('/logistica/post-operaciones/{id}/estado', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updatePostOperacionEstado']);
     Route::put('/logistica/operaciones/{id}/post-operaciones/actualizar-estados', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'actualizarEstadosPostOperaciones']);
     Route::delete('/logistica/post-operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyPostOperacion']);
-    
+
     // Rutas para Post-Operaciones Globales
     Route::get('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'indexPostOperacionesGlobales']);
     Route::post('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacionGlobal']);
     Route::delete('/logistica/post-operaciones-globales/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyPostOperacionGlobal']);
-    
+
     // Ruta para recalcular status
     Route::post('/logistica/operaciones/recalcular-status', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'recalcularStatus']);
-    
+
     // Rutas para Comentarios
     Route::get('/logistica/operaciones/{id}/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getComentariosByOperacion']);
     Route::post('/logistica/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeComentario']);
     Route::put('/logistica/comentarios/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateComentario']);
+
+    // Rutas para Aduanas
+    Route::get('/logistica/aduanas', [\App\Http\Controllers\AduanaImportController::class, 'index']);
+    Route::post('/logistica/aduanas/import', [\App\Http\Controllers\AduanaImportController::class, 'import']);
+    Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\AduanaImportController::class, 'destroy']);
+    Route::delete('/logistica/aduanas', [\App\Http\Controllers\AduanaImportController::class, 'clear']);
 });
 
 // Rutas de autenticación
@@ -143,7 +149,7 @@ Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name
     // Inventory removed from admin panel
 
     // Se mantienen solo tickets y usuarios en el panel admin
-    
+
     // Gestión de usuarios (separado del dominio Sistemas)
     Route::get('/users', [UsersController::class, 'index'])->name('users');
     Route::get('/users/create', [UsersController::class, 'create'])->name('users.create');
@@ -156,7 +162,7 @@ Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name
     Route::delete('/users/{user}', [UsersController::class, 'destroy'])->name('users.destroy');
     Route::delete('/users/{user}/rejection', [UsersController::class, 'destroyRejected'])->name('users.rejections.destroy');
     Route::delete('/blocked-emails/{blockedEmail}', [UsersController::class, 'destroyBlockedEmail'])->name('blocked-emails.destroy');
-    
+
     // Rutas de ayuda en admin eliminadas
 });
 

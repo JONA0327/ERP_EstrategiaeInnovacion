@@ -99,7 +99,7 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Transporte</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Aduana</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Guía //BL</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Status</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Status</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Modulación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Planta</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Resultado</th>
@@ -131,13 +131,34 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200">
-                                    <span class="status-badge {{ 
-                                        $operacion->color_status === 'verde' ? 'status-verde' : 
-                                        ($operacion->color_status === 'amarillo' ? 'status-amarillo' : 
-                                        ($operacion->color_status === 'rojo' ? 'status-rojo' : 'status-sin-fecha')) 
-                                    }}">
-                                        {{ $operacion->status_calculado ?? 'In Process' }}
-                                    </span>
+                                    <div class="flex flex-col space-y-1">
+                                        <!-- Status Manual (prevalece si está en Done) -->
+                                        @if($operacion->status_manual === 'Done')
+                                            <span class="status-badge status-verde text-xs">
+                                                ✓ Done (Manual)
+                                            </span>
+                                        @else
+                                            <!-- Status Automático -->
+                                            <span class="status-badge {{
+                                                $operacion->color_status === 'verde' ? 'status-verde' :
+                                                ($operacion->color_status === 'amarillo' ? 'status-amarillo' :
+                                                ($operacion->color_status === 'rojo' ? 'status-rojo' : 'status-sin-fecha'))
+                                            }} text-xs">
+                                                @php
+                                                    $statusDisplay = match($operacion->status_calculado) {
+                                                        'In Process' => 'En Proceso',
+                                                        'Out of Metric' => 'Fuera de Métrica',
+                                                        'Done' => 'Completado',
+                                                        default => $operacion->status_calculado ?? 'En Proceso'
+                                                    };
+                                                @endphp
+                                                {{ $statusDisplay }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                Manual: {{ $operacion->status_manual ?? 'In Process' }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-' }}</td>
@@ -145,9 +166,9 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->target ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     @if($operacion->dias_transito !== null)
-                                        <span class="dias-indicator {{ 
-                                            $operacion->color_status === 'verde' ? 'dias-verde' : 
-                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo') 
+                                        <span class="dias-indicator {{
+                                            $operacion->color_status === 'verde' ? 'dias-verde' :
+                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo')
                                         }}">
                                             {{ abs($operacion->dias_transito) }} días
                                         </span>
@@ -156,8 +177,8 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    <button onclick="verPostOperaciones({{ $operacion->id }})" 
-                                            class="action-button btn-view" 
+                                    <button onclick="verPostOperaciones({{ $operacion->id }})"
+                                            class="action-button btn-view"
                                             title="Ver post-operaciones">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
@@ -165,8 +186,8 @@
                                     </button>
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    <button onclick="verComentarios({{ $operacion->id }})" 
-                                            class="action-button btn-view" 
+                                    <button onclick="verComentarios({{ $operacion->id }})"
+                                            class="action-button btn-view"
                                             title="Ver comentarios">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
@@ -175,26 +196,26 @@
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
-                                        <button onclick="verHistorial({{ $operacion->id }})" 
-                                                class="action-button btn-view" 
+                                        <button onclick="verHistorial({{ $operacion->id }})"
+                                                class="action-button btn-view"
                                                 title="Ver historial">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
                                         </button>
-                                        @if($operacion->status_calculado !== 'Done')
-                                        <button onclick="marcarComoDone({{ $operacion->id }})" 
-                                                class="action-button btn-edit" 
-                                                title="Marcar como Done">
+                                        @if($operacion->status_manual !== 'Done')
+                                        <button onclick="marcarComoDone({{ $operacion->id }})"
+                                                class="action-button btn-edit"
+                                                title="Marcar como Done (Manual)">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
                                         </button>
                                         @endif
 
-                                        <button onclick="eliminarOperacion({{ $operacion->id }})" 
-                                                class="action-button btn-delete" 
+                                        <button onclick="eliminarOperacion({{ $operacion->id }})"
+                                                class="action-button btn-delete"
                                                 title="Eliminar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -227,10 +248,10 @@
                     <div class="text-sm text-slate-600">
                         Mostrando operaciones con días de tránsito calculados automáticamente
                     </div>
-                    <div class="flex gap-2 text-xs">
-                        <span class="status-badge status-verde">Verde: Completado</span>
-                        <span class="status-badge status-amarillo">Amarillo: En Proceso</span>
-                        <span class="status-badge status-rojo">Rojo: Fuera de Métrica</span>
+                    <div class="flex gap-2 text-xs flex-wrap">
+                        <span class="status-badge status-verde">✓ Done Manual: Completado por usuario</span>
+                        <span class="status-badge status-amarillo">En Proceso: Días ≤ target desde aduana</span>
+                        <span class="status-badge status-rojo">Fuera Métrica: Días > target desde aduana</span>
                     </div>
                 </div>
             </div>
@@ -250,7 +271,7 @@
                     <span>&times;</span>
                 </button>
             </div>
-            
+
             <!-- Contenido del historial con scroll -->
             <div class="flex-1 overflow-y-auto p-4">
                 <div id="historialContent">
@@ -276,12 +297,12 @@
                     <span>&times;</span>
                 </button>
             </div>
-            
+
             <!-- Contenido del formulario -->
             <div class="flex-1 overflow-y-auto p-4">
                 <form id="formPostOperacion" onsubmit="guardarPostOperacion(event)" class="space-y-4">
                     @csrf
-                    
+
                     <!-- Nombre de Post-Operación -->
                     <div>
                         <label for="nombre_post_operacion" class="block text-sm font-medium text-slate-700 mb-1">
@@ -320,11 +341,11 @@
 
                     <!-- Botones -->
                     <div class="flex justify-end space-x-3 pt-4 border-t">
-                        <button type="button" onclick="cerrarModalPostOperacion()" 
+                        <button type="button" onclick="cerrarModalPostOperacion()"
                                 class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
                             Cancelar
                         </button>
-                        <button type="submit" 
+                        <button type="submit"
                                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                             Guardar Post-Operación
                         </button>
@@ -347,12 +368,12 @@
                         <span>&times;</span>
                     </button>
             </div>
-            
+
             <!-- Contenido del formulario con scroll -->
             <div class="flex-1 overflow-y-auto p-4">
                 <form id="formOperacion" class="space-y-4">
                         @csrf
-                        
+
                         <!-- Información Básica -->
                         <div class="form-section">
                             <h3>Información Básica</h3>
@@ -391,7 +412,7 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-sm font-medium text-slate-700">Cliente *</label>
-                                        <button type="button" onclick="mostrarNuevoCliente()" 
+                                        <button type="button" onclick="mostrarNuevoCliente()"
                                                 class="text-xs text-blue-600 hover:text-blue-800 font-medium">
                                             + Nuevo cliente
                                         </button>
@@ -406,15 +427,15 @@
                                     <div id="nuevoClienteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
                                         <input type="text" id="nuevoClienteNombre" placeholder="Nombre del nuevo cliente" class="form-input mb-2">
                                         <div class="flex space-x-2">
-                                            <button type="button" onclick="guardarNuevoCliente()" 
+                                            <button type="button" onclick="guardarNuevoCliente()"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
                                                     <span class="mr-1 font-bold">+</span>Guardar</button>
-                                            <button type="button" onclick="cancelarNuevoCliente()" 
+                                            <button type="button" onclick="cancelarNuevoCliente()"
                                                     class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Ejecutivo *</label>
                                     <input type="text" name="ejecutivo" required class="form-input" placeholder="Nombre del ejecutivo" list="ejecutivosList">
@@ -478,7 +499,7 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-sm font-medium text-slate-700">Agente Aduanal</label>
-                                        <button type="button" onclick="mostrarNuevoAgente()" 
+                                        <button type="button" onclick="mostrarNuevoAgente()"
                                                 class="text-xs text-blue-600 hover:text-blue-800 font-medium">
                                             + Nuevo agente
                                         </button>
@@ -493,10 +514,10 @@
                                     <div id="nuevoAgenteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
                                         <input type="text" id="nuevoAgenteNombre" placeholder="Nombre del nuevo agente aduanal" class="form-input mb-2">
                                         <div class="flex space-x-2">
-                                            <button type="button" onclick="guardarNuevoAgente()" 
+                                            <button type="button" onclick="guardarNuevoAgente()"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
                                                     <span class="mr-1 font-bold">+</span>Guardar</button>
-                                            <button type="button" onclick="cancelarNuevoAgente()" 
+                                            <button type="button" onclick="cancelarNuevoAgente()"
                                                     class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
                                         </div>
                                     </div>
@@ -511,7 +532,7 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-sm font-medium text-slate-700">Transporte</label>
-                                        <button type="button" onclick="mostrarNuevoTransporte()" 
+                                        <button type="button" onclick="mostrarNuevoTransporte()"
                                                 class="text-xs text-blue-600 hover:text-blue-800 font-medium">
                                             + Nuevo transporte
                                         </button>
@@ -526,10 +547,10 @@
                                     <div id="nuevoTransporteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
                                         <input type="text" id="nuevoTransporteNombre" placeholder="Nombre del nuevo transporte" class="form-input mb-2">
                                         <div class="flex space-x-2">
-                                            <button type="button" onclick="guardarNuevoTransporte()" 
+                                            <button type="button" onclick="guardarNuevoTransporte()"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
                                                     <span class="mr-1 font-bold">+</span>Guardar</button>
-                                            <button type="button" onclick="cancelarNuevoTransporte()" 
+                                            <button type="button" onclick="cancelarNuevoTransporte()"
                                                     class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
                                         </div>
                                     </div>
@@ -544,7 +565,7 @@
                                 <p class="text-sm text-purple-700 font-medium">ℹ️ Estos campos se llenan durante el proceso</p>
                                 <p class="text-xs text-purple-600">Puede crear la operación sin estos datos y actualizarlos después</p>
                             </div>
-                            
+
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo Aduana</label>
@@ -577,22 +598,22 @@
                                     <p class="text-xs text-gray-500">Documento de transporte</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Campo de Comentarios -->
                             <div class="mt-4">
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Comentarios Iniciales</label>
-                                <textarea name="comentarios" rows="2" class="form-input w-full" 
+                                <textarea name="comentarios" rows="2" class="form-input w-full"
                                          placeholder="Comentarios opcionales al crear la operación..."></textarea>
                             </div>
                         </div>
-                        
+
                         <!-- Botones -->
                         <div class="flex justify-end space-x-3 pt-4 border-t">
-                            <button type="button" onclick="cerrarModal()" 
+                            <button type="button" onclick="cerrarModal()"
                                     class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
                                 Cancelar
                             </button>
-                            <button type="submit" 
+                            <button type="submit"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                                 Guardar Operación
                             </button>
@@ -615,7 +636,7 @@
                     <span>&times;</span>
                 </button>
             </div>
-            
+
             <!-- Contenido -->
             <div class="flex-1 overflow-y-auto p-4">
                 <!-- Información -->
@@ -625,18 +646,18 @@
                         <div>
                             <h4 class="text-blue-800 font-semibold mb-1">Gestión de Post-Operaciones</h4>
                             <p class="text-blue-700 text-sm">
-                                Aquí puede actualizar el estado de las post-operaciones asignadas a esta operación específica. 
+                                Aquí puede actualizar el estado de las post-operaciones asignadas a esta operación específica.
                                 Los cambios se guardan por operación usando el número de pedimento.
                             </p>
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="contenidoPostOperaciones">
                     <!-- Se carga dinámicamente -->
                 </div>
             </div>
-            
+
             <!-- Footer -->
             <div class="bg-slate-50 border-t border-slate-200 p-4 flex justify-between items-center rounded-b-xl">
                 <button onclick="cerrarModalPostOperaciones()" class="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors">
@@ -663,7 +684,7 @@
                     <span>&times;</span>
                 </button>
             </div>
-            
+
             <!-- Contenido -->
             <div class="flex-1 overflow-y-auto p-4">
                 <!-- Comentarios actuales -->
@@ -673,7 +694,7 @@
                         <!-- Se carga dinámicamente -->
                     </div>
                 </div>
-                
+
                 <!-- Formulario para añadir/editar comentario -->
                 <div class="p-4 border-t border-slate-200">
                     <h3 class="text-md font-semibold text-slate-800 mb-3">
@@ -685,9 +706,9 @@
                             <label class="block text-sm font-medium text-slate-700 mb-2">
                                 Comentario <span class="text-red-500">*</span>
                             </label>
-                            <textarea id="textoComentario" 
-                                     name="comentario" 
-                                     rows="4" 
+                            <textarea id="textoComentario"
+                                     name="comentario"
+                                     rows="4"
                                      required
                                      class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                      placeholder="Escriba su comentario aquí..."></textarea>
@@ -721,11 +742,11 @@
                     <span>&times;</span>
                 </button>
             </div>
-            
+
             <!-- Contenido -->
             <div class="flex-1 overflow-y-auto p-4">
                 <p class="text-slate-600 mb-4">Desde aquí puede crear post-operaciones estándar que estarán disponibles para todas las operaciones.</p>
-                
+
                 <!-- Lista de post-operaciones globales -->
                 <div class="mb-6">
                     <h3 class="text-md font-semibold text-slate-800 mb-3">Post-Operaciones Disponibles</h3>
@@ -733,7 +754,7 @@
                         <!-- Se carga dinámicamente -->
                     </div>
                 </div>
-                
+
                 <!-- Formulario para crear nueva post-operación global -->
                 <div class="p-4 border-t border-slate-200">
                     <h3 class="text-md font-semibold text-slate-800 mb-3">Crear Nueva Post-Operación</h3>
@@ -743,10 +764,10 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-2">
                                     Nombre <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" 
-                                       id="nombrePostOpGlobal" 
-                                       name="nombre" 
-                                       required 
+                                <input type="text"
+                                       id="nombrePostOpGlobal"
+                                       name="nombre"
+                                       required
                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                        placeholder="Ej: Revisión de documentos">
                             </div>
@@ -754,9 +775,9 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-2">
                                     Descripción
                                 </label>
-                                <textarea id="descripcionPostOpGlobal" 
-                                         name="descripcion" 
-                                         rows="3" 
+                                <textarea id="descripcionPostOpGlobal"
+                                         name="descripcion"
+                                         rows="3"
                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                          placeholder="Descripción detallada..."></textarea>
                             </div>

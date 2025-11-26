@@ -32,7 +32,7 @@ class OperacionLogistica extends Model
         'cliente',
         'agente_aduanal',
         'transporte',
-        
+
         // Campos de operación
         'operacion',
         'proveedor_o_cliente',
@@ -53,6 +53,8 @@ class OperacionLogistica extends Model
         'dias_transito',
         'post_operacion_id',
         'status_calculado', // Campo calculado automáticamente
+        'status_manual', // Campo manual controlado por usuario
+        'fecha_status_manual',
         'color_status',
         'dias_transcurridos_calculados',
         'fecha_ultimo_calculo',
@@ -67,6 +69,7 @@ class OperacionLogistica extends Model
         'fecha_arribo_aduana' => 'date',
         'fecha_modulacion' => 'date',
         'fecha_arribo_planta' => 'date',
+        'fecha_status_manual' => 'datetime',
         'resultado' => 'integer',
         'target' => 'integer',
         'dias_transito' => 'integer',
@@ -124,7 +127,7 @@ class OperacionLogistica extends Model
         )->withPivot([
             'status',
             'fecha_asignacion',
-            'fecha_completado', 
+            'fecha_completado',
             'notas_especificas'
         ])->withTimestamps();
     }
@@ -199,13 +202,13 @@ class OperacionLogistica extends Model
 
         // Actualizar campos calculados
         $this->dias_transcurridos_calculados = $diasTranscurridos;
-        
+
         // Calcular status descriptivo
         $this->status_calculado = $this->calcularStatusDescriptivo();
-        
+
         // Calcular color basado en target
         $this->color_status = $this->calcularColorStatus($diasTranscurridos);
-        
+
         return $diasTranscurridos;
     }
 
@@ -217,7 +220,7 @@ class OperacionLogistica extends Model
         if ($this->fecha_arribo_planta) {
             return 'Entregado';
         } elseif ($this->fecha_modulacion) {
-            return 'Modulado';  
+            return 'Modulado';
         } elseif ($this->fecha_arribo_aduana) {
             return 'En Aduana';
         } elseif ($this->fecha_embarque) {
@@ -283,7 +286,7 @@ class OperacionLogistica extends Model
     {
         // Usar tipo_operacion_enum si tipo_operacion está vacío
         $tipoOperacion = $this->tipo_operacion_enum ?? $this->tipo_operacion;
-        
+
         if (empty($tipoOperacion)) {
             return null;
         }
@@ -319,7 +322,7 @@ class OperacionLogistica extends Model
         return match($this->color_status) {
             'verde' => 'Completado',
             'amarillo' => 'En Proceso',
-            'rojo' => 'Fuera de Métrica', 
+            'rojo' => 'Fuera de Métrica',
             'sin_fecha' => 'Sin Fecha',
             default => 'Desconocido',
         };
@@ -327,58 +330,67 @@ class OperacionLogistica extends Model
 
     /**
      * Calcular status basado en días transcurridos vs target
-     * Lógica: fecha_registro vs fecha_actual, comparar días con target
+     * NUEVA LÓGICA: Desde fecha de aduana hasta hoy, NO cambiar automáticamente a Done
      */
     public function calcularStatusPorDias()
     {
-        // Siempre calcular días desde registro hasta hoy (nuevo flujo corporativo)
-        $fechaRegistro = $this->created_at ?? now(); 
-        $fechaActual = now();
-        $diasTranscurridos = $fechaRegistro->diffInDays($fechaActual);
-        
         $statusAnterior = $this->status_calculado;
         $colorAnterior = $this->color_status;
-        
+
         // Obtener target
         $target = $this->target ?? $this->calcularTargetAutomatico() ?? 3;
-        
-        // Determinar status según el flujo corporativo:
-        
-        // Si ya está marcado como done o tiene fecha de arribo a planta = VERDE
-        if ($this->status_calculado === 'Done' || $this->fecha_arribo_planta) {
-            $nuevoStatus = 'Done';
-            $nuevoColor = 'verde';
-        }
-        // Si no hay fecha de arribo a aduana = EN PROCESO (amarillo)
-        elseif (!$this->fecha_arribo_aduana) {
-            $nuevoStatus = 'En Proceso';
-            $nuevoColor = 'amarillo';
-        }
-        // Si los días desde registro superan el target = ROJO (Fuera de Métrica)
-        elseif ($diasTranscurridos > $target) {
-            $nuevoStatus = 'Fuera de Métrica';
-            $nuevoColor = 'rojo';
-        }
-        // Si está dentro del target = AMARILLO (En Proceso)
-        else {
-            $nuevoStatus = 'En Proceso';
+
+        // NUEVA LÓGICA: Calcular días desde fecha de aduana hasta hoy (si existe)
+        if ($this->fecha_arribo_aduana) {
+            $fechaAduana = \Carbon\Carbon::parse($this->fecha_arribo_aduana);
+            $fechaActual = now();
+            $diasTranscurridos = $fechaAduana->diffInDays($fechaActual);
+
+            // Determinar color SOLO basado en días vs target (NO cambiar status automáticamente)
+            if ($diasTranscurridos > $target) {
+                $nuevoColor = 'rojo';    // Fuera de métrica
+                $nuevoStatus = 'Out of Metric';  // Usar valor válido del enum
+            } else {
+                $nuevoColor = 'amarillo'; // Dentro de métrica
+                $nuevoStatus = 'In Process'; // Usar valor válido del enum
+            }
+        } else {
+            // Si no hay fecha de aduana, calcular desde registro
+            $fechaRegistro = $this->created_at ?? now();
+            $fechaActual = now();
+            $diasTranscurridos = $fechaRegistro->diffInDays($fechaActual);
+
+            // Sin fecha de aduana = En proceso (amarillo por defecto)
+            $nuevoStatus = 'In Process'; // Usar valor válido del enum
             $nuevoColor = 'amarillo';
         }
 
-        
+        // Si hay fecha de arribo a planta, considerar como completado automáticamente
+        if ($this->fecha_arribo_planta) {
+            $nuevoStatus = 'Done';
+            // Color según si fue dentro o fuera de métrica
+            $nuevoColor = (isset($diasTranscurridos) && $diasTranscurridos <= $target) ? 'verde' : 'rojo';
+        }
+
+        // El status manual prevalece sobre el automático para "Done"
+        if ($this->status_manual === 'Done') {
+            $nuevoStatus = 'Done';
+            $nuevoColor = 'verde';
+        }
+
         // Actualizar campos
-        $this->dias_transcurridos_calculados = $diasTranscurridos;
+        $this->dias_transcurridos_calculados = $diasTranscurridos ?? 0;
         $this->status_calculado = $nuevoStatus;
         $this->color_status = $nuevoColor;
         $this->fecha_ultimo_calculo = now();
-        
+
         // Determinar si hubo cambio de status
         $huboCambio = ($statusAnterior !== $nuevoStatus) || ($colorAnterior !== $nuevoColor);
-        
+
         return [
             'status' => $nuevoStatus,
             'color' => $nuevoColor,
-            'dias_transcurridos' => $diasTranscurridos,
+            'dias_transcurridos' => $diasTranscurridos ?? 0,
             'target' => $target,
             'cambio' => $huboCambio,
             'status_anterior' => $statusAnterior,
@@ -389,23 +401,37 @@ class OperacionLogistica extends Model
     /**
      * Generar historial automáticamente cuando hay cambio de status
      */
-    public function generarHistorialCambioStatus($resultado)
+    public function generarHistorialCambioStatus($resultado, $esManual = false, $accionManual = null)
     {
         // Solo generar historial si hubo cambio o es la primera vez
-        if (!$resultado['cambio'] && $this->historicoMatrizSgm()->exists()) {
+        if (!$resultado['cambio'] && $this->historicoMatrizSgm()->exists() && !$esManual) {
             return null;
         }
-        
-        $descripcion = "Status actualizado automáticamente: ";
-        
-        if ($resultado['status_anterior'] && $resultado['cambio']) {
-            $descripcion .= "Cambió de '{$resultado['status_anterior']}' a '{$resultado['status']}'";
+
+        if ($esManual && $accionManual) {
+            $descripcion = "Acción manual: {$accionManual}";
+            $descripcion .= ". Status manual: {$this->status_manual}";
+            $descripcion .= ". Status automático: {$resultado['status']}";
         } else {
-            $descripcion .= "Establecido como '{$resultado['status']}'";
+            $descripcion = "Status actualizado automáticamente: ";
+
+            if ($resultado['status_anterior'] && $resultado['cambio']) {
+                $descripcion .= "Cambió de '{$resultado['status_anterior']}' a '{$resultado['status']}'";
+            } else {
+                $descripcion .= "Establecido como '{$resultado['status']}'";
+            }
         }
-        
+
         $descripcion .= ". Días transcurridos: {$resultado['dias_transcurridos']}, Target: {$resultado['target']}";
-        
+
+        // Agregar información de fechas clave si existen
+        if ($this->fecha_arribo_aduana) {
+            $descripcion .= ". Fecha aduana: " . \Carbon\Carbon::parse($this->fecha_arribo_aduana)->format('d/m/Y');
+        }
+        if ($this->fecha_arribo_planta) {
+            $descripcion .= ". Fecha entrega: " . \Carbon\Carbon::parse($this->fecha_arribo_planta)->format('d/m/Y');
+        }
+
         // Crear registro de historial (solo si la operación ya fue guardada)
         if ($this->exists) {
             $historial = $this->historicoMatrizSgm()->create([
@@ -419,7 +445,7 @@ class OperacionLogistica extends Model
             ]);
             return $historial;
         }
-        
+
         return null;
     }
 
@@ -429,15 +455,15 @@ class OperacionLogistica extends Model
     public function actualizarStatusAutomaticamente($guardarCambios = true)
     {
         $resultado = $this->calcularStatusPorDias();
-        
+
         // Generar historial si hay cambio
         $this->generarHistorialCambioStatus($resultado);
-        
+
         // Guardar cambios si se solicita
         if ($guardarCambios) {
             $this->saveQuietly(); // Usar saveQuietly para evitar loops infinitos
         }
-        
+
         return $resultado;
     }
 
@@ -447,14 +473,14 @@ class OperacionLogistica extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::saving(function ($operacion) {
             // Solo calcular en creación o si las fechas clave cambiaron
             if ($operacion->isDirty(['fecha_arribo_aduana', 'target', 'fecha_arribo_planta']) || !$operacion->exists) {
                 $operacion->calcularStatusPorDias();
             }
         });
-        
+
         static::created(function ($operacion) {
             // Generar historial inicial después de crear
             $operacion->refresh(); // Asegurarse de que tiene todos los datos

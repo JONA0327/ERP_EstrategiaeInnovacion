@@ -30,7 +30,7 @@
                 <!-- Tab Headers -->
                 <div class="border-b border-slate-200">
                     <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                        <button data-tab="clientes" id="tab-clientes" 
+                        <button data-tab="clientes" id="tab-clientes"
                                 class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                             <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
@@ -62,11 +62,19 @@
                             Ejecutivos
                             <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{{ $ejecutivos->total() }}</span>
                         </button>
+                        <button data-tab="aduanas" id="tab-aduanas"
+                                class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            Aduanas
+                            <span class="ml-2 bg-purple-100 text-purple-600 py-0.5 px-2 rounded-full text-xs">{{ $aduanas->total() }}</span>
+                        </button>
                     </nav>
                 </div>
 
                 <!-- Tab Contents -->
-                
+
                 <!-- Clientes Tab -->
                 <div id="clientes-content" class="tab-content">
                     <div class="p-6">
@@ -87,7 +95,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -128,16 +136,16 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
-                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $cliente->id }}" 
-                                                        data-type="clientes" 
+                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $cliente->id }}"
+                                                        data-type="clientes"
                                                         data-name="{{ $cliente->cliente }}"
                                                         data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}">
                                                     Editar
                                                 </button>
-                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $cliente->id }}" 
-                                                        data-type="clientes" 
+                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $cliente->id }}"
+                                                        data-type="clientes"
                                                         data-name="{{ $cliente->cliente }}">
                                                     Eliminar
                                                 </button>
@@ -159,7 +167,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         @if($clientes->hasPages())
                         <div class="mt-6 flex justify-center">
                             {{ $clientes->links() }}
@@ -178,7 +186,7 @@
                                 Agregar Agente
                             </button>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -197,15 +205,15 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $agente->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
-                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $agente->id }}" 
-                                                        data-type="agentes" 
+                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $agente->id }}"
+                                                        data-type="agentes"
                                                         data-name="{{ $agente->agente_aduanal }}">
                                                     Editar
                                                 </button>
-                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $agente->id }}" 
-                                                        data-type="agentes" 
+                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $agente->id }}"
+                                                        data-type="agentes"
                                                         data-name="{{ $agente->agente_aduanal }}">
                                                     Eliminar
                                                 </button>
@@ -227,7 +235,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         @if($agentesAduanales->hasPages())
                         <div class="mt-6 flex justify-center">
                             {{ $agentesAduanales->links() }}
@@ -246,7 +254,7 @@
                                 Agregar Transporte
                             </button>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -264,7 +272,7 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $transporte->id }}</td>
                                         <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $transporte->transporte }}</td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                                 {{ $transporte->tipo_operacion == 'EXPORTACION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
                                                 {{ $transporte->tipo_operacion }}
                                             </span>
@@ -272,15 +280,15 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $transporte->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
-                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $transporte->id }}" 
-                                                        data-type="transportes" 
+                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $transporte->id }}"
+                                                        data-type="transportes"
                                                         data-name="{{ $transporte->transporte }}">
                                                     Editar
                                                 </button>
-                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all" 
-                                                        data-id="{{ $transporte->id }}" 
-                                                        data-type="transportes" 
+                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                        data-id="{{ $transporte->id }}"
+                                                        data-type="transportes"
                                                         data-name="{{ $transporte->transporte }}">
                                                     Eliminar
                                                 </button>
@@ -302,7 +310,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         @if($transportes->hasPages())
                         <div class="mt-6 flex justify-center">
                             {{ $transportes->links() }}
@@ -318,7 +326,7 @@
                             <h2 class="text-lg font-semibold text-slate-800">Ejecutivos de Logística</h2>
                             <p class="text-sm text-slate-600">Solo se muestran empleados del área de logística</p>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -358,10 +366,115 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         @if($ejecutivos->hasPages())
                         <div class="mt-6 flex justify-center">
                             {{ $ejecutivos->links() }}
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Aduanas Tab -->
+                <div id="aduanas-content" class="tab-content hidden">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold text-slate-800">Gestión de Aduanas</h2>
+                            <div class="flex space-x-3">
+                                <button id="clearAduanasBtn" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Limpiar Todo
+                                </button>
+                                <button id="importAduanasBtn" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    Importar desde Word
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress bar para importación -->
+                        <div id="importProgress" class="hidden mb-6">
+                            <div class="bg-gray-200 rounded-full h-2 mb-2">
+                                <div id="progressBar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p id="progressText" class="text-sm text-gray-600">Procesando archivo...</p>
+                        </div>
+
+                        <!-- Estadísticas -->
+                        <div id="aduanasStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-purple-800">Total Aduanas</h3>
+                                <p id="totalAduanas" class="text-2xl font-bold text-purple-600">{{ $aduanas->total() }}</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-blue-800">Última Importación</h3>
+                                <p id="ultimaImportacion" class="text-sm text-blue-600">-</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-green-800">Estado</h3>
+                                <p id="estadoImportacion" class="text-sm text-green-600">Listo para importar</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Código</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Sección</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Denominación</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Patente</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">País</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Fecha</th>
+                                        <th class="px-4 py-3 text-center text-sm font-semibold text-slate-700">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200" id="aduanasTableBody">
+                                    @forelse($aduanas as $aduana)
+                                    <tr class="hover:bg-purple-50/50 transition-colors">
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $aduana->aduana }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->seccion }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ Str::limit($aduana->denominacion, 50) }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->patente ?? 'N/A' }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                {{ $aduana->pais }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button onclick="eliminarAduana({{ $aduana->id }})"
+                                                    class="text-red-600 hover:text-red-800 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-12 h-12 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                                </svg>
+                                                <p class="mb-2">No hay aduanas registradas</p>
+                                                <p class="text-xs">Importa un archivo Word con la información de aduanas</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if($aduanas->hasPages())
+                        <div class="mt-6 flex justify-center">
+                            {{ $aduanas->links() }}
                         </div>
                         @endif
                     </div>
@@ -376,18 +489,18 @@
             <div class="modal-header p-6 border-b border-gray-200">
                 <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Editar Item</h3>
             </div>
-            
+
             <form id="editForm" class="p-6">
                 <div class="mb-4">
                     <label for="editName" class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                    <input type="text" id="editName" name="name" required 
+                    <input type="text" id="editName" name="name" required
                            class="form-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
+
                 <!-- Campo de ejecutivo asignado solo para clientes -->
                 <div id="ejecutivoField" class="mb-4 hidden">
                     <label for="editEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Ejecutivo Asignado</label>
-                    <select id="editEjecutivo" name="ejecutivo_asignado_id" 
+                    <select id="editEjecutivo" name="ejecutivo_asignado_id"
                            class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Sin asignar</option>
                         @foreach($todosEjecutivos as $ejecutivo)
@@ -395,7 +508,7 @@
                         @endforeach
                     </select>
                 </div>
-                
+
                 <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
                     <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancelar
@@ -414,7 +527,7 @@
             <div class="modal-header p-6 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">Confirmar Eliminación</h3>
             </div>
-            
+
             <div class="p-6">
                 <div class="flex items-center mb-4">
                     <div class="flex-shrink-0">
@@ -428,7 +541,7 @@
                         </p>
                     </div>
                 </div>
-                
+
                 <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
                     <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancelar
@@ -447,15 +560,15 @@
             <div class="modal-header p-6 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">Asignar Ejecutivo a Clientes</h3>
             </div>
-            
+
             <form id="assignExecutiveForm" class="p-6">
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-4">
                         Se asignarán <span id="selectedClientsCount" class="font-semibold text-blue-600">0</span> clientes seleccionados al ejecutivo elegido.
                     </p>
-                    
+
                     <label for="selectEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Ejecutivo</label>
-                    <select id="selectEjecutivo" name="ejecutivo_id" required 
+                    <select id="selectEjecutivo" name="ejecutivo_id" required
                            class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Seleccione un ejecutivo...</option>
                         @foreach($todosEjecutivos as $ejecutivo)
@@ -463,13 +576,63 @@
                         @endforeach
                     </select>
                 </div>
-                
+
                 <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
                     <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancelar
                     </button>
                     <button type="submit" class="btn-primary px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
                         Asignar Ejecutivo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Importación de Aduanas -->
+    <div id="importAduanasModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Importar Aduanas desde Word</h3>
+                <p class="text-sm text-gray-600 mt-1">Sube un archivo .docx con la información de las aduanas</p>
+            </div>
+
+            <form id="importAduanasForm" class="p-6" enctype="multipart/form-data">
+                <div class="mb-6">
+                    <label for="aduanasFile" class="block text-sm font-medium text-gray-700 mb-2">Archivo Word (.docx)</label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="aduanasFile" class="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-purple-500">
+                                    <span>Seleccionar archivo</span>
+                                    <input id="aduanasFile" name="file" type="file" accept=".docx,.doc" class="sr-only" required>
+                                </label>
+                                <p class="pl-1">o arrastrar aquí</p>
+                            </div>
+                            <p class="text-xs text-gray-500">DOC, DOCX hasta 10MB</p>
+                        </div>
+                    </div>
+                    <div id="selectedFileName" class="mt-2 text-sm text-gray-600 hidden"></div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h4 class="text-sm font-medium text-blue-800 mb-2">Formato esperado:</h4>
+                    <div class="text-xs text-blue-700">
+                        <p>• Código aduana (2 dígitos) + espacio + sección (1 dígito) + espacio + denominación</p>
+                        <p>• Ejemplo: <code class="bg-blue-100 px-1 rounded">01 0 Aduana de Tijuana</code></p>
+                    </div>
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="importBtn" class="btn-primary px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                        <span class="import-text">Importar Aduanas</span>
+                        <span class="loading-text hidden">Procesando...</span>
                     </button>
                 </div>
             </form>
