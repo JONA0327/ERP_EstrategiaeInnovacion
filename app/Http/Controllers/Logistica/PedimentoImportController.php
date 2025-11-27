@@ -4,21 +4,21 @@ namespace App\Http\Controllers\Logistica;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\AduanaImportService;
-use App\Models\Logistica\Aduana;
+use App\Services\PedimentoImportService;
+use App\Models\Logistica\Pedimento;
 use Illuminate\Support\Facades\Storage;
 
-class AduanaImportController extends Controller
+class PedimentoImportController extends Controller
 {
-    protected $aduanaImportService;
+    protected $pedimentoImportService;
 
-    public function __construct(AduanaImportService $aduanaImportService)
+    public function __construct(PedimentoImportService $pedimentoImportService)
     {
-        $this->aduanaImportService = $aduanaImportService;
+        $this->pedimentoImportService = $pedimentoImportService;
     }
 
     /**
-     * Importar aduanas desde archivo Word
+     * Importar pedimentos desde archivo Word/Excel/CSV
      */
     public function import(Request $request)
     {
@@ -30,7 +30,7 @@ class AduanaImportController extends Controller
 
             // Guardar el archivo temporalmente
             $file = $request->file('file');
-            $fileName = 'aduanas_' . time() . '.' . $file->getClientOriginalExtension();
+            $fileName = 'pedimentos_' . time() . '.' . $file->getClientOriginalExtension();
             
             // Usar Storage para manejar los archivos de forma más segura
             $relativePath = 'temp/imports/' . $fileName;
@@ -49,10 +49,10 @@ class AduanaImportController extends Controller
                 throw new \Exception("Error: el archivo temporal no se pudo crear correctamente");
             }
 
-            \Log::info("Procesando archivo de aduanas: {$fileName}");
+            \Log::info("Procesando archivo de pedimentos: {$fileName}");
 
             // Procesar la importación
-            $result = $this->aduanaImportService->import($fullPath);
+            $result = $this->pedimentoImportService->import($fullPath);
 
             // Limpiar el archivo temporal solo si el procesamiento fue exitoso
             if (Storage::exists($relativePath)) {
@@ -90,131 +90,118 @@ class AduanaImportController extends Controller
     }
 
     /**
-     * Obtener lista de aduanas
+     * Obtener lista de pedimentos
      */
     public function index(Request $request)
     {
         try {
-            $query = Aduana::query();
+            $query = Pedimento::query();
 
             // Filtro por búsqueda
             if ($request->has('search') && !empty($request->search)) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('denominacion', 'LIKE', "%{$search}%")
-                      ->orWhere('aduana', 'LIKE', "%{$search}%")
-                      ->orWhere('patente', 'LIKE', "%{$search}%");
+                    $q->where('clave', 'like', "%{$search}%")
+                      ->orWhere('descripcion', 'like', "%{$search}%")
+                      ->orWhere('categoria', 'like', "%{$search}%")
+                      ->orWhere('subcategoria', 'like', "%{$search}%");
                 });
             }
 
-            // Filtro por país
-            if ($request->has('pais') && !empty($request->pais)) {
-                $query->where('pais', $request->pais);
+            // Filtro por categoría
+            if ($request->has('categoria') && !empty($request->categoria)) {
+                $query->where('categoria', $request->categoria);
             }
 
-            // Ordenamiento
-            $sortBy = $request->get('sort_by', 'aduana');
-            $sortDirection = $request->get('sort_direction', 'asc');
-            $query->orderBy($sortBy, $sortDirection);
+            // Filtro por subcategoría
+            if ($request->has('subcategoria') && !empty($request->subcategoria)) {
+                $query->where('subcategoria', $request->subcategoria);
+            }
 
-            // Paginación
-            $perPage = $request->get('per_page', 15);
-            $aduanas = $query->paginate($perPage);
+            $pedimentos = $query->orderBy('clave')->paginate(15);
 
             return response()->json([
                 'success' => true,
-                'aduanas' => $aduanas,
-                'stats' => $this->aduanaImportService->getStats()
+                'data' => $pedimentos
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener las aduanas: ' . $e->getMessage()
+                'message' => 'Error al obtener los pedimentos: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Eliminar una aduana
+     * Eliminar un pedimento
      */
     public function destroy($id)
     {
         try {
-            $aduana = Aduana::findOrFail($id);
-            $aduana->delete();
+            $pedimento = Pedimento::findOrFail($id);
+            $pedimento->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Aduana eliminada exitosamente'
+                'message' => 'Pedimento eliminado exitosamente'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar la aduana: ' . $e->getMessage()
+                'message' => 'Error al eliminar el pedimento: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Limpiar todas las aduanas
+     * Limpiar todos los pedimentos
      */
     public function clear()
     {
         try {
-            $count = Aduana::count();
-            Aduana::truncate();
+            $count = Pedimento::count();
+            Pedimento::truncate();
 
             return response()->json([
                 'success' => true,
-                'message' => "Se eliminaron {$count} aduanas exitosamente",
+                'message' => "Se eliminaron {$count} pedimentos exitosamente",
                 'deleted_count' => $count
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al limpiar las aduanas: ' . $e->getMessage()
+                'message' => 'Error al limpiar los pedimentos: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Crear una nueva aduana
+     * Crear un nuevo pedimento
      */
     public function store(Request $request)
     {
         try {
             $request->validate([
-                'aduana' => 'required|string|size:2|regex:/^[0-9]{2}$/',
-                'seccion' => 'nullable|string|size:1|regex:/^[0-9]$/',
-                'denominacion' => 'required|string|max:255'
+                'clave' => 'required|string|max:10|unique:pedimentos,clave',
+                'descripcion' => 'required|string|max:500',
+                'categoria' => 'nullable|string|max:255',
+                'subcategoria' => 'nullable|string|max:255'
             ]);
 
-            // Verificar si ya existe la combinación aduana + sección
-            $seccion = $request->seccion ?: '0';
-            $existing = Aduana::where('aduana', $request->aduana)
-                             ->where('seccion', $seccion)
-                             ->first();
-
-            if ($existing) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ya existe una aduana con ese código y sección'
-                ], 422);
-            }
-
-            $aduana = Aduana::create([
-                'aduana' => $request->aduana,
-                'seccion' => $seccion,
-                'denominacion' => $request->denominacion
+            $pedimento = Pedimento::create([
+                'clave' => strtoupper(trim($request->clave)),
+                'descripcion' => trim($request->descripcion),
+                'categoria' => $request->categoria ? trim($request->categoria) : null,
+                'subcategoria' => $request->subcategoria ? trim($request->subcategoria) : null
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Aduana creada exitosamente',
-                'aduana' => $aduana
+                'message' => 'Pedimento creado exitosamente',
+                'pedimento' => $pedimento
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -226,53 +213,37 @@ class AduanaImportController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear la aduana: ' . $e->getMessage()
+                'message' => 'Error al crear el pedimento: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Actualizar una aduana existente
+     * Actualizar un pedimento existente
      */
     public function update(Request $request, $id)
     {
         try {
             $request->validate([
-                'aduana' => 'required|string|size:2|regex:/^[0-9]{2}$/',
-                'seccion' => 'nullable|string|size:1|regex:/^[0-9]$/',
-                'denominacion' => 'required|string|max:255',
-                'patente' => 'nullable|string|max:50',
-                'pais' => 'nullable|string|max:10'
+                'clave' => 'required|string|max:10|unique:pedimentos,clave,' . $id,
+                'descripcion' => 'required|string|max:500',
+                'categoria' => 'nullable|string|max:255',
+                'subcategoria' => 'nullable|string|max:255'
             ]);
 
-            $aduana = Aduana::findOrFail($id);
-            $seccion = $request->seccion ?: '0';
+            $pedimento = Pedimento::findOrFail($id);
 
-            // Verificar si ya existe otra aduana con la misma combinación código + sección
-            $existing = Aduana::where('aduana', $request->aduana)
-                             ->where('seccion', $seccion)
-                             ->where('id', '!=', $id)
-                             ->first();
-
-            if ($existing) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ya existe otra aduana con ese código y sección'
-                ], 422);
-            }
-
-            $aduana->update([
-                'aduana' => $request->aduana,
-                'seccion' => $seccion,
-                'denominacion' => $request->denominacion,
-                'patente' => $request->patente,
-                'pais' => $request->pais ?: 'MX'
+            $pedimento->update([
+                'clave' => strtoupper(trim($request->clave)),
+                'descripcion' => trim($request->descripcion),
+                'categoria' => $request->categoria ? trim($request->categoria) : null,
+                'subcategoria' => $request->subcategoria ? trim($request->subcategoria) : null
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Aduana actualizada exitosamente',
-                'aduana' => $aduana
+                'message' => 'Pedimento actualizado exitosamente',
+                'pedimento' => $pedimento
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -284,7 +255,50 @@ class AduanaImportController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar la aduana: ' . $e->getMessage()
+                'message' => 'Error al actualizar el pedimento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener todas las categorías disponibles
+     */
+    public function getCategorias()
+    {
+        try {
+            $categorias = Pedimento::getCategorias();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $categorias
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las categorías: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener subcategorías por categoría
+     */
+    public function getSubcategorias(Request $request)
+    {
+        try {
+            $categoria = $request->input('categoria');
+            $subcategorias = Pedimento::getSubcategoriasPorCategoria($categoria);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $subcategorias
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las subcategorías: ' . $e->getMessage()
             ], 500);
         }
     }

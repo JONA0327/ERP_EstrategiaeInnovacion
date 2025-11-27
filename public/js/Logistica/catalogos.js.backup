@@ -7,6 +7,7 @@
 function getCsrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]');
     if (!token) {
+        console.error('CSRF token no encontrado en la página');
         return null;
     }
     return token.getAttribute('content');
@@ -21,8 +22,9 @@ function restoreBodyScroll() {
         document.body.style.position = '';
         // También limpiar cualquier clase que pueda estar afectando el scroll
         document.body.classList.remove('modal-open', 'no-scroll');
+        console.log('Scroll del body restaurado');
     } catch (error) {
-        // Error silencioso
+        console.warn('Error al restaurar scroll del body:', error);
     }
 }
 
@@ -197,10 +199,6 @@ async function searchEmployees(query) {
             headers: getAuthHeaders()
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
 
         if (data.success) {
@@ -263,10 +261,6 @@ async function selectEmployee(empleadoId) {
                 empleado_id: empleadoId
             })
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
 
         const data = await response.json();
 
@@ -334,27 +328,17 @@ async function checkDataExistenceAndUpdateButtons() {
             method: 'GET',
             headers: getAuthHeaders()
         });
-        
-        let aduanasExists = false;
-        if (aduanasResponse.ok) {
-            const aduanasData = await aduanasResponse.json();
-            aduanasExists = aduanasData.success ? aduanasData.exists : false;
-        }
+        const aduanasData = await aduanasResponse.json();
 
         // Verificar pedimentos
         const pedimentosResponse = await fetch('/logistica/pedimentos/check', {
             method: 'GET',
             headers: getAuthHeaders()
         });
-        
-        let pedimentosExists = false;
-        if (pedimentosResponse.ok) {
-            const pedimentosData = await pedimentosResponse.json();
-            pedimentosExists = pedimentosData.success ? pedimentosData.exists : false;
-        }
+        const pedimentosData = await pedimentosResponse.json();
 
         // Actualizar visibilidad de botones
-        updateImportButtonsVisibility(aduanasExists, pedimentosExists);
+        updateImportButtonsVisibility(aduanasData.exists, pedimentosData.exists);
 
     } catch (error) {
         // En caso de error, mostrar los botones por defecto
@@ -432,26 +416,18 @@ class CatalogosMaestros {
         
         // Prioridad: URL > sessionStorage > default
         const activeTab = urlTab || savedTab || 'clientes';
-        
-        // Si la URL tiene parámetros extraños, limpiarla
-        if (window.location.search && (!urlTab || urlParams.toString() !== `tab=${activeTab}`)) {
-            this.updateURL(activeTab);
-        }
-        
-        this.showTabWithoutURLUpdate(activeTab);
+        this.showTab(activeTab);
         
         // Guardar el tab activo en sessionStorage para futuras navegaciones
-        sessionStorage.setItem('activeTab', activeTab);
+        if (urlTab) {
+            sessionStorage.setItem('activeTab', urlTab);
+        }
 
         // Escuchar cambios en la URL (navegación con botones del navegador)
-        window.addEventListener('popstate', (event) => {
+        window.addEventListener('popstate', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const newTab = urlParams.get('tab') || 'clientes';
-            
-            // Solo cambiar si el tab es diferente al actual para evitar bucles
-            if (newTab !== this.activeTab) {
-                this.showTabWithoutURLUpdate(newTab);
-            }
+            this.showTab(newTab);
         });
     }
 
@@ -489,46 +465,6 @@ class CatalogosMaestros {
             
             // Guardar el tab activo en sessionStorage
             sessionStorage.setItem('activeTab', tabId);
-            
-            // Actualizar la URL limpiamente solo con el tab
-            this.updateURL(tabId);
-        }
-    }
-
-    updateURL(tabId) {
-        // Crear una URL limpia solo con el parámetro tab
-        const baseUrl = window.location.pathname;
-        const newUrl = `${baseUrl}?tab=${tabId}`;
-        
-        // Actualizar la URL sin recargar la página
-        window.history.pushState({ tab: tabId }, '', newUrl);
-    }
-
-    showTabWithoutURLUpdate(tabId) {
-        // Ocultar todos los contenidos de tabs
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(content => {
-            content.classList.add('hidden');
-        });
-
-        // Remover clase active de todos los botones
-        const tabButtons = document.querySelectorAll('.tab-button');
-        tabButtons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        // Mostrar el tab seleccionado
-        const activeContent = document.getElementById(`${tabId}-content`);
-        const activeButton = document.querySelector(`[data-tab="${tabId}"]`);
-
-        if (activeContent && activeButton) {
-            activeContent.classList.remove('hidden');
-            activeButton.classList.add('active');
-            this.activeTab = tabId;
-            
-            // Guardar el tab activo en sessionStorage
-            sessionStorage.setItem('activeTab', tabId);
-            // NO actualizar URL aquí para evitar bucles
         }
     }
 
@@ -728,8 +664,7 @@ class CatalogosMaestros {
         const modal = document.getElementById('deleteModal');
         const message = document.getElementById('deleteMessage');
 
-        const typeLabel = this.getTypeLabel(type) || type || 'elemento';
-        message.innerHTML = `¿Estás seguro de que deseas eliminar ${typeLabel.toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer.</span>`;
+        message.innerHTML = `¿Estás seguro de que deseas eliminar ${this.getTypeLabel(type).toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer.</span>`;
 
         this.showModal(modal);
     }
@@ -898,12 +833,10 @@ class CatalogosMaestros {
             'clientes': 'Cliente',
             'agentes': 'Agente Aduanal',
             'transportes': 'Transporte',
-            'ejecutivos': 'Ejecutivo',
-            'aduanas': 'Aduana',
-            'pedimentos': 'Pedimento'
+            'ejecutivos': 'Ejecutivo'
         };
 
-        return labels[type] || type || 'elemento';
+        return labels[type];
     }
 
     refreshTable(type) {
@@ -1546,12 +1479,22 @@ let confirmModalCallback = null;
 
 // Abrir modal de confirmación
 function openConfirmModal(title, message, confirmText = 'Eliminar', callback = null) {
+    console.log('openConfirmModal llamado:', { title, message, confirmText });
+    
     const modal = document.getElementById('confirmModal');
     const titleElement = document.getElementById('confirmModalTitle');
     const messageElement = document.getElementById('confirmModalMessage');
     const confirmBtn = document.getElementById('confirmModalBtn');
     
+    console.log('Elementos encontrados:', { 
+        modal: !!modal, 
+        titleElement: !!titleElement, 
+        messageElement: !!messageElement, 
+        confirmBtn: !!confirmBtn 
+    });
+    
     if (!modal || !titleElement || !messageElement || !confirmBtn) {
+        console.error('No se encontraron todos los elementos del modal de confirmación');
         alert(message); // Fallback
         if (callback) callback();
         return;
@@ -1577,10 +1520,13 @@ function openConfirmModal(title, message, confirmText = 'Eliminar', callback = n
             modalContent.style.transform = 'scale(1)';
         }
     }, 10);
+    
+    console.log('Modal abierto exitosamente');
 }
 
 // Cerrar modal de confirmación
 function closeConfirmModal() {
+    console.log('Cerrando modal de confirmación');
     const modal = document.getElementById('confirmModal');
     
     if (modal) {
@@ -1594,6 +1540,7 @@ function closeConfirmModal() {
             modal.classList.add('hidden');
             restoreBodyScroll();
             confirmModalCallback = null;
+            console.log('Modal cerrado y scroll restaurado');
         }, 300);
     } else {
         // Como medida de emergencia, restaurar scroll inmediatamente
@@ -1608,6 +1555,7 @@ function handleConfirm() {
         try {
             confirmModalCallback();
         } catch (error) {
+            console.error('Error en callback de confirmación:', error);
             showAlert('Error al ejecutar la acción.', 'error');
         } finally {
             // Asegurar que el modal se cierre siempre
@@ -2026,7 +1974,7 @@ async function importPedimentos() {
     }
 
     const formData = new FormData();
-    formData.append('pedimentos_file', fileInput.files[0]);
+    formData.append('file', fileInput.files[0]);
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     try {

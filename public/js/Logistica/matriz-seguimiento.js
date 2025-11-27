@@ -1618,3 +1618,94 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// =======================================
+// FUNCIONES PARA NUEVA ADUANA EN MATRIZ
+// =======================================
+
+// Mostrar formulario de nueva aduana
+window.mostrarNuevaAduana = function() {
+    const form = document.getElementById('nuevaAduanaForm');
+    if (form) form.classList.remove('hidden');
+};
+
+// Cancelar nueva aduana
+window.cancelarNuevaAduana = function() {
+    const form = document.getElementById('nuevaAduanaForm');
+    const inputs = ['nuevaAduanaCodigo', 'nuevaAduanaSeccion', 'nuevaAduanaDenominacion'];
+    
+    if (form) form.classList.add('hidden');
+    
+    inputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) input.value = '';
+    });
+    
+    // Restaurar valor por defecto
+    const seccionInput = document.getElementById('nuevaAduanaSeccion');
+    if (seccionInput) seccionInput.value = '0';
+};
+
+// Guardar nueva aduana
+window.guardarNuevaAduana = function() {
+    const codigo = document.getElementById('nuevaAduanaCodigo').value.trim();
+    const seccion = document.getElementById('nuevaAduanaSeccion').value.trim() || '0';
+    const denominacion = document.getElementById('nuevaAduanaDenominacion').value.trim();
+
+    // Validaciones
+    if (!codigo || codigo.length !== 2 || !/^\d{2}$/.test(codigo)) {
+        alert('El código debe ser de 2 dígitos (01-99)');
+        return;
+    }
+
+    if (seccion.length !== 1 || !/^\d{1}$/.test(seccion)) {
+        alert('La sección debe ser de 1 dígito (0-9)');
+        return;
+    }
+
+    if (!denominacion) {
+        alert('La denominación es obligatoria');
+        return;
+    }
+
+    // Crear FormData
+    const formData = new FormData();
+    formData.append('aduana', codigo);
+    formData.append('seccion', seccion);
+    formData.append('denominacion', denominacion);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    // Enviar petición
+    fetch('/logistica/aduanas', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Añadir la nueva opción al datalist
+            const datalist = document.getElementById('aduanasList');
+            if (datalist) {
+                const option = document.createElement('option');
+                option.value = `${codigo}${seccion} - ${denominacion}`;
+                datalist.appendChild(option);
+            }
+
+            // Llenar automáticamente el campo principal
+            const aduanaInput = document.querySelector('input[name="aduana"]');
+            if (aduanaInput) {
+                aduanaInput.value = `${codigo}${seccion} - ${denominacion}`;
+            }
+
+            // Limpiar y ocultar formulario
+            cancelarNuevaAduana();
+            alert('Aduana creada exitosamente');
+        } else {
+            alert(data.message || 'Error al crear la aduana');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al crear la aduana');
+    });
+};

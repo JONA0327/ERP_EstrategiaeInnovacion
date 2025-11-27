@@ -87,11 +87,11 @@ class AduanaImportService
         
         // Leer datos
         while (($data = fgetcsv($file)) !== FALSE) {
-            if (count($data) >= 2) {
+            if (count($data) >= 2 && !empty($data[0]) && is_numeric($data[0])) {
                 $rows[] = [
                     'aduana' => str_pad($data[0], 2, '0', STR_PAD_LEFT),
-                    'seccion' => isset($data[1]) ? $data[1] : '0',
-                    'denominacion' => isset($data[2]) ? $data[2] : $data[1]
+                    'seccion' => isset($data[1]) ? $this->cleanExcelValue($data[1]) : '0',
+                    'denominacion' => isset($data[2]) ? $this->cleanExcelValue($data[2]) : $this->cleanExcelValue($data[1])
                 ];
             }
         }
@@ -117,10 +117,12 @@ class AduanaImportService
             
             $rowData = [];
             foreach ($cellIterator as $cell) {
-                $rowData[] = $cell->getValue();
+                $value = $cell->getValue();
+                // Limpiar valores de error de Excel
+                $rowData[] = $this->cleanExcelValue($value);
             }
             
-            if (count($rowData) >= 2 && !empty($rowData[0])) {
+            if (count($rowData) >= 2 && !empty($rowData[0]) && is_numeric($rowData[0])) {
                 $rows[] = [
                     'aduana' => str_pad($rowData[0], 2, '0', STR_PAD_LEFT),
                     'seccion' => isset($rowData[1]) ? $rowData[1] : '0',
@@ -239,11 +241,16 @@ class AduanaImportService
             // Limpiar y normalizar datos
             $cleanRow = [
                 'aduana' => str_pad($row['aduana'], 2, '0', STR_PAD_LEFT),
-                'seccion' => $row['seccion'] ?: '0',
-                'denominacion' => trim(preg_replace('/\s+/', ' ', $row['denominacion'])),
+                'seccion' => $this->validateSeccion($row['seccion']),
+                'denominacion' => $this->cleanDenominacion($row['denominacion']),
                 'patente' => null, // Se puede completar manualmente después
                 'pais' => null     // Se puede completar manualmente después
             ];
+            
+            // Validar que la sección sea válida después de la limpieza
+            if (strlen($cleanRow['seccion']) > 1) {
+                continue; // Saltar filas con sección inválida
+            }
             
             // Evitar duplicados
             $key = $cleanRow['aduana'] . '_' . $cleanRow['seccion'];
@@ -280,5 +287,80 @@ class AduanaImportService
                                           })
                                           ->toArray()
         ];
+    }
+
+    /**
+     * Limpiar valores de Excel que pueden contener errores
+     */
+    private function cleanExcelValue($value)
+    {
+        // Si el valor es null o está vacío
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        // Convertir a string para procesar
+        $stringValue = (string) $value;
+
+        // Manejar errores comunes de Excel
+        $excelErrors = ['#VALUE!', '#N/A', '#REF!', '#DIV/0!', '#NUM!', '#NAME?', '#NULL!'];
+        
+        if (in_array($stringValue, $excelErrors)) {
+            return null;
+        }
+
+        // Limpiar espacios extra
+        return trim($stringValue);
+    }
+
+    /**
+     * Validar y limpiar el campo sección
+     */
+    private function validateSeccion($seccion)
+    {
+        // Si es null o vacío, usar '0' por defecto
+        if (empty($seccion)) {
+            return '0';
+        }
+
+        // Convertir a string y limpiar
+        $seccion = trim((string) $seccion);
+
+        // Si contiene errores de Excel, usar '0'
+        $excelErrors = ['#VALUE!', '#N/A', '#REF!', '#DIV/0!', '#NUM!', '#NAME?', '#NULL!'];
+        if (in_array($seccion, $excelErrors)) {
+            return '0';
+        }
+
+        // Solo permitir números de un dígito
+        if (preg_match('/^\d{1}$/', $seccion)) {
+            return $seccion;
+        }
+
+        // Si no es válido, usar '0' por defecto
+        return '0';
+    }
+
+    /**
+     * Limpiar y validar el campo denominación
+     */
+    private function cleanDenominacion($denominacion)
+    {
+        // Si es null o vacío
+        if (empty($denominacion)) {
+            return '';
+        }
+
+        // Convertir a string
+        $denominacion = (string) $denominacion;
+
+        // Manejar errores de Excel
+        $excelErrors = ['#VALUE!', '#N/A', '#REF!', '#DIV/0!', '#NUM!', '#NAME?', '#NULL!'];
+        if (in_array($denominacion, $excelErrors)) {
+            return '';
+        }
+
+        // Limpiar espacios múltiples y normalizar
+        return trim(preg_replace('/\s+/', ' ', $denominacion));
     }
 }

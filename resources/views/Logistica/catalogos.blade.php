@@ -70,6 +70,14 @@
                             Aduanas
                             <span class="ml-2 bg-purple-100 text-purple-600 py-0.5 px-2 rounded-full text-xs">{{ $aduanas->total() }}</span>
                         </button>
+                        <button data-tab="pedimentos" id="tab-pedimentos"
+                                class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Pedimentos
+                            <span class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">{{ $pedimentos->total() }}</span>
+                        </button>
                     </nav>
                 </div>
 
@@ -96,6 +104,43 @@
                             </div>
                         </div>
 
+                        <!-- Sección de importación de clientes -->
+                        <div id="clientes-import-section" class="mb-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-800">Importar Clientes desde Excel</h3>
+                                        <p class="text-xs text-gray-600">Carga masiva de clientes con asignación automática de ejecutivos</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="file" id="clientes-file-input" accept=".xlsx,.xls" class="hidden">
+                                    <button id="clientes-upload-btn" class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                        Cargar Excel
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Barra de progreso -->
+                            <div id="clientes-progress-container" class="mt-4 hidden">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                        <div id="clientes-progress-bar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                    <span id="clientes-progress-text" class="text-sm text-gray-600">0%</span>
+                                </div>
+                                <div id="clientes-progress-message" class="mt-2 text-sm text-gray-700"></div>
+                            </div>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
@@ -107,7 +152,9 @@
                                         @endif
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">ID</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Cliente</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Correos</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Ejecutivo Asignado</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Periodicidad</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Fecha Creación</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Acciones</th>
                                     </tr>
@@ -123,6 +170,19 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->id }}</td>
                                         <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $cliente->cliente }}</td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
+                                            @if($cliente->correos && count($cliente->correos) > 0)
+                                                <div class="space-y-1">
+                                                    @foreach($cliente->correos as $correo)
+                                                        <div class="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                                            {{ $correo }}
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400 text-xs">Sin correos</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
                                             @if($cliente->ejecutivoAsignado)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                     {{ $cliente->ejecutivoAsignado->nombre }}
@@ -131,6 +191,17 @@
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                                     Sin asignar
                                                 </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
+                                            @if($cliente->periodicidad_reporte)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                                    {{ $cliente->periodicidad_reporte === 'Diario' ? 'bg-red-100 text-red-800' : 
+                                                       ($cliente->periodicidad_reporte === 'Semanal' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800') }}">
+                                                    {{ $cliente->periodicidad_reporte }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 text-xs">No definida</span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->created_at->format('d/m/Y') }}</td>
@@ -170,7 +241,7 @@
 
                         @if($clientes->hasPages())
                         <div class="mt-6 flex justify-center">
-                            {{ $clientes->links() }}
+                            {{ $clientes->appends(['tab' => 'clientes'])->links() }}
                         </div>
                         @endif
                     </div>
@@ -238,7 +309,7 @@
 
                         @if($agentesAduanales->hasPages())
                         <div class="mt-6 flex justify-center">
-                            {{ $agentesAduanales->links() }}
+                            {{ $agentesAduanales->appends(['tab' => 'agentes'])->links() }}
                         </div>
                         @endif
                     </div>
@@ -313,7 +384,7 @@
 
                         @if($transportes->hasPages())
                         <div class="mt-6 flex justify-center">
-                            {{ $transportes->links() }}
+                            {{ $transportes->appends(['tab' => 'transportes'])->links() }}
                         </div>
                         @endif
                     </div>
@@ -323,8 +394,18 @@
                 <div id="ejecutivos-content" class="tab-content hidden">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-slate-800">Ejecutivos de Logística</h2>
-                            <p class="text-sm text-slate-600">Solo se muestran empleados del área de logística</p>
+                            <div>
+                                <h2 class="text-lg font-semibold text-slate-800">Ejecutivos de Logística</h2>
+                                <p class="text-sm text-slate-600">Solo se muestran empleados del área de logística</p>
+                            </div>
+                            @if(auth()->user() && auth()->user()->hasRole('admin'))
+                            <button id="searchEmployeeBtn" onclick="openSearchEmployeeModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                Buscar Empleado
+                            </button>
+                            @endif
                         </div>
 
                         <div class="overflow-x-auto">
@@ -369,7 +450,7 @@
 
                         @if($ejecutivos->hasPages())
                         <div class="mt-6 flex justify-center">
-                            {{ $ejecutivos->links() }}
+                            {{ $ejecutivos->appends(['tab' => 'ejecutivos'])->links() }}
                         </div>
                         @endif
                     </div>
@@ -381,6 +462,10 @@
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-lg font-semibold text-slate-800">Gestión de Aduanas</h2>
                             <div class="flex space-x-3">
+                                <button id="addAduanaBtn" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm">
+                                    <span class="mr-2 font-bold">+</span>
+                                    Añadir Aduana
+                                </button>
                                 <button id="clearAduanasBtn" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -391,7 +476,7 @@
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                     </svg>
-                                    Importar desde Word
+                                    Importar desde Archivo
                                 </button>
                             </div>
                         </div>
@@ -447,12 +532,20 @@
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-center">
-                                            <button onclick="eliminarAduana({{ $aduana->id }})"
-                                                    class="text-red-600 hover:text-red-800 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
+                                            <div class="flex justify-center space-x-2">
+                                                <button onclick="editarAduana({{ $aduana->id }}, '{{ $aduana->aduana }}', '{{ $aduana->seccion }}', '{{ addslashes($aduana->denominacion) }}', '{{ $aduana->patente }}', '{{ $aduana->pais }}')"
+                                                        class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button onclick="eliminarAduana({{ $aduana->id }})"
+                                                        class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     @empty
@@ -474,7 +567,143 @@
 
                         @if($aduanas->hasPages())
                         <div class="mt-6 flex justify-center">
-                            {{ $aduanas->links() }}
+                            {{ $aduanas->appends(['tab' => 'aduanas'])->links() }}
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Pedimentos Tab -->
+                <div id="pedimentos-content" class="tab-content hidden">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold text-slate-800">Gestión de Claves de Pedimentos</h2>
+                            <div class="flex space-x-3">
+                                <button id="addPedimentoBtn" onclick="openAddPedimentoModal()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm">
+                                    <span class="mr-2 font-bold">+</span>
+                                    Añadir Pedimento
+                                </button>
+                                <button id="clearPedimentosBtn" onclick="clearAllPedimentos()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Limpiar Todo
+                                </button>
+                                <button id="importPedimentosBtn" onclick="openImportPedimentosModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    Importar desde Archivo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress bar para importación -->
+                        <div id="importPedimentosProgress" class="hidden mb-6">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                    <span class="text-sm font-medium text-blue-800" id="progressPedimentosText">Procesando archivo...</span>
+                                </div>
+                                <div class="w-full bg-blue-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%" id="progressPedimentosBar"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estadísticas de pedimentos -->
+                        <div id="pedimentosStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-indigo-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-indigo-800">Total Pedimentos</h3>
+                                <p id="totalPedimentos" class="text-2xl font-bold text-indigo-600">{{ $pedimentos->total() }}</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-blue-800">Última Importación</h3>
+                                <p id="ultimaImportacionPedimentos" class="text-sm text-blue-600">-</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-green-800">Estado</h3>
+                                <p id="estadoImportacionPedimentos" class="text-sm text-green-600">Listo para importar</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Clave</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Categoría</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Subcategoría</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Descripción</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Fecha</th>
+                                        <th class="px-4 py-3 text-center text-sm font-semibold text-slate-700">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200" id="pedimentosTableBody">
+                                    @forelse($pedimentos as $pedimento)
+                                    <tr class="hover:bg-indigo-50/50 transition-colors">
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                {{ $pedimento->clave }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
+                                            @if($pedimento->categoria)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {{ $pedimento->categoria }}
+                                                </span>
+                                            @else
+                                                <span class="text-slate-400">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
+                                            @if($pedimento->subcategoria)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                                    {{ $pedimento->subcategoria }}
+                                                </span>
+                                            @else
+                                                <span class="text-slate-400">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ Str::limit($pedimento->descripcion, 80) }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $pedimento->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex justify-center space-x-2">
+                                                <button onclick="editarPedimento({{ $pedimento->id }}, '{{ $pedimento->clave }}', '{{ addslashes($pedimento->descripcion) }}', '{{ addslashes($pedimento->categoria ?? '') }}', '{{ addslashes($pedimento->subcategoria ?? '') }}')"
+                                                        class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button onclick="eliminarPedimento({{ $pedimento->id }})"
+                                                        class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-12 h-12 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                                <p class="mb-2">No hay claves de pedimentos registradas</p>
+                                                <p class="text-xs">Importa un archivo Word, Excel o CSV con las claves de pedimentos</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if($pedimentos->hasPages())
+                        <div class="mt-6 flex justify-center">
+                            {{ $pedimentos->appends(['tab' => 'pedimentos'])->links() }}
                         </div>
                         @endif
                     </div>
@@ -594,26 +823,28 @@
         <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
             <div class="modal-header p-6 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">Importar Aduanas desde Word</h3>
-                <p class="text-sm text-gray-600 mt-1">Sube un archivo .docx con la información de las aduanas</p>
+                <p class="text-sm text-gray-600 mt-1">Sube un archivo .xlsx con la información de las aduanas</p>
             </div>
 
             <form id="importAduanasForm" class="p-6" enctype="multipart/form-data">
                 <div class="mb-6">
                     <label for="aduanasFile" class="block text-sm font-medium text-gray-700 mb-2">Archivo de Aduanas</label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                            <div class="flex text-sm text-gray-600">
-                                <label for="aduanasFile" class="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-purple-500">
-                                    <span>Seleccionar archivo</span>
-                                    <input id="aduanasFile" name="file" type="file" accept=".docx,.doc,.csv,.xlsx,.xls" class="sr-only" required>
-                                </label>
-                                <p class="pl-1">o arrastrar aquí</p>
-                            </div>
-                            <p class="text-xs text-gray-500">DOC, DOCX, CSV, XLS, XLSX hasta 10MB</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="mt-4">
+                            <label for="aduanasFile" class="cursor-pointer">
+                                <span class="mt-2 block text-sm font-medium text-gray-900">
+                                    Selecciona un archivo de aduanas o arrastra aquí
+                                </span>
+                                <input id="aduanasFile" name="file" type="file" class="sr-only" accept=".xlsx,.xls" required>
+                            </label>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Formatos compatibles: Word (.docx), Excel (.xlsx), CSV (.csv)
+                            </p>
                         </div>
+                        <div id="selectedFileName" class="mt-3 text-sm text-green-600 hidden"></div>
                     </div>
                     <div id="selectedFileName" class="mt-2 text-sm text-gray-600 hidden"></div>
                 </div>
@@ -630,17 +861,404 @@
                     <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" id="importBtn" class="btn-primary px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                    <button type="submit" id="importAduanasBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                         <span class="import-text">Importar Aduanas</span>
-                        <span class="loading-text hidden">Procesando...</span>
+                        <span class="loading-text hidden">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Importando...
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Modal para Añadir Nueva Aduana -->
+    <div id="addAduanaModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Añadir Nueva Aduana</h3>
+                <p class="text-sm text-gray-600 mt-1">Completa los datos de la nueva aduana</p>
+            </div>
+
+            <form id="addAduanaForm" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="aduanaCodigo" class="block text-sm font-medium text-gray-700 mb-2">Código de Aduana *</label>
+                        <input type="text" id="aduanaCodigo" name="aduana" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                               placeholder="01-99" maxlength="2" pattern="[0-9]{2}">
+                        <p class="text-xs text-gray-500 mt-1">2 dígitos (01-99)</p>
+                    </div>
+                    <div>
+                        <label for="aduanaSeccion" class="block text-sm font-medium text-gray-700 mb-2">Sección</label>
+                        <input type="text" id="aduanaSeccion" name="seccion" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                               placeholder="0-9" maxlength="1" value="0" pattern="[0-9]{1}">
+                        <p class="text-xs text-gray-500 mt-1">1 dígito (0-9)</p>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="aduanaDenominacion" class="block text-sm font-medium text-gray-700 mb-2">Denominación *</label>
+                    <input type="text" id="aduanaDenominacion" name="denominacion" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                           placeholder="Nombre completo de la aduana">
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveAduanaBtn" class="btn-primary px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                        <span class="save-text">Guardar Aduana</span>
+                        <span class="loading-text hidden">Guardando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Aduana -->
+    <div id="editAduanaModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Editar Aduana</h3>
+                <p class="text-sm text-gray-600 mt-1">Modifica los datos de la aduana</p>
+            </div>
+
+            <form id="editAduanaForm" class="p-6">
+                <input type="hidden" id="editAduanaId" name="id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="editAduanaCodigo" class="block text-sm font-medium text-gray-700 mb-2">Código de Aduana *</label>
+                        <input type="text" id="editAduanaCodigo" name="aduana" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="01-99" maxlength="2" pattern="[0-9]{2}">
+                        <p class="text-xs text-gray-500 mt-1">2 dígitos (01-99)</p>
+                    </div>
+                    <div>
+                        <label for="editAduanaSeccion" class="block text-sm font-medium text-gray-700 mb-2">Sección</label>
+                        <input type="text" id="editAduanaSeccion" name="seccion" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="0-9" maxlength="1" pattern="[0-9]{1}">
+                        <p class="text-xs text-gray-500 mt-1">1 dígito (0-9)</p>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="editAduanaDenominacion" class="block text-sm font-medium text-gray-700 mb-2">Denominación *</label>
+                    <input type="text" id="editAduanaDenominacion" name="denominacion" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="Nombre completo de la aduana">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="editAduanaPatente" class="block text-sm font-medium text-gray-700 mb-2">Patente</label>
+                        <input type="text" id="editAduanaPatente" name="patente" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="Número de patente (opcional)">
+                    </div>
+                    <div>
+                        <label for="editAduanaPais" class="block text-sm font-medium text-gray-700 mb-2">País</label>
+                        <input type="text" id="editAduanaPais" name="pais" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="País (opcional)" value="MX">
+                    </div>
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="updateAduanaBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <span class="update-text">Actualizar Aduana</span>
+                        <span class="loading-text hidden">Actualizando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Importar Pedimentos -->
+    <div id="importPedimentosModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Importar Claves de Pedimentos</h3>
+                <p class="text-sm text-gray-600 mt-1">Sube un archivo con las claves y descripciones de pedimentos</p>
+            </div>
+
+            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data">
+                <div class="mb-6">
+                    <label for="pedimentosFile" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo de Pedimentos</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="mt-4">
+                            <label for="pedimentosFile" class="cursor-pointer">
+                                <span class="mt-2 block text-sm font-medium text-gray-900">
+                                    Selecciona un archivo de pedimentos o arrastra aquí
+                                </span>
+                                <input id="pedimentosFile" name="file" type="file" class="sr-only" accept=".xlsx,.xls" required>
+                            </label>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Formatos compatibles: Excel (.xlsx, .xls)
+                            </p>
+                        </div>
+                        <div id="selectedPedimentosFileName" class="mt-3 text-sm text-green-600 hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div id="importPedimentosProgressModal" class="hidden mb-4">
+                    <div class="flex items-center mb-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
+                        <span class="text-sm text-indigo-600" id="progressPedimentosTextModal">Procesando...</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 0%" id="progressPedimentosBarModal"></div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-sm font-medium text-indigo-800 mb-2">Formato esperado:</h4>
+                    <div class="text-xs text-indigo-700">
+                        <p>• Clave + separador + descripción</p>
+                        <p>• Ejemplo: <code class="bg-indigo-100 px-1 rounded">A1 - IMPORTACIÓN O EXPORTACIÓN DEFINITIVA</code></p>
+                        <p>• También: <code class="bg-indigo-100 px-1 rounded">C1, IMPORTACIÓN DEFINITIVA A LA FRANJA</code></p>
+                    </div>
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeImportPedimentosModal()" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="importPedimentosBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <span class="import-text">Importar Pedimentos</span>
+                        <span class="loading-text hidden">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Importando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Añadir Nuevo Pedimento -->
+    <div id="addPedimentoModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Añadir Nuevo Pedimento</h3>
+                <p class="text-sm text-gray-600 mt-1">Completa los datos del nuevo pedimento</p>
+            </div>
+
+            <form id="addPedimentoForm" class="p-6">
+                <div class="mb-4">
+                    <label for="pedimentoClave" class="block text-sm font-medium text-gray-700 mb-2">Clave *</label>
+                    <input type="text" id="pedimentoClave" name="clave" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                           placeholder="A1, C1, etc." maxlength="10">
+                    <p class="text-xs text-gray-500 mt-1">Ejemplo: A1, C1, F1, etc.</p>
+                </div>
+                <div class="mb-4">
+                    <label for="pedimentoCategoria" class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                    <input type="text" id="pedimentoCategoria" name="categoria"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                           placeholder="DEPOSITO FISCAL, INDUSTRIA AUTOMOTRIZ, etc." maxlength="255">
+                    <p class="text-xs text-gray-500 mt-1">Opcional: Categoría principal del pedimento</p>
+                </div>
+                <div class="mb-4">
+                    <label for="pedimentoSubcategoria" class="block text-sm font-medium text-gray-700 mb-2">Subcategoría</label>
+                    <input type="text" id="pedimentoSubcategoria" name="subcategoria"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                           placeholder="AGD, IA, etc." maxlength="255">
+                    <p class="text-xs text-gray-500 mt-1">Opcional: Subcategoría o código de la categoría</p>
+                </div>
+                <div class="mb-4">
+                    <label for="pedimentoDescripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
+                    <textarea id="pedimentoDescripcion" name="descripcion" required rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                              placeholder="Descripción completa del pedimento"></textarea>
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeAddPedimentoModal()" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="savePedimentoBtn" class="btn-primary px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                        <span class="save-text">Guardar Pedimento</span>
+                        <span class="loading-text hidden">Guardando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Pedimento -->
+    <div id="editPedimentoModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="modal-header p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Editar Pedimento</h3>
+                <p class="text-sm text-gray-600 mt-1">Modifica los datos del pedimento</p>
+            </div>
+
+            <form id="editPedimentoForm" class="p-6">
+                <input type="hidden" id="editPedimentoId" name="id">
+                <div class="mb-4">
+                    <label for="editPedimentoClave" class="block text-sm font-medium text-gray-700 mb-2">Clave *</label>
+                    <input type="text" id="editPedimentoClave" name="clave" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="A1, C1, etc." maxlength="10">
+                    <p class="text-xs text-gray-500 mt-1">Ejemplo: A1, C1, F1, etc.</p>
+                </div>
+                <div class="mb-4">
+                    <label for="editPedimentoCategoria" class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                    <input type="text" id="editPedimentoCategoria" name="categoria"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="DEPOSITO FISCAL, INDUSTRIA AUTOMOTRIZ, etc." maxlength="255">
+                    <p class="text-xs text-gray-500 mt-1">Opcional: Categoría principal del pedimento</p>
+                </div>
+                <div class="mb-4">
+                    <label for="editPedimentoSubcategoria" class="block text-sm font-medium text-gray-700 mb-2">Subcategoría</label>
+                    <input type="text" id="editPedimentoSubcategoria" name="subcategoria"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="AGD, IA, etc." maxlength="255">
+                    <p class="text-xs text-gray-500 mt-1">Opcional: Subcategoría o código de la categoría</p>
+                </div>
+                <div class="mb-4">
+                    <label for="editPedimentoDescripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
+                    <textarea id="editPedimentoDescripcion" name="descripcion" required rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                              placeholder="Descripción completa del pedimento"></textarea>
+                </div>
+
+                <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeEditPedimentoModal()" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="updatePedimentoBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <span class="update-text">Actualizar Pedimento</span>
+                        <span class="loading-text hidden">Actualizando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- Modal de Confirmación Reutilizable -->
+<div id="confirmModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-all duration-300">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <h3 id="confirmModalTitle" class="text-lg font-semibold text-gray-900">Confirmar Acción</h3>
+                </div>
+                <button onclick="closeConfirmModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mensaje -->
+            <div class="mb-6">
+                <p id="confirmModalMessage" class="text-gray-700"></p>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmModalBtn" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                    <span class="confirm-text">Eliminar</span>
+                    <span class="loading-text hidden">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Eliminando...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Modal de Confirmación -->
+
+<!-- Modal de Búsqueda de Empleados -->
+@if(auth()->user() && auth()->user()->hasRole('admin'))
+<div id="searchEmployeeModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform scale-95 transition-all duration-300">
+        <div class="modal-header p-6 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Buscar Empleado para Agregar como Ejecutivo</h3>
+            <p class="text-sm text-gray-600 mt-1">Busca empleados en la base de datos para agregarlos como ejecutivos de logística</p>
+        </div>
+
+        <div class="p-6">
+            <!-- Barra de búsqueda -->
+            <div class="mb-6">
+                <div class="relative">
+                    <input type="text" id="employeeSearchInput" placeholder="Buscar por nombre, ID empleado o correo..." 
+                           class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados de búsqueda -->
+            <div id="searchResults" class="hidden">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Resultados de búsqueda:</h4>
+                <div id="searchResultsList" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                    <!-- Los resultados se cargarán aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="searchLoading" class="hidden text-center py-8">
+                <svg class="animate-spin h-8 w-8 mx-auto text-indigo-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-sm text-gray-600 mt-2">Buscando empleados...</p>
+            </div>
+
+            <!-- Estado inicial -->
+            <div id="searchInitialState" class="text-center py-12">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <p class="text-gray-500">Escribe en la barra de búsqueda para encontrar empleados</p>
+            </div>
+        </div>
+
+        <div class="modal-footer flex justify-end space-x-3 p-6 border-t border-gray-200">
+            <button type="button" onclick="closeSearchEmployeeModal()" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/Logistica/catalogos.js') }}"></script>
+<script src="{{ asset('js/Logistica/catalogos.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/Logistica/clientes-import.js') }}"></script>
 @endpush

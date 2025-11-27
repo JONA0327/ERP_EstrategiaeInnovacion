@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Logistica;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Models\Logistica\OperacionLogistica;
 use App\Models\Logistica\Cliente;
 use App\Models\Logistica\AgenteAduanal;
@@ -11,8 +12,12 @@ use App\Models\Logistica\Transporte;
 use App\Models\Logistica\PostOperacion;
 use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
+use App\Models\Logistica\Aduana;
+use App\Models\Logistica\Pedimento;
 use App\Models\Empleado;
 use App\Services\WordDocumentService;
+use App\Services\ClienteImportService;
+use App\Services\PedimentoImportService;
 
 class OperacionLogisticaController extends Controller
 {
@@ -60,8 +65,9 @@ class OperacionLogisticaController extends Controller
             ->orderBy('nombre')
             ->get();
         $transportes = Transporte::orderBy('transporte')->get();
+        $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->get();
 
-        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes'));
+        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas'));
     }
 
     public function catalogos()
@@ -73,6 +79,9 @@ class OperacionLogisticaController extends Controller
 
         // Agregar aduanas
         $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->paginate(15, ['*'], 'aduanas_page');
+
+        // Agregar pedimentos
+        $pedimentos = \App\Models\Logistica\Pedimento::orderBy('clave')->paginate(15, ['*'], 'pedimentos_page');
 
         // Solo empleados del área de logística
         $ejecutivos = Empleado::where(function($query) {
@@ -94,7 +103,7 @@ class OperacionLogisticaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas'));
+        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos'));
     }
 
     public function create()
@@ -387,8 +396,10 @@ class OperacionLogisticaController extends Controller
         try {
             $cliente = Cliente::findOrFail($id);
 
-            // Verificar si tiene operaciones asociadas
-            if ($cliente->operaciones()->count() > 0) {
+            // Verificar si tiene operaciones asociadas por el campo texto 'cliente'
+            $operacionesAsociadas = OperacionLogistica::where('cliente', $cliente->cliente)->count();
+            
+            if ($operacionesAsociadas > 0) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se puede eliminar el cliente porque tiene operaciones asociadas'
@@ -1563,6 +1574,236 @@ class OperacionLogisticaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al generar el reporte: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Buscar empleados para agregar como ejecutivos
+     */
+    public function searchEmployees(Request $request)
+    {
+        try {
+            $search = $request->get('search', '');
+            
+            if (strlen($search) < 2) {
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+
+            // Buscar empleados que no sean ya ejecutivos de logística
+            $empleadosEjecutivos = Empleado::where('area', 'Logistica')->pluck('id');
+            
+            $empleados = Empleado::where(function($query) use ($search) {
+                $query->where('nombre', 'like', "%{$search}%")
+                      ->orWhere('id_empleado', 'like', "%{$search}%")
+                      ->orWhere('correo', 'like', "%{$search}%");
+            })
+            ->whereNotIn('id', $empleadosEjecutivos)
+            ->limit(20)
+            ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $empleados
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al buscar empleados: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Agregar empleado como ejecutivo de logística
+     */
+    public function addEjecutivo(Request $request)
+    {
+        try {
+            $request->validate([
+                'empleado_id' => 'required|exists:empleados,id'
+            ]);
+
+            $empleado = Empleado::findOrFail($request->empleado_id);
+            
+            // Verificar que no sea ya ejecutivo de logística
+            if ($empleado->area === 'Logistica') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este empleado ya es ejecutivo de logística'
+                ], 422);
+            }
+
+            // Actualizar el área del empleado a Logística
+            $empleado->update([
+                'area' => 'Logistica'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empleado agregado como ejecutivo de logística exitosamente',
+                'empleado' => $empleado
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al agregar ejecutivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function checkAduanas()
+    {
+        try {
+            $count = Aduana::count();
+            
+            return response()->json([
+                'success' => true,
+                'exists' => $count > 0,
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar aduanas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function checkPedimentos()
+    {
+        try {
+            $count = Pedimento::count();
+            
+            return response()->json([
+                'success' => true,
+                'exists' => $count > 0,
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar pedimentos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // === MÉTODOS DE IMPORTACIÓN DE CLIENTES ===
+    
+    public function importClientes(Request $request)
+    {
+        try {
+            $request->validate([
+                'clientes_file' => 'required|file|mimes:xlsx,xls|max:10240' // 10MB máximo
+            ]);
+            
+            $file = $request->file('clientes_file');
+            $filename = 'clientes_' . time() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('uploads/clientes', $filename, 'local');
+            $fullPath = storage_path('app/' . $filePath);
+            
+            Log::info("Iniciando importación de clientes desde archivo: {$filename}");
+            
+            $importService = new ClienteImportService();
+            $resultados = $importService->importFromExcel($fullPath);
+            
+            // Limpiar archivo temporal
+            unlink($fullPath);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Importación completada exitosamente',
+                'resultados' => $resultados
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error en importación de clientes: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar clientes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function checkClientes()
+    {
+        try {
+            $count = Cliente::whereNotNull('fecha_carga_excel')->count();
+            
+            return response()->json([
+                'success' => true,
+                'exists' => $count > 0,
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar clientes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // === MÉTODOS DE IMPORTACIÓN DE PEDIMENTOS ===
+    
+    public function importPedimentos(Request $request)
+    {
+        try {
+            // Debug: Registrar todos los datos de la request
+            Log::info('Datos de la request de pedimentos:', [
+                'files' => array_keys($request->allFiles()),
+                'has_pedimentos_file' => $request->hasFile('pedimentos_file'),
+                'has_file' => $request->hasFile('file'),
+                'all_keys' => array_keys($request->all())
+            ]);
+            
+            // Validar que existe uno de los dos posibles nombres de campo
+            $request->validate([
+                'pedimentos_file' => 'sometimes|file|mimes:xlsx,xls|max:10240',
+                'file' => 'sometimes|file|mimes:xlsx,xls|max:10240'
+            ]);
+            
+            // Buscar el archivo en cualquiera de los dos campos
+            $file = $request->file('pedimentos_file') ?? $request->file('file');
+            
+            if (!$file) {
+                throw new \Exception('No se ha proporcionado ningún archivo de pedimentos.');
+            }
+            $filename = 'pedimentos_' . time() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('uploads/pedimentos', $filename, 'local');
+            $fullPath = storage_path('app/' . $filePath);
+            
+            Log::info("Iniciando importación de pedimentos desde archivo: {$filename}");
+            
+            $importService = new \App\Services\PedimentoImportService();
+            $resultados = $importService->import($fullPath);
+            
+            // Limpiar archivo temporal
+            unlink($fullPath);
+            
+            if ($resultados['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $resultados['message'] ?? 'Importación completada exitosamente',
+                    'resultados' => $resultados
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $resultados['message'] ?? 'Error en la importación',
+                    'errors' => $resultados['errors'] ?? []
+                ], 400);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error("Error en importación de pedimentos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar pedimentos: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -15,6 +15,14 @@ class Cliente extends Model
     protected $fillable = [
         'cliente',
         'ejecutivo_asignado_id',
+        'correos',
+        'periodicidad_reporte',
+        'fecha_carga_excel',
+    ];
+
+    protected $casts = [
+        'correos' => 'array',
+        'fecha_carga_excel' => 'datetime',
     ];
 
     public function ejecutivoAsignado()
@@ -22,8 +30,22 @@ class Cliente extends Model
         return $this->belongsTo(Empleado::class, 'ejecutivo_asignado_id');
     }
 
-    public function operaciones()
+    // Método helper para obtener correos como string separados por comas
+    public function getCorreosStringAttribute()
     {
-        return $this->hasMany(OperacionLogistica::class, 'cliente_id');
+        return $this->correos ? implode(', ', $this->correos) : '';
     }
+
+    // Método para agregar un correo
+    public function addCorreo($correo)
+    {
+        $correos = $this->correos ?? [];
+        if (!in_array($correo, $correos)) {
+            $correos[] = $correo;
+            $this->correos = $correos;
+        }
+    }
+
+    // Nota: La relación con operaciones_logisticas fue eliminada porque 
+    // la tabla usa un campo de texto 'cliente' en lugar de cliente_id foreign key
 }

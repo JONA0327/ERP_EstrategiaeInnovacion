@@ -487,16 +487,68 @@
                                     <input type="text" name="no_factura" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Clave *</label>
-                                    <input type="text" name="clave" required class="form-input">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-sm font-medium text-slate-700">Aduana *</label>
+                                        <button type="button" onclick="mostrarNuevaAduana()"
+                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                            + Nueva aduana
+                                        </button>
+                                    </div>
+                                    <input type="text" name="aduana" required class="form-input" placeholder="Código y nombre de la aduana" list="aduanasList">
+                                    <datalist id="aduanasList">
+                                        @foreach($aduanas ?? [] as $aduana)
+                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}">
+                                        @endforeach
+                                    </datalist>
+                                    <!-- Formulario para nueva aduana -->
+                                    <div id="nuevaAduanaForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                            <input type="text" id="nuevaAduanaCodigo" placeholder="Cód. (01-99)" class="form-input text-sm" maxlength="2">
+                                            <input type="text" id="nuevaAduanaSeccion" placeholder="Sección (0-9)" class="form-input text-sm" maxlength="1" value="0">
+                                            <input type="text" id="nuevaAduanaDenominacion" placeholder="Denominación" class="form-input text-sm">
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button type="button" onclick="guardarNuevaAduana()"
+                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
+                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                            <button type="button" onclick="cancelarNuevaAduana()"
+                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Referencia Interna *</label>
                                     <input type="text" name="referencia_interna" required class="form-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Aduana *</label>
-                                    <input type="text" name="aduana" required class="form-input">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-sm font-medium text-slate-700">Aduana *</label>
+                                        <button type="button" onclick="mostrarNuevaAduana()"
+                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                            + Nueva aduana
+                                        </button>
+                                    </div>
+                                    <input type="text" name="aduana" required class="form-input" placeholder="Código y nombre de la aduana" list="aduanasList">
+                                    <datalist id="aduanasList">
+                                        @foreach($aduanas ?? [] as $aduana)
+                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}">
+                                        @endforeach
+                                    </datalist>
+                                    <!-- Formulario para nueva aduana -->
+                                    <div id="nuevaAduanaForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                            <input type="text" id="nuevaAduanaCodigo" placeholder="Cód. (01-99)" class="form-input text-sm" maxlength="2">
+                                            <input type="text" id="nuevaAduanaSeccion" placeholder="Sección (0-9)" class="form-input text-sm" maxlength="1" value="0">
+                                            <input type="text" id="nuevaAduanaDenominacion" placeholder="Denominación" class="form-input text-sm">
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button type="button" onclick="guardarNuevaAduana()"
+                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
+                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                            <button type="button" onclick="cancelarNuevaAduana()"
+                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Target (días)</label>

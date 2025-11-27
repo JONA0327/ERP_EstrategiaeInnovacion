@@ -42,6 +42,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
     Route::get('/logistica/matriz-seguimiento', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'index'])->name('logistica.matriz-seguimiento');
     Route::get('/logistica/catalogos', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'catalogos'])->name('logistica.catalogos');
+    Route::get('/test-routes', function () { return view('test_routes'); });
     Route::get('/logistica/operaciones/create', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'create'])->name('logistica.operaciones.create');
     Route::post('/logistica/operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'store'])->name('logistica.operaciones.store');
     Route::get('/logistica/transportes-por-tipo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getTransportesPorTipo'])->name('logistica.transportes-por-tipo');
@@ -92,9 +93,35 @@ Route::middleware(['auth','area.logistica'])->group(function () {
 
     // Rutas para Aduanas
     Route::get('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'index']);
+    Route::post('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'store']);
+    Route::put('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'update']);
     Route::post('/logistica/aduanas/import', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'import']);
     Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'destroy']);
     Route::delete('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'clear']);
+
+    // Rutas para Pedimentos
+    Route::get('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'index']);
+    Route::post('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'store']);
+    Route::put('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'update']);
+    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos']);
+    Route::delete('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'destroy']);
+    Route::delete('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'clear']);
+    Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
+    Route::get('/logistica/pedimentos/subcategorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getSubcategorias']);
+    
+    // Rutas para verificar existencia de datos
+    Route::get('/logistica/aduanas/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkAduanas']);
+    Route::get('/logistica/pedimentos/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkPedimentos']);
+    
+    // Rutas para importación de clientes
+    Route::post('/logistica/clientes/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importClientes']);
+    Route::get('/logistica/clientes/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkClientes']);
+    
+    // Rutas para búsqueda de empleados (solo admin)
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::get('/logistica/empleados/search', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'searchEmployees']);
+        Route::post('/logistica/empleados/add-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'addEjecutivo']);
+    });
 
     // Rutas para Reportes Word
     Route::get('/logistica/operaciones/{id}/reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteWord'])->name('logistica.operaciones.reporte-word');
