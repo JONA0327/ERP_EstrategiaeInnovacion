@@ -3,6 +3,27 @@
  * Manejo de tabs, modales de edición y eliminación
  */
 
+// Helper para obtener token CSRF
+function getCsrfToken() {
+    const token = document.querySelector('meta[name="csrf-token"]');
+    if (!token) {
+        console.error('CSRF token no encontrado en la página');
+        return null;
+    }
+    return token.getAttribute('content');
+}
+
+// Helper para crear headers con CSRF
+function getAuthHeaders() {
+    const token = getCsrfToken();
+    return token ? {
+        'X-CSRF-TOKEN': token,
+        'Accept': 'application/json'
+    } : {
+        'Accept': 'application/json'
+    };
+}
+
 class CatalogosMaestros {
     constructor() {
         this.activeTab = 'clientes';
@@ -332,6 +353,7 @@ class CatalogosMaestros {
 
             const response = await fetch(url, {
                 method: 'POST', // Siempre POST debido a Laravel form method spoofing
+                headers: getAuthHeaders(),
                 body: formData
             });
 
@@ -364,6 +386,7 @@ class CatalogosMaestros {
 
             const response = await fetch(url, {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData
             });
 
@@ -576,6 +599,7 @@ class CatalogosMaestros {
 
             const response = await fetch('/logistica/clientes/asignar-ejecutivo', {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData
             });
 
@@ -738,6 +762,7 @@ async function importAduanas() {
 
         const response = await fetch('/logistica/aduanas/import', {
             method: 'POST',
+            headers: getAuthHeaders(),
             body: formData
         });
 
@@ -751,12 +776,21 @@ async function importAduanas() {
         const contentType = response.headers.get('content-type');
         let data;
         
+        if (response.status === 419) {
+            throw new Error('Sesión expirada. Por favor, recarga la página e inténtalo de nuevo.');
+        }
+        
         if (contentType && contentType.includes('application/json')) {
             data = await response.json();
         } else {
             // Si no es JSON, probablemente es una página de error HTML
             const text = await response.text();
             console.error('Respuesta no JSON:', text);
+            
+            if (text.includes('Page Expired')) {
+                throw new Error('Sesión expirada (CSRF). Por favor, recarga la página e inténtalo de nuevo.');
+            }
+            
             throw new Error('El servidor devolvió una respuesta inválida (no JSON)');
         }
 
@@ -770,10 +804,18 @@ async function importAduanas() {
             }, 500);
         } else {
             showAlert(data.message || 'Error en la importación.', 'error');
+            // Cerrar modal también cuando hay error
+            setTimeout(() => {
+                closeImportAduanasModal();
+            }, 1500);
         }
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error de conexión durante la importación.', 'error');
+        // Cerrar modal también en caso de excepción
+        setTimeout(() => {
+            closeImportAduanasModal();
+        }, 1500);
     } finally {
         // Ocultar progress bar
         if (progressContainer) {

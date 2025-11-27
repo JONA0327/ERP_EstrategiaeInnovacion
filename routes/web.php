@@ -95,6 +95,11 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::post('/logistica/aduanas/import', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'import']);
     Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'destroy']);
     Route::delete('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'clear']);
+
+    // Rutas para Reportes Word
+    Route::get('/logistica/operaciones/{id}/reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteWord'])->name('logistica.operaciones.reporte-word');
+    Route::post('/logistica/operaciones/reporte-multiple-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteMultiple'])->name('logistica.operaciones.reporte-multiple-word');
+    Route::get('/logistica/operaciones/{id}/guardar-reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'guardarReporteWord'])->name('logistica.operaciones.guardar-reporte-word');
 });
 
 // Rutas de autenticación

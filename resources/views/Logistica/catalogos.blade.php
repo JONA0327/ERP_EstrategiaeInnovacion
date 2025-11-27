@@ -463,7 +463,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                                                 </svg>
                                                 <p class="mb-2">No hay aduanas registradas</p>
-                                                <p class="text-xs">Importa un archivo Word con la información de aduanas</p>
+                                                <p class="text-xs">Importa un archivo Word, Excel o CSV con la información de aduanas</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -599,7 +599,7 @@
 
             <form id="importAduanasForm" class="p-6" enctype="multipart/form-data">
                 <div class="mb-6">
-                    <label for="aduanasFile" class="block text-sm font-medium text-gray-700 mb-2">Archivo Word (.docx)</label>
+                    <label for="aduanasFile" class="block text-sm font-medium text-gray-700 mb-2">Archivo de Aduanas</label>
                     <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                         <div class="space-y-1 text-center">
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -608,11 +608,11 @@
                             <div class="flex text-sm text-gray-600">
                                 <label for="aduanasFile" class="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-purple-500">
                                     <span>Seleccionar archivo</span>
-                                    <input id="aduanasFile" name="file" type="file" accept=".docx,.doc" class="sr-only" required>
+                                    <input id="aduanasFile" name="file" type="file" accept=".docx,.doc,.csv,.xlsx,.xls" class="sr-only" required>
                                 </label>
                                 <p class="pl-1">o arrastrar aquí</p>
                             </div>
-                            <p class="text-xs text-gray-500">DOC, DOCX hasta 10MB</p>
+                            <p class="text-xs text-gray-500">DOC, DOCX, CSV, XLS, XLSX hasta 10MB</p>
                         </div>
                     </div>
                     <div id="selectedFileName" class="mt-2 text-sm text-gray-600 hidden"></div>

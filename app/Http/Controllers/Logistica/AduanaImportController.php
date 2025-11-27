@@ -25,19 +25,36 @@ class AduanaImportController extends Controller
         try {
             // Validar el archivo subido
             $request->validate([
-                'file' => 'required|file|mimes:docx,doc|max:10240' // Máximo 10MB
+                'file' => 'required|file|mimes:docx,doc,csv,xlsx,xls|max:10240' // Máximo 10MB
             ]);
 
             // Guardar el archivo temporalmente
             $file = $request->file('file');
-            $path = $file->storeAs('temp/imports', 'aduanas_' . time() . '.' . $file->getClientOriginalExtension());
+            $fileName = 'aduanas_' . time() . '.' . $file->getClientOriginalExtension();
+            
+            // Asegurarse de que el directorio existe
+            $tempDir = storage_path('app/temp/imports');
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            
+            $path = $file->storeAs('temp/imports', $fileName);
             $fullPath = storage_path('app/' . $path);
+
+            // Verificar que el archivo se guardó correctamente
+            if (!file_exists($fullPath)) {
+                throw new \Exception("Error al guardar el archivo temporal en: {$fullPath}");
+            }
+
+            \Log::info("Procesando archivo de aduanas: {$fullPath}");
 
             // Procesar la importación
             $result = $this->aduanaImportService->import($fullPath);
 
-            // Limpiar el archivo temporal
-            Storage::delete($path);
+            // Limpiar el archivo temporal solo si el procesamiento fue exitoso
+            if (file_exists($fullPath)) {
+                Storage::delete($path);
+            }
 
             return response()->json($result);
 

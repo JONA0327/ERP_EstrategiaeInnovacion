@@ -12,6 +12,7 @@ use App\Models\Logistica\PostOperacion;
 use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Empleado;
+use App\Services\WordDocumentService;
 
 class OperacionLogisticaController extends Controller
 {
@@ -1427,6 +1428,142 @@ class OperacionLogisticaController extends Controller
 
         } catch (\Exception $e) {
             \Log::error("Error en verificación automática de status: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generar reporte Word de una operación específica
+     */
+    public function generarReporteWord($id)
+    {
+        try {
+            $operacion = OperacionLogistica::with([
+                'ejecutivo', 
+                'cliente', 
+                'agenteAduanal', 
+                'transporte', 
+                'postOperaciones',
+                'historial' => function($query) {
+                    $query->orderBy('created_at', 'desc')->limit(20);
+                }
+            ])->findOrFail($id);
+
+            $wordService = new WordDocumentService();
+            $wordService->crearReporteOperacion($operacion);
+            
+            $nombreArchivo = 'reporte_operacion_' . ($operacion->numero_operacion ?? $operacion->id) . '_' . date('Y-m-d_H-i-s') . '.docx';
+            
+            // Descargar directamente
+            $wordService->descargar($nombreArchivo);
+            
+        } catch (\Exception $e) {
+            \Log::error("Error generando reporte Word: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el reporte: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar reporte Word de múltiples operaciones (con filtros)
+     */
+    public function generarReporteMultiple(Request $request)
+    {
+        try {
+            $query = OperacionLogistica::with(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte']);
+
+            // Aplicar filtros si existen
+            if ($request->filled('cliente_id')) {
+                $query->where('cliente_id', $request->cliente_id);
+            }
+            
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            
+            if ($request->filled('fecha_desde')) {
+                $query->whereDate('created_at', '>=', $request->fecha_desde);
+            }
+            
+            if ($request->filled('fecha_hasta')) {
+                $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            }
+
+            if ($request->filled('ejecutivo_id')) {
+                $query->where('ejecutivo_id', $request->ejecutivo_id);
+            }
+
+            // Limitar a máximo 100 operaciones para evitar documentos muy grandes
+            $operaciones = $query->orderBy('created_at', 'desc')->limit(100)->get();
+
+            if ($operaciones->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontraron operaciones con los filtros aplicados'
+                ], 404);
+            }
+
+            $wordService = new WordDocumentService();
+            
+            $titulo = 'REPORTE DE OPERACIONES LOGÍSTICAS';
+            if ($request->filled('cliente_id')) {
+                $cliente = \App\Models\Logistica\Cliente::find($request->cliente_id);
+                $titulo .= ' - ' . ($cliente->cliente ?? 'Cliente');
+            }
+            
+            $wordService->crearReporteMultiple($operaciones, $titulo);
+            
+            $nombreArchivo = 'reporte_operaciones_' . date('Y-m-d_H-i-s') . '.docx';
+            
+            // Descargar directamente
+            $wordService->descargar($nombreArchivo);
+            
+        } catch (\Exception $e) {
+            \Log::error("Error generando reporte múltiple Word: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el reporte: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Guardar reporte Word en servidor (para uso posterior)
+     */
+    public function guardarReporteWord($id)
+    {
+        try {
+            $operacion = OperacionLogistica::with([
+                'ejecutivo', 
+                'cliente', 
+                'agenteAduanal', 
+                'transporte', 
+                'postOperaciones',
+                'historial' => function($query) {
+                    $query->orderBy('created_at', 'desc')->limit(20);
+                }
+            ])->findOrFail($id);
+
+            $wordService = new WordDocumentService();
+            $wordService->crearReporteOperacion($operacion);
+            
+            $nombreArchivo = 'reporte_operacion_' . ($operacion->numero_operacion ?? $operacion->id) . '_' . date('Y-m-d_H-i-s');
+            
+            $resultado = $wordService->guardar($nombreArchivo);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Reporte generado exitosamente',
+                'data' => $resultado
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error("Error guardando reporte Word: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el reporte: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

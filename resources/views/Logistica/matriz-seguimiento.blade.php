@@ -64,6 +64,12 @@
                             </svg>
                             Gestionar Post-Operaciones
                         </button>
+                        <button onclick="abrirModalReportes()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Generar Reportes Word
+                        </button>
                     </div>
                     <div class="flex gap-2">
                         <input type="text" placeholder="Buscar..." class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
@@ -213,6 +219,14 @@
                                             </svg>
                                         </button>
                                         @endif
+
+                                        <button onclick="generarReporteIndividual({{ $operacion->id }})"
+                                                class="action-button btn-view"
+                                                title="Generar reporte Word">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </button>
 
                                         <button onclick="eliminarOperacion({{ $operacion->id }})"
                                                 class="action-button btn-delete"
@@ -789,6 +803,124 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Generar Reportes Word -->
+    <div id="modalReportes" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <span class="text-red-600 mr-2 text-xl">📄</span>
+                    Generar Reportes Word
+                </h2>
+                <button onclick="cerrarModalReportes()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <!-- Contenido -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-6">
+                    <!-- Opción: Reporte Multiple con Filtros -->
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Reporte Múltiple con Filtros
+                        </h3>
+                        
+                        <form id="formReporteMultiple">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <!-- Filtro Cliente -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+                                    <select name="cliente_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Todos los clientes</option>
+                                        @foreach($clientes as $cliente)
+                                            <option value="{{ $cliente->id }}">{{ $cliente->cliente }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <!-- Filtro Status -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                                    <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Todos los status</option>
+                                        <option value="Done">Done</option>
+                                        <option value="En Proceso">En Proceso</option>
+                                        <option value="Fuera Métrica">Fuera Métrica</option>
+                                    </select>
+                                </div>
+
+                                <!-- Filtro Fecha Desde -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Desde</label>
+                                    <input type="date" name="fecha_desde" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Filtro Fecha Hasta -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Hasta</label>
+                                    <input type="date" name="fecha_hasta" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Generar Reporte Múltiple
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Separador -->
+                    <div class="text-center">
+                        <span class="text-slate-400 text-sm">o también puedes</span>
+                    </div>
+
+                    <!-- Opción: Todas las Operaciones -->
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                        <h3 class="text-lg font-semibold text-green-800 mb-2 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Reporte de Todas las Operaciones
+                        </h3>
+                        <p class="text-green-700 text-sm mb-3">Genera un reporte con todas las operaciones (máximo 100 registros más recientes)</p>
+                        <button onclick="generarReporteTodas()" class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Generar Reporte Completo
+                        </button>
+                    </div>
+
+                    <!-- Nota informativa -->
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-sm font-medium text-yellow-800">Información sobre los reportes</h4>
+                                <ul class="text-xs text-yellow-700 mt-1 space-y-1">
+                                    <li>• Los reportes incluyen información completa de las operaciones</li>
+                                    <li>• Se incluyen post-operaciones e historial cuando estén disponibles</li>
+                                    <li>• Los archivos se descargan automáticamente en formato .docx</li>
+                                    <li>• Para reportes individuales, usa el botón 📄 en cada fila de la tabla</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
