@@ -49,6 +49,8 @@ Route::middleware(['auth','area.logistica'])->group(function () {
 
     // Rutas para CRUD de clientes
     Route::post('/logistica/clientes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeCliente'])->name('logistica.clientes.store');
+    // Ruta específica para eliminar todos los clientes (DEBE ir antes que la ruta con {id})
+    Route::delete('/logistica/clientes/all', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'deleteAllClientes'])->middleware(['auth', 'admin']);
     Route::put('/logistica/clientes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateCliente'])->name('logistica.clientes.update');
     Route::delete('/logistica/clientes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyCliente'])->name('logistica.clientes.destroy');
 
@@ -103,7 +105,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'index']);
     Route::post('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'store']);
     Route::put('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'update']);
-    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos']);
+    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos'])->name('logistica.pedimentos.import');
     Route::delete('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'destroy']);
     Route::delete('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'clear']);
     Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
@@ -112,10 +114,6 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     // Rutas para verificar existencia de datos
     Route::get('/logistica/aduanas/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkAduanas']);
     Route::get('/logistica/pedimentos/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkPedimentos']);
-    
-    // Rutas para importación de clientes
-    Route::post('/logistica/clientes/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importClientes']);
-    Route::get('/logistica/clientes/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkClientes']);
     
     // Rutas para búsqueda de empleados (solo admin)
     Route::middleware(['auth', 'admin'])->group(function () {

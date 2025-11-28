@@ -230,12 +230,27 @@ class OperacionLogisticaController extends Controller
             \Log::info('Datos recibidos para cliente:', $request->all());
 
             $request->validate([
-                'cliente' => 'required|string|max:255|unique:clientes,cliente'
+                'cliente' => 'required|string|max:255|unique:clientes,cliente',
+                'ejecutivo_asignado_id' => 'nullable|exists:empleados,id',
+                'correos' => 'nullable|string', // Recibido como JSON string
+                'periodicidad_reporte' => 'nullable|string|max:50'
             ]);
+
+            // Procesar correos si se envían
+            $correosArray = null;
+            if ($request->correos) {
+                $correosArray = json_decode($request->correos, true);
+                if (!is_array($correosArray)) {
+                    $correosArray = null;
+                }
+            }
 
             $cliente = Cliente::create([
                 'cliente' => $request->cliente,
-                'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null
+                'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null,
+                'correos' => $correosArray,
+                'periodicidad_reporte' => $request->periodicidad_reporte ?? 'Diario',
+                'fecha_carga_excel' => null // Solo se asigna cuando viene del Excel
             ]);
 
             \Log::info('Cliente creado:', $cliente->toArray());
@@ -314,13 +329,34 @@ class OperacionLogisticaController extends Controller
             $cliente = Cliente::findOrFail($id);
 
             $request->validate([
-                'cliente' => 'required|string|max:255|unique:clientes,cliente,' . $id
+                'cliente' => 'required|string|max:255|unique:clientes,cliente,' . $id,
+                'ejecutivo_asignado_id' => 'nullable|exists:empleados,id',
+                'correos' => 'nullable|string', // Recibido como JSON string
+                'periodicidad_reporte' => 'nullable|string|max:50'
             ]);
 
-            $cliente->update([
+            $updateData = [
                 'cliente' => $request->cliente,
-                'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id
-            ]);
+                'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null
+            ];
+
+            // Solo actualizar campos opcionales si se envían en la request
+            if ($request->has('correos')) {
+                $correosArray = null;
+                if ($request->correos) {
+                    $correosArray = json_decode($request->correos, true);
+                    if (!is_array($correosArray)) {
+                        $correosArray = null;
+                    }
+                }
+                $updateData['correos'] = $correosArray;
+            }
+            
+            if ($request->has('periodicidad_reporte')) {
+                $updateData['periodicidad_reporte'] = $request->periodicidad_reporte;
+            }
+
+            $cliente->update($updateData);
 
             return response()->json([
                 'success' => true,
@@ -1703,19 +1739,48 @@ class OperacionLogisticaController extends Controller
             ]);
             
             $file = $request->file('clientes_file');
+            
+            // Crear directorio si no existe
+            $uploadsDir = storage_path('app/uploads/clientes');
+            if (!file_exists($uploadsDir)) {
+                mkdir($uploadsDir, 0755, true);
+                Log::info("Directorio creado: {$uploadsDir}");
+            }
+            
             $filename = 'clientes_' . time() . '.' . $file->getClientOriginalExtension();
-            $filePath = $file->storeAs('uploads/clientes', $filename, 'local');
-            $fullPath = storage_path('app/' . $filePath);
+            $fullPath = $uploadsDir . DIRECTORY_SEPARATOR . $filename;
             
             Log::info("Iniciando importación de clientes desde archivo: {$filename}");
+            Log::info("Intentando guardar archivo en: {$fullPath}");
+            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'Sí' : 'No'));
+            Log::info("Archivo original válido: " . ($file->isValid() ? 'Sí' : 'No'));
+            
+            try {
+                // Usar método directo para guardar el archivo
+                $saved = $file->move($uploadsDir, $filename);
+                
+                if ($saved) {
+                    Log::info("Archivo guardado exitosamente usando move()");
+                    Log::info("¿Archivo existe después de move()? " . (file_exists($fullPath) ? 'Sí' : 'No'));
+                    Log::info("Tamaño del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
+                } else {
+                    throw new \Exception("El método move() retornó false");
+                }
+            } catch (\Exception $moveException) {
+                Log::error("Error al mover archivo: " . $moveException->getMessage());
+                throw new \Exception("No se pudo mover el archivo a: {$fullPath}. Error: " . $moveException->getMessage());
+            }
+            
+            // Verificar que el archivo existe antes de procesarlo
+            if (!file_exists($fullPath)) {
+                throw new \Exception("El archivo no se pudo guardar correctamente. Ruta: {$fullPath}");
+            }
             
             $importService = new ClienteImportService();
             $resultados = $importService->importFromExcel($fullPath);
             
-            // Limpiar archivo temporal
-            unlink($fullPath);
-            
-            return response()->json([
+            // Preparar la respuesta
+            $response = response()->json([
                 'success' => true,
                 'message' => 'Importación completada exitosamente',
                 'resultados' => $resultados
@@ -1723,11 +1788,21 @@ class OperacionLogisticaController extends Controller
             
         } catch (\Exception $e) {
             Log::error("Error en importación de clientes: " . $e->getMessage());
-            return response()->json([
+            $response = response()->json([
                 'success' => false,
                 'message' => 'Error al importar clientes: ' . $e->getMessage()
             ], 500);
+        } finally {
+            // Limpiar archivo temporal siempre, sin importar si hubo éxito o error
+            if (isset($fullPath) && file_exists($fullPath)) {
+                unlink($fullPath);
+                Log::info("Archivo temporal de clientes eliminado: {$fullPath}");
+            } elseif (isset($fullPath)) {
+                Log::warning("Archivo temporal de clientes no encontrado para eliminar: {$fullPath}");
+            }
         }
+        
+        return $response ?? response()->json(['success' => false, 'message' => 'Error desconocido'], 500);
     }
     
     public function checkClientes()
@@ -1744,6 +1819,46 @@ class OperacionLogisticaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al verificar clientes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function deleteAllClientes()
+    {
+        try {
+            // Solo permitir a administradores
+            if (!auth()->user() || !auth()->user()->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permisos para realizar esta acción'
+                ], 403);
+            }
+            
+            $count = Cliente::count();
+            
+            if ($count === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay clientes para eliminar'
+                ]);
+            }
+            
+            // Eliminar todos los clientes
+            Cliente::truncate();
+            
+            Log::info("Todos los clientes fueron eliminados por el usuario: " . auth()->user()->name . " (ID: " . auth()->id() . "). Total eliminados: {$count}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Se eliminaron {$count} clientes exitosamente",
+                'deleted_count' => $count
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error al eliminar todos los clientes: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar clientes: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1773,38 +1888,74 @@ class OperacionLogisticaController extends Controller
             if (!$file) {
                 throw new \Exception('No se ha proporcionado ningún archivo de pedimentos.');
             }
+            
+            // Crear directorio si no existe
+            $uploadsDir = storage_path('app/uploads/pedimentos');
+            if (!file_exists($uploadsDir)) {
+                mkdir($uploadsDir, 0755, true);
+                Log::info("Directorio creado: {$uploadsDir}");
+            }
+            
             $filename = 'pedimentos_' . time() . '.' . $file->getClientOriginalExtension();
-            $filePath = $file->storeAs('uploads/pedimentos', $filename, 'local');
-            $fullPath = storage_path('app/' . $filePath);
+            $fullPath = $uploadsDir . DIRECTORY_SEPARATOR . $filename;
             
             Log::info("Iniciando importación de pedimentos desde archivo: {$filename}");
+            Log::info("Intentando guardar archivo en: {$fullPath}");
+            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'Sí' : 'No'));
+            Log::info("Archivo original válido: " . ($file->isValid() ? 'Sí' : 'No'));
+            
+            try {
+                // Usar método directo para guardar el archivo
+                $saved = $file->move($uploadsDir, $filename);
+                
+                if ($saved) {
+                    Log::info("Archivo guardado exitosamente usando move()");
+                    Log::info("¿Archivo existe después de move()? " . (file_exists($fullPath) ? 'Sí' : 'No'));
+                    Log::info("Tamaño del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
+                } else {
+                    throw new \Exception("El método move() retornó false");
+                }
+            } catch (\Exception $moveException) {
+                Log::error("Error al mover archivo: " . $moveException->getMessage());
+                throw new \Exception("No se pudo mover el archivo a: {$fullPath}. Error: " . $moveException->getMessage());
+            }
+            Log::info("Ruta completa del archivo: {$fullPath}");
+            
+            // Verificar que el archivo existe antes de procesarlo
+            if (!file_exists($fullPath)) {
+                throw new \Exception("El archivo no se pudo guardar correctamente. Ruta: {$fullPath}");
+            }
             
             $importService = new \App\Services\PedimentoImportService();
             $resultados = $importService->import($fullPath);
             
-            // Limpiar archivo temporal
-            unlink($fullPath);
-            
+            // Preparar la respuesta
             if ($resultados['success']) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $resultados['message'] ?? 'Importación completada exitosamente',
-                    'resultados' => $resultados
-                ]);
+                $totalImported = $resultados['total_imported'] ?? 0;
+                $totalSkipped = $resultados['total_skipped'] ?? 0;
+                $message = "Importación completada: {$totalImported} pedimentos importados";
+                if ($totalSkipped > 0) {
+                    $message .= ", {$totalSkipped} omitidos";
+                }
+                $response = back()->with('success', $message);
             } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => $resultados['message'] ?? 'Error en la importación',
-                    'errors' => $resultados['errors'] ?? []
-                ], 400);
+                $message = $resultados['message'] ?? 'Error en la importación';
+                $response = back()->with('error', $message);
             }
             
         } catch (\Exception $e) {
             Log::error("Error en importación de pedimentos: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al importar pedimentos: ' . $e->getMessage()
-            ], 500);
+            $response = back()->with('error', 'Error al importar pedimentos: ' . $e->getMessage());
+        } finally {
+            // Limpiar archivo temporal siempre, sin importar si hubo éxito o error
+            if (isset($fullPath) && file_exists($fullPath)) {
+                unlink($fullPath);
+                Log::info("Archivo temporal eliminado: {$fullPath}");
+            } elseif (isset($fullPath)) {
+                Log::warning("Archivo temporal no encontrado para eliminar: {$fullPath}");
+            }
         }
+        
+        return $response ?? back()->with('error', 'Error desconocido en la importación');
     }
 }

@@ -1,6 +1,6 @@
-/**
- * Catálogos Maestros - JavaScript
- * Manejo de tabs, modales de edición y eliminación
+﻿/**
+ * CatÃ¡logos Maestros - JavaScript
+ * Manejo de tabs, modales de ediciÃ³n y eliminaciÃ³n
  */
 
 // Helper para obtener token CSRF
@@ -19,14 +19,14 @@ function restoreBodyScroll() {
         document.body.style.overflow = 'auto';
         document.body.style.overflowY = 'auto';
         document.body.style.position = '';
-        // También limpiar cualquier clase que pueda estar afectando el scroll
+        // TambiÃ©n limpiar cualquier clase que pueda estar afectando el scroll
         document.body.classList.remove('modal-open', 'no-scroll');
     } catch (error) {
         // Error silencioso
     }
 }
 
-// Helper para mostrar loading en botón
+// Helper para mostrar loading en botÃ³n
 function showButtonLoading(button, loadingText = 'Procesando...') {
     if (button) {
         button.disabled = true;
@@ -41,7 +41,7 @@ function showButtonLoading(button, loadingText = 'Procesando...') {
     }
 }
 
-// Helper para ocultar loading en botón
+// Helper para ocultar loading en botÃ³n
 function hideButtonLoading(button) {
     if (button) {
         button.disabled = false;
@@ -59,12 +59,12 @@ function updateProgress(percentage, message, type = 'aduanas') {
     const progressBar = document.getElementById(type === 'aduanas' ? 'progressBar' : 'progressPedimentosBar');
     const progressText = document.getElementById(type === 'aduanas' ? 'progressText' : 'progressPedimentosText');
     
-    // También actualizar modal si existe
+    // TambiÃ©n actualizar modal si existe
     const modalContainer = document.getElementById(`import${type.charAt(0).toUpperCase() + type.slice(1)}ProgressModal`);
     const modalBar = document.getElementById(`progress${type.charAt(0).toUpperCase() + type.slice(1)}BarModal`);
     const modalText = document.getElementById(`progress${type.charAt(0).toUpperCase() + type.slice(1)}TextModal`);
 
-    // Mostrar contenedores si están ocultos
+    // Mostrar contenedores si estÃ¡n ocultos
     if (progressContainer) progressContainer.classList.remove('hidden');
     if (modalContainer) modalContainer.classList.remove('hidden');
 
@@ -86,7 +86,7 @@ function hideProgress(type = 'aduanas') {
     if (modalContainer) modalContainer.classList.add('hidden');
 }
 
-// Función de emergencia para restaurar scroll automáticamente
+// FunciÃ³n de emergencia para restaurar scroll automÃ¡ticamente
 function emergencyScrollRestore() {
     // Verificar si hay modales visibles
     const modals = document.querySelectorAll('.modal-overlay:not(.hidden)');
@@ -100,7 +100,7 @@ function emergencyScrollRestore() {
 // Monitorear tecla Escape para cerrar modales y restaurar scroll
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
-        // Cerrar modal de confirmación si está abierto
+        // Cerrar modal de confirmaciÃ³n si estÃ¡ abierto
         const confirmModal = document.getElementById('confirmModal');
         if (confirmModal && !confirmModal.classList.contains('hidden')) {
             closeConfirmModal();
@@ -116,7 +116,7 @@ document.addEventListener('keydown', function(event) {
 setInterval(emergencyScrollRestore, 2000);
 
 // ========================================
-// FUNCIONES PARA BÚSQUEDA DE EMPLEADOS
+// FUNCIONES PARA BÃšSQUEDA DE EMPLEADOS
 // ========================================
 
 function openSearchEmployeeModal() {
@@ -133,7 +133,7 @@ function openSearchEmployeeModal() {
             }
         }, 10);
 
-        // Limpiar búsqueda anterior
+        // Limpiar bÃºsqueda anterior
         const searchInput = document.getElementById('employeeSearchInput');
         if (searchInput) {
             searchInput.value = '';
@@ -211,7 +211,7 @@ async function searchEmployees(query) {
         }
 
     } catch (error) {
-        showAlert('Error de conexión al buscar empleados', 'error');
+        showAlert('Error de conexiÃ³n al buscar empleados', 'error');
         showSearchState('initial');
     }
 }
@@ -237,7 +237,7 @@ function displaySearchResults(empleados) {
                     <div>
                         <h4 class="font-medium text-gray-900">${empleado.nombre}</h4>
                         <p class="text-sm text-gray-600">ID: ${empleado.id_empleado || 'N/A'}</p>
-                        <p class="text-sm text-gray-600">Área: ${empleado.area || 'Sin área'}</p>
+                        <p class="text-sm text-gray-600">Ãrea: ${empleado.area || 'Sin Ã¡rea'}</p>
                         <p class="text-sm text-gray-600">Email: ${empleado.correo || 'Sin email'}</p>
                     </div>
                     <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
@@ -274,7 +274,7 @@ async function selectEmployee(empleadoId) {
             showAlert(data.message, 'success');
             closeSearchEmployeeModal();
             
-            // Recargar la página para mostrar el nuevo ejecutivo
+            // Recargar la pÃ¡gina para mostrar el nuevo ejecutivo
             setTimeout(() => {
                 sessionStorage.setItem('activeTab', 'ejecutivos');
                 window.location.reload();
@@ -284,11 +284,11 @@ async function selectEmployee(empleadoId) {
         }
 
     } catch (error) {
-        showAlert('Error de conexión al agregar ejecutivo', 'error');
+        showAlert('Error de conexiÃ³n al agregar ejecutivo', 'error');
     }
 }
 
-// Event listener para la búsqueda en tiempo real
+// Event listener para la bÃºsqueda en tiempo real
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('employeeSearchInput');
     if (searchInput) {
@@ -319,12 +319,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Verificar existencia de datos al cargar la página
+    // Verificar existencia de datos al cargar la pÃ¡gina
     checkDataExistenceAndUpdateButtons();
+    
+    // Event listener para el botÃ³n de eliminar todos los clientes
+    const deleteAllClientsBtn = document.getElementById('deleteAllClientsBtn');
+    if (deleteAllClientsBtn) {
+        deleteAllClientsBtn.addEventListener('click', deleteAllClients);
+    }
 });
 
 // ========================================
-// GESTIÓN DE VISIBILIDAD DE BOTONES DE IMPORTACIÓN
+// GESTIÃ“N DE VISIBILIDAD DE BOTONES DE IMPORTACIÃ“N
 // ========================================
 
 async function checkDataExistenceAndUpdateButtons() {
@@ -363,7 +369,7 @@ async function checkDataExistenceAndUpdateButtons() {
 }
 
 function updateImportButtonsVisibility(aduanasExist, pedimentosExist) {
-    // Botones de importación en la parte superior de cada pestaña
+    // Botones de importaciÃ³n en la parte superior de cada pestaÃ±a
     const importAduanasBtn = document.getElementById('importAduanasBtn');
     const importPedimentosBtn = document.getElementById('importPedimentosBtn');
 
@@ -386,7 +392,7 @@ function updateImportButtonsVisibility(aduanasExist, pedimentosExist) {
     }
 }
 
-// Función para mostrar botones de importación después de limpiar datos
+// FunciÃ³n para mostrar botones de importaciÃ³n despuÃ©s de limpiar datos
 function showImportButtons() {
     const importAduanasBtn = document.getElementById('importAduanasBtn');
     const importPedimentosBtn = document.getElementById('importPedimentosBtn');
@@ -425,7 +431,7 @@ class CatalogosMaestros {
         this.initEventListeners();
         this.initExecutiveAssignment();
         
-        // Determinar qué tab mostrar basado en URL o sessionStorage
+        // Determinar quÃ© tab mostrar basado en URL o sessionStorage
         const urlParams = new URLSearchParams(window.location.search);
         const urlTab = urlParams.get('tab');
         const savedTab = sessionStorage.getItem('activeTab');
@@ -433,7 +439,7 @@ class CatalogosMaestros {
         // Prioridad: URL > sessionStorage > default
         const activeTab = urlTab || savedTab || 'clientes';
         
-        // Si la URL tiene parámetros extraños, limpiarla
+        // Si la URL tiene parÃ¡metros extraÃ±os, limpiarla
         if (window.location.search && (!urlTab || urlParams.toString() !== `tab=${activeTab}`)) {
             this.updateURL(activeTab);
         }
@@ -443,7 +449,7 @@ class CatalogosMaestros {
         // Guardar el tab activo en sessionStorage para futuras navegaciones
         sessionStorage.setItem('activeTab', activeTab);
 
-        // Escuchar cambios en la URL (navegación con botones del navegador)
+        // Escuchar cambios en la URL (navegaciÃ³n con botones del navegador)
         window.addEventListener('popstate', (event) => {
             const urlParams = new URLSearchParams(window.location.search);
             const newTab = urlParams.get('tab') || 'clientes';
@@ -496,11 +502,11 @@ class CatalogosMaestros {
     }
 
     updateURL(tabId) {
-        // Crear una URL limpia solo con el parámetro tab
+        // Crear una URL limpia solo con el parÃ¡metro tab
         const baseUrl = window.location.pathname;
         const newUrl = `${baseUrl}?tab=${tabId}`;
         
-        // Actualizar la URL sin recargar la página
+        // Actualizar la URL sin recargar la pÃ¡gina
         window.history.pushState({ tab: tabId }, '', newUrl);
     }
 
@@ -528,12 +534,12 @@ class CatalogosMaestros {
             
             // Guardar el tab activo en sessionStorage
             sessionStorage.setItem('activeTab', tabId);
-            // NO actualizar URL aquí para evitar bucles
+            // NO actualizar URL aquÃ­ para evitar bucles
         }
     }
 
     initModals() {
-        // Modal de edición
+        // Modal de ediciÃ³n
         const editModal = document.getElementById('editModal');
         const deleteModal = document.getElementById('deleteModal');
         const assignModal = document.getElementById('assignExecutiveModal');
@@ -590,7 +596,9 @@ class CatalogosMaestros {
                 const type = e.target.getAttribute('data-type');
                 const name = e.target.getAttribute('data-name');
                 const ejecutivoId = e.target.getAttribute('data-ejecutivo-id');
-                this.openEditModal(id, type, name, ejecutivoId);
+                const periodicidad = e.target.getAttribute('data-periodicidad');
+                const correos = e.target.getAttribute('data-correos');
+                this.openEditModal(id, type, name, ejecutivoId, periodicidad, correos);
             }
         });
 
@@ -604,7 +612,7 @@ class CatalogosMaestros {
             }
         });
 
-        // Formulario de edición
+        // Formulario de ediciÃ³n
         const editForm = document.getElementById('editForm');
         if (editForm) {
             editForm.addEventListener('submit', (e) => {
@@ -613,7 +621,7 @@ class CatalogosMaestros {
             });
         }
 
-        // Confirmación de eliminación
+        // ConfirmaciÃ³n de eliminaciÃ³n
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
         if (confirmDeleteBtn) {
             confirmDeleteBtn.addEventListener('click', () => {
@@ -631,7 +639,7 @@ class CatalogosMaestros {
             });
         });
 
-        // Formulario de asignación de ejecutivo
+        // Formulario de asignaciÃ³n de ejecutivo
         const assignForm = document.getElementById('assignExecutiveForm');
         if (assignForm) {
             assignForm.addEventListener('submit', (e) => {
@@ -642,7 +650,7 @@ class CatalogosMaestros {
     }
 
     initExecutiveAssignment() {
-        // Botón de asignar ejecutivo
+        // BotÃ³n de asignar ejecutivo
         const assignBtn = document.getElementById('assignExecutiveBtn');
         if (assignBtn) {
             assignBtn.addEventListener('click', () => {
@@ -673,49 +681,70 @@ class CatalogosMaestros {
         const modal = document.getElementById('editModal');
         const title = document.getElementById('modalTitle');
         const nameInput = document.getElementById('editName');
-        const ejecutivoField = document.getElementById('ejecutivoField');
+        const clienteFieldsGroup = document.getElementById('clienteFieldsGroup');
         const ejecutivoSelect = document.getElementById('editEjecutivo');
+        const periodicidadSelect = document.getElementById('editPeriodicidad');
+        const correosTextarea = document.getElementById('editCorreos');
 
         title.textContent = `Agregar ${this.getTypeLabel(type)}`;
         nameInput.value = '';
         nameInput.focus();
 
-        // Mostrar campo de ejecutivo solo para clientes
-        if (type === 'clientes' && ejecutivoField) {
-            ejecutivoField.classList.remove('hidden');
-            if (ejecutivoSelect) {
-                ejecutivoSelect.value = '';
+        // Mostrar campos adicionales solo para clientes
+        if (type === 'clientes' && clienteFieldsGroup) {
+            clienteFieldsGroup.classList.remove('hidden');
+            if (ejecutivoSelect) ejecutivoSelect.value = '';
+            if (periodicidadSelect) {
+                periodicidadSelect.value = 'Diario';
+                togglePeriodicidadOptions();
             }
-        } else if (ejecutivoField) {
-            ejecutivoField.classList.add('hidden');
+            if (correosTextarea) correosTextarea.value = '';
+        } else if (clienteFieldsGroup) {
+            clienteFieldsGroup.classList.add('hidden');
         }
 
         this.showModal(modal);
     }
 
-    openEditModal(id, type, name, ejecutivoId = null) {
+    openEditModal(id, type, name, ejecutivoId = null, periodicidad = null, correos = null) {
         this.currentEditId = id;
         this.currentEditType = type;
 
         const modal = document.getElementById('editModal');
         const title = document.getElementById('modalTitle');
         const nameInput = document.getElementById('editName');
-        const ejecutivoField = document.getElementById('ejecutivoField');
+        const clienteFieldsGroup = document.getElementById('clienteFieldsGroup');
         const ejecutivoSelect = document.getElementById('editEjecutivo');
+        const periodicidadSelect = document.getElementById('editPeriodicidad');
+        const correosTextarea = document.getElementById('editCorreos');
 
         title.textContent = `Editar ${this.getTypeLabel(type)}`;
         nameInput.value = name;
         nameInput.focus();
         nameInput.select();
 
-        // Mostrar campo de ejecutivo solo para clientes
-        if (type === 'clientes' && ejecutivoField) {
-            ejecutivoField.classList.remove('hidden');
-            if (ejecutivoSelect && ejecutivoId) {
-                ejecutivoSelect.value = ejecutivoId;
+        // Mostrar campos adicionales solo para clientes
+        if (type === 'clientes' && clienteFieldsGroup) {
+            clienteFieldsGroup.classList.remove('hidden');
+            
+            if (ejecutivoSelect) {
+                ejecutivoSelect.value = ejecutivoId || '';
             }
-        } else if (ejecutivoField) {
-            ejecutivoField.classList.add('hidden');
+            
+            if (periodicidadSelect) {
+                setPeriodicidadValues(periodicidad || 'Diario');
+            }
+            
+            if (correosTextarea) {
+                // Convertir array de correos a string separado por comas
+                if (Array.isArray(correos)) {
+                    correosTextarea.value = correos.join(', ');
+                } else {
+                    correosTextarea.value = correos || '';
+                }
+            }
+        } else if (clienteFieldsGroup) {
+            clienteFieldsGroup.classList.add('hidden');
         }
 
         this.showModal(modal);
@@ -729,7 +758,7 @@ class CatalogosMaestros {
         const message = document.getElementById('deleteMessage');
 
         const typeLabel = this.getTypeLabel(type) || type || 'elemento';
-        message.innerHTML = `¿Estás seguro de que deseas eliminar ${typeLabel.toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer.</span>`;
+        message.innerHTML = `Â¿EstÃ¡s seguro de que deseas eliminar ${typeLabel.toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acciÃ³n no se puede deshacer.</span>`;
 
         this.showModal(modal);
     }
@@ -783,7 +812,7 @@ class CatalogosMaestros {
         const name = nameInput.value.trim();
 
         if (!name) {
-            this.showAlert('Por favor, ingresa un nombre válido.', 'error');
+            this.showAlert('Por favor, ingresa un nombre vÃ¡lido.', 'error');
             return;
         }
 
@@ -795,11 +824,30 @@ class CatalogosMaestros {
         formData.append(this.getFieldName(this.currentEditType), name);
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
-        // Agregar ejecutivo asignado si es un cliente
+        // Agregar campos adicionales si es un cliente
         if (this.currentEditType === 'clientes') {
             const ejecutivoSelect = document.getElementById('editEjecutivo');
+            const periodicidadSelect = document.getElementById('editPeriodicidad');
+            const correosTextarea = document.getElementById('editCorreos');
+            
             if (ejecutivoSelect) {
                 formData.append('ejecutivo_asignado_id', ejecutivoSelect.value || '');
+            }
+            
+            if (periodicidadSelect) {
+                const periodicidadCompleta = buildPeriodicidadString();
+                formData.append('periodicidad_reporte', periodicidadCompleta);
+            }
+            
+            if (correosTextarea && correosTextarea.value.trim()) {
+                // Convertir string de correos separados por comas a array
+                const correosArray = correosTextarea.value
+                    .split(',')
+                    .map(email => email.trim())
+                    .filter(email => email.length > 0);
+                
+                // Enviar como JSON string
+                formData.append('correos', JSON.stringify(correosArray));
             }
         }
 
@@ -827,7 +875,7 @@ class CatalogosMaestros {
             }
         } catch (error) {
             console.error('Error:', error);
-            this.showAlert('Error de conexión. Por favor, intenta nuevamente.', 'error');
+            this.showAlert('Error de conexiÃ³n. Por favor, intenta nuevamente.', 'error');
         } finally {
             this.showLoading(false);
         }
@@ -860,7 +908,7 @@ class CatalogosMaestros {
             }
         } catch (error) {
             console.error('Error:', error);
-            this.showAlert('Error de conexión. Por favor, intenta nuevamente.', 'error');
+            this.showAlert('Error de conexiÃ³n. Por favor, intenta nuevamente.', 'error');
         } finally {
             this.showLoading(false);
         }
@@ -907,13 +955,13 @@ class CatalogosMaestros {
     }
 
     refreshTable(type) {
-        // Para aduanas, usar la función específica
+        // Para aduanas, usar la funciÃ³n especÃ­fica
         if (type === 'aduanas') {
             refreshAduanasTable();
         } else if (type === 'pedimentos') {
             refreshPedimentosTable();
         } else {
-            // Para otros catálogos, recargar con el parámetro tab en la URL
+            // Para otros catÃ¡logos, recargar con el parÃ¡metro tab en la URL
             const currentTab = this.activeTab;
             const currentUrl = new URL(window.location);
             currentUrl.searchParams.set('tab', currentTab);
@@ -977,7 +1025,7 @@ class CatalogosMaestros {
             alert.classList.remove('translate-x-full');
         }, 100);
 
-        // Auto remover después de 5 segundos
+        // Auto remover despuÃ©s de 5 segundos
         setTimeout(() => {
             alert.classList.add('translate-x-full');
             setTimeout(() => {
@@ -986,7 +1034,7 @@ class CatalogosMaestros {
         }, 5000);
     }
 
-    // Métodos para asignación de ejecutivos
+    // MÃ©todos para asignaciÃ³n de ejecutivos
     selectAllClients(checked) {
         const checkboxes = document.querySelectorAll('.cliente-checkbox');
         checkboxes.forEach(checkbox => {
@@ -1086,7 +1134,7 @@ class CatalogosMaestros {
             }
         } catch (error) {
             console.error('Error:', error);
-            this.showAlert('Error de conexión. Por favor, intenta nuevamente.', 'error');
+            this.showAlert('Error de conexiÃ³n. Por favor, intenta nuevamente.', 'error');
         } finally {
             this.showLoading(false);
         }
@@ -1109,7 +1157,7 @@ class CatalogosMaestros {
     }
 }
 
-// Inicializar cuando el DOM esté listo
+// Inicializar cuando el DOM estÃ© listo
 document.addEventListener('DOMContentLoaded', function() {
     window.catalogosMaestros = new CatalogosMaestros();
 });
@@ -1134,10 +1182,10 @@ function openDeleteModal(id, type, name) {
 }
 
 // ===================================
-// FUNCIONES ESPECÍFICAS PARA ADUANAS
+// FUNCIONES ESPECÃFICAS PARA ADUANAS
 // ===================================
 
-// Abrir modal de importación
+// Abrir modal de importaciÃ³n
 function openImportAduanasModal() {
     const modal = document.getElementById('importAduanasModal');
     if (modal) {
@@ -1151,7 +1199,7 @@ function openImportAduanasModal() {
     }
 }
 
-// Cerrar modal de importación
+// Cerrar modal de importaciÃ³n
 function closeImportAduanasModal() {
     const modal = document.getElementById('importAduanasModal');
     if (modal) {
@@ -1172,7 +1220,7 @@ function closeImportAduanasModal() {
     }
 }
 
-// Manejar selección de archivo
+// Manejar selecciÃ³n de archivo
 function initFileHandling() {
     const fileInput = document.getElementById('aduanasFile');
     const fileName = document.getElementById('selectedFileName');
@@ -1211,7 +1259,7 @@ async function importAduanas() {
     const progressText = document.getElementById('progressText');
 
     try {
-        // Deshabilitar botón y mostrar estado de carga
+        // Deshabilitar botÃ³n y mostrar estado de carga
         if (importBtn) {
             importBtn.disabled = true;
             const importText = importBtn.querySelector('.import-text');
@@ -1249,38 +1297,38 @@ async function importAduanas() {
             progressText.textContent = 'Analizando datos...';
         }
 
-        // Verificar si la respuesta es JSON válida
+        // Verificar si la respuesta es JSON vÃ¡lida
         const contentType = response.headers.get('content-type');
         let data;
         
         if (response.status === 419) {
-            throw new Error('Sesión expirada. Por favor, recarga la página e inténtalo de nuevo.');
+            throw new Error('SesiÃ³n expirada. Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
         }
         
         if (contentType && contentType.includes('application/json')) {
             data = await response.json();
         } else {
-            // Si no es JSON, probablemente es una página de error HTML
+            // Si no es JSON, probablemente es una pÃ¡gina de error HTML
             const text = await response.text();
             console.error('Respuesta no JSON:', text);
             
             if (text.includes('Page Expired')) {
-                throw new Error('Sesión expirada (CSRF). Por favor, recarga la página e inténtalo de nuevo.');
+                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
             }
             
-            throw new Error('El servidor devolvió una respuesta inválida (no JSON)');
+            throw new Error('El servidor devolviÃ³ una respuesta invÃ¡lida (no JSON)');
         }
 
         if (response.ok && data.success) {
             // Progreso completado
             if (progressBar && progressText) {
                 progressBar.style.width = '100%';
-                progressText.textContent = 'Importación completada exitosamente!';
+                progressText.textContent = 'ImportaciÃ³n completada exitosamente!';
             }
             
-            showAlert(`Importación exitosa: ${data.total_imported} aduanas importadas, ${data.total_skipped || 0} omitidas.`, 'success');
+            showAlert(`ImportaciÃ³n exitosa: ${data.total_imported} aduanas importadas, ${data.total_skipped || 0} omitidas.`, 'success');
             
-            // Recargar página después del éxito para actualizar todo
+            // Recargar pÃ¡gina despuÃ©s del Ã©xito para actualizar todo
             setTimeout(() => {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
@@ -1290,7 +1338,7 @@ async function importAduanas() {
                 window.location.reload();
             }, 1500);
         } else {
-            showAlert(data.message || 'Error en la importación.', 'error');
+            showAlert(data.message || 'Error en la importaciÃ³n.', 'error');
             // Ocultar progreso y cerrar modal cuando hay error
             setTimeout(() => {
                 if (progressContainer) {
@@ -1301,8 +1349,8 @@ async function importAduanas() {
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión durante la importación.', 'error');
-        // Ocultar progreso y cerrar modal en caso de excepción
+        showAlert('Error de conexiÃ³n durante la importaciÃ³n.', 'error');
+        // Ocultar progreso y cerrar modal en caso de excepciÃ³n
         setTimeout(() => {
             if (progressContainer) {
                 progressContainer.classList.add('hidden');
@@ -1310,7 +1358,7 @@ async function importAduanas() {
             closeImportAduanasModal();
         }, 1500);
     } finally {
-        // Habilitar botón
+        // Habilitar botÃ³n
         if (importBtn) {
             importBtn.disabled = false;
             const importText = importBtn.querySelector('.import-text');
@@ -1325,7 +1373,7 @@ async function importAduanas() {
 async function eliminarAduana(id) {
     openConfirmModal(
         'Eliminar Aduana',
-        '¿Estás seguro de que deseas eliminar esta aduana? Esta acción no se puede deshacer.',
+        'Â¿EstÃ¡s seguro de que deseas eliminar esta aduana? Esta acciÃ³n no se puede deshacer.',
         'Eliminar',
         async () => {
             await executeEliminarAduana(id);
@@ -1333,7 +1381,7 @@ async function eliminarAduana(id) {
     );
 }
 
-// Función auxiliar para ejecutar la eliminación
+// FunciÃ³n auxiliar para ejecutar la eliminaciÃ³n
 async function executeEliminarAduana(id) {
     try {
         const response = await fetch(`/logistica/aduanas/${id}`, {
@@ -1347,7 +1395,7 @@ async function executeEliminarAduana(id) {
 
         if (data.success) {
             showAlert(data.message, 'success');
-            // Asegurar que permanezca en la pestaña de aduanas
+            // Asegurar que permanezca en la pestaÃ±a de aduanas
             sessionStorage.setItem('activeTab', 'aduanas');
             refreshAduanasTable();
         } else {
@@ -1355,7 +1403,7 @@ async function executeEliminarAduana(id) {
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al eliminar la aduana.', 'error');
+        showAlert('Error de conexiÃ³n al eliminar la aduana.', 'error');
     }
 }
 
@@ -1365,7 +1413,7 @@ async function clearAllAduanas() {
     
     openConfirmModal(
         'Limpiar Todas las Aduanas',
-        `¿Estás seguro de que deseas eliminar TODAS las ${totalAduanas} aduanas? Esta acción no se puede deshacer.`,
+        `Â¿EstÃ¡s seguro de que deseas eliminar TODAS las ${totalAduanas} aduanas? Esta acciÃ³n no se puede deshacer.`,
         'Eliminar Todas',
         async () => {
             await executeClearAllAduanas();
@@ -1373,7 +1421,7 @@ async function clearAllAduanas() {
     );
 }
 
-// Función auxiliar para ejecutar la limpieza
+// FunciÃ³n auxiliar para ejecutar la limpieza
 async function executeClearAllAduanas() {
     try {
         const response = await fetch('/logistica/aduanas', {
@@ -1387,22 +1435,22 @@ async function executeClearAllAduanas() {
 
         if (data.success) {
             showAlert(data.message, 'success');
-            // Asegurar que permanezca en la pestaña de aduanas
+            // Asegurar que permanezca en la pestaÃ±a de aduanas
             sessionStorage.setItem('activeTab', 'aduanas');
             updateAduanasStats({ total_imported: 0 });
             refreshAduanasTable();
-            // Mostrar botón de importación de aduanas ya que se limpiaron los datos
+            // Mostrar botÃ³n de importaciÃ³n de aduanas ya que se limpiaron los datos
             updateImportButtonsVisibility(false, null);
         } else {
             showAlert(data.message || 'Error al limpiar las aduanas.', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al limpiar las aduanas.', 'error');
+        showAlert('Error de conexiÃ³n al limpiar las aduanas.', 'error');
     }
 }
 
-// Actualizar estadísticas de aduanas
+// Actualizar estadÃ­sticas de aduanas
 function updateAduanasStats(data) {
     const totalElement = document.getElementById('totalAduanas');
     const ultimaElement = document.getElementById('ultimaImportacion');
@@ -1423,13 +1471,13 @@ function updateAduanasStats(data) {
     }
 
     if (estadoElement) {
-        estadoElement.textContent = data.success ? 'Actualizado' : 'Error en importación';
+        estadoElement.textContent = data.success ? 'Actualizado' : 'Error en importaciÃ³n';
     }
 }
 
-// Función helper para obtener la página actual de aduanas
+// FunciÃ³n helper para obtener la pÃ¡gina actual de aduanas
 function getCurrentAduanasPage() {
-    // Buscar el enlace de página activo en la paginación de aduanas
+    // Buscar el enlace de pÃ¡gina activo en la paginaciÃ³n de aduanas
     const activePage = document.querySelector('#aduanas-content .pagination .page-item.active .page-link');
     if (activePage) {
         const pageText = activePage.textContent.trim();
@@ -1437,7 +1485,7 @@ function getCurrentAduanasPage() {
         return isNaN(pageNum) ? 1 : pageNum;
     }
     
-    // También intentar obtener de la URL actual
+    // TambiÃ©n intentar obtener de la URL actual
     const urlParams = new URLSearchParams(window.location.search);
     const pageFromUrl = urlParams.get('aduanas_page');
     return pageFromUrl ? parseInt(pageFromUrl) : 1;
@@ -1446,11 +1494,11 @@ function getCurrentAduanasPage() {
 // Refrescar tabla de aduanas
 async function refreshAduanasTable() {
     try {
-        // Obtener la página actual de la paginación
+        // Obtener la pÃ¡gina actual de la paginaciÃ³n
         const currentPage = getCurrentAduanasPage();
         let url = '/logistica/catalogos?tab=aduanas';
         
-        // Si hay una página específica, agregarla a la URL
+        // Si hay una pÃ¡gina especÃ­fica, agregarla a la URL
         if (currentPage > 1) {
             url += `&aduanas_page=${currentPage}`;
         }
@@ -1478,7 +1526,7 @@ async function refreshAduanasTable() {
                 currentTableContainer.innerHTML = newTableContainer.innerHTML;
             }
 
-            // Actualizar estadísticas también
+            // Actualizar estadÃ­sticas tambiÃ©n
             const newStats = tempDiv.querySelector('#aduanasStats');
             const currentStats = document.querySelector('#aduanasStats');
             
@@ -1486,14 +1534,14 @@ async function refreshAduanasTable() {
                 currentStats.innerHTML = newStats.innerHTML;
             }
 
-            // Actualizar paginación si existe
+            // Actualizar paginaciÃ³n si existe
             const newPagination = tempDiv.querySelector('#aduanas-content .flex.justify-center');
             const currentPagination = document.querySelector('#aduanas-content .flex.justify-center');
             
             if (newPagination && currentPagination) {
                 currentPagination.innerHTML = newPagination.innerHTML;
             } else if (newPagination && !currentPagination) {
-                // Si hay nueva paginación pero no existía antes, agregarla
+                // Si hay nueva paginaciÃ³n pero no existÃ­a antes, agregarla
                 const aduanasContent = document.querySelector('#aduanas-content .p-6');
                 if (aduanasContent) {
                     const paginationDiv = document.createElement('div');
@@ -1504,8 +1552,8 @@ async function refreshAduanasTable() {
             }
 
         } else {
-            console.warn('No se pudo actualizar la tabla, recargando página...');
-            // Forzar recarga con parámetro tab y página para mantener en aduanas
+            console.warn('No se pudo actualizar la tabla, recargando pÃ¡gina...');
+            // Forzar recarga con parÃ¡metro tab y pÃ¡gina para mantener en aduanas
             const currentUrl = new URL(window.location);
             const currentPage = getCurrentAduanasPage();
             currentUrl.searchParams.set('tab', 'aduanas');
@@ -1517,7 +1565,7 @@ async function refreshAduanasTable() {
         }
     } catch (error) {
         console.error('Error al actualizar tabla:', error);
-        // Como fallback, recargar la página manteniendo el tab y página activa
+        // Como fallback, recargar la pÃ¡gina manteniendo el tab y pÃ¡gina activa
         const currentUrl = new URL(window.location);
         const currentPage = getCurrentAduanasPage();
         currentUrl.searchParams.set('tab', 'aduanas');
@@ -1529,7 +1577,7 @@ async function refreshAduanasTable() {
     }
 }
 
-// Función auxiliar para mostrar alertas
+// FunciÃ³n auxiliar para mostrar alertas
 function showAlert(message, type = 'info') {
     if (window.catalogosMaestros) {
         window.catalogosMaestros.showAlert(message, type);
@@ -1539,12 +1587,12 @@ function showAlert(message, type = 'info') {
 }
 
 // ===============================================
-// MODAL DE CONFIRMACIÓN REUTILIZABLE
+// MODAL DE CONFIRMACIÃ“N REUTILIZABLE
 // ===============================================
 
 let confirmModalCallback = null;
 
-// Abrir modal de confirmación
+// Abrir modal de confirmaciÃ³n
 function openConfirmModal(title, message, confirmText = 'Eliminar', callback = null) {
     const modal = document.getElementById('confirmModal');
     const titleElement = document.getElementById('confirmModalTitle');
@@ -1565,12 +1613,12 @@ function openConfirmModal(title, message, confirmText = 'Eliminar', callback = n
     
     confirmModalCallback = callback;
     
-    // Asegurar que el modal esté visible
+    // Asegurar que el modal estÃ© visible
     modal.classList.remove('hidden');
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
     
-    // Animar la aparición
+    // Animar la apariciÃ³n
     setTimeout(() => {
         const modalContent = modal.querySelector('.modal-content');
         if (modalContent) {
@@ -1579,7 +1627,7 @@ function openConfirmModal(title, message, confirmText = 'Eliminar', callback = n
     }, 10);
 }
 
-// Cerrar modal de confirmación
+// Cerrar modal de confirmaciÃ³n
 function closeConfirmModal() {
     const modal = document.getElementById('confirmModal');
     
@@ -1602,13 +1650,13 @@ function closeConfirmModal() {
     }
 }
 
-// Manejar confirmación
+// Manejar confirmaciÃ³n
 function handleConfirm() {
     if (confirmModalCallback && typeof confirmModalCallback === 'function') {
         try {
             confirmModalCallback();
         } catch (error) {
-            showAlert('Error al ejecutar la acción.', 'error');
+            showAlert('Error al ejecutar la acciÃ³n.', 'error');
         } finally {
             // Asegurar que el modal se cierre siempre
             setTimeout(() => {
@@ -1620,7 +1668,7 @@ function handleConfirm() {
     }
 }
 
-// Agregar evento al botón de confirmación y mecanismo de emergencia
+// Agregar evento al botÃ³n de confirmaciÃ³n y mecanismo de emergencia
 document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmModalBtn');
     if (confirmBtn) {
@@ -1644,21 +1692,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2000);
 });
 
-// Inicializar eventos específicos de aduanas cuando se cargue el DOM
+// Inicializar eventos especÃ­ficos de aduanas cuando se cargue el DOM
 document.addEventListener('DOMContentLoaded', function() {
-    // Botón de importar aduanas
+    // BotÃ³n de importar aduanas
     const importAduanasBtn = document.getElementById('importAduanasBtn');
     if (importAduanasBtn) {
         importAduanasBtn.addEventListener('click', openImportAduanasModal);
     }
 
-    // Botón de limpiar aduanas
+    // BotÃ³n de limpiar aduanas
     const clearAduanasBtn = document.getElementById('clearAduanasBtn');
     if (clearAduanasBtn) {
         clearAduanasBtn.addEventListener('click', clearAllAduanas);
     }
 
-    // Formulario de importación
+    // Formulario de importaciÃ³n
     const importForm = document.getElementById('importAduanasForm');
     if (importForm) {
         importForm.addEventListener('submit', function(e) {
@@ -1667,13 +1715,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Botón de añadir aduana
+    // BotÃ³n de aÃ±adir aduana
     const addAduanaBtn = document.getElementById('addAduanaBtn');
     if (addAduanaBtn) {
         addAduanaBtn.addEventListener('click', openAddAduanaModal);
     }
 
-    // Formulario de añadir aduana
+    // Formulario de aÃ±adir aduana
     const addAduanaForm = document.getElementById('addAduanaForm');
     if (addAduanaForm) {
         addAduanaForm.addEventListener('submit', function(e) {
@@ -1705,37 +1753,32 @@ document.addEventListener('DOMContentLoaded', function() {
     initFileHandling();
 
     // ======================================
-    // INICIALIZACIÓN DE PEDIMENTOS
+    // INICIALIZACIÃ“N DE PEDIMENTOS
     // ======================================
     
-    // Botón de importar pedimentos
+    // BotÃ³n de importar pedimentos
     const importPedimentosBtn = document.getElementById('importPedimentosBtn');
     if (importPedimentosBtn) {
         importPedimentosBtn.addEventListener('click', openImportPedimentosModal);
     }
 
-    // Formulario de importar pedimentos
-    const importPedimentosForm = document.getElementById('importPedimentosForm');
-    if (importPedimentosForm) {
-        importPedimentosForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            importPedimentos();
-        });
-    }
+    // Formulario de importar pedimentos - usando envÃ­o normal HTML
+    // const importPedimentosForm = document.getElementById('importPedimentosForm');
+    // Event listener deshabilitado - usando envÃ­o normal del formulario
 
-    // Botón de limpiar pedimentos
+    // BotÃ³n de limpiar pedimentos
     const clearPedimentosBtn = document.getElementById('clearPedimentosBtn');
     if (clearPedimentosBtn) {
         clearPedimentosBtn.addEventListener('click', clearAllPedimentos);
     }
 
-    // Botón de añadir nuevo pedimento
+    // BotÃ³n de aÃ±adir nuevo pedimento
     const addPedimentoBtn = document.getElementById('addPedimentoBtn');
     if (addPedimentoBtn) {
         addPedimentoBtn.addEventListener('click', openAddPedimentoModal);
     }
 
-    // Formulario de añadir pedimento
+    // Formulario de aÃ±adir pedimento
     const addPedimentoForm = document.getElementById('addPedimentoForm');
     if (addPedimentoForm) {
         addPedimentoForm.addEventListener('submit', function(e) {
@@ -1758,10 +1801,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===================================
-// FUNCIONES PARA AÑADIR NUEVA ADUANA
+// FUNCIONES PARA AÃ‘ADIR NUEVA ADUANA
 // ===================================
 
-// Abrir modal de añadir aduana
+// Abrir modal de aÃ±adir aduana
 function openAddAduanaModal() {
     const modal = document.getElementById('addAduanaModal');
     if (modal) {
@@ -1782,7 +1825,7 @@ function openAddAduanaModal() {
     }
 }
 
-// Cerrar modal de añadir aduana
+// Cerrar modal de aÃ±adir aduana
 function closeAddAduanaModal() {
     const modal = document.getElementById('addAduanaModal');
     if (modal) {
@@ -1802,7 +1845,7 @@ function closeAddAduanaModal() {
     }
 }
 
-// Guardar nueva aduana desde el catálogo
+// Guardar nueva aduana desde el catÃ¡logo
 async function guardarNuevaAduanaCatalogo() {
     const saveBtn = document.getElementById('saveAduanaBtn');
     const form = document.getElementById('addAduanaForm');
@@ -1827,7 +1870,7 @@ async function guardarNuevaAduanaCatalogo() {
         if (data.success) {
             showAlert(data.message, 'success');
             closeAddAduanaModal();
-            // Asegurar que permanezca en la pestaña de aduanas
+            // Asegurar que permanezca en la pestaÃ±a de aduanas
             sessionStorage.setItem('activeTab', 'aduanas');
             refreshAduanasTable();
             updateAduanasStats({ total_imported: 1 });
@@ -1837,7 +1880,7 @@ async function guardarNuevaAduanaCatalogo() {
 
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al crear la aduana.', 'error');
+        showAlert('Error de conexiÃ³n al crear la aduana.', 'error');
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
@@ -1930,7 +1973,7 @@ async function actualizarAduana() {
         if (data.success) {
             showAlert(data.message, 'success');
             closeEditAduanaModal();
-            // Asegurar que permanezca en la pestaña de aduanas
+            // Asegurar que permanezca en la pestaÃ±a de aduanas
             sessionStorage.setItem('activeTab', 'aduanas');
             refreshAduanasTable();
         } else {
@@ -1939,7 +1982,7 @@ async function actualizarAduana() {
 
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al actualizar la aduana.', 'error');
+        showAlert('Error de conexiÃ³n al actualizar la aduana.', 'error');
     } finally {
         if (updateBtn) {
             updateBtn.disabled = false;
@@ -1950,10 +1993,10 @@ async function actualizarAduana() {
 }
 
 // ===============================================
-// FUNCIONES ESPECÍFICAS PARA PEDIMENTOS
+// FUNCIONES ESPECÃFICAS PARA PEDIMENTOS
 // ===============================================
 
-// Abrir modal de importación de pedimentos
+// Abrir modal de importaciÃ³n de pedimentos
 function openImportPedimentosModal() {
     const modal = document.getElementById('importPedimentosModal');
     if (modal) {
@@ -1967,7 +2010,7 @@ function openImportPedimentosModal() {
     }
 }
 
-// Cerrar modal de importación de pedimentos
+// Cerrar modal de importaciÃ³n de pedimentos
 function closeImportPedimentosModal() {
     const modal = document.getElementById('importPedimentosModal');
     if (modal) {
@@ -1991,7 +2034,7 @@ function closeImportPedimentosModal() {
     }
 }
 
-// Manejar selección de archivo de pedimentos
+// Manejar selecciÃ³n de archivo de pedimentos
 function initPedimentosFileHandling() {
     const fileInput = document.getElementById('pedimentosFile');
     const fileName = document.getElementById('selectedPedimentosFileName');
@@ -2009,7 +2052,8 @@ function initPedimentosFileHandling() {
     }
 }
 
-// Importar pedimentos
+// Importar pedimentos - DESHABILITADA (usando envÃ­o normal del formulario)
+/*
 async function importPedimentos() {
     const form = document.getElementById('importPedimentosForm');
     const fileInput = document.getElementById('pedimentosFile');
@@ -2030,7 +2074,7 @@ async function importPedimentos() {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     try {
-        // Deshabilitar botón y mostrar estado de carga
+        // Deshabilitar botÃ³n y mostrar estado de carga
         if (importBtn) {
             importBtn.disabled = true;
             const importText = importBtn.querySelector('.import-text');
@@ -2039,12 +2083,12 @@ async function importPedimentos() {
             if (loadingText) loadingText.classList.remove('hidden');
         }
 
-        // Mostrar barras de progreso (tanto en página como en modal)
+        // Mostrar barras de progreso (tanto en pÃ¡gina como en modal)
         const progressModalContainer = document.getElementById('importPedimentosProgressModal');
         const progressModalBar = document.getElementById('progressPedimentosBarModal');
         const progressModalText = document.getElementById('progressPedimentosTextModal');
 
-        // Mostrar progreso en página
+        // Mostrar progreso en pÃ¡gina
         if (progressContainer) {
             progressContainer.classList.remove('hidden');
         }
@@ -2085,7 +2129,7 @@ async function importPedimentos() {
         // Progreso mientras procesa la respuesta
         if (progressBar && progressText) {
             progressBar.style.width = '70%';
-            progressText.textContent = 'Analizando categorías y códigos...';
+            progressText.textContent = 'Analizando categorÃ­as y cÃ³digos...';
         }
         if (progressModalBar && progressModalText) {
             progressModalBar.style.width = '70%';
@@ -2096,7 +2140,7 @@ async function importPedimentos() {
         let data;
         
         if (response.status === 419) {
-            throw new Error('Sesión expirada. Por favor, recarga la página e inténtalo de nuevo.');
+            throw new Error('SesiÃ³n expirada. Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
         }
         
         if (contentType && contentType.includes('application/json')) {
@@ -2106,26 +2150,26 @@ async function importPedimentos() {
             console.error('Respuesta no JSON:', text);
             
             if (text.includes('Page Expired')) {
-                throw new Error('Sesión expirada (CSRF). Por favor, recarga la página e inténtalo de nuevo.');
+                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
             }
             
-            throw new Error('El servidor devolvió una respuesta inválida (no JSON)');
+            throw new Error('El servidor devolviÃ³ una respuesta invÃ¡lida (no JSON)');
         }
 
         if (response.ok && data.success) {
             // Progreso completado
             if (progressBar && progressText) {
                 progressBar.style.width = '100%';
-                progressText.textContent = 'Importación de pedimentos completada exitosamente!';
+                progressText.textContent = 'ImportaciÃ³n de pedimentos completada exitosamente!';
             }
             if (progressModalBar && progressModalText) {
                 progressModalBar.style.width = '100%';
                 progressModalText.textContent = 'Completado!';
             }
             
-            showAlert(`Importación exitosa: ${data.total_imported} pedimentos importados, ${data.total_skipped || 0} omitidos.`, 'success');
+            showAlert(`ImportaciÃ³n exitosa: ${data.total_imported} pedimentos importados, ${data.total_skipped || 0} omitidos.`, 'success');
             
-            // Recargar página después del éxito para actualizar todo
+            // Recargar pÃ¡gina despuÃ©s del Ã©xito para actualizar todo
             setTimeout(() => {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
@@ -2138,7 +2182,7 @@ async function importPedimentos() {
                 window.location.reload();
             }, 1500);
         } else {
-            showAlert(data.message || 'Error en la importación.', 'error');
+            showAlert(data.message || 'Error en la importaciÃ³n.', 'error');
             setTimeout(() => {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
@@ -2151,7 +2195,7 @@ async function importPedimentos() {
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión durante la importación.', 'error');
+        showAlert('Error de conexiÃ³n durante la importaciÃ³n.', 'error');
         setTimeout(() => {
             if (progressContainer) {
                 progressContainer.classList.add('hidden');
@@ -2171,12 +2215,13 @@ async function importPedimentos() {
         }
     }
 }
+*/
 
 // Eliminar pedimento individual
 async function eliminarPedimento(id) {
     openConfirmModal(
         'Eliminar Pedimento',
-        '¿Estás seguro de que deseas eliminar este pedimento? Esta acción no se puede deshacer.',
+        'Â¿EstÃ¡s seguro de que deseas eliminar este pedimento? Esta acciÃ³n no se puede deshacer.',
         'Eliminar',
         async () => {
             await executeEliminarPedimento(id);
@@ -2184,7 +2229,7 @@ async function eliminarPedimento(id) {
     );
 }
 
-// Función auxiliar para ejecutar la eliminación
+// FunciÃ³n auxiliar para ejecutar la eliminaciÃ³n
 async function executeEliminarPedimento(id) {
     try {
         const response = await fetch(`/logistica/pedimentos/${id}`, {
@@ -2203,7 +2248,7 @@ async function executeEliminarPedimento(id) {
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al eliminar el pedimento.', 'error');
+        showAlert('Error de conexiÃ³n al eliminar el pedimento.', 'error');
     }
 }
 
@@ -2213,7 +2258,7 @@ async function clearAllPedimentos() {
     
     openConfirmModal(
         'Limpiar Todos los Pedimentos',
-        `¿Estás seguro de que deseas eliminar TODOS los ${totalPedimentos} pedimentos? Esta acción no se puede deshacer.`,
+        `Â¿EstÃ¡s seguro de que deseas eliminar TODOS los ${totalPedimentos} pedimentos? Esta acciÃ³n no se puede deshacer.`,
         'Eliminar Todos',
         async () => {
             try {
@@ -2226,7 +2271,7 @@ async function clearAllPedimentos() {
     );
 }
 
-// Función auxiliar para ejecutar la limpieza
+// FunciÃ³n auxiliar para ejecutar la limpieza
 async function executeClearAllPedimentos() {
 
     try {
@@ -2247,25 +2292,25 @@ async function executeClearAllPedimentos() {
                 deleted_count: data.deleted_count 
             });
             refreshPedimentosTable();
-            // Mostrar botón de importación de pedimentos ya que se limpiaron los datos
+            // Mostrar botÃ³n de importaciÃ³n de pedimentos ya que se limpiaron los datos
             updateImportButtonsVisibility(null, false);
         } else {
             showAlert(data.message || 'Error al limpiar los pedimentos.', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al limpiar pedimentos.', 'error');
+        showAlert('Error de conexiÃ³n al limpiar pedimentos.', 'error');
     }
 }
 
-// Actualizar estadísticas de pedimentos
+// Actualizar estadÃ­sticas de pedimentos
 function updatePedimentosStats(data) {
     const totalElement = document.getElementById('totalPedimentos');
     const ultimaElement = document.getElementById('ultimaImportacionPedimentos');
     const estadoElement = document.getElementById('estadoImportacionPedimentos');
     
     if (totalElement && data.total_imported !== undefined) {
-        // Si es una operación de limpieza (deleted_count existe), usar el count devuelto del servidor
+        // Si es una operaciÃ³n de limpieza (deleted_count existe), usar el count devuelto del servidor
         if (data.deleted_count !== undefined) {
             totalElement.textContent = '0';
         } else {
@@ -2283,14 +2328,14 @@ function updatePedimentosStats(data) {
         if (data.deleted_count !== undefined) {
             estadoElement.textContent = 'Limpiado';
         } else {
-            estadoElement.textContent = data.success ? 'Actualizado' : 'Error en importación';
+            estadoElement.textContent = data.success ? 'Actualizado' : 'Error en importaciÃ³n';
         }
     }
 }
 
-// Función helper para obtener la página actual de pedimentos
+// FunciÃ³n helper para obtener la pÃ¡gina actual de pedimentos
 function getCurrentPedimentosPage() {
-    // Buscar el enlace de página activo en la paginación de pedimentos
+    // Buscar el enlace de pÃ¡gina activo en la paginaciÃ³n de pedimentos
     const activePage = document.querySelector('#pedimentos-content .pagination .page-item.active .page-link');
     if (activePage) {
         const pageText = activePage.textContent.trim();
@@ -2298,7 +2343,7 @@ function getCurrentPedimentosPage() {
         return isNaN(pageNum) ? 1 : pageNum;
     }
     
-    // También intentar obtener de la URL actual
+    // TambiÃ©n intentar obtener de la URL actual
     const urlParams = new URLSearchParams(window.location.search);
     const pageFromUrl = urlParams.get('pedimentos_page');
     return pageFromUrl ? parseInt(pageFromUrl) : 1;
@@ -2307,11 +2352,11 @@ function getCurrentPedimentosPage() {
 // Refrescar tabla de pedimentos
 async function refreshPedimentosTable() {
     try {
-        // Obtener la página actual de la paginación
+        // Obtener la pÃ¡gina actual de la paginaciÃ³n
         const currentPage = getCurrentPedimentosPage();
         let url = '/logistica/catalogos?tab=pedimentos';
         
-        // Si hay una página específica, agregarla a la URL
+        // Si hay una pÃ¡gina especÃ­fica, agregarla a la URL
         if (currentPage > 1) {
             url += `&pedimentos_page=${currentPage}`;
         }
@@ -2351,8 +2396,8 @@ async function refreshPedimentosTable() {
             }
 
         } else {
-            console.warn('No se pudo actualizar la tabla, recargando página...');
-            // Forzar recarga con parámetro tab y página para mantener en pedimentos
+            console.warn('No se pudo actualizar la tabla, recargando pÃ¡gina...');
+            // Forzar recarga con parÃ¡metro tab y pÃ¡gina para mantener en pedimentos
             const currentUrl = new URL(window.location);
             const currentPage = getCurrentPedimentosPage();
             currentUrl.searchParams.set('tab', 'pedimentos');
@@ -2364,7 +2409,7 @@ async function refreshPedimentosTable() {
         }
     } catch (error) {
         console.error('Error al actualizar tabla:', error);
-        // Como fallback, recargar la página manteniendo el tab y página activa
+        // Como fallback, recargar la pÃ¡gina manteniendo el tab y pÃ¡gina activa
         const currentUrl = new URL(window.location);
         const currentPage = getCurrentPedimentosPage();
         currentUrl.searchParams.set('tab', 'pedimentos');
@@ -2377,10 +2422,10 @@ async function refreshPedimentosTable() {
 }
 
 // =======================================
-// FUNCIONES PARA AÑADIR NUEVO PEDIMENTO
+// FUNCIONES PARA AÃ‘ADIR NUEVO PEDIMENTO
 // =======================================
 
-// Abrir modal de añadir pedimento
+// Abrir modal de aÃ±adir pedimento
 function openAddPedimentoModal() {
     const modal = document.getElementById('addPedimentoModal');
     if (modal) {
@@ -2399,7 +2444,7 @@ function openAddPedimentoModal() {
     }
 }
 
-// Cerrar modal de añadir pedimento
+// Cerrar modal de aÃ±adir pedimento
 function closeAddPedimentoModal() {
     const modal = document.getElementById('addPedimentoModal');
     if (modal) {
@@ -2421,7 +2466,7 @@ function closeAddPedimentoModal() {
     }
 }
 
-// Guardar nuevo pedimento desde el catálogo
+// Guardar nuevo pedimento desde el catÃ¡logo
 async function guardarNuevoPedimentoCatalogo() {
     const saveBtn = document.getElementById('savePedimentoBtn');
     const form = document.getElementById('addPedimentoForm');
@@ -2453,7 +2498,7 @@ async function guardarNuevoPedimentoCatalogo() {
 
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al crear el pedimento.', 'error');
+        showAlert('Error de conexiÃ³n al crear el pedimento.', 'error');
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
@@ -2559,12 +2604,140 @@ async function actualizarPedimento() {
 
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexión al actualizar el pedimento.', 'error');
+        showAlert('Error de conexiÃ³n al actualizar el pedimento.', 'error');
     } finally {
         if (updateBtn) {
             updateBtn.disabled = false;
             updateBtn.querySelector('.update-text').classList.remove('hidden');
             updateBtn.querySelector('.loading-text').classList.add('hidden');
+        }
+    }
+}
+
+
+
+
+// Eliminar todos los clientes
+async function deleteAllClients() {
+    openConfirmModal(
+        'Eliminar Todos los Clientes',
+        '¿Estás completamente seguro de que deseas eliminar TODOS los clientes de la base de datos?\n\nEsta acción NO se puede deshacer y eliminará permanentemente todos los registros de clientes.',
+        'Sí, eliminar todos',
+        async () => {
+            await executeDeleteAllClientes();
+        }
+    );
+}
+
+// Función auxiliar para ejecutar la eliminación
+async function executeDeleteAllClientes() {
+    try {
+        showAlert('Eliminando todos los clientes...', 'info');
+        
+        const response = await fetch('/logistica/clientes/all', {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message + '. La página se recargará.', 'success');
+            
+            // Recargar la página después de 2 segundos
+            setTimeout(() => {
+                sessionStorage.setItem('activeTab', 'clientes');
+                window.location.reload();
+            }, 2000);
+        } else {
+            showAlert(data.message || 'Error al eliminar los clientes', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al eliminar los clientes', 'error');
+    }
+}
+
+// === FUNCIONES PARA PERIODICIDAD AVANZADA ===
+
+function togglePeriodicidadOptions() {
+    const periodicidadSelect = document.getElementById('editPeriodicidad');
+    const opcionesSemanal = document.getElementById('opciones-semanal');
+    const helpText = document.getElementById('periodicidad-help');
+    
+    if (!periodicidadSelect) return;
+    
+    const valor = periodicidadSelect.value;
+    
+    // Ocultar opciones semanal por defecto
+    if (opcionesSemanal) opcionesSemanal.classList.add('hidden');
+    
+    // Mostrar opciones según la selección
+    switch(valor) {
+        case 'Semanal':
+            if (opcionesSemanal) opcionesSemanal.classList.remove('hidden');
+            if (helpText) helpText.textContent = 'Reporte semanal los lunes';
+            break;
+            
+        case 'Tri-semanal':
+            if (helpText) helpText.textContent = 'Reportes los lunes, miércoles y viernes';
+            break;
+            
+        case 'Diario':
+        default:
+            if (helpText) helpText.textContent = 'Reportes diarios de lunes a viernes';
+            break;
+    }
+}
+
+function buildPeriodicidadString() {
+    const periodicidadSelect = document.getElementById('editPeriodicidad');
+    if (!periodicidadSelect) return 'Diario';
+    
+    const tipo = periodicidadSelect.value;
+    let resultado = tipo;
+    
+    if (tipo === 'Semanal') {
+        const diaSemanal = document.getElementById('dia-semanal');
+        if (diaSemanal && diaSemanal.value) {
+            resultado = `Semanal-${diaSemanal.value}`;
+        }
+    }
+    
+    return resultado;
+}
+
+function parsePeriodicidadString(periodicidadString) {
+    if (!periodicidadString) return { tipo: 'Diario', opcion: null };
+    
+    const partes = periodicidadString.split('-');
+    const tipo = partes[0];
+    const opcion = partes[1] || null;
+    
+    return { tipo, opcion };
+}
+
+function setPeriodicidadValues(periodicidadString) {
+    const { tipo, opcion } = parsePeriodicidadString(periodicidadString);
+    
+    const periodicidadSelect = document.getElementById('editPeriodicidad');
+    if (periodicidadSelect) {
+        // Asegurar compatibilidad con valores antiguos
+        let tipoFinal = tipo;
+        if (tipo === 'Quincenal' || tipo === 'Mensual') {
+            tipoFinal = 'Diario'; // Convertir valores antiguos a Diario
+        }
+        periodicidadSelect.value = tipoFinal || 'Diario';
+    }
+    
+    // Trigger change para mostrar opciones apropiadas
+    togglePeriodicidadOptions();
+    
+    // Set valores específicos para semanal
+    if (tipo === 'Semanal' && opcion) {
+        const diaSemanal = document.getElementById('dia-semanal');
+        if (diaSemanal) {
+            diaSemanal.value = opcion;
         }
     }
 }

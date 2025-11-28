@@ -25,6 +25,37 @@
                 </div>
             </div>
 
+            <!-- Mensajes Flash -->
+            @if(session('success'))
+                <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Pestañas -->
             <div class="bg-white/90 backdrop-blur rounded-2xl border border-blue-100/80 shadow-lg shadow-blue-500/10 overflow-hidden">
                 <!-- Tab Headers -->
@@ -96,6 +127,12 @@
                                     </svg>
                                     Asignar Ejecutivo
                                 </button>
+                                <button id="deleteAllClientsBtn" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Limpiar Clientes
+                                </button>
                                 @endif
                                 <button class="btn-add inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" data-type="clientes">
                                     <span class="mr-2 font-bold">+</span>
@@ -104,42 +141,7 @@
                             </div>
                         </div>
 
-                        <!-- Sección de importación de clientes -->
-                        <div id="clientes-import-section" class="mb-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-sm font-semibold text-gray-800">Importar Clientes desde Excel</h3>
-                                        <p class="text-xs text-gray-600">Carga masiva de clientes con asignación automática de ejecutivos</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center space-x-3">
-                                    <input type="file" id="clientes-file-input" accept=".xlsx,.xls" class="hidden">
-                                    <button id="clientes-upload-btn" class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                        </svg>
-                                        Cargar Excel
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Barra de progreso -->
-                            <div id="clientes-progress-container" class="mt-4 hidden">
-                                <div class="flex items-center space-x-3">
-                                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                        <div id="clientes-progress-bar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                                    </div>
-                                    <span id="clientes-progress-text" class="text-sm text-gray-600">0%</span>
-                                </div>
-                                <div id="clientes-progress-message" class="mt-2 text-sm text-gray-700"></div>
-                            </div>
-                        </div>
+
 
                         <div class="overflow-x-auto">
                             <table class="w-full">
@@ -211,7 +213,9 @@
                                                         data-id="{{ $cliente->id }}"
                                                         data-type="clientes"
                                                         data-name="{{ $cliente->cliente }}"
-                                                        data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}">
+                                                        data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}"
+                                                        data-periodicidad="{{ $cliente->periodicidad_reporte }}"
+                                                        data-correos="{{ $cliente->correos_string }}">
                                                     Editar
                                                 </button>
                                                 <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
@@ -726,16 +730,51 @@
                            class="form-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Campo de ejecutivo asignado solo para clientes -->
-                <div id="ejecutivoField" class="mb-4 hidden">
-                    <label for="editEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Ejecutivo Asignado</label>
-                    <select id="editEjecutivo" name="ejecutivo_asignado_id"
-                           class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Sin asignar</option>
-                        @foreach($todosEjecutivos as $ejecutivo)
-                        <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
-                        @endforeach
-                    </select>
+                <!-- Campos adicionales solo para clientes -->
+                <div id="clienteFieldsGroup" class="hidden">
+                    <!-- Campo de ejecutivo asignado -->
+                    <div class="mb-4">
+                        <label for="editEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Ejecutivo Asignado</label>
+                        <select id="editEjecutivo" name="ejecutivo_asignado_id"
+                               class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Sin asignar</option>
+                            @foreach($todosEjecutivos as $ejecutivo)
+                            <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Campo de periodicidad -->
+                    <div class="mb-4">
+                        <label for="editPeriodicidad" class="block text-sm font-medium text-gray-700 mb-2">Periodicidad de Reporte <span class="text-gray-500 text-xs">(Opcional)</span></label>
+                        <select id="editPeriodicidad" name="periodicidad_tipo" onchange="togglePeriodicidadOptions()"
+                               class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Diario">Diario (Lunes a Viernes)</option>
+                            <option value="Tri-semanal">Tri-semanal (Lunes, Miércoles, Viernes)</option>
+                            <option value="Semanal">Semanal (Elegir día)</option>
+                        </select>
+                        
+                        <!-- Opciones adicionales para semanal -->
+                        <div id="opciones-semanal" class="mt-2 hidden">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Día de la semana</label>
+                            <select id="dia-semanal" name="dia_semanal" class="form-select w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-400">
+                                <option value="lunes">Lunes</option>
+                            </select>
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 mt-2">
+                            <span id="periodicidad-help">Los reportes se envían solo en días hábiles (L-V)</span>
+                        </p>
+                    </div>
+
+                    <!-- Campo de correos -->
+                    <div class="mb-4">
+                        <label for="editCorreos" class="block text-sm font-medium text-gray-700 mb-2">Correos del Cliente <span class="text-gray-500 text-xs">(Opcional - separados por comas)</span></label>
+                        <textarea id="editCorreos" name="correos_string" rows="2"
+                                 placeholder="correo1@empresa.com, correo2@empresa.com"
+                                 class="form-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Separe múltiples correos con comas</p>
+                    </div>
                 </div>
 
                 <div class="modal-footer flex justify-end space-x-3 pt-4 border-t border-gray-200">
@@ -989,7 +1028,8 @@
                 <p class="text-sm text-gray-600 mt-1">Sube un archivo con las claves y descripciones de pedimentos</p>
             </div>
 
-            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data">
+            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data" action="{{ route('logistica.pedimentos.import') }}" method="POST">
+                @csrf
                 <div class="mb-6">
                     <label for="pedimentosFile" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo de Pedimentos</label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
@@ -1001,7 +1041,7 @@
                                 <span class="mt-2 block text-sm font-medium text-gray-900">
                                     Selecciona un archivo de pedimentos o arrastra aquí
                                 </span>
-                                <input id="pedimentosFile" name="file" type="file" class="sr-only" accept=".xlsx,.xls" required>
+                                <input id="pedimentosFile" name="pedimentos_file" type="file" class="sr-only" accept=".xlsx,.xls" required>
                             </label>
                             <p class="mt-1 text-xs text-gray-500">
                                 Formatos compatibles: Excel (.xlsx, .xls)
@@ -1035,7 +1075,7 @@
                     <button type="button" onclick="closeImportPedimentosModal()" class="btn-cancel px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" id="importPedimentosBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    <button type="submit" id="submitPedimentosBtn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                         <span class="import-text">Importar Pedimentos</span>
                         <span class="loading-text hidden">
                             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
@@ -1260,5 +1300,4 @@
 
 @push('scripts')
 <script src="{{ asset('js/Logistica/catalogos.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/Logistica/clientes-import.js') }}"></script>
 @endpush
