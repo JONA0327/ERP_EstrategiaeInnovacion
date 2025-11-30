@@ -17,6 +17,7 @@ class AgenteAduanal extends Model
 
     public function operaciones()
     {
-        return $this->hasMany(OperacionLogistica::class, 'agente_aduanal_id');
+        // La tabla operaciones_logisticas usa el campo 'agente_aduanal' (texto) no 'agente_aduanal_id' (FK)
+        return $this->hasMany(OperacionLogistica::class, 'agente_aduanal', 'agente_aduanal');
     }
 }

@@ -72,23 +72,15 @@ window.guardarNuevoCliente = function() {
     })
     .then(data => {
         if (data.success) {
-            // Actualizar el campo del formulario con el nuevo nombre
-            const clienteInput = document.querySelector('input[name="cliente"]');
-            if (clienteInput) {
-                clienteInput.value = nombre;
-            }
-            
-            // Agregar al datalist si existe
-            const datalist = document.getElementById('clientesList');
-            if (datalist) {
+            // Agregar el nuevo cliente al select
+            const clienteSelect = document.getElementById('clienteSelect');
+            if (clienteSelect) {
                 const option = document.createElement('option');
                 option.value = nombre;
-                datalist.appendChild(option);
-            } else {
-                console.warn('Datalist clientesList not found - verificando DOM...');
-                // Intentar encontrar el datalist por su atributo
-                const allDatalist = document.querySelectorAll('datalist');
-
+                option.textContent = nombre;
+                clienteSelect.appendChild(option);
+                // Seleccionar el nuevo cliente
+                clienteSelect.value = nombre;
             }
             
             cancelarNuevoCliente();
@@ -768,30 +760,8 @@ window.eliminarOperacion = function(operacionId) {
     });
 });
 
-// Función global para recalcular todos los status automáticamente
-function recalcularTodosLosStatus() {
-    if (confirm('¿Desea recalcular automáticamente todos los status de las operaciones?')) {
-        fetch('/logistica/operaciones/recalcular-status', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Status recalculados exitosamente');
-                window.location.reload();
-            } else {
-                alert('Error al recalcular: ' + (data.message || 'Error desconocido'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error de conexión');
-        });
-    }
-}
+// NOTA: El recálculo de status ahora se ejecuta automáticamente al cargar la página
+// La función manual ha sido eliminada ya que no es necesaria
 
 // Función para marcar operación como Done
 window.marcarComoDone = function(operacionId) {
@@ -1449,175 +1419,10 @@ document.getElementById('formPostOpGlobal').addEventListener('submit', function(
 // });
 
 // ========================================
-// FUNCIONES PARA REPORTES WORD
+// FUNCIONES PARA REPORTES WORD (ELIMINADAS)
 // ========================================
-
-/**
- * Abrir modal de reportes
- */
-window.abrirModalReportes = function() {
-    document.getElementById('modalReportes').classList.remove('hidden');
-};
-
-/**
- * Cerrar modal de reportes
- */
-window.cerrarModalReportes = function() {
-    document.getElementById('modalReportes').classList.add('hidden');
-    // Reset form
-    const form = document.getElementById('formReporteMultiple');
-    if (form) form.reset();
-};
-
-/**
- * Generar reporte individual de una operación
- */
-window.generarReporteIndividual = function(operacionId) {
-    if (!operacionId) {
-        alert('ID de operación no válido');
-        return;
-    }
-
-    // Mostrar loading
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loading-reporte';
-    loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    loadingDiv.innerHTML = `
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span class="text-slate-700">Generando reporte Word...</span>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-
-    // Crear un enlace temporal para la descarga
-    const url = `/logistica/operaciones/${operacionId}/reporte-word`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Remover loading después de un tiempo
-    setTimeout(() => {
-        const loading = document.getElementById('loading-reporte');
-        if (loading) {
-            document.body.removeChild(loading);
-        }
-    }, 2000);
-};
-
-/**
- * Generar reporte de todas las operaciones
- */
-window.generarReporteTodas = function() {
-    // Mostrar loading
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loading-reporte-todas';
-    loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    loadingDiv.innerHTML = `
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-            <span class="text-slate-700">Generando reporte completo...</span>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-
-    // Crear formulario para enviar por POST (sin filtros)
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/logistica/operaciones/reporte-multiple-word';
-    form.style.display = 'none';
-
-    // Agregar token CSRF
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const tokenInput = document.createElement('input');
-    tokenInput.type = 'hidden';
-    tokenInput.name = '_token';
-    tokenInput.value = csrfToken;
-    form.appendChild(tokenInput);
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-
-    // Cerrar modal
-    cerrarModalReportes();
-
-    // Remover loading después de un tiempo
-    setTimeout(() => {
-        const loading = document.getElementById('loading-reporte-todas');
-        if (loading) {
-            document.body.removeChild(loading);
-        }
-    }, 3000);
-};
-
-/**
- * Manejar formulario de reporte múltiple con filtros
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const formReporteMultiple = document.getElementById('formReporteMultiple');
-    if (formReporteMultiple) {
-        formReporteMultiple.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Mostrar loading
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loading-reporte-multiple';
-            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            loadingDiv.innerHTML = `
-                <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    <span class="text-slate-700">Generando reporte filtrado...</span>
-                </div>
-            `;
-            document.body.appendChild(loadingDiv);
-
-            // Crear formulario temporal para la descarga
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/logistica/operaciones/reporte-multiple-word';
-            form.style.display = 'none';
-
-            // Agregar token CSRF
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '_token';
-            tokenInput.value = csrfToken;
-            form.appendChild(tokenInput);
-
-            // Agregar los campos del formulario
-            const formData = new FormData(formReporteMultiple);
-            for (let [key, value] of formData.entries()) {
-                if (value) { // Solo agregar campos con valor
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = key;
-                    input.value = value;
-                    form.appendChild(input);
-                }
-            }
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-
-            // Cerrar modal
-            cerrarModalReportes();
-
-            // Remover loading después de un tiempo
-            setTimeout(() => {
-                const loading = document.getElementById('loading-reporte-multiple');
-                if (loading) {
-                    document.body.removeChild(loading);
-                }
-            }, 3000);
-        });
-    }
-});
+// Las funciones de generación de reportes Word han sido eliminadas
+// ya que esta funcionalidad no se utilizará
 
 // =======================================
 // FUNCIONES PARA NUEVA ADUANA EN MATRIZ

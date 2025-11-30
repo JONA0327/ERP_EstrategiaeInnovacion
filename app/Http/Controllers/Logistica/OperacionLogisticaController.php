@@ -26,7 +26,7 @@ class OperacionLogisticaController extends Controller
         // *** VERIFICACIÓN AUTOMÁTICA DE STATUS AL CONSULTAR ***
         $this->verificarYActualizarStatusOperaciones();
 
-        $operaciones = OperacionLogistica::with(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte', 'postOperacion'])
+        $operaciones = OperacionLogistica::with(['ejecutivo', 'postOperacion'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -34,24 +34,28 @@ class OperacionLogisticaController extends Controller
         // Filtrar clientes por ejecutivo asignado (solo mostrar los del ejecutivo logueado)
         $usuarioActual = auth()->user();
         $empleadoActual = null;
+        $esAdmin = false;
 
         // Buscar el empleado actual en la tabla empleados
         if ($usuarioActual) {
             $empleadoActual = Empleado::where('correo', $usuarioActual->email)
                 ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
                 ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
         }
 
-        // Si es administrador, mostrar todos los clientes, si no, solo los asignados
-        if ($usuarioActual && $usuarioActual->hasRole('admin')) {
-            $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->get();
-        } elseif ($empleadoActual) {
+        // Para ejecutivos normales (no admin), solo mostrar sus clientes asignados
+        // Para admin, mostrar todos los clientes
+        if (!$esAdmin && $empleadoActual) {
+            // Solo mostrar clientes asignados específicamente a este ejecutivo
             $clientes = Cliente::where('ejecutivo_asignado_id', $empleadoActual->id)
-                ->orWhereNull('ejecutivo_asignado_id')
                 ->orderBy('cliente')->get();
+        } elseif ($esAdmin) {
+            // Administrador ve todos los clientes
+            $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->get();
         } else {
-            $clientes = Cliente::whereNull('ejecutivo_asignado_id')
-                ->orderBy('cliente')->get();
+            // Si no es admin y no se encontró el empleado, no mostrar clientes
+            $clientes = collect();
         }
 
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->get();
@@ -67,13 +71,26 @@ class OperacionLogisticaController extends Controller
         $transportes = Transporte::orderBy('transporte')->get();
         $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->get();
 
-        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas'));
+        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'empleadoActual', 'esAdmin'));
     }
 
     public function catalogos()
     {
-        // Obtener todos los datos para las pestañas
+        $usuarioActual = auth()->user();
+        $empleadoActual = null;
+        $esAdmin = false;
+
+        // Buscar el empleado actual
+        if ($usuarioActual) {
+            $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        // Mostrar todos los clientes para todos los usuarios
         $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->paginate(15, ['*'], 'clientes_page');
+
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->paginate(15, ['*'], 'agentes_page');
         $transportes = Transporte::orderBy('transporte')->paginate(15, ['*'], 'transportes_page');
 
@@ -103,7 +120,7 @@ class OperacionLogisticaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos'));
+        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin'));
     }
 
     public function create()
@@ -229,12 +246,23 @@ class OperacionLogisticaController extends Controller
         try {
             \Log::info('Datos recibidos para cliente:', $request->all());
 
+            // Convertir el nombre del cliente a mayúsculas
+            $nombreCliente = strtoupper($request->cliente);
+
             $request->validate([
-                'cliente' => 'required|string|max:255|unique:clientes,cliente',
+                'cliente' => 'required|string|max:255',
                 'ejecutivo_asignado_id' => 'nullable|exists:empleados,id',
                 'correos' => 'nullable|string', // Recibido como JSON string
                 'periodicidad_reporte' => 'nullable|string|max:50'
             ]);
+
+            // Verificar si el cliente ya existe (en mayúsculas)
+            if (Cliente::whereRaw('UPPER(cliente) = ?', [$nombreCliente])->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El cliente ya existe en el sistema'
+                ], 422);
+            }
 
             // Procesar correos si se envían
             $correosArray = null;
@@ -245,9 +273,23 @@ class OperacionLogisticaController extends Controller
                 }
             }
 
+            // Si no se especifica ejecutivo_asignado_id, asignar al usuario actual
+            $ejecutivoAsignadoId = $request->ejecutivo_asignado_id;
+            if (!$ejecutivoAsignadoId) {
+                $usuarioActual = auth()->user();
+                if ($usuarioActual) {
+                    $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                        ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                        ->first();
+                    if ($empleadoActual) {
+                        $ejecutivoAsignadoId = $empleadoActual->id;
+                    }
+                }
+            }
+
             $cliente = Cliente::create([
-                'cliente' => $request->cliente,
-                'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null,
+                'cliente' => $nombreCliente, // Guardar en mayúsculas
+                'ejecutivo_asignado_id' => $ejecutivoAsignadoId,
                 'correos' => $correosArray,
                 'periodicidad_reporte' => $request->periodicidad_reporte ?? 'Diario',
                 'fecha_carga_excel' => null // Solo se asigna cuando viene del Excel
@@ -328,15 +370,43 @@ class OperacionLogisticaController extends Controller
         try {
             $cliente = Cliente::findOrFail($id);
 
+            // Verificar permisos: solo admin o el ejecutivo asignado puede editar
+            $usuarioActual = auth()->user();
+            $esAdmin = $usuarioActual && $usuarioActual->hasRole('admin');
+            
+            if (!$esAdmin) {
+                $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                    ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                    ->first();
+                
+                if (!$empleadoActual || $cliente->ejecutivo_asignado_id != $empleadoActual->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes permisos para editar este cliente'
+                    ], 403);
+                }
+            }
+
+            // Convertir nombre a mayúsculas
+            $nombreCliente = strtoupper($request->cliente);
+
             $request->validate([
-                'cliente' => 'required|string|max:255|unique:clientes,cliente,' . $id,
+                'cliente' => 'required|string|max:255',
                 'ejecutivo_asignado_id' => 'nullable|exists:empleados,id',
-                'correos' => 'nullable|string', // Recibido como JSON string
+                'correos' => 'nullable|string',
                 'periodicidad_reporte' => 'nullable|string|max:50'
             ]);
 
+            // Verificar duplicados (excluyendo el actual)
+            if (Cliente::whereRaw('UPPER(cliente) = ?', [$nombreCliente])->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe un cliente con ese nombre'
+                ], 422);
+            }
+
             $updateData = [
-                'cliente' => $request->cliente,
+                'cliente' => $nombreCliente,
                 'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null
             ];
 
@@ -431,6 +501,23 @@ class OperacionLogisticaController extends Controller
     {
         try {
             $cliente = Cliente::findOrFail($id);
+
+            // Verificar permisos: solo admin o el ejecutivo asignado puede eliminar
+            $usuarioActual = auth()->user();
+            $esAdmin = $usuarioActual && $usuarioActual->hasRole('admin');
+            
+            if (!$esAdmin) {
+                $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                    ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                    ->first();
+                
+                if (!$empleadoActual || $cliente->ejecutivo_asignado_id != $empleadoActual->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes permisos para eliminar este cliente'
+                    ], 403);
+                }
+            }
 
             // Verificar si tiene operaciones asociadas por el campo texto 'cliente'
             $operacionesAsociadas = OperacionLogistica::where('cliente', $cliente->cliente)->count();
@@ -1518,11 +1605,11 @@ class OperacionLogisticaController extends Controller
     public function generarReporteMultiple(Request $request)
     {
         try {
-            $query = OperacionLogistica::with(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte']);
+            $query = OperacionLogistica::with(['ejecutivo']);
 
             // Aplicar filtros si existen
-            if ($request->filled('cliente_id')) {
-                $query->where('cliente_id', $request->cliente_id);
+            if ($request->filled('cliente')) {
+                $query->where('cliente', 'like', '%' . $request->cliente . '%');
             }
             
             if ($request->filled('status')) {
@@ -1554,9 +1641,8 @@ class OperacionLogisticaController extends Controller
             $wordService = new WordDocumentService();
             
             $titulo = 'REPORTE DE OPERACIONES LOGÍSTICAS';
-            if ($request->filled('cliente_id')) {
-                $cliente = \App\Models\Logistica\Cliente::find($request->cliente_id);
-                $titulo .= ' - ' . ($cliente->cliente ?? 'Cliente');
+            if ($request->filled('cliente')) {
+                $titulo .= ' - ' . $request->cliente;
             }
             
             $wordService->crearReporteMultiple($operaciones, $titulo);

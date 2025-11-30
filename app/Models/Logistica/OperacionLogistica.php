@@ -88,28 +88,15 @@ class OperacionLogistica extends Model
     }
 
     /**
-     * Relación con el cliente
+     * NOTA: Las relaciones con cliente, agenteAduanal y transporte fueron eliminadas
+     * porque la tabla operaciones_logisticas usa campos de texto directos:
+     * - 'cliente' (texto) en lugar de 'cliente_id' (FK)
+     * - 'agente_aduanal' (texto) en lugar de 'agente_aduanal_id' (FK)
+     * - 'transporte' (texto) en lugar de 'transporte_id' (FK)
+     * 
+     * Las columnas FK fueron eliminadas en la migración:
+     * 2025_11_25_171611_fix_post_operaciones_and_clean_operaciones_logisticas.php
      */
-    public function cliente()
-    {
-        return $this->belongsTo(Cliente::class, 'cliente_id');
-    }
-
-    /**
-     * Relación con el agente aduanal
-     */
-    public function agenteAduanal()
-    {
-        return $this->belongsTo(AgenteAduanal::class, 'agente_aduanal_id');
-    }
-
-    /**
-     * Relación con el transporte
-     */
-    public function transporte()
-    {
-        return $this->belongsTo(Transporte::class, 'transporte_id');
-    }
 
     /**
      * Relación con la post operación

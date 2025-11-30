@@ -1,6 +1,6 @@
 ﻿/**
- * CatÃ¡logos Maestros - JavaScript
- * Manejo de tabs, modales de ediciÃ³n y eliminaciÃ³n
+ * Catálogos Maestros - JavaScript
+ * Manejo de tabs, modales de edición y eliminación
  */
 
 // Helper para obtener token CSRF
@@ -54,10 +54,10 @@ function hideButtonLoading(button) {
 }
 
 // Helper para actualizar progreso
-function updateProgress(percentage, message, type = 'aduanas') {
-    const progressContainer = document.getElementById(type === 'aduanas' ? 'importProgress' : 'importPedimentosProgress');
-    const progressBar = document.getElementById(type === 'aduanas' ? 'progressBar' : 'progressPedimentosBar');
-    const progressText = document.getElementById(type === 'aduanas' ? 'progressText' : 'progressPedimentosText');
+function updateProgress(percentage, message, type = 'ADUANAS') {
+    const progressContainer = document.getElementById(type === 'ADUANAS' ? 'importProgress' : 'importPedimentosProgress');
+    const progressBar = document.getElementById(type === 'ADUANAS' ? 'progressBar' : 'progressPedimentosBar');
+    const progressText = document.getElementById(type === 'ADUANAS' ? 'progressText' : 'progressPedimentosText');
     
     // TambiÃ©n actualizar modal si existe
     const modalContainer = document.getElementById(`import${type.charAt(0).toUpperCase() + type.slice(1)}ProgressModal`);
@@ -78,15 +78,15 @@ function updateProgress(percentage, message, type = 'aduanas') {
 }
 
 // Helper para ocultar todos los progress de un tipo
-function hideProgress(type = 'aduanas') {
-    const progressContainer = document.getElementById(type === 'aduanas' ? 'importProgress' : 'importPedimentosProgress');
+function hideProgress(type = 'ADUANAS') {
+    const progressContainer = document.getElementById(type === 'ADUANAS' ? 'importProgress' : 'importPedimentosProgress');
     const modalContainer = document.getElementById(`import${type.charAt(0).toUpperCase() + type.slice(1)}ProgressModal`);
     
     if (progressContainer) progressContainer.classList.add('hidden');
     if (modalContainer) modalContainer.classList.add('hidden');
 }
 
-// FunciÃ³n de emergencia para restaurar scroll automÃ¡ticamente
+// FunciÃ³n de emergencia para restaurar scroll automáticamente
 function emergencyScrollRestore() {
     // Verificar si hay modales visibles
     const modals = document.querySelectorAll('.modal-overlay:not(.hidden)');
@@ -116,7 +116,7 @@ document.addEventListener('keydown', function(event) {
 setInterval(emergencyScrollRestore, 2000);
 
 // ========================================
-// FUNCIONES PARA BÃšSQUEDA DE EMPLEADOS
+// FUNCIONES PARA BÚSQUEDA DE EMPLEADOS
 // ========================================
 
 function openSearchEmployeeModal() {
@@ -133,7 +133,7 @@ function openSearchEmployeeModal() {
             }
         }, 10);
 
-        // Limpiar bÃºsqueda anterior
+        // Limpiar búsqueda anterior
         const searchInput = document.getElementById('employeeSearchInput');
         if (searchInput) {
             searchInput.value = '';
@@ -237,7 +237,7 @@ function displaySearchResults(empleados) {
                     <div>
                         <h4 class="font-medium text-gray-900">${empleado.nombre}</h4>
                         <p class="text-sm text-gray-600">ID: ${empleado.id_empleado || 'N/A'}</p>
-                        <p class="text-sm text-gray-600">Ãrea: ${empleado.area || 'Sin Ã¡rea'}</p>
+                        <p class="text-sm text-gray-600">Ãrea: ${empleado.area || 'Sin área'}</p>
                         <p class="text-sm text-gray-600">Email: ${empleado.correo || 'Sin email'}</p>
                     </div>
                     <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
@@ -274,7 +274,7 @@ async function selectEmployee(empleadoId) {
             showAlert(data.message, 'success');
             closeSearchEmployeeModal();
             
-            // Recargar la pÃ¡gina para mostrar el nuevo ejecutivo
+            // Recargar la página para mostrar el nuevo ejecutivo
             setTimeout(() => {
                 sessionStorage.setItem('activeTab', 'ejecutivos');
                 window.location.reload();
@@ -288,7 +288,7 @@ async function selectEmployee(empleadoId) {
     }
 }
 
-// Event listener para la bÃºsqueda en tiempo real
+// Event listener para la búsqueda en tiempo real
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('employeeSearchInput');
     if (searchInput) {
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Verificar existencia de datos al cargar la pÃ¡gina
+    // Verificar existencia de datos al cargar la página
     checkDataExistenceAndUpdateButtons();
     
     // Event listener para el botÃ³n de eliminar todos los clientes
@@ -335,16 +335,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function checkDataExistenceAndUpdateButtons() {
     try {
-        // Verificar aduanas
-        const aduanasResponse = await fetch('/logistica/aduanas/check', {
+        // Verificar ADUANAS
+        const ADUANASResponse = await fetch('/logistica/ADUANAS/check', {
             method: 'GET',
             headers: getAuthHeaders()
         });
         
-        let aduanasExists = false;
-        if (aduanasResponse.ok) {
-            const aduanasData = await aduanasResponse.json();
-            aduanasExists = aduanasData.success ? aduanasData.exists : false;
+        let ADUANASExists = false;
+        if (ADUANASResponse.ok) {
+            const ADUANASData = await ADUANASResponse.json();
+            ADUANASExists = ADUANASData.success ? ADUANASData.exists : false;
         }
 
         // Verificar pedimentos
@@ -360,7 +360,7 @@ async function checkDataExistenceAndUpdateButtons() {
         }
 
         // Actualizar visibilidad de botones
-        updateImportButtonsVisibility(aduanasExists, pedimentosExists);
+        updateImportButtonsVisibility(ADUANASExists, pedimentosExists);
 
     } catch (error) {
         // En caso de error, mostrar los botones por defecto
@@ -368,17 +368,17 @@ async function checkDataExistenceAndUpdateButtons() {
     }
 }
 
-function updateImportButtonsVisibility(aduanasExist, pedimentosExist) {
+function updateImportButtonsVisibility(ADUANASExist, pedimentosExist) {
     // Botones de importaciÃ³n en la parte superior de cada pestaÃ±a
-    const importAduanasBtn = document.getElementById('importAduanasBtn');
+    const importADUANASBtn = document.getElementById('importADUANASBtn');
     const importPedimentosBtn = document.getElementById('importPedimentosBtn');
 
-    // Solo actualizar aduanas si no es null
-    if (importAduanasBtn && aduanasExist !== null) {
-        if (aduanasExist) {
-            importAduanasBtn.style.display = 'none';
+    // Solo actualizar ADUANAS si no es null
+    if (importADUANASBtn && ADUANASExist !== null) {
+        if (ADUANASExist) {
+            importADUANASBtn.style.display = 'none';
         } else {
-            importAduanasBtn.style.display = 'inline-flex';
+            importADUANASBtn.style.display = 'inline-flex';
         }
     }
 
@@ -394,11 +394,11 @@ function updateImportButtonsVisibility(aduanasExist, pedimentosExist) {
 
 // FunciÃ³n para mostrar botones de importaciÃ³n despuÃ©s de limpiar datos
 function showImportButtons() {
-    const importAduanasBtn = document.getElementById('importAduanasBtn');
+    const importADUANASBtn = document.getElementById('importADUANASBtn');
     const importPedimentosBtn = document.getElementById('importPedimentosBtn');
 
-    if (importAduanasBtn) {
-        importAduanasBtn.style.display = 'inline-flex';
+    if (importADUANASBtn) {
+        importADUANASBtn.style.display = 'inline-flex';
     }
 
     if (importPedimentosBtn) {
@@ -431,7 +431,7 @@ class CatalogosMaestros {
         this.initEventListeners();
         this.initExecutiveAssignment();
         
-        // Determinar quÃ© tab mostrar basado en URL o sessionStorage
+        // Determinar qué© tab mostrar basado en URL o sessionStorage
         const urlParams = new URLSearchParams(window.location.search);
         const urlTab = urlParams.get('tab');
         const savedTab = sessionStorage.getItem('activeTab');
@@ -439,7 +439,7 @@ class CatalogosMaestros {
         // Prioridad: URL > sessionStorage > default
         const activeTab = urlTab || savedTab || 'clientes';
         
-        // Si la URL tiene parÃ¡metros extraÃ±os, limpiarla
+        // Si la URL tiene parámetros extraÃ±os, limpiarla
         if (window.location.search && (!urlTab || urlParams.toString() !== `tab=${activeTab}`)) {
             this.updateURL(activeTab);
         }
@@ -502,11 +502,11 @@ class CatalogosMaestros {
     }
 
     updateURL(tabId) {
-        // Crear una URL limpia solo con el parÃ¡metro tab
+        // Crear una URL limpia solo con el parámetro tab
         const baseUrl = window.location.pathname;
         const newUrl = `${baseUrl}?tab=${tabId}`;
         
-        // Actualizar la URL sin recargar la pÃ¡gina
+        // Actualizar la URL sin recargar la página
         window.history.pushState({ tab: tabId }, '', newUrl);
     }
 
@@ -534,7 +534,7 @@ class CatalogosMaestros {
             
             // Guardar el tab activo en sessionStorage
             sessionStorage.setItem('activeTab', tabId);
-            // NO actualizar URL aquÃ­ para evitar bucles
+            // NO actualizar URL aqué­ para evitar bucles
         }
     }
 
@@ -621,7 +621,7 @@ class CatalogosMaestros {
             });
         }
 
-        // ConfirmaciÃ³n de eliminaciÃ³n
+        // Confirmación de eliminación
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
         if (confirmDeleteBtn) {
             confirmDeleteBtn.addEventListener('click', () => {
@@ -758,7 +758,7 @@ class CatalogosMaestros {
         const message = document.getElementById('deleteMessage');
 
         const typeLabel = this.getTypeLabel(type) || type || 'elemento';
-        message.innerHTML = `Â¿EstÃ¡s seguro de que deseas eliminar ${typeLabel.toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acciÃ³n no se puede deshacer.</span>`;
+        message.innerHTML = `¿Estás seguro de que deseas eliminar ${typeLabel.toLowerCase()} <strong>"${name}"</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer.</span>`;
 
         this.showModal(modal);
     }
@@ -812,7 +812,7 @@ class CatalogosMaestros {
         const name = nameInput.value.trim();
 
         if (!name) {
-            this.showAlert('Por favor, ingresa un nombre vÃ¡lido.', 'error');
+            this.showAlert('Por favor, ingresa un nombre válido.', 'error');
             return;
         }
 
@@ -947,7 +947,7 @@ class CatalogosMaestros {
             'agentes': 'Agente Aduanal',
             'transportes': 'Transporte',
             'ejecutivos': 'Ejecutivo',
-            'aduanas': 'Aduana',
+            'ADUANAS': 'Aduana',
             'pedimentos': 'Pedimento'
         };
 
@@ -955,13 +955,13 @@ class CatalogosMaestros {
     }
 
     refreshTable(type) {
-        // Para aduanas, usar la funciÃ³n especÃ­fica
-        if (type === 'aduanas') {
-            refreshAduanasTable();
+        // Para ADUANAS, usar la funciÃ³n especÃ­fica
+        if (type === 'ADUANAS') {
+            refreshADUANASTable();
         } else if (type === 'pedimentos') {
             refreshPedimentosTable();
         } else {
-            // Para otros catÃ¡logos, recargar con el parÃ¡metro tab en la URL
+            // Para otros Catálogos, recargar con el parámetro tab en la URL
             const currentTab = this.activeTab;
             const currentUrl = new URL(window.location);
             currentUrl.searchParams.set('tab', currentTab);
@@ -1186,8 +1186,8 @@ function openDeleteModal(id, type, name) {
 // ===================================
 
 // Abrir modal de importaciÃ³n
-function openImportAduanasModal() {
-    const modal = document.getElementById('importAduanasModal');
+function openImportADUANASModal() {
+    const modal = document.getElementById('importADUANASModal');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('show');
@@ -1200,8 +1200,8 @@ function openImportAduanasModal() {
 }
 
 // Cerrar modal de importaciÃ³n
-function closeImportAduanasModal() {
-    const modal = document.getElementById('importAduanasModal');
+function closeImportADUANASModal() {
+    const modal = document.getElementById('importADUANASModal');
     if (modal) {
         modal.classList.remove('show');
         modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
@@ -1212,7 +1212,7 @@ function closeImportAduanasModal() {
         }, 300);
 
         // Limpiar formulario
-        const form = document.getElementById('importAduanasForm');
+        const form = document.getElementById('importADUANASForm');
         if (form) {
             form.reset();
             document.getElementById('selectedFileName').classList.add('hidden');
@@ -1222,7 +1222,7 @@ function closeImportAduanasModal() {
 
 // Manejar selecciÃ³n de archivo
 function initFileHandling() {
-    const fileInput = document.getElementById('aduanasFile');
+    const fileInput = document.getElementById('ADUANASFile');
     const fileName = document.getElementById('selectedFileName');
 
     if (fileInput && fileName) {
@@ -1238,11 +1238,11 @@ function initFileHandling() {
     }
 }
 
-// Importar aduanas
-async function importAduanas() {
-    const form = document.getElementById('importAduanasForm');
-    const fileInput = document.getElementById('aduanasFile');
-    const importBtn = document.getElementById('importAduanasBtn');
+// Importar ADUANAS
+async function importADUANAS() {
+    const form = document.getElementById('importADUANASForm');
+    const fileInput = document.getElementById('ADUANASFile');
+    const importBtn = document.getElementById('importADUANASBtn');
 
     if (!fileInput.files[0]) {
         showAlert('Por favor, selecciona un archivo.', 'error');
@@ -1285,7 +1285,7 @@ async function importAduanas() {
             progressText.textContent = 'Procesando archivo...';
         }
 
-        const response = await fetch('/logistica/aduanas/import', {
+        const response = await fetch('/logistica/ADUANAS/import', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: formData
@@ -1302,18 +1302,18 @@ async function importAduanas() {
         let data;
         
         if (response.status === 419) {
-            throw new Error('SesiÃ³n expirada. Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
+            throw new Error('SesiÃ³n expirada. Por favor, recarga la página e intÃ©ntalo de nuevo.');
         }
         
         if (contentType && contentType.includes('application/json')) {
             data = await response.json();
         } else {
-            // Si no es JSON, probablemente es una pÃ¡gina de error HTML
+            // Si no es JSON, probablemente es una página de error HTML
             const text = await response.text();
             console.error('Respuesta no JSON:', text);
             
             if (text.includes('Page Expired')) {
-                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
+                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la página e intÃ©ntalo de nuevo.');
             }
             
             throw new Error('El servidor devolviÃ³ una respuesta invÃ¡lida (no JSON)');
@@ -1326,15 +1326,15 @@ async function importAduanas() {
                 progressText.textContent = 'ImportaciÃ³n completada exitosamente!';
             }
             
-            showAlert(`ImportaciÃ³n exitosa: ${data.total_imported} aduanas importadas, ${data.total_skipped || 0} omitidas.`, 'success');
+            showAlert(`ImportaciÃ³n exitosa: ${data.total_imported} ADUANAS importadas, ${data.total_skipped || 0} omitidas.`, 'success');
             
-            // Recargar pÃ¡gina despuÃ©s del Ã©xito para actualizar todo
+            // Recargar página despuÃ©s del Ã©xito para actualizar todo
             setTimeout(() => {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
                 }
-                // Mantener el tab activo de aduanas
-                sessionStorage.setItem('activeTab', 'aduanas');
+                // Mantener el tab activo de ADUANAS
+                sessionStorage.setItem('activeTab', 'ADUANAS');
                 window.location.reload();
             }, 1500);
         } else {
@@ -1344,7 +1344,7 @@ async function importAduanas() {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
                 }
-                closeImportAduanasModal();
+                closeImportADUANASModal();
             }, 1500);
         }
     } catch (error) {
@@ -1355,7 +1355,7 @@ async function importAduanas() {
             if (progressContainer) {
                 progressContainer.classList.add('hidden');
             }
-            closeImportAduanasModal();
+            closeImportADUANASModal();
         }, 1500);
     } finally {
         // Habilitar botÃ³n
@@ -1373,7 +1373,7 @@ async function importAduanas() {
 async function eliminarAduana(id) {
     openConfirmModal(
         'Eliminar Aduana',
-        'Â¿EstÃ¡s seguro de que deseas eliminar esta aduana? Esta acciÃ³n no se puede deshacer.',
+        '¿Estás seguro de que deseas eliminar esta aduana? Esta acción no se puede deshacer.',
         'Eliminar',
         async () => {
             await executeEliminarAduana(id);
@@ -1381,10 +1381,10 @@ async function eliminarAduana(id) {
     );
 }
 
-// FunciÃ³n auxiliar para ejecutar la eliminaciÃ³n
+// Función auxiliar para ejecutar la eliminación
 async function executeEliminarAduana(id) {
     try {
-        const response = await fetch(`/logistica/aduanas/${id}`, {
+        const response = await fetch(`/logistica/ADUANAS/${id}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1395,9 +1395,9 @@ async function executeEliminarAduana(id) {
 
         if (data.success) {
             showAlert(data.message, 'success');
-            // Asegurar que permanezca en la pestaÃ±a de aduanas
-            sessionStorage.setItem('activeTab', 'aduanas');
-            refreshAduanasTable();
+            // Asegurar que permanezca en la pestaÃ±a de ADUANAS
+            sessionStorage.setItem('activeTab', 'ADUANAS');
+            refreshADUANASTable();
         } else {
             showAlert(data.message || 'Error al eliminar la aduana.', 'error');
         }
@@ -1407,24 +1407,24 @@ async function executeEliminarAduana(id) {
     }
 }
 
-// Limpiar todas las aduanas
-async function clearAllAduanas() {
-    const totalAduanas = document.getElementById('totalAduanas').textContent;
+// Limpiar todas las ADUANAS
+async function clearAllADUANAS() {
+    const totalADUANAS = document.getElementById('totalADUANAS').textContent;
     
     openConfirmModal(
-        'Limpiar Todas las Aduanas',
-        `Â¿EstÃ¡s seguro de que deseas eliminar TODAS las ${totalAduanas} aduanas? Esta acciÃ³n no se puede deshacer.`,
+        'Limpiar Todas las ADUANAS',
+        `¿Estás seguro de que deseas eliminar TODAS las ${totalADUANAS} ADUANAS? Esta acción no se puede deshacer.`,
         'Eliminar Todas',
         async () => {
-            await executeClearAllAduanas();
+            await executeClearAllADUANAS();
         }
     );
 }
 
 // FunciÃ³n auxiliar para ejecutar la limpieza
-async function executeClearAllAduanas() {
+async function executeClearAllADUANAS() {
     try {
-        const response = await fetch('/logistica/aduanas', {
+        const response = await fetch('/logistica/ADUANAS', {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1435,24 +1435,24 @@ async function executeClearAllAduanas() {
 
         if (data.success) {
             showAlert(data.message, 'success');
-            // Asegurar que permanezca en la pestaÃ±a de aduanas
-            sessionStorage.setItem('activeTab', 'aduanas');
-            updateAduanasStats({ total_imported: 0 });
-            refreshAduanasTable();
-            // Mostrar botÃ³n de importaciÃ³n de aduanas ya que se limpiaron los datos
+            // Asegurar que permanezca en la pestaÃ±a de ADUANAS
+            sessionStorage.setItem('activeTab', 'ADUANAS');
+            updateADUANASStats({ total_imported: 0 });
+            refreshADUANASTable();
+            // Mostrar botÃ³n de importaciÃ³n de ADUANAS ya que se limpiaron los datos
             updateImportButtonsVisibility(false, null);
         } else {
-            showAlert(data.message || 'Error al limpiar las aduanas.', 'error');
+            showAlert(data.message || 'Error al limpiar las ADUANAS.', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Error de conexiÃ³n al limpiar las aduanas.', 'error');
+        showAlert('Error de conexiÃ³n al limpiar las ADUANAS.', 'error');
     }
 }
 
-// Actualizar estadÃ­sticas de aduanas
-function updateAduanasStats(data) {
-    const totalElement = document.getElementById('totalAduanas');
+// Actualizar estadÃ­sticas de ADUANAS
+function updateADUANASStats(data) {
+    const totalElement = document.getElementById('totalADUANAS');
     const ultimaElement = document.getElementById('ultimaImportacion');
     const estadoElement = document.getElementById('estadoImportacion');
 
@@ -1475,10 +1475,10 @@ function updateAduanasStats(data) {
     }
 }
 
-// FunciÃ³n helper para obtener la pÃ¡gina actual de aduanas
-function getCurrentAduanasPage() {
-    // Buscar el enlace de pÃ¡gina activo en la paginaciÃ³n de aduanas
-    const activePage = document.querySelector('#aduanas-content .pagination .page-item.active .page-link');
+// FunciÃ³n helper para obtener la página actual de ADUANAS
+function getCurrentADUANASPage() {
+    // Buscar el enlace de página activo en la paginaciÃ³n de ADUANAS
+    const activePage = document.querySelector('#ADUANAS-content .pagination .page-item.active .page-link');
     if (activePage) {
         const pageText = activePage.textContent.trim();
         const pageNum = parseInt(pageText);
@@ -1487,20 +1487,20 @@ function getCurrentAduanasPage() {
     
     // TambiÃ©n intentar obtener de la URL actual
     const urlParams = new URLSearchParams(window.location.search);
-    const pageFromUrl = urlParams.get('aduanas_page');
+    const pageFromUrl = urlParams.get('ADUANAS_page');
     return pageFromUrl ? parseInt(pageFromUrl) : 1;
 }
 
-// Refrescar tabla de aduanas
-async function refreshAduanasTable() {
+// Refrescar tabla de ADUANAS
+async function refreshADUANASTable() {
     try {
-        // Obtener la pÃ¡gina actual de la paginaciÃ³n
-        const currentPage = getCurrentAduanasPage();
-        let url = '/logistica/catalogos?tab=aduanas';
+        // Obtener la página actual de la paginaciÃ³n
+        const currentPage = getCurrentADUANASPage();
+        let url = '/logistica/catalogos?tab=ADUANAS';
         
-        // Si hay una pÃ¡gina especÃ­fica, agregarla a la URL
+        // Si hay una página especÃ­fica, agregarla a la URL
         if (currentPage > 1) {
-            url += `&aduanas_page=${currentPage}`;
+            url += `&ADUANAS_page=${currentPage}`;
         }
         
         const response = await fetch(url, {
@@ -1518,61 +1518,61 @@ async function refreshAduanasTable() {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
             
-            // Extraer solo la tabla de aduanas del HTML recibido
-            const newTableContainer = tempDiv.querySelector('#aduanas-content .overflow-x-auto');
-            const currentTableContainer = document.querySelector('#aduanas-content .overflow-x-auto');
+            // Extraer solo la tabla de ADUANAS del HTML recibido
+            const newTableContainer = tempDiv.querySelector('#ADUANAS-content .overflow-x-auto');
+            const currentTableContainer = document.querySelector('#ADUANAS-content .overflow-x-auto');
             
             if (newTableContainer && currentTableContainer) {
                 currentTableContainer.innerHTML = newTableContainer.innerHTML;
             }
 
             // Actualizar estadÃ­sticas tambiÃ©n
-            const newStats = tempDiv.querySelector('#aduanasStats');
-            const currentStats = document.querySelector('#aduanasStats');
+            const newStats = tempDiv.querySelector('#ADUANASStats');
+            const currentStats = document.querySelector('#ADUANASStats');
             
             if (newStats && currentStats) {
                 currentStats.innerHTML = newStats.innerHTML;
             }
 
             // Actualizar paginaciÃ³n si existe
-            const newPagination = tempDiv.querySelector('#aduanas-content .flex.justify-center');
-            const currentPagination = document.querySelector('#aduanas-content .flex.justify-center');
+            const newPagination = tempDiv.querySelector('#ADUANAS-content .flex.justify-center');
+            const currentPagination = document.querySelector('#ADUANAS-content .flex.justify-center');
             
             if (newPagination && currentPagination) {
                 currentPagination.innerHTML = newPagination.innerHTML;
             } else if (newPagination && !currentPagination) {
                 // Si hay nueva paginaciÃ³n pero no existÃ­a antes, agregarla
-                const aduanasContent = document.querySelector('#aduanas-content .p-6');
-                if (aduanasContent) {
+                const ADUANASContent = document.querySelector('#ADUANAS-content .p-6');
+                if (ADUANASContent) {
                     const paginationDiv = document.createElement('div');
                     paginationDiv.className = 'mt-6 flex justify-center';
                     paginationDiv.innerHTML = newPagination.innerHTML;
-                    aduanasContent.appendChild(paginationDiv);
+                    ADUANASContent.appendChild(paginationDiv);
                 }
             }
 
         } else {
-            console.warn('No se pudo actualizar la tabla, recargando pÃ¡gina...');
-            // Forzar recarga con parÃ¡metro tab y pÃ¡gina para mantener en aduanas
+            console.warn('No se pudo actualizar la tabla, recargando página...');
+            // Forzar recarga con parámetro tab y página para mantener en ADUANAS
             const currentUrl = new URL(window.location);
-            const currentPage = getCurrentAduanasPage();
-            currentUrl.searchParams.set('tab', 'aduanas');
+            const currentPage = getCurrentADUANASPage();
+            currentUrl.searchParams.set('tab', 'ADUANAS');
             if (currentPage > 1) {
-                currentUrl.searchParams.set('aduanas_page', currentPage);
+                currentUrl.searchParams.set('ADUANAS_page', currentPage);
             }
-            sessionStorage.setItem('activeTab', 'aduanas');
+            sessionStorage.setItem('activeTab', 'ADUANAS');
             window.location.href = currentUrl.toString();
         }
     } catch (error) {
         console.error('Error al actualizar tabla:', error);
-        // Como fallback, recargar la pÃ¡gina manteniendo el tab y pÃ¡gina activa
+        // Como fallback, recargar la página manteniendo el tab y página activa
         const currentUrl = new URL(window.location);
-        const currentPage = getCurrentAduanasPage();
-        currentUrl.searchParams.set('tab', 'aduanas');
+        const currentPage = getCurrentADUANASPage();
+        currentUrl.searchParams.set('tab', 'ADUANAS');
         if (currentPage > 1) {
-            currentUrl.searchParams.set('aduanas_page', currentPage);
+            currentUrl.searchParams.set('ADUANAS_page', currentPage);
         }
-        sessionStorage.setItem('activeTab', 'aduanas');
+        sessionStorage.setItem('activeTab', 'ADUANAS');
         window.location.href = currentUrl.toString();
     }
 }
@@ -1656,7 +1656,7 @@ function handleConfirm() {
         try {
             confirmModalCallback();
         } catch (error) {
-            showAlert('Error al ejecutar la acciÃ³n.', 'error');
+            showAlert('Error al ejecutar la acción.', 'error');
         } finally {
             // Asegurar que el modal se cierre siempre
             setTimeout(() => {
@@ -1692,26 +1692,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2000);
 });
 
-// Inicializar eventos especÃ­ficos de aduanas cuando se cargue el DOM
+// Inicializar eventos especÃ­ficos de ADUANAS cuando se cargue el DOM
 document.addEventListener('DOMContentLoaded', function() {
-    // BotÃ³n de importar aduanas
-    const importAduanasBtn = document.getElementById('importAduanasBtn');
-    if (importAduanasBtn) {
-        importAduanasBtn.addEventListener('click', openImportAduanasModal);
+    // BotÃ³n de importar ADUANAS
+    const importADUANASBtn = document.getElementById('importADUANASBtn');
+    if (importADUANASBtn) {
+        importADUANASBtn.addEventListener('click', openImportADUANASModal);
     }
 
-    // BotÃ³n de limpiar aduanas
-    const clearAduanasBtn = document.getElementById('clearAduanasBtn');
-    if (clearAduanasBtn) {
-        clearAduanasBtn.addEventListener('click', clearAllAduanas);
+    // BotÃ³n de limpiar ADUANAS
+    const clearADUANASBtn = document.getElementById('clearADUANASBtn');
+    if (clearADUANASBtn) {
+        clearADUANASBtn.addEventListener('click', clearAllADUANAS);
     }
 
     // Formulario de importaciÃ³n
-    const importForm = document.getElementById('importAduanasForm');
+    const importForm = document.getElementById('importADUANASForm');
     if (importForm) {
         importForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            importAduanas();
+            importADUANAS();
         });
     }
 
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelButtons = document.querySelectorAll('.btn-cancel');
     cancelButtons.forEach(button => {
         button.addEventListener('click', function() {
-            closeImportAduanasModal();
+            closeImportADUANASModal();
             closeAddAduanaModal();
             closeEditAduanaModal();
         });
@@ -1820,7 +1820,7 @@ function openAddAduanaModal() {
         const form = document.getElementById('addAduanaForm');
         if (form) {
             form.reset();
-            document.getElementById('aduanaSeccion').value = '0';
+            document.getElementById('ADUANASeccion').value = '0';
         }
     }
 }
@@ -1859,7 +1859,7 @@ async function guardarNuevaAduanaCatalogo() {
             saveBtn.querySelector('.loading-text').classList.remove('hidden');
         }
 
-        const response = await fetch('/logistica/aduanas', {
+        const response = await fetch('/logistica/ADUANAS', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: formData
@@ -1870,10 +1870,10 @@ async function guardarNuevaAduanaCatalogo() {
         if (data.success) {
             showAlert(data.message, 'success');
             closeAddAduanaModal();
-            // Asegurar que permanezca en la pestaÃ±a de aduanas
-            sessionStorage.setItem('activeTab', 'aduanas');
-            refreshAduanasTable();
-            updateAduanasStats({ total_imported: 1 });
+            // Asegurar que permanezca en la pestaÃ±a de ADUANAS
+            sessionStorage.setItem('activeTab', 'ADUANAS');
+            refreshADUANASTable();
+            updateADUANASStats({ total_imported: 1 });
         } else {
             showAlert(data.message || 'Error al crear la aduana.', 'error');
         }
@@ -1901,7 +1901,7 @@ function editarAduana(id, codigo, seccion, denominacion, patente, pais) {
         // Llenar los campos con los datos actuales
         document.getElementById('editAduanaId').value = id;
         document.getElementById('editAduanaCodigo').value = codigo;
-        document.getElementById('editAduanaSeccion').value = seccion || '0';
+        document.getElementById('editADUANASeccion').value = seccion || '0';
         document.getElementById('editAduanaDenominacion').value = denominacion;
         document.getElementById('editAduanaPatente').value = patente || '';
         document.getElementById('editAduanaPais').value = pais || 'MX';
@@ -1952,7 +1952,7 @@ async function actualizarAduana() {
             updateBtn.querySelector('.loading-text').classList.remove('hidden');
         }
 
-        const response = await fetch(`/logistica/aduanas/${aduanaId}`, {
+        const response = await fetch(`/logistica/ADUANAS/${aduanaId}`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1973,9 +1973,9 @@ async function actualizarAduana() {
         if (data.success) {
             showAlert(data.message, 'success');
             closeEditAduanaModal();
-            // Asegurar que permanezca en la pestaÃ±a de aduanas
-            sessionStorage.setItem('activeTab', 'aduanas');
-            refreshAduanasTable();
+            // Asegurar que permanezca en la pestaÃ±a de ADUANAS
+            sessionStorage.setItem('activeTab', 'ADUANAS');
+            refreshADUANASTable();
         } else {
             showAlert(data.message || 'Error al actualizar la aduana.', 'error');
         }
@@ -2083,12 +2083,12 @@ async function importPedimentos() {
             if (loadingText) loadingText.classList.remove('hidden');
         }
 
-        // Mostrar barras de progreso (tanto en pÃ¡gina como en modal)
+        // Mostrar barras de progreso (tanto en página como en modal)
         const progressModalContainer = document.getElementById('importPedimentosProgressModal');
         const progressModalBar = document.getElementById('progressPedimentosBarModal');
         const progressModalText = document.getElementById('progressPedimentosTextModal');
 
-        // Mostrar progreso en pÃ¡gina
+        // Mostrar progreso en página
         if (progressContainer) {
             progressContainer.classList.remove('hidden');
         }
@@ -2140,7 +2140,7 @@ async function importPedimentos() {
         let data;
         
         if (response.status === 419) {
-            throw new Error('SesiÃ³n expirada. Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
+            throw new Error('SesiÃ³n expirada. Por favor, recarga la página e intÃ©ntalo de nuevo.');
         }
         
         if (contentType && contentType.includes('application/json')) {
@@ -2150,7 +2150,7 @@ async function importPedimentos() {
             console.error('Respuesta no JSON:', text);
             
             if (text.includes('Page Expired')) {
-                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la pÃ¡gina e intÃ©ntalo de nuevo.');
+                throw new Error('SesiÃ³n expirada (CSRF). Por favor, recarga la página e intÃ©ntalo de nuevo.');
             }
             
             throw new Error('El servidor devolviÃ³ una respuesta invÃ¡lida (no JSON)');
@@ -2169,7 +2169,7 @@ async function importPedimentos() {
             
             showAlert(`ImportaciÃ³n exitosa: ${data.total_imported} pedimentos importados, ${data.total_skipped || 0} omitidos.`, 'success');
             
-            // Recargar pÃ¡gina despuÃ©s del Ã©xito para actualizar todo
+            // Recargar página despuÃ©s del Ã©xito para actualizar todo
             setTimeout(() => {
                 if (progressContainer) {
                     progressContainer.classList.add('hidden');
@@ -2221,7 +2221,7 @@ async function importPedimentos() {
 async function eliminarPedimento(id) {
     openConfirmModal(
         'Eliminar Pedimento',
-        'Â¿EstÃ¡s seguro de que deseas eliminar este pedimento? Esta acciÃ³n no se puede deshacer.',
+        '¿Estás seguro de que deseas eliminar este pedimento? Esta acción no se puede deshacer.',
         'Eliminar',
         async () => {
             await executeEliminarPedimento(id);
@@ -2229,7 +2229,7 @@ async function eliminarPedimento(id) {
     );
 }
 
-// FunciÃ³n auxiliar para ejecutar la eliminaciÃ³n
+// Función auxiliar para ejecutar la eliminación
 async function executeEliminarPedimento(id) {
     try {
         const response = await fetch(`/logistica/pedimentos/${id}`, {
@@ -2258,7 +2258,7 @@ async function clearAllPedimentos() {
     
     openConfirmModal(
         'Limpiar Todos los Pedimentos',
-        `Â¿EstÃ¡s seguro de que deseas eliminar TODOS los ${totalPedimentos} pedimentos? Esta acciÃ³n no se puede deshacer.`,
+        `¿Estás seguro de que deseas eliminar TODOS los ${totalPedimentos} pedimentos? Esta acción no se puede deshacer.`,
         'Eliminar Todos',
         async () => {
             try {
@@ -2333,9 +2333,9 @@ function updatePedimentosStats(data) {
     }
 }
 
-// FunciÃ³n helper para obtener la pÃ¡gina actual de pedimentos
+// FunciÃ³n helper para obtener la página actual de pedimentos
 function getCurrentPedimentosPage() {
-    // Buscar el enlace de pÃ¡gina activo en la paginaciÃ³n de pedimentos
+    // Buscar el enlace de página activo en la paginaciÃ³n de pedimentos
     const activePage = document.querySelector('#pedimentos-content .pagination .page-item.active .page-link');
     if (activePage) {
         const pageText = activePage.textContent.trim();
@@ -2352,11 +2352,11 @@ function getCurrentPedimentosPage() {
 // Refrescar tabla de pedimentos
 async function refreshPedimentosTable() {
     try {
-        // Obtener la pÃ¡gina actual de la paginaciÃ³n
+        // Obtener la página actual de la paginaciÃ³n
         const currentPage = getCurrentPedimentosPage();
         let url = '/logistica/catalogos?tab=pedimentos';
         
-        // Si hay una pÃ¡gina especÃ­fica, agregarla a la URL
+        // Si hay una página especÃ­fica, agregarla a la URL
         if (currentPage > 1) {
             url += `&pedimentos_page=${currentPage}`;
         }
@@ -2396,8 +2396,8 @@ async function refreshPedimentosTable() {
             }
 
         } else {
-            console.warn('No se pudo actualizar la tabla, recargando pÃ¡gina...');
-            // Forzar recarga con parÃ¡metro tab y pÃ¡gina para mantener en pedimentos
+            console.warn('No se pudo actualizar la tabla, recargando página...');
+            // Forzar recarga con parámetro tab y página para mantener en pedimentos
             const currentUrl = new URL(window.location);
             const currentPage = getCurrentPedimentosPage();
             currentUrl.searchParams.set('tab', 'pedimentos');
@@ -2409,7 +2409,7 @@ async function refreshPedimentosTable() {
         }
     } catch (error) {
         console.error('Error al actualizar tabla:', error);
-        // Como fallback, recargar la pÃ¡gina manteniendo el tab y pÃ¡gina activa
+        // Como fallback, recargar la página manteniendo el tab y página activa
         const currentUrl = new URL(window.location);
         const currentPage = getCurrentPedimentosPage();
         currentUrl.searchParams.set('tab', 'pedimentos');
@@ -2741,3 +2741,4 @@ function setPeriodicidadValues(periodicidadString) {
         }
     }
 }
+

@@ -46,29 +46,11 @@
                             </svg>
                             Nueva Operación
                         </button>
-                        <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                            </svg>
-                            Importar
-                        </button>
-                        <button onclick="recalcularTodosLosStatus()" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                            Recalcular Status
-                        </button>
                         <button onclick="abrirModalPostOperaciones()" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                             </svg>
                             Gestionar Post-Operaciones
-                        </button>
-                        <button onclick="abrirModalReportes()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            Generar Reportes Word
                         </button>
                     </div>
                     <div class="flex gap-2">
@@ -219,14 +201,6 @@
                                             </svg>
                                         </button>
                                         @endif
-
-                                        <button onclick="generarReporteIndividual({{ $operacion->id }})"
-                                                class="action-button btn-view"
-                                                title="Generar reporte Word">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
-                                        </button>
 
                                         <button onclick="eliminarOperacion({{ $operacion->id }})"
                                                 class="action-button btn-delete"
@@ -384,304 +358,295 @@
             </div>
 
             <!-- Contenido del formulario con scroll -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <form id="formOperacion" class="space-y-4">
+            <div class="flex-1 overflow-y-auto p-6">
+                <form id="formOperacion" class="space-y-6">
                         @csrf
 
-                        <!-- Información Básica -->
-                        <div class="form-section">
-                            <h3>Información Básica</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- PASO 1: Tipo de Operación -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-l-4 border-blue-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">1</div>
+                                <h3 class="text-lg font-bold text-slate-800">Tipo de Operación</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Operación *</label>
-                                    <select name="operacion" required class="form-input">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">¿Qué tipo de operación es? *</label>
+                                    <select name="operacion" required class="form-input text-base">
                                         <option value="">Seleccionar...</option>
-                                        <option value="EXPORTACION">Exportación</option>
-                                        <option value="IMPORTACION">Importación</option>
+                                        <option value="IMPORTACION">📦 Importación</option>
+                                        <option value="EXPORTACION">🚚 Exportación</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">T. Operación *</label>
-                                    <select name="tipo_operacion_enum" required onchange="actualizarTransportes(); calcularTargetAutomatico();" class="form-input">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">¿Qué transporte utilizará? *</label>
+                                    <select name="tipo_operacion_enum" required onchange="actualizarTransportes(); calcularTargetAutomatico();" class="form-input text-base">
                                         <option value="">Seleccionar...</option>
-                                        <option value="Terrestre" data-target="3">Terrestre (Land)</option>
-                                        <option value="Aerea" data-target="3">Aérea (Air)</option>
-                                        <option value="Ferrocarril" data-target="3">Ferrocarril (Railway)</option>
-                                        <option value="Maritima" data-target="7">Marítima (Sea)</option>
+                                        <option value="Terrestre" data-target="3">🚛 Terrestre (3 días)</option>
+                                        <option value="Aerea" data-target="3">✈️ Aérea (3 días)</option>
+                                        <option value="Ferrocarril" data-target="3">🚂 Ferrocarril (3 días)</option>
+                                        <option value="Maritima" data-target="7">🚢 Marítima (7 días)</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <div class="bg-blue-50 p-3 rounded-lg">
-                                        <p class="text-sm text-blue-700 font-medium">📊 Control de Status</p>
-                                        <p class="text-xs text-blue-600">El status se calculará automáticamente según las fechas ingresadas</p>
-                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">💡 El tiempo estimado se calcula automáticamente</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Cliente y Ejecutivo -->
-                        <div class="form-section" style="background: #dbeafe;">
-                            <h3>Cliente y Ejecutivo</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- PASO 2: Cliente y Responsable -->
+                        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 border-l-4 border-emerald-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-emerald-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">2</div>
+                                <h3 class="text-lg font-bold text-slate-800">Cliente y Responsable</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-sm font-medium text-slate-700">Cliente *</label>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-semibold text-slate-700">Cliente *</label>
                                         <button type="button" onclick="mostrarNuevoCliente()"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            + Nuevo cliente
+                                                class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold flex items-center">
+                                            <span class="mr-1">+</span> Agregar nuevo
                                         </button>
                                     </div>
-                                    <input type="text" name="cliente" required class="form-input" placeholder="Nombre del cliente" list="clientesList">
-                                    <datalist id="clientesList">
+                                    <select name="cliente" id="clienteSelect" required class="form-input text-base w-full">
+                                        <option value="">Selecciona un cliente</option>
                                         @foreach($clientes as $cliente)
-                                            <option value="{{ $cliente->cliente }}">
+                                            <option value="{{ $cliente->cliente }}">{{ $cliente->cliente }}</option>
                                         @endforeach
-                                    </datalist>
-                                    <!-- Formulario para nuevo cliente -->
-                                    <div id="nuevoClienteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
+                                    </select>
+                                    <div id="nuevoClienteForm" class="hidden mt-3 p-3 bg-white border-2 border-emerald-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoClienteNombre" placeholder="Nombre del nuevo cliente" class="form-input mb-2">
                                         <div class="flex space-x-2">
                                             <button type="button" onclick="guardarNuevoCliente()"
-                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
-                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                                    class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center">
+                                                    ✓ Guardar</button>
                                             <button type="button" onclick="cancelarNuevoCliente()"
-                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                                    class="px-4 py-2 bg-slate-400 text-white rounded-lg text-sm hover:bg-slate-500">Cancelar</button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Ejecutivo *</label>
-                                    <input type="text" name="ejecutivo" required class="form-input" placeholder="Nombre del ejecutivo" list="ejecutivosList">
-                                    <datalist id="ejecutivosList">
-                                        @foreach($empleados as $empleado)
-                                            <option value="{{ $empleado->nombre }}">
-                                        @endforeach
-                                    </datalist>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Ejecutivo Responsable *</label>
+                                    @php
+                                        $valorEjecutivo = '';
+                                        $soloLectura = false;
+                                        
+                                        if (isset($esAdmin) && isset($empleadoActual)) {
+                                            if (!$esAdmin && $empleadoActual) {
+                                                $valorEjecutivo = $empleadoActual->nombre;
+                                                $soloLectura = true;
+                                            }
+                                        }
+                                    @endphp
+                                    <input type="text" name="ejecutivo" required class="form-input text-base" 
+                                           placeholder="Nombre del ejecutivo" 
+                                           @if(isset($esAdmin) && $esAdmin) list="ejecutivosList" @endif
+                                           value="{{ $valorEjecutivo }}"
+                                           @if($soloLectura) readonly @endif>
+                                    @if(isset($esAdmin) && $esAdmin)
+                                        <datalist id="ejecutivosList">
+                                            @foreach($empleados as $empleado)
+                                                <option value="{{ $empleado->nombre }}">
+                                            @endforeach
+                                        </datalist>
+                                    @endif
+                                    @if($soloLectura)
+                                        <p class="text-xs text-slate-500 mt-1">📌 Tu nombre está asignado automáticamente</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Fechas Iniciales -->
-                        <div class="form-section" style="background: #f0fdf4;">
-                            <h3>📅 Fechas Iniciales (Solo la obligatoria)</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-1 gap-3">
+                        <!-- PASO 3: Información de la Operación -->
+                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border-l-4 border-amber-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">3</div>
+                                <h3 class="text-lg font-bold text-slate-800">Detalles de la Operación</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Embarque *</label>
-                                    <input type="date" name="fecha_embarque" required class="form-input">
-                                    <p class="text-xs text-green-600 mt-1">✓ Esta es la única fecha obligatoria al crear la operación</p>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Proveedor/Cliente Final *</label>
+                                    <input type="text" name="proveedor_o_cliente" required class="form-input text-base" placeholder="Nombre del proveedor o cliente">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Número de Factura *</label>
+                                    <input type="text" name="no_factura" required class="form-input text-base" placeholder="Ej: FAC-12345">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Clave/ID Interno *</label>
+                                    <input type="text" name="clave" required class="form-input text-base" placeholder="Código de identificación">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Referencia Interna *</label>
+                                    <input type="text" name="referencia_interna" required class="form-input text-base" placeholder="Referencia para seguimiento">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Información Inicial Obligatoria -->
-                        <div class="form-section" style="background: #fef3c7;">
-                            <h3>📋 Información Inicial Obligatoria</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- PASO 4: Fecha y Aduana -->
+                        <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-5 border-l-4 border-violet-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-violet-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">4</div>
+                                <h3 class="text-lg font-bold text-slate-800">Fecha y Ubicación</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Proveedor/Cliente *</label>
-                                    <input type="text" name="proveedor_o_cliente" required class="form-input">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">📅 Fecha de Embarque *</label>
+                                    <input type="date" name="fecha_embarque" required class="form-input text-base">
+                                    <p class="text-xs text-violet-600 mt-1 font-medium">✓ Esta es la única fecha obligatoria</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Factura *</label>
-                                    <input type="text" name="no_factura" required class="form-input">
-                                </div>
-                                <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-sm font-medium text-slate-700">Aduana *</label>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-semibold text-slate-700">Aduana de Despacho *</label>
                                         <button type="button" onclick="mostrarNuevaAduana()"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            + Nueva aduana
+                                                class="text-xs text-violet-600 hover:text-violet-800 font-semibold flex items-center">
+                                            <span class="mr-1">+</span> Agregar nueva
                                         </button>
                                     </div>
-                                    <input type="text" name="aduana" required class="form-input" placeholder="Código y nombre de la aduana" list="aduanasList">
+                                    <input type="text" name="aduana" required class="form-input text-base" placeholder="Código y nombre de la aduana" list="aduanasList">
                                     <datalist id="aduanasList">
                                         @foreach($aduanas ?? [] as $aduana)
                                             <option value="{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}">
                                         @endforeach
                                     </datalist>
-                                    <!-- Formulario para nueva aduana -->
-                                    <div id="nuevaAduanaForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                                            <input type="text" id="nuevaAduanaCodigo" placeholder="Cód. (01-99)" class="form-input text-sm" maxlength="2">
-                                            <input type="text" id="nuevaAduanaSeccion" placeholder="Sección (0-9)" class="form-input text-sm" maxlength="1" value="0">
-                                            <input type="text" id="nuevaAduanaDenominacion" placeholder="Denominación" class="form-input text-sm">
+                                    <div id="nuevaAduanaForm" class="hidden mt-3 p-3 bg-white border-2 border-violet-200 rounded-lg shadow-sm">
+                                        <div class="grid grid-cols-3 gap-2 mb-2">
+                                            <input type="text" id="nuevaAduanaCodigo" placeholder="Código" class="form-input text-sm" maxlength="2">
+                                            <input type="text" id="nuevaAduanaSeccion" placeholder="Sección" class="form-input text-sm" maxlength="1" value="0">
+                                            <input type="text" id="nuevaAduanaDenominacion" placeholder="Nombre" class="form-input text-sm col-span-3">
                                         </div>
                                         <div class="flex space-x-2">
                                             <button type="button" onclick="guardarNuevaAduana()"
-                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
-                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                                    class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700 flex items-center">
+                                                    ✓ Guardar</button>
                                             <button type="button" onclick="cancelarNuevaAduana()"
-                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                                    class="px-4 py-2 bg-slate-400 text-white rounded-lg text-sm hover:bg-slate-500">Cancelar</button>
                                         </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia Interna *</label>
-                                    <input type="text" name="referencia_interna" required class="form-input">
-                                </div>
-                                <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-sm font-medium text-slate-700">Aduana *</label>
-                                        <button type="button" onclick="mostrarNuevaAduana()"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            + Nueva aduana
-                                        </button>
-                                    </div>
-                                    <input type="text" name="aduana" required class="form-input" placeholder="Código y nombre de la aduana" list="aduanasList">
-                                    <datalist id="aduanasList">
-                                        @foreach($aduanas ?? [] as $aduana)
-                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}">
-                                        @endforeach
-                                    </datalist>
-                                    <!-- Formulario para nueva aduana -->
-                                    <div id="nuevaAduanaForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                                            <input type="text" id="nuevaAduanaCodigo" placeholder="Cód. (01-99)" class="form-input text-sm" maxlength="2">
-                                            <input type="text" id="nuevaAduanaSeccion" placeholder="Sección (0-9)" class="form-input text-sm" maxlength="1" value="0">
-                                            <input type="text" id="nuevaAduanaDenominacion" placeholder="Denominación" class="form-input text-sm">
-                                        </div>
-                                        <div class="flex space-x-2">
-                                            <button type="button" onclick="guardarNuevaAduana()"
-                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
-                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
-                                            <button type="button" onclick="cancelarNuevaAduana()"
-                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Target (días)</label>
-                                    <input type="number" name="target" min="0" readonly class="form-input bg-gray-100" title="Se calcula automáticamente según el tipo de operación">
-                                    <p class="text-xs text-gray-600 mt-1">✓ Automático: Terrestre/Aérea/Tren=3 días, Marítima=7 días</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Agente Aduanal -->
-                        <div class="form-section" style="background: #fef3c7;">
-                            <h3>Agente Aduanal</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- PASO 5: Agente y Transporte -->
+                        <div class="bg-gradient-to-r from-sky-50 to-cyan-50 rounded-xl p-5 border-l-4 border-sky-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-sky-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">5</div>
+                                <h3 class="text-lg font-bold text-slate-800">Agente Aduanal y Transporte</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-sm font-medium text-slate-700">Agente Aduanal</label>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-semibold text-slate-700">Agente Aduanal *</label>
                                         <button type="button" onclick="mostrarNuevoAgente()"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            + Nuevo agente
+                                                class="text-xs text-sky-600 hover:text-sky-800 font-semibold flex items-center">
+                                            <span class="mr-1">+</span> Agregar nuevo
                                         </button>
                                     </div>
-                                    <input type="text" name="agente_aduanal" class="form-input" placeholder="Nombre del agente aduanal" list="agentesList">
+                                    <input type="text" name="agente_aduanal" required class="form-input text-base" placeholder="Nombre del agente aduanal" list="agentesList">
                                     <datalist id="agentesList">
                                         @foreach($agentesAduanales as $agente)
                                             <option value="{{ $agente->agente_aduanal }}">
                                         @endforeach
                                     </datalist>
-                                    <!-- Formulario para nuevo agente -->
-                                    <div id="nuevoAgenteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
-                                        <input type="text" id="nuevoAgenteNombre" placeholder="Nombre del nuevo agente aduanal" class="form-input mb-2">
+                                    <div id="nuevoAgenteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
+                                        <input type="text" id="nuevoAgenteNombre" placeholder="Nombre del nuevo agente" class="form-input mb-2">
                                         <div class="flex space-x-2">
                                             <button type="button" onclick="guardarNuevoAgente()"
-                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
-                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                                    class="px-4 py-2 bg-sky-600 text-white rounded-lg text-sm hover:bg-sky-700 flex items-center">
+                                                    ✓ Guardar</button>
                                             <button type="button" onclick="cancelarNuevoAgente()"
-                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                                    class="px-4 py-2 bg-slate-400 text-white rounded-lg text-sm hover:bg-slate-500">Cancelar</button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Transporte -->
-                        <div class="form-section" style="background: #ecfdf5;">
-                            <h3>Transporte</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-sm font-medium text-slate-700">Transporte</label>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-semibold text-slate-700">Empresa de Transporte</label>
                                         <button type="button" onclick="mostrarNuevoTransporte()"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            + Nuevo transporte
+                                                class="text-xs text-sky-600 hover:text-sky-800 font-semibold flex items-center">
+                                            <span class="mr-1">+</span> Agregar nuevo
                                         </button>
                                     </div>
-                                    <input type="text" name="transporte" class="form-input" placeholder="Nombre del transporte" list="transportesList">
+                                    <input type="text" name="transporte" class="form-input text-base" placeholder="Nombre de la empresa" list="transportesList">
                                     <datalist id="transportesList">
                                         @foreach($transportes as $transporte)
                                             <option value="{{ $transporte->transporte }}" data-tipo="{{ $transporte->tipo_operacion }}">
                                         @endforeach
                                     </datalist>
-                                    <!-- Formulario para nuevo transporte -->
-                                    <div id="nuevoTransporteForm" class="hidden mt-2 p-3 bg-white border rounded-lg">
-                                        <input type="text" id="nuevoTransporteNombre" placeholder="Nombre del nuevo transporte" class="form-input mb-2">
+                                    <div id="nuevoTransporteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
+                                        <input type="text" id="nuevoTransporteNombre" placeholder="Nombre de la empresa" class="form-input mb-2">
                                         <div class="flex space-x-2">
                                             <button type="button" onclick="guardarNuevoTransporte()"
-                                                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center">
-                                                    <span class="mr-1 font-bold">+</span>Guardar</button>
+                                                    class="px-4 py-2 bg-sky-600 text-white rounded-lg text-sm hover:bg-sky-700 flex items-center">
+                                                    ✓ Guardar</button>
                                             <button type="button" onclick="cancelarNuevoTransporte()"
-                                                    class="px-3 py-1 bg-gray-600 text-white rounded text-sm">Cancelar</button>
+                                                    class="px-4 py-2 bg-slate-400 text-white rounded-lg text-sm hover:bg-slate-500">Cancelar</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Información Posterior (NO OBLIGATORIA AL INICIO) -->
-                        <div class="form-section" style="background: #f3e8ff; border: 2px dashed #a855f7;">
-                            <h3>🔄 Información Posterior (Opcional al crear)</h3>
-                            <div class="bg-purple-50 p-3 rounded-lg mb-4">
-                                <p class="text-sm text-purple-700 font-medium">ℹ️ Estos campos se llenan durante el proceso</p>
-                                <p class="text-xs text-purple-600">Puede crear la operación sin estos datos y actualizarlos después</p>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo Aduana</label>
-                                    <input type="date" name="fecha_arribo_aduana" class="form-input">
-                                    <p class="text-xs text-gray-500">Se llena cuando llega la carga</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Modulación</label>
-                                    <input type="date" name="fecha_modulacion" class="form-input">
-                                    <p class="text-xs text-gray-500">Cuando A.A procesa pedimento</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Arribo a Planta</label>
-                                    <input type="date" name="fecha_arribo_planta" class="form-input">
-                                    <p class="text-xs text-gray-500">Cuando se entrega al cliente</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Pedimento</label>
-                                    <input type="text" name="no_pedimento" class="form-input">
-                                    <p class="text-xs text-gray-500">Solo después de modulación</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Referencia A.A</label>
-                                    <input type="text" name="referencia_aa" class="form-input">
-                                    <p class="text-xs text-gray-500">Referencia del agente</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Guía/BL</label>
-                                    <input type="text" name="guia_bl" class="form-input">
-                                    <p class="text-xs text-gray-500">Documento de transporte</p>
+                        <!-- PASO 6: Información Adicional (Opcional) -->
+                        <div class="bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl p-5 border-l-4 border-slate-400 border-dashed">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-slate-400 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">6</div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-bold text-slate-800">Información Adicional</h3>
+                                    <p class="text-xs text-slate-600">Opcional - Se puede completar después</p>
                                 </div>
                             </div>
+                            
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                                <p class="text-sm text-blue-700 flex items-center">
+                                    <span class="mr-2">💡</span>
+                                    <strong>Tip:</strong> Puedes guardar ahora y completar estos datos más tarde durante el proceso
+                                </p>
+                            </div>
 
-                            <!-- Campo de Comentarios -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Fecha Arribo a Aduana</label>
+                                    <input type="date" name="fecha_arribo_aduana" class="form-input bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Fecha de Modulación</label>
+                                    <input type="date" name="fecha_modulacion" class="form-input bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Fecha Arribo a Planta</label>
+                                    <input type="date" name="fecha_arribo_planta" class="form-input bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Número de Pedimento</label>
+                                    <input type="text" name="no_pedimento" class="form-input bg-white" placeholder="Se llena después">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Referencia del Agente</label>
+                                    <input type="text" name="referencia_aa" class="form-input bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Guía/BL</label>
+                                    <input type="text" name="guia_bl" class="form-input bg-white">
+                                </div>
+                            </div>
+
                             <div class="mt-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Comentarios Iniciales</label>
-                                <textarea name="comentarios" rows="2" class="form-input w-full"
-                                         placeholder="Comentarios opcionales al crear la operación..."></textarea>
+                                <label class="block text-sm font-medium text-slate-600 mb-2">Comentarios</label>
+                                <textarea name="comentarios" rows="2" class="form-input w-full bg-white"
+                                         placeholder="Agrega cualquier nota o comentario relevante..."></textarea>
                             </div>
                         </div>
 
-                        <!-- Botones -->
-                        <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <!-- Botones de Acción -->
+                        <div class="flex justify-between items-center pt-6 border-t-2 border-slate-200">
                             <button type="button" onclick="cerrarModal()"
-                                    class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
-                                Cancelar
+                                    class="px-6 py-3 border-2 border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition-all">
+                                ✕ Cancelar
                             </button>
                             <button type="submit"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                Guardar Operación
+                                    class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all flex items-center">
+                                <span class="mr-2">✓</span> Guardar Operación
                             </button>
                         </div>
                 </form>
@@ -855,124 +820,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Generar Reportes Word -->
-    <div id="modalReportes" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <!-- Header -->
-            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
-                <h2 class="text-lg font-semibold text-slate-800">
-                    <span class="text-red-600 mr-2 text-xl">📄</span>
-                    Generar Reportes Word
-                </h2>
-                <button onclick="cerrarModalReportes()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
-                    <span>&times;</span>
-                </button>
-            </div>
-
-            <!-- Contenido -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="space-y-6">
-                    <!-- Opción: Reporte Multiple con Filtros -->
-                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                            Reporte Múltiple con Filtros
-                        </h3>
-                        
-                        <form id="formReporteMultiple">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <!-- Filtro Cliente -->
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-                                    <select name="cliente_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="">Todos los clientes</option>
-                                        @foreach($clientes as $cliente)
-                                            <option value="{{ $cliente->id }}">{{ $cliente->cliente }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <!-- Filtro Status -->
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                    <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="">Todos los status</option>
-                                        <option value="Done">Done</option>
-                                        <option value="En Proceso">En Proceso</option>
-                                        <option value="Fuera Métrica">Fuera Métrica</option>
-                                    </select>
-                                </div>
-
-                                <!-- Filtro Fecha Desde -->
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Desde</label>
-                                    <input type="date" name="fecha_desde" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-
-                                <!-- Filtro Fecha Hasta -->
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Hasta</label>
-                                    <input type="date" name="fecha_hasta" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                            </div>
-
-                            <div class="flex justify-end">
-                                <button type="submit" class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    Generar Reporte Múltiple
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Separador -->
-                    <div class="text-center">
-                        <span class="text-slate-400 text-sm">o también puedes</span>
-                    </div>
-
-                    <!-- Opción: Todas las Operaciones -->
-                    <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-                        <h3 class="text-lg font-semibold text-green-800 mb-2 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                            </svg>
-                            Reporte de Todas las Operaciones
-                        </h3>
-                        <p class="text-green-700 text-sm mb-3">Genera un reporte con todas las operaciones (máximo 100 registros más recientes)</p>
-                        <button onclick="generarReporteTodas()" class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            Generar Reporte Completo
-                        </button>
-                    </div>
-
-                    <!-- Nota informativa -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <div class="flex items-start">
-                            <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div>
-                                <h4 class="text-sm font-medium text-yellow-800">Información sobre los reportes</h4>
-                                <ul class="text-xs text-yellow-700 mt-1 space-y-1">
-                                    <li>• Los reportes incluyen información completa de las operaciones</li>
-                                    <li>• Se incluyen post-operaciones e historial cuando estén disponibles</li>
-                                    <li>• Los archivos se descargan automáticamente en formato .docx</li>
-                                    <li>• Para reportes individuales, usa el botón 📄 en cada fila de la tabla</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

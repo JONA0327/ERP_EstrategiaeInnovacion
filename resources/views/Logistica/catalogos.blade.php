@@ -209,21 +209,32 @@
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
-                                                <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $cliente->id }}"
-                                                        data-type="clientes"
-                                                        data-name="{{ $cliente->cliente }}"
-                                                        data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}"
-                                                        data-periodicidad="{{ $cliente->periodicidad_reporte }}"
-                                                        data-correos="{{ $cliente->correos_string }}">
-                                                    Editar
-                                                </button>
-                                                <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $cliente->id }}"
-                                                        data-type="clientes"
-                                                        data-name="{{ $cliente->cliente }}">
-                                                    Eliminar
-                                                </button>
+                                                @php
+                                                    $puedeEditar = $esAdmin ?? true;
+                                                    if (!$puedeEditar && isset($empleadoActual) && $empleadoActual) {
+                                                        $puedeEditar = $cliente->ejecutivo_asignado_id == $empleadoActual->id;
+                                                    }
+                                                @endphp
+                                                
+                                                @if($puedeEditar)
+                                                    <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                            data-id="{{ $cliente->id }}"
+                                                            data-type="clientes"
+                                                            data-name="{{ $cliente->cliente }}"
+                                                            data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}"
+                                                            data-periodicidad="{{ $cliente->periodicidad_reporte }}"
+                                                            data-correos="{{ $cliente->correos_string }}">
+                                                        Editar
+                                                    </button>
+                                                    <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
+                                                            data-id="{{ $cliente->id }}"
+                                                            data-type="clientes"
+                                                            data-name="{{ $cliente->cliente }}">
+                                                        Eliminar
+                                                    </button>
+                                                @else
+                                                    <span class="text-xs text-gray-400 italic">Sin permisos</span>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
