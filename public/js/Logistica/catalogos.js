@@ -3,6 +3,122 @@
  * Manejo de tabs, modales de edición y eliminación
  */
 
+// ========================================
+// SISTEMA DE MODALES REUTILIZABLES
+// ========================================
+
+/**
+ * Muestra un modal de alerta (reemplazo de alert())
+ * @param {string} message - Mensaje a mostrar
+ * @param {string} type - Tipo: 'success', 'error', 'warning', 'info'
+ * @param {string} title - Título opcional
+ */
+window.mostrarAlerta = function(message, type = 'info', title = '') {
+    const modal = document.getElementById('modalAlert');
+    const iconContainer = document.getElementById('modalAlertIcon');
+    const titleElement = document.getElementById('modalAlertTitle');
+    const messageElement = document.getElementById('modalAlertMessage');
+    
+    // Definir iconos y colores según el tipo
+    const types = {
+        success: {
+            icon: `<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Éxito'
+        },
+        error: {
+            icon: `<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Error'
+        },
+        warning: {
+            icon: `<svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>`,
+            title: title || 'Advertencia'
+        },
+        info: {
+            icon: `<svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Información'
+        }
+    };
+    
+    const config = types[type] || types.info;
+    iconContainer.innerHTML = config.icon;
+    titleElement.textContent = config.title;
+    messageElement.textContent = message;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+/**
+ * Cierra el modal de alerta
+ */
+window.cerrarModalAlert = function() {
+    const modal = document.getElementById('modalAlert');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+/**
+ * Muestra un modal de confirmación (reemplazo de confirm())
+ * @param {string} message - Mensaje a mostrar
+ * @param {function} onConfirm - Callback cuando se confirma
+ * @param {string} title - Título opcional
+ * @param {string} confirmText - Texto del botón de confirmar
+ */
+window.mostrarConfirmacion = function(message, onConfirm, title = 'Confirmar acción', confirmText = 'Confirmar') {
+    const modal = document.getElementById('modalConfirm');
+    const titleElement = document.getElementById('modalConfirmTitle');
+    const messageElement = document.getElementById('modalConfirmMessage');
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    confirmBtn.textContent = confirmText;
+    
+    // Remover listeners anteriores
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    
+    // Agregar nuevo listener
+    document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+        cerrarModalConfirm(true);
+        if (typeof onConfirm === 'function') {
+            onConfirm();
+        }
+    });
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+/**
+ * Cierra el modal de confirmación
+ */
+window.cerrarModalConfirm = function(confirmed) {
+    const modal = document.getElementById('modalConfirm');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+// Event listener para cerrar modales con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalAlert();
+        cerrarModalConfirm(false);
+    }
+});
+
+// ========================================
+// FIN SISTEMA DE MODALES
+// ========================================
+
 // Helper para obtener token CSRF
 function getCsrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]');

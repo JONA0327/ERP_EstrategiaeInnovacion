@@ -352,12 +352,13 @@ class OperacionLogistica extends Model
             $nuevoColor = 'amarillo';
         }
 
-        // Si hay fecha de arribo a planta, considerar como completado automáticamente
-        if ($this->fecha_arribo_planta) {
-            $nuevoStatus = 'Done';
-            // Color según si fue dentro o fuera de métrica
-            $nuevoColor = (isset($diasTranscurridos) && $diasTranscurridos <= $target) ? 'verde' : 'rojo';
-        }
+        // Si hay fecha de aduana, considerar como completado automáticamente
+        // NOTA: Ya no se marca como Done automáticamente, solo manualmente
+        // if ($this->fecha_arribo_planta) {
+        //     $nuevoStatus = 'Done';
+        //     // Color según si fue dentro o fuera de métrica
+        //     $nuevoColor = (isset($diasTranscurridos) && $diasTranscurridos <= $target) ? 'verde' : 'rojo';
+        // }
 
         // El status manual prevalece sobre el automático para "Done"
         if ($this->status_manual === 'Done') {
@@ -390,15 +391,22 @@ class OperacionLogistica extends Model
      */
     public function generarHistorialCambioStatus($resultado, $esManual = false, $accionManual = null)
     {
-        // Solo generar historial si hubo cambio o es la primera vez
-        if (!$resultado['cambio'] && $this->historicoMatrizSgm()->exists() && !$esManual) {
-            return null;
+        // Si es creación inicial o manual, SIEMPRE crear historial
+        // Si es actualización automática, solo crear si hubo cambio
+        if (!$esManual && !str_contains($accionManual ?? '', 'Creación') && !str_contains($accionManual ?? '', 'Actualización')) {
+            if (!$resultado['cambio'] && $this->historicoMatrizSgm()->exists()) {
+                return null;
+            }
         }
 
         if ($esManual && $accionManual) {
-            $descripcion = "Acción manual: {$accionManual}";
-            $descripcion .= ". Status manual: {$this->status_manual}";
-            $descripcion .= ". Status automático: {$resultado['status']}";
+            $descripcion = $accionManual;
+            if (!str_contains($accionManual, 'Status')) {
+                $descripcion .= ". Status manual: {$this->status_manual}";
+            }
+        } elseif ($accionManual) {
+            // Descripción personalizada proporcionada
+            $descripcion = $accionManual;
         } else {
             $descripcion = "Status actualizado automáticamente: ";
 

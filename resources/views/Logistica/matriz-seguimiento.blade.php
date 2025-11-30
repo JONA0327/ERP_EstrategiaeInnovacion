@@ -192,9 +192,16 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
                                         </button>
+                                        <button onclick="editarOperacion({{ $operacion->id }})"
+                                                class="action-button btn-edit"
+                                                title="Editar operación">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </button>
                                         @if($operacion->status_manual !== 'Done')
                                         <button onclick="marcarComoDone({{ $operacion->id }})"
-                                                class="action-button btn-edit"
+                                                class="action-button btn-done"
                                                 title="Marcar como Done (Manual)">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -348,7 +355,7 @@
         <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header fijo -->
             <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
-                    <h2 class="text-lg font-semibold text-slate-800">
+                    <h2 id="modalTitle" class="text-lg font-semibold text-slate-800">
                         <span class="text-blue-600 mr-2 text-xl">⊕</span>
                         Añadir Nueva Operación
                     </h2>
@@ -361,6 +368,8 @@
             <div class="flex-1 overflow-y-auto p-6">
                 <form id="formOperacion" class="space-y-6">
                         @csrf
+                        <input type="hidden" id="operacionId" name="operacion_id" value="">
+                        <input type="hidden" id="isEditing" name="_method" value="">
 
                         <!-- PASO 1: Tipo de Operación -->
                         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-l-4 border-blue-500">
@@ -472,8 +481,13 @@
                                     <input type="text" name="no_factura" required class="form-input text-base" placeholder="Ej: FAC-12345">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Clave/ID Interno *</label>
-                                    <input type="text" name="clave" required class="form-input text-base" placeholder="Código de identificación">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Clave del Pedimento *</label>
+                                    <select name="clave" required class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                        <option value="">Seleccione una clave</option>
+                                        @foreach($pedimentos ?? [] as $pedimento)
+                                            <option value="{{ $pedimento->clave }}">{{ $pedimento->clave }} - {{ $pedimento->descripcion }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Referencia Interna *</label>
@@ -502,10 +516,12 @@
                                             <span class="mr-1">+</span> Agregar nueva
                                         </button>
                                     </div>
-                                    <input type="text" name="aduana" required class="form-input text-base" placeholder="Código y nombre de la aduana" list="aduanasList">
+                                    <input type="text" name="aduana" required class="form-input text-base" placeholder="Ej: 010, 021, etc." list="aduanasList">
                                     <datalist id="aduanasList">
                                         @foreach($aduanas ?? [] as $aduana)
-                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}">
+                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }}" data-denominacion="{{ $aduana->denominacion }}">
+                                                {{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}
+                                            </option>
                                         @endforeach
                                     </datalist>
                                     <div id="nuevaAduanaForm" class="hidden mt-3 p-3 bg-white border-2 border-violet-200 rounded-lg shadow-sm">
@@ -638,15 +654,31 @@
                             </div>
                         </div>
 
+                        <!-- Status Manual (solo visible al editar) -->
+                        <div id="statusManualSection" class="hidden bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-5 border-l-4 border-rose-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-rose-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">⚙</div>
+                                <h3 class="text-lg font-bold text-slate-800">Control de Estado</h3>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Status Manual</label>
+                                <select name="status_manual" id="statusManualSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white">
+                                    <option value="In Process">🔄 In Process (En Proceso)</option>
+                                    <option value="Done">✅ Done (Completado)</option>
+                                </select>
+                                <p class="text-xs text-rose-600 mt-2 font-medium">💡 Cambia manualmente el estado si es necesario</p>
+                            </div>
+                        </div>
+
                         <!-- Botones de Acción -->
                         <div class="flex justify-between items-center pt-6 border-t-2 border-slate-200">
                             <button type="button" onclick="cerrarModal()"
                                     class="px-6 py-3 border-2 border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition-all">
                                 ✕ Cancelar
                             </button>
-                            <button type="submit"
+                            <button type="submit" id="submitButton"
                                     class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all flex items-center">
-                                <span class="mr-2">✓</span> Guardar Operación
+                                <span class="mr-2">✓</span> <span id="submitButtonText">Guardar Operación</span>
                             </button>
                         </div>
                 </form>
@@ -820,6 +852,51 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta (Reemplazo de alert) -->
+    <div id="modalAlert" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+            <div class="p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="modalAlertIcon" class="flex-shrink-0">
+                        <!-- Icon will be inserted here -->
+                    </div>
+                    <h3 id="modalAlertTitle" class="text-xl font-semibold text-slate-900"></h3>
+                </div>
+                <p id="modalAlertMessage" class="text-slate-600 mb-6"></p>
+                <div class="flex justify-end">
+                    <button onclick="cerrarModalAlert()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación (Reemplazo de confirm) -->
+    <div id="modalConfirm" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+            <div class="p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 id="modalConfirmTitle" class="text-xl font-semibold text-slate-900">Confirmar acción</h3>
+                </div>
+                <p id="modalConfirmMessage" class="text-slate-600 mb-6"></p>
+                <div class="flex justify-end gap-3">
+                    <button onclick="cerrarModalConfirm(false)" class="px-6 py-2.5 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors font-medium">
+                        Cancelar
+                    </button>
+                    <button id="modalConfirmBtn" class="px-6 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium">
+                        Confirmar
+                    </button>
                 </div>
             </div>
         </div>

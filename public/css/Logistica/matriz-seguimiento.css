@@ -119,6 +119,15 @@
     background-color: #d1fae5;
 }
 
+.btn-done {
+    color: #7c3aed;
+    background-color: transparent;
+}
+
+.btn-done:hover {
+    background-color: #ede9fe;
+}
+
 .btn-delete {
     color: #dc2626;
     background-color: transparent;

@@ -19,6 +19,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
 
+// Ruta pública para consulta de operaciones logísticas (sin autenticación)
+Route::get('/logistica/consulta-publica', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'consultaPublica'])->name('logistica.consulta-publica');
+Route::get('/logistica/consulta-publica/buscar', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'buscarOperacionPublica'])->name('logistica.consulta-publica.buscar');
 
 // Áreas adicionales (requieren autenticación)
 // Áreas bajo autenticación y control de área
@@ -45,6 +48,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/test-routes', function () { return view('test_routes'); });
     Route::get('/logistica/operaciones/create', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'create'])->name('logistica.operaciones.create');
     Route::post('/logistica/operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'store'])->name('logistica.operaciones.store');
+    Route::put('/logistica/operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'update'])->name('logistica.operaciones.update');
     Route::get('/logistica/transportes-por-tipo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getTransportesPorTipo'])->name('logistica.transportes-por-tipo');
 
     // Rutas para CRUD de clientes

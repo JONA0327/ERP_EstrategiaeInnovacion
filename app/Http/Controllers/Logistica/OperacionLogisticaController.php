@@ -70,8 +70,9 @@ class OperacionLogisticaController extends Controller
             ->get();
         $transportes = Transporte::orderBy('transporte')->get();
         $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->get();
+        $pedimentos = \App\Models\Logistica\Pedimento::orderBy('clave')->get();
 
-        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'empleadoActual', 'esAdmin'));
+        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin'));
     }
 
     public function catalogos()
@@ -216,20 +217,153 @@ class OperacionLogisticaController extends Controller
         // *** GUARDAR PRIMERO, LUEGO CALCULAR STATUS ***
         $operacion->save();
 
-        // Ahora calcular status (ya que created_at existe) y generar historial inicial
+        // Ahora calcular status (ya que created_at existe) y generar historial inicial SIEMPRE
         $resultado = $operacion->calcularStatusPorDias();
         $operacion->generarHistorialCambioStatus(
             $resultado,
             false, // No es acción manual
-            null
+            'Creación de operación - Registro inicial (tentativo)'
         );
         $operacion->saveQuietly(); // Guardar sin disparar eventos otra vez
 
         return response()->json([
             'success' => true,
             'message' => 'Operación creada exitosamente',
-            'operacion' => $operacion->load(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte'])
+            'operacion' => $operacion->fresh()
         ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $operacion = OperacionLogistica::findOrFail($id);
+
+            // Validación
+            $request->validate([
+                'operacion' => 'required|in:EXPORTACION,IMPORTACION',
+                'tipo_operacion_enum' => 'required|in:Terrestre,Aerea,Maritima,Ferrocarril',
+                'cliente' => 'required|string|max:255',
+                'ejecutivo' => 'required|string|max:255',
+                'fecha_embarque' => 'required|date',
+                'proveedor_o_cliente' => 'required|string|max:255',
+                'no_factura' => 'required|string|max:255',
+                'clave' => 'required|string|max:100',
+                'referencia_interna' => 'required|string|max:255',
+                'aduana' => 'required|string|max:255',
+                'agente_aduanal' => 'required|string|max:255',
+                'referencia_aa' => 'nullable|string|max:255',
+                'no_pedimento' => 'nullable|string|max:255',
+                'transporte' => 'nullable|string|max:255',
+                'guia_bl' => 'nullable|string|max:255',
+                'fecha_arribo_aduana' => 'nullable|date',
+                'fecha_modulacion' => 'nullable|date',
+                'fecha_arribo_planta' => 'nullable|date',
+                'target' => 'nullable|integer|min:0',
+                'resultado' => 'nullable|integer|min:0',
+                'dias_transito' => 'nullable|integer|min:0',
+                'status_manual' => 'nullable|in:In Process,Done',
+            ]);
+
+            // Guardar el status anterior para el historial
+            $statusAnterior = [
+                'status_calculado' => $operacion->status_calculado,
+                'color_status' => $operacion->color_status,
+                'status_manual' => $operacion->status_manual
+            ];
+
+            // Actualizar todos los campos
+            $operacion->update([
+                'ejecutivo' => $request->ejecutivo,
+                'cliente' => $request->cliente,
+                'agente_aduanal' => $request->agente_aduanal,
+                'transporte' => $request->transporte,
+                'operacion' => $request->operacion,
+                'proveedor_o_cliente' => $request->proveedor_o_cliente,
+                'fecha_embarque' => $request->fecha_embarque,
+                'no_factura' => $request->no_factura,
+                'tipo_operacion_enum' => $request->tipo_operacion_enum,
+                'clave' => $request->clave,
+                'referencia_interna' => $request->referencia_interna,
+                'aduana' => $request->aduana,
+                'referencia_aa' => $request->referencia_aa,
+                'no_pedimento' => $request->no_pedimento,
+                'fecha_arribo_aduana' => $request->fecha_arribo_aduana,
+                'guia_bl' => $request->guia_bl,
+                'fecha_modulacion' => $request->fecha_modulacion,
+                'fecha_arribo_planta' => $request->fecha_arribo_planta,
+                'resultado' => $request->resultado,
+                'comentarios' => $request->comentarios,
+                // Solo actualizar status_manual si se envía explícitamente
+            ]);
+            
+            // Actualizar status_manual solo si se envió en el request
+            if ($request->has('status_manual')) {
+                $operacion->status_manual = $request->status_manual;
+            }
+
+            // Recalcular target si cambió el tipo de operación
+            $targetCalculado = $operacion->calcularTargetAutomatico();
+            if ($targetCalculado !== null) {
+                $operacion->target = $targetCalculado;
+            }
+
+            $operacion->save();
+
+            // Calcular el nuevo status
+            $resultado = $operacion->calcularStatusPorDias();
+            
+            // SIEMPRE generar historial al editar
+            if ($request->has('status_manual') && $request->status_manual !== $statusAnterior['status_manual']) {
+                // Si se cambió el status manual (especialmente a Done)
+                if ($request->status_manual === 'Done') {
+                    $operacion->generarHistorialCambioStatus(
+                        $resultado,
+                        true,
+                        'Marcado como DONE manualmente - Operación completada'
+                    );
+                } else {
+                    $operacion->generarHistorialCambioStatus(
+                        $resultado,
+                        true,
+                        'Cambio manual de status a: ' . $request->status_manual
+                    );
+                }
+            } else {
+                // Edición de campos (fechas, datos, etc) - siempre registrar
+                $cambios = [];
+                if ($request->fecha_arribo_aduana && $request->fecha_arribo_aduana !== $statusAnterior['status_calculado']) {
+                    $cambios[] = 'fecha de aduana';
+                }
+                if ($request->fecha_arribo_planta) {
+                    $cambios[] = 'fecha de entrega';
+                }
+                
+                $descripcionCambio = count($cambios) > 0 
+                    ? 'Actualización de operación - Cambios en: ' . implode(', ', $cambios)
+                    : 'Actualización de operación';
+                    
+                $operacion->generarHistorialCambioStatus(
+                    $resultado,
+                    false,
+                    $descripcionCambio
+                );
+            }
+
+            $operacion->saveQuietly();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Operación actualizada exitosamente',
+                'operacion' => $operacion->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar operación: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la operación: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getTransportesPorTipo(Request $request)
@@ -813,10 +947,31 @@ class OperacionLogisticaController extends Controller
                 'historial' => $historial->toArray(),
                 'operacion' => [
                     'id' => $operacion->id,
-                    'operacion' => $operacion->operacion ?? 'Sin nombre',
-                    'status' => $operacion->status_calculado ?? $operacion->status ?? 'In Process',
-                    'cliente' => $operacion->cliente ?? 'Sin cliente',
-                    'no_pedimento' => $operacion->no_pedimento ?? 'Sin No Ped',
+                    'operacion' => $operacion->operacion,
+                    'tipo_operacion_enum' => $operacion->tipo_operacion_enum,
+                    'cliente' => $operacion->cliente,
+                    'ejecutivo' => $operacion->ejecutivo,
+                    'proveedor_o_cliente' => $operacion->proveedor_o_cliente,
+                    'no_factura' => $operacion->no_factura,
+                    'clave' => $operacion->clave,
+                    'referencia_interna' => $operacion->referencia_interna,
+                    'fecha_embarque' => $operacion->fecha_embarque ? $operacion->fecha_embarque->format('Y-m-d') : null,
+                    'aduana' => $operacion->aduana,
+                    'agente_aduanal' => $operacion->agente_aduanal,
+                    'transporte' => $operacion->transporte,
+                    'fecha_arribo_aduana' => $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('Y-m-d') : null,
+                    'fecha_modulacion' => $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('Y-m-d') : null,
+                    'fecha_arribo_planta' => $operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('Y-m-d') : null,
+                    'no_pedimento' => $operacion->no_pedimento,
+                    'referencia_aa' => $operacion->referencia_aa,
+                    'guia_bl' => $operacion->guia_bl,
+                    'comentarios' => $operacion->comentarios,
+                    'status_calculado' => $operacion->status_calculado,
+                    'status_manual' => $operacion->status_manual,
+                    'color_status' => $operacion->color_status,
+                    'target' => $operacion->target,
+                    'resultado' => $operacion->resultado,
+                    'dias_transito' => $operacion->dias_transito,
                 ],
                 'operaciones_relacionadas' => $operacionesRelacionadas->map(function($op) {
                     return [
@@ -2043,5 +2198,120 @@ class OperacionLogisticaController extends Controller
         }
         
         return $response ?? back()->with('error', 'Error desconocido en la importación');
+    }
+
+    /**
+     * Vista pública para consulta de operaciones (sin autenticación)
+     */
+    public function consultaPublica()
+    {
+        return view('Logistica.consulta-publica');
+    }
+
+    /**
+     * Búsqueda pública de operación por pedimento o factura
+     */
+    public function buscarOperacionPublica(Request $request)
+    {
+        try {
+            $request->validate([
+                'tipo_busqueda' => 'required|in:pedimento,factura',
+                'valor' => 'required|string'
+            ]);
+
+            $tipoBusqueda = $request->tipo_busqueda;
+            $valor = $request->valor;
+
+            $query = OperacionLogistica::query();
+
+            if ($tipoBusqueda === 'pedimento') {
+                $query->where('no_pedimento', $valor);
+            } else {
+                $query->where('no_factura', $valor);
+            }
+
+            $operacion = $query->first();
+
+            if (!$operacion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró ninguna operación con ese ' . ($tipoBusqueda === 'pedimento' ? 'número de pedimento' : 'número de factura')
+                ]);
+            }
+
+            // Cargar relaciones con verificación
+            $historial = \App\Models\Logistica\HistoricoMatrizSgm::where('operacion_logistica_id', $operacion->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Obtener post-operaciones a través de la tabla pivot
+            $postOperaciones = \App\Models\Logistica\PostOperacionOperacion::where('operacion_logistica_id', $operacion->id)
+                ->with('postOperacion')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Formatear datos
+            $data = [
+                'success' => true,
+                'operacion' => [
+                    'id' => $operacion->id,
+                    'operacion' => $operacion->operacion,
+                    'cliente' => $operacion->cliente,
+                    'ejecutivo' => $operacion->ejecutivo,
+                    'tipo_operacion' => $operacion->tipo_operacion_enum,
+                    'no_factura' => $operacion->no_factura,
+                    'no_pedimento' => $operacion->no_pedimento,
+                    'clave' => $operacion->clave,
+                    'referencia_interna' => $operacion->referencia_interna,
+                    'proveedor_o_cliente' => $operacion->proveedor_o_cliente,
+                    'aduana' => $operacion->aduana,
+                    'agente_aduanal' => $operacion->agente_aduanal,
+                    'transporte' => $operacion->transporte,
+                    'fecha_embarque' => $operacion->fecha_embarque?->format('d/m/Y'),
+                    'fecha_arribo_aduana' => $operacion->fecha_arribo_aduana?->format('d/m/Y'),
+                    'fecha_modulacion' => $operacion->fecha_modulacion?->format('d/m/Y'),
+                    'fecha_arribo_planta' => $operacion->fecha_arribo_planta?->format('d/m/Y'),
+                    'status_calculado' => $operacion->status_calculado,
+                    'status_manual' => $operacion->status_manual,
+                    'color_status' => $operacion->color_status,
+                    'target' => $operacion->target,
+                    'dias_transcurridos' => $operacion->dias_transcurridos_calculados,
+                    'comentarios' => $operacion->comentarios,
+                ],
+                'historial' => $historial->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'fecha' => $item->created_at->format('d/m/Y H:i:s'),
+                        'status' => $item->operacion_status ?? 'N/A',
+                        'color' => $item->color_status ?? 'sin_fecha',
+                        'descripcion' => $item->observaciones ?? 'Sin observaciones',
+                        'dias_transcurridos' => $item->dias_transcurridos,
+                        'target_dias' => $item->target_dias,
+                        'fecha_arribo_aduana' => $item->fecha_arribo_aduana?->format('d/m/Y'),
+                        'fecha_registro' => $item->fecha_registro?->format('d/m/Y'),
+                    ];
+                }),
+                'post_operaciones' => $postOperaciones->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'nombre' => $item->postOperacion->nombre ?? 'N/A',
+                        'descripcion' => $item->postOperacion->descripcion ?? '',
+                        'status' => $item->status,
+                        'fecha_asignacion' => $item->fecha_asignacion?->format('d/m/Y'),
+                        'fecha_completado' => $item->fecha_completado?->format('d/m/Y'),
+                        'notas_especificas' => $item->notas_especificas,
+                    ];
+                })
+            ];
+
+            return response()->json($data);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en búsqueda pública: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al realizar la búsqueda. Por favor, intente nuevamente.'
+            ], 500);
+        }
     }
 }

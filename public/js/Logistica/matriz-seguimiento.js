@@ -4,10 +4,134 @@
 let transportes = window.transportes || {};
 let operacionActualId = null;
 
+// ========================================
+// SISTEMA DE MODALES REUTILIZABLES
+// ========================================
+
+/**
+ * Muestra un modal de alerta (reemplazo de alert())
+ * @param {string} message - Mensaje a mostrar
+ * @param {string} type - Tipo: 'success', 'error', 'warning', 'info'
+ * @param {string} title - Título opcional
+ */
+window.mostrarAlerta = function(message, type = 'info', title = '') {
+    const modal = document.getElementById('modalAlert');
+    const iconContainer = document.getElementById('modalAlertIcon');
+    const titleElement = document.getElementById('modalAlertTitle');
+    const messageElement = document.getElementById('modalAlertMessage');
+    
+    // Definir iconos y colores según el tipo
+    const types = {
+        success: {
+            icon: `<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Éxito'
+        },
+        error: {
+            icon: `<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Error'
+        },
+        warning: {
+            icon: `<svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>`,
+            title: title || 'Advertencia'
+        },
+        info: {
+            icon: `<svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>`,
+            title: title || 'Información'
+        }
+    };
+    
+    const config = types[type] || types.info;
+    iconContainer.innerHTML = config.icon;
+    titleElement.textContent = config.title;
+    messageElement.textContent = message;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+/**
+ * Cierra el modal de alerta
+ */
+window.cerrarModalAlert = function() {
+    const modal = document.getElementById('modalAlert');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+/**
+ * Muestra un modal de confirmación (reemplazo de confirm())
+ * @param {string} message - Mensaje a mostrar
+ * @param {function} onConfirm - Callback cuando se confirma
+ * @param {string} title - Título opcional
+ * @param {string} confirmText - Texto del botón de confirmar
+ */
+window.mostrarConfirmacion = function(message, onConfirm, title = 'Confirmar acción', confirmText = 'Confirmar') {
+    const modal = document.getElementById('modalConfirm');
+    const titleElement = document.getElementById('modalConfirmTitle');
+    const messageElement = document.getElementById('modalConfirmMessage');
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    confirmBtn.textContent = confirmText;
+    
+    // Remover listeners anteriores
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    
+    // Agregar nuevo listener
+    document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+        cerrarModalConfirm(true);
+        if (typeof onConfirm === 'function') {
+            onConfirm();
+        }
+    });
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+/**
+ * Cierra el modal de confirmación
+ */
+window.cerrarModalConfirm = function(confirmed) {
+    const modal = document.getElementById('modalConfirm');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+// Event listener para cerrar modales con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalAlert();
+        cerrarModalConfirm(false);
+    }
+});
+
+// ========================================
+// FIN SISTEMA DE MODALES
+// ========================================
 
 
 // Funciones del modal principal
 window.abrirModal = function() {
+    // Resetear el formulario para nueva operación
+    const form = document.getElementById('formOperacion');
+    if (form) form.reset();
+    
+    document.getElementById('operacionId').value = '';
+    document.getElementById('isEditing').value = '';
+    document.getElementById('modalTitle').innerHTML = '<span class="text-blue-600 mr-2 text-xl">⊕</span>Añadir Nueva Operación';
+    document.getElementById('submitButtonText').textContent = 'Guardar Operación';
+    document.getElementById('statusManualSection').classList.add('hidden');
     document.getElementById('modalOperacion').classList.remove('hidden');
 };
 
@@ -40,19 +164,19 @@ window.cancelarNuevoCliente = function() {
 window.guardarNuevoCliente = function() {
     const nombreInput = document.getElementById('nuevoClienteNombre');
     if (!nombreInput) {
-        alert('Error: No se encontró el campo de nombre del cliente');
+        mostrarAlerta('No se encontró el campo de nombre del cliente', 'error');
         return;
     }
     
     const nombre = nombreInput.value.trim();
     if (!nombre) {
-        alert('Por favor, ingrese el nombre del cliente');
+        mostrarAlerta('Por favor, ingrese el nombre del cliente', 'warning');
         return;
     }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
-        alert('Error: Token CSRF no encontrado');
+        mostrarAlerta('Token CSRF no encontrado', 'error');
         return;
     }
 
@@ -84,21 +208,21 @@ window.guardarNuevoCliente = function() {
             }
             
             cancelarNuevoCliente();
-            alert('✅ Cliente guardado exitosamente y agregado al formulario');
+            mostrarAlerta('Cliente guardado exitosamente y agregado al formulario', 'success');
         } else {
-            alert('Error al guardar el cliente: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar el cliente: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error completo:', error);
-        alert('Error de conexión: ' + error.message);
+        mostrarAlerta('Error de conexión: ' + error.message, 'error');
     });
 };
 
 window.guardarNuevoCliente = function() {
         const nombre = document.getElementById('nuevoClienteNombre').value.trim();
         if (!nombre) {
-            alert('Por favor, ingrese el nombre del cliente');
+            mostrarAlerta('Por favor, ingrese el nombre del cliente', 'warning');
             return;
         }
 
@@ -129,12 +253,12 @@ window.guardarNuevoCliente = function() {
                 
                 cancelarNuevoCliente();
             } else {
-                alert('Error al guardar el cliente: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al guardar el cliente: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
     };
 
@@ -154,19 +278,19 @@ window.cancelarNuevoAgente = function() {
 window.guardarNuevoAgente = function() {
     const nombreInput = document.getElementById('nuevoAgenteNombre');
     if (!nombreInput) {
-        alert('Error: No se encontró el campo de nombre del agente');
+        mostrarAlerta('No se encontró el campo de nombre del agente', 'error');
         return;
     }
     
     const nombre = nombreInput.value.trim();
     if (!nombre) {
-        alert('Por favor, ingrese el nombre del agente aduanal');
+        mostrarAlerta('Por favor, ingrese el nombre del agente aduanal', 'warning');
         return;
     }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
-        alert('Error: Token CSRF no encontrado');
+        mostrarAlerta('Token CSRF no encontrado', 'error');
         return;
     }
 
@@ -206,21 +330,21 @@ window.guardarNuevoAgente = function() {
             }
             
             cancelarNuevoAgente();
-            alert('✅ Agente aduanal guardado exitosamente y agregado al formulario');
+            mostrarAlerta('Agente aduanal guardado exitosamente y agregado al formulario', 'success');
         } else {
-            alert('Error al guardar el agente aduanal: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar el agente aduanal: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error completo:', error);
-        alert('Error de conexión: ' + error.message);
+        mostrarAlerta('Error de conexión: ' + error.message, 'error');
     });
 };
 
     window.guardarNuevoAgente = function() {
         const nombre = document.getElementById('nuevoAgenteNombre').value.trim();
         if (!nombre) {
-            alert('Por favor, ingrese el nombre del agente aduanal');
+            mostrarAlerta('Por favor, ingrese el nombre del agente aduanal', 'warning');
             return;
         }
 
@@ -251,12 +375,12 @@ window.guardarNuevoAgente = function() {
                 
                 cancelarNuevoAgente();
             } else {
-                alert('Error al guardar el agente aduanal: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al guardar el agente aduanal: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
     };
 
@@ -286,7 +410,7 @@ window.actualizarTransportes = function() {
     const form = document.getElementById('nuevoTransporteForm');
     
     if (!select || !select.value) {
-        alert('Por favor, seleccione primero el tipo de operación');
+        mostrarAlerta('Por favor, seleccione primero el tipo de operación', 'warning');
         return;
     }
     if (form) form.classList.remove('hidden');
@@ -302,7 +426,7 @@ window.cancelarNuevoTransporte = function() {
 window.guardarNuevoTransporte = function() {
     const nombreInput = document.getElementById('nuevoTransporteNombre');
     if (!nombreInput) {
-        alert('Error: No se encontró el campo de nombre del transporte');
+        mostrarAlerta('No se encontró el campo de nombre del transporte', 'error');
         return;
     }
     
@@ -311,18 +435,18 @@ window.guardarNuevoTransporte = function() {
     const tipoOperacion = tipoOperacionSelect ? tipoOperacionSelect.value : '';
     
     if (!nombre) {
-        alert('Por favor, ingrese el nombre del transporte');
+        mostrarAlerta('Por favor, ingrese el nombre del transporte', 'warning');
         return;
     }
     
     if (!tipoOperacion) {
-        alert('Por favor, seleccione el tipo de operación primero');
+        mostrarAlerta('Por favor, seleccione el tipo de operación primero', 'warning');
         return;
     }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
-        alert('Error: Token CSRF no encontrado');
+        mostrarAlerta('Token CSRF no encontrado', 'error');
         return;
     }
 
@@ -366,14 +490,14 @@ window.guardarNuevoTransporte = function() {
             }
             
             cancelarNuevoTransporte();
-            alert('✅ Transporte guardado exitosamente y agregado al formulario');
+            mostrarAlerta('Transporte guardado exitosamente y agregado al formulario', 'success');
         } else {
-            alert('Error al guardar el transporte: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar el transporte: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error completo:', error);
-        alert('Error de conexión: ' + error.message);
+        mostrarAlerta('Error de conexión: ' + error.message, 'error');
     });
 };
 
@@ -382,12 +506,12 @@ window.guardarNuevoTransporte = function() {
         const tipoOperacion = document.querySelector('select[name="tipo_operacion_enum"]').value;
         
         if (!nombre) {
-            alert('Por favor, ingrese el nombre del transporte');
+            mostrarAlerta('Por favor, ingrese el nombre del transporte', 'warning');
             return;
         }
         
         if (!tipoOperacion) {
-            alert('Por favor, seleccione el tipo de operación primero');
+            mostrarAlerta('Por favor, seleccione el tipo de operación primero', 'warning');
             return;
         }
 
@@ -427,26 +551,32 @@ window.guardarNuevoTransporte = function() {
                 
                 cancelarNuevoTransporte();
             } else {
-                alert('Error al guardar el transporte: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al guardar el transporte: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
     };
 
 // Cálculos automáticos
 window.calcularResultado = function() {
-    const fechaArribo = document.querySelector('input[name="fecha_arribo_aduana"]').value;
-    const fechaModulacion = document.querySelector('input[name="fecha_modulacion"]').value;
+    const fechaArriboInput = document.querySelector('input[name="fecha_arribo_aduana"]');
+    const fechaModulacionInput = document.querySelector('input[name="fecha_modulacion"]');
+    const resultadoInput = document.querySelector('input[name="resultado"]');
     
-    if (fechaArribo && fechaModulacion) {
-        const arribo = new Date(fechaArribo);
-        const modulacion = new Date(fechaModulacion);
-        const diferencia = Math.abs((modulacion - arribo) / (1000 * 60 * 60 * 24));
+    if (fechaArriboInput && fechaModulacionInput && resultadoInput) {
+        const fechaArribo = fechaArriboInput.value;
+        const fechaModulacion = fechaModulacionInput.value;
         
-        document.querySelector('input[name="resultado"]').value = Math.round(diferencia);
+        if (fechaArribo && fechaModulacion) {
+            const arribo = new Date(fechaArribo);
+            const modulacion = new Date(fechaModulacion);
+            const diferencia = Math.abs((modulacion - arribo) / (1000 * 60 * 60 * 24));
+            
+            resultadoInput.value = Math.round(diferencia);
+        }
     }
 };
 
@@ -463,15 +593,21 @@ window.calcularTargetAutomatico = function() {
         }
     }
 };window.calcularDiasTransito = function() {
-        const fechaEmbarque = document.querySelector('input[name="fecha_embarque"]').value;
-        const fechaArribo = document.querySelector('input[name="fecha_arribo_planta"]').value;
+        const fechaEmbarqueInput = document.querySelector('input[name="fecha_embarque"]');
+        const fechaArriboInput = document.querySelector('input[name="fecha_arribo_planta"]');
+        const diasTransitoInput = document.querySelector('input[name="dias_transito"]');
         
-        if (fechaEmbarque && fechaArribo) {
-            const embarque = new Date(fechaEmbarque);
-            const arribo = new Date(fechaArribo);
-            const diferencia = Math.abs((arribo - embarque) / (1000 * 60 * 60 * 24));
+        if (fechaEmbarqueInput && fechaArriboInput && diasTransitoInput) {
+            const fechaEmbarque = fechaEmbarqueInput.value;
+            const fechaArribo = fechaArriboInput.value;
             
-            document.querySelector('input[name="dias_transito"]').value = Math.round(diferencia);
+            if (fechaEmbarque && fechaArribo) {
+                const embarque = new Date(fechaEmbarque);
+                const arribo = new Date(fechaArribo);
+                const diferencia = Math.abs((arribo - embarque) / (1000 * 60 * 60 * 24));
+                
+                diasTransitoInput.value = Math.round(diferencia);
+            }
         }
     };
 
@@ -638,38 +774,100 @@ window.cerrarModalHistorial = function() {
         }
     }
 
-// Función para editar operación (solo marcar como Done)
+// Función para editar operación - Cargar datos en el modal
 window.editarOperacion = function(operacionId) {
-        if (confirm('¿Desea marcar esta operación como COMPLETADA (Done)?')) {
-            fetch(`/logistica/operaciones/${operacionId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    status_calculado: 'Done'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Operación marcada como completada exitosamente');
-                    window.location.reload();
-                } else {
-                    alert('Error al actualizar el status: ' + (data.message || 'Error desconocido'));
+    // Obtener los datos de la operación
+    fetch(`/logistica/operaciones/${operacionId}/historial`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Datos recibidos:', data); // Debug
+            
+            if (data.success && data.operacion) {
+                const op = data.operacion;
+                console.log('Operación:', op); // Debug
+                
+                // Configurar el modal para edición
+                document.getElementById('operacionId').value = op.id || '';
+                document.getElementById('isEditing').value = 'PUT';
+                document.getElementById('modalTitle').innerHTML = '<span class="text-amber-600 mr-2 text-xl">✏️</span>Editar Operación #' + op.id;
+                document.getElementById('submitButtonText').textContent = 'Actualizar Operación';
+                document.getElementById('statusManualSection').classList.remove('hidden');
+                
+                // Llenar todos los campos del formulario
+                const form = document.getElementById('formOperacion');
+                if (form) {
+                    // Función helper para llenar campos de forma segura
+                    const setFieldValue = (selector, value) => {
+                        const field = form.querySelector(selector);
+                        if (field) {
+                            field.value = value || '';
+                        } else {
+                            console.warn('Campo no encontrado:', selector);
+                        }
+                    };
+                    
+                    // Tipo de operación
+                    setFieldValue('[name="operacion"]', op.operacion);
+                    setFieldValue('[name="tipo_operacion_enum"]', op.tipo_operacion_enum);
+                    
+                    // Cliente y ejecutivo
+                    setFieldValue('[name="cliente"]', op.cliente);
+                    setFieldValue('[name="ejecutivo"]', op.ejecutivo);
+                    
+                    // Detalles de operación
+                    setFieldValue('[name="proveedor_o_cliente"]', op.proveedor_o_cliente);
+                    setFieldValue('[name="no_factura"]', op.no_factura);
+                    setFieldValue('[name="clave"]', op.clave);
+                    setFieldValue('[name="referencia_interna"]', op.referencia_interna);
+                    
+                    // Fecha y aduana
+                    setFieldValue('[name="fecha_embarque"]', op.fecha_embarque);
+                    setFieldValue('[name="aduana"]', op.aduana);
+                    
+                    // Agente y transporte
+                    setFieldValue('[name="agente_aduanal"]', op.agente_aduanal);
+                    setFieldValue('[name="transporte"]', op.transporte);
+                    
+                    // Información adicional
+                    setFieldValue('[name="fecha_arribo_aduana"]', op.fecha_arribo_aduana);
+                    setFieldValue('[name="fecha_modulacion"]', op.fecha_modulacion);
+                    setFieldValue('[name="fecha_arribo_planta"]', op.fecha_arribo_planta);
+                    setFieldValue('[name="no_pedimento"]', op.no_pedimento);
+                    setFieldValue('[name="referencia_aa"]', op.referencia_aa);
+                    setFieldValue('[name="guia_bl"]', op.guia_bl);
+                    setFieldValue('[name="comentarios"]', op.comentarios);
+                    
+                    // Status manual - asegurar que el select existe
+                    const statusSelect = document.getElementById('statusManualSelect');
+                    if (statusSelect) {
+                        statusSelect.value = op.status_manual || 'In Process';
+                        console.log('Status manual configurado:', statusSelect.value);
+                    } else {
+                        console.error('Select de status manual no encontrado');
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error de conexión');
-            });
-        }
-    };
+                
+                // Actualizar transportes según el tipo
+                if (typeof actualizarTransportes === 'function') {
+                    actualizarTransportes();
+                }
+                
+                // Abrir el modal
+                document.getElementById('modalOperacion').classList.remove('hidden');
+            } else {
+                console.error('Respuesta inválida:', data);
+                mostrarAlerta('Error al cargar los datos de la operación', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            mostrarAlerta('Error de conexión al cargar la operación: ' + error.message, 'error');
+        });
+};
 
 // Función para eliminar operación
 window.eliminarOperacion = function(operacionId) {
-        if (confirm('¿Está seguro de que desea eliminar esta operación? Esta acción no se puede deshacer.')) {
+        mostrarConfirmacion('¿Está seguro de que desea eliminar esta operación? Esta acción no se puede deshacer.', function() {
             fetch(`/logistica/operaciones/${operacionId}`, {
                 method: 'DELETE',
                 headers: {
@@ -679,40 +877,59 @@ window.eliminarOperacion = function(operacionId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Operación eliminada exitosamente');
+                    mostrarAlerta('Operación eliminada exitosamente', 'success');
                     window.location.reload();
                 } else {
-                    alert('Error al eliminar la operación: ' + (data.message || 'Error desconocido'));
+                    mostrarAlerta('Error al eliminar la operación: ' + (data.message || 'Error desconocido'), 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error de conexión');
+                mostrarAlerta('Error de conexión', 'error');
             });
-        }
+        }, '¿Eliminar operación?', 'Eliminar');
     };
 
     // Event listeners para fechas y cálculos automáticos
     document.addEventListener('change', function(e) {
-        if (e.target.name === 'fecha_arribo_aduana' || e.target.name === 'fecha_modulacion') {
-            calcularResultado();
-        }
-        if (e.target.name === 'fecha_embarque' || e.target.name === 'fecha_arribo_planta') {
-            calcularDiasTransito();
-        }
+        // NOTA: resultado y dias_transito se calculan automáticamente en el backend
+        // No necesitan cálculo en el frontend ya que no tienen campos en el formulario
+        // if (e.target.name === 'fecha_arribo_aduana' || e.target.name === 'fecha_modulacion') {
+        //     calcularResultado();
+        // }
+        // if (e.target.name === 'fecha_embarque' || e.target.name === 'fecha_arribo_planta') {
+        //     calcularDiasTransito();
+        // }
         if (e.target.name === 'tipo_operacion_enum') {
             actualizarTransportes();
         }
     });
 
-    // Manejar envío del formulario
+    // Manejar envío del formulario (crear o actualizar)
     document.getElementById('formOperacion').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        const operacionId = document.getElementById('operacionId').value;
+        const isEditing = document.getElementById('isEditing').value === 'PUT';
         
-        fetch('/logistica/operaciones', {
-            method: 'POST',
+        // Mostrar indicador de carga
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ' + (isEditing ? 'Actualizando...' : 'Guardando...');
+        
+        // Determinar URL y método
+        const url = isEditing ? `/logistica/operaciones/${operacionId}` : '/logistica/operaciones';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        // Si es edición, agregar el método PUT al FormData
+        if (isEditing) {
+            formData.append('_method', 'PUT');
+        }
+        
+        fetch(url, {
+            method: 'POST', // Siempre POST, Laravel detecta PUT por _method
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
@@ -726,16 +943,22 @@ window.eliminarOperacion = function(operacionId) {
         })
         .then(data => {
             if (data.success) {
-                alert('Operación guardada exitosamente');
-                cerrarModal();
-                window.location.reload();
+                submitBtn.innerHTML = '<svg class="h-5 w-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡' + (isEditing ? 'Actualizado!' : 'Guardado!');
+                setTimeout(() => {
+                    cerrarModal();
+                    window.location.reload();
+                }, 800);
             } else {
-                alert('Error al guardar la operación: ' + (data.message || 'Error desconocido'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                mostrarAlerta('Error al ' + (isEditing ? 'actualizar' : 'guardar') + ' la operación: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error completo:', error);
-            alert('Error al guardar la operación: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            mostrarAlerta('Error al ' + (isEditing ? 'actualizar' : 'guardar') + ' la operación: ' + error.message, 'error');
         });
     });
 
@@ -765,7 +988,7 @@ window.eliminarOperacion = function(operacionId) {
 
 // Función para marcar operación como Done
 window.marcarComoDone = function(operacionId) {
-    if (confirm('¿Está seguro de marcar esta operación como completada?')) {
+    mostrarConfirmacion('¿Está seguro de marcar esta operación como completada?', function() {
         fetch(`/logistica/operaciones/${operacionId}/status`, {
             method: 'PUT',
             headers: {
@@ -782,19 +1005,19 @@ window.marcarComoDone = function(operacionId) {
                 // Recargar la página para mostrar los cambios
                 window.location.reload();
             } else {
-                alert('Error al actualizar el status: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al actualizar el status: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
-    }
+    }, '¿Marcar como completada?', 'Marcar');
 }
 
 // Funciones para Post-Operaciones
 window.marcarPostOpComoDone = function(postOpId) {
-    if (confirm('¿Está seguro de marcar esta post-operación como completada?')) {
+    mostrarConfirmacion('¿Está seguro de marcar esta post-operación como completada?', function() {
         fetch(`/logistica/post-operaciones/${postOpId}/done`, {
             method: 'PUT',
             headers: {
@@ -808,18 +1031,18 @@ window.marcarPostOpComoDone = function(postOpId) {
                 // Recargar la tabla de post-operaciones
                 cargarPostOperaciones();
             } else {
-                alert('Error al marcar como completada: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al marcar como completada: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
-    }
+    }, '¿Marcar como completada?', 'Marcar');
 }
 
 window.eliminarPostOperacion = function(postOpId) {
-    if (confirm('¿Está seguro de eliminar esta post-operación?')) {
+    mostrarConfirmacion('¿Está seguro de eliminar esta post-operación?', function() {
         fetch(`/logistica/post-operaciones/${postOpId}`, {
             method: 'DELETE',
             headers: {
@@ -832,14 +1055,14 @@ window.eliminarPostOperacion = function(postOpId) {
                 // Recargar la tabla de post-operaciones
                 cargarPostOperaciones();
             } else {
-                alert('Error al eliminar: ' + (data.message || 'Error desconocido'));
+                mostrarAlerta('Error al eliminar: ' + (data.message || 'Error desconocido'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión');
+            mostrarAlerta('Error de conexión', 'error');
         });
-    }
+    }, '¿Eliminar post-operación?', 'Eliminar');
 }
 
 window.abrirModalPostOperacion = function() {
@@ -926,14 +1149,14 @@ window.guardarPostOperacion = function(event) {
         if (data.success) {
             cerrarModalPostOperacion();
             cargarPostOperaciones();
-            alert('Post-operación guardada exitosamente');
+            mostrarAlerta('Post-operación guardada exitosamente', 'success');
         } else {
-            alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión');
+        mostrarAlerta('Error de conexión', 'error');
     });
 }
 
@@ -1113,7 +1336,7 @@ function guardarCambiosPostOperaciones() {
     const operacionId = operacionActualPostOp;
     
     if (Object.keys(cambiosPendientesPostOps).length === 0) {
-        alert('No hay cambios pendientes para guardar');
+        mostrarAlerta('No hay cambios pendientes para guardar', 'info');
         return;
     }
     
@@ -1135,18 +1358,18 @@ function guardarCambiosPostOperaciones() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Cambios guardados exitosamente');
+            mostrarAlerta('Cambios guardados exitosamente', 'success');
             cambiosPendientesPostOps = {}; // Limpiar cambios pendientes
             cargarPostOperacionesPorOperacion(operacionId);
             // Actualizar tabla principal si es necesario
             // window.location.reload();
         } else {
-            alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión al guardar');
+        mostrarAlerta('Error de conexión al guardar', 'error');
     })
     .finally(() => {
         btn.disabled = false;
@@ -1275,7 +1498,7 @@ document.getElementById('formComentario').addEventListener('submit', function(e)
     e.preventDefault();
     
     if (!operacionActualComentarios) {
-        alert('Error: No se ha seleccionado una operación');
+        mostrarAlerta('No se ha seleccionado una operación', 'error');
         return;
     }
     
@@ -1306,12 +1529,12 @@ document.getElementById('formComentario').addEventListener('submit', function(e)
             cancelarEdicionComentario();
             cargarComentariosPorOperacion(operacionActualComentarios);
         } else {
-            alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión');
+        mostrarAlerta('Error de conexión', 'error');
     });
 });
 
@@ -1366,7 +1589,7 @@ function mostrarPostOperacionesGlobales(postOperaciones) {
 }
 
 window.eliminarPostOpGlobal = function(id) {
-    if (confirm('¿Está seguro de eliminar esta post-operación?')) {
+    mostrarConfirmacion('¿Está seguro de eliminar esta post-operación?', function() {
         fetch(`/logistica/post-operaciones-globales/${id}`, {
             method: 'DELETE',
             headers: {
@@ -1380,7 +1603,7 @@ window.eliminarPostOpGlobal = function(id) {
             }
         })
         .catch(error => console.error('Error:', error));
-    }
+    }, '¿Eliminar post-operación?', 'Eliminar');
 };
 
 // Manejar formulario de post-operación global
@@ -1404,12 +1627,12 @@ document.getElementById('formPostOpGlobal').addEventListener('submit', function(
             document.getElementById('formPostOpGlobal').reset();
             cargarPostOperacionesGlobales();
         } else {
-            alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+            mostrarAlerta('Error al guardar: ' + (data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión');
+        mostrarAlerta('Error de conexión', 'error');
     });
 });
 
@@ -1459,17 +1682,17 @@ window.guardarNuevaAduana = function() {
 
     // Validaciones
     if (!codigo || codigo.length !== 2 || !/^\d{2}$/.test(codigo)) {
-        alert('El código debe ser de 2 dígitos (01-99)');
+        mostrarAlerta('El código debe ser de 2 dígitos (01-99)', 'warning');
         return;
     }
 
     if (seccion.length !== 1 || !/^\d{1}$/.test(seccion)) {
-        alert('La sección debe ser de 1 dígito (0-9)');
+        mostrarAlerta('La sección debe ser de 1 dígito (0-9)', 'warning');
         return;
     }
 
     if (!denominacion) {
-        alert('La denominación es obligatoria');
+        mostrarAlerta('La denominación es obligatoria', 'warning');
         return;
     }
 
@@ -1504,13 +1727,13 @@ window.guardarNuevaAduana = function() {
 
             // Limpiar y ocultar formulario
             cancelarNuevaAduana();
-            alert('Aduana creada exitosamente');
+            mostrarAlerta('Aduana creada exitosamente', 'success');
         } else {
-            alert(data.message || 'Error al crear la aduana');
+            mostrarAlerta(data.message || 'Error al crear la aduana', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión al crear la aduana');
+        mostrarAlerta('Error de conexión al crear la aduana', 'error');
     });
 };

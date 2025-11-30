@@ -747,7 +747,7 @@
                     <div class="mb-4">
                         <label for="editEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Ejecutivo Asignado</label>
                         <select id="editEjecutivo" name="ejecutivo_asignado_id"
-                               class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <option value="">Sin asignar</option>
                             @foreach($todosEjecutivos as $ejecutivo)
                             <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
@@ -759,7 +759,7 @@
                     <div class="mb-4">
                         <label for="editPeriodicidad" class="block text-sm font-medium text-gray-700 mb-2">Periodicidad de Reporte <span class="text-gray-500 text-xs">(Opcional)</span></label>
                         <select id="editPeriodicidad" name="periodicidad_tipo" onchange="togglePeriodicidadOptions()"
-                               class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <option value="Diario">Diario (Lunes a Viernes)</option>
                             <option value="Tri-semanal">Tri-semanal (Lunes, Miércoles, Viernes)</option>
                             <option value="Semanal">Semanal (Elegir día)</option>
@@ -768,7 +768,7 @@
                         <!-- Opciones adicionales para semanal -->
                         <div id="opciones-semanal" class="mt-2 hidden">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Día de la semana</label>
-                            <select id="dia-semanal" name="dia_semanal" class="form-select w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-400">
+                            <select id="dia-semanal" name="dia_semanal" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-400 bg-white">
                                 <option value="lunes">Lunes</option>
                             </select>
                         </div>
@@ -848,7 +848,7 @@
 
                     <label for="selectEjecutivo" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Ejecutivo</label>
                     <select id="selectEjecutivo" name="ejecutivo_id" required
-                           class="form-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                         <option value="">Seleccione un ejecutivo...</option>
                         @foreach($todosEjecutivos as $ejecutivo)
                         <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
@@ -1306,6 +1306,51 @@
     </div>
 </div>
 @endif
+
+<!-- Modal de Alerta (Reemplazo de alert) -->
+<div id="modalAlert" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div id="modalAlertIcon" class="flex-shrink-0">
+                    <!-- Icon will be inserted here -->
+                </div>
+                <h3 id="modalAlertTitle" class="text-xl font-semibold text-slate-900"></h3>
+            </div>
+            <p id="modalAlertMessage" class="text-slate-600 mb-6"></p>
+            <div class="flex justify-end">
+                <button onclick="cerrarModalAlert()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación (Reemplazo de confirm) -->
+<div id="modalConfirm" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex-shrink-0">
+                    <svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 id="modalConfirmTitle" class="text-xl font-semibold text-slate-900">Confirmar acción</h3>
+            </div>
+            <p id="modalConfirmMessage" class="text-slate-600 mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button onclick="cerrarModalConfirm(false)" class="px-6 py-2.5 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors font-medium">
+                    Cancelar
+                </button>
+                <button id="modalConfirmBtn" class="px-6 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
