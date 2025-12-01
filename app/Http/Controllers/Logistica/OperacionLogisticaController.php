@@ -124,6 +124,386 @@ class OperacionLogisticaController extends Controller
         return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin'));
     }
 
+    // Reportes: página con export y gráfico
+    public function reportes(Request $request)
+    {
+        // Obtener usuario actual y verificar permisos
+        $usuarioActual = auth()->user();
+        $empleadoActual = null;
+        $esAdmin = false;
+
+        if ($usuarioActual) {
+            $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        // Construir query base
+        $query = OperacionLogistica::with('ejecutivo');
+        $statsQuery = OperacionLogistica::query();
+
+        // Si no es admin, filtrar solo sus operaciones
+        if (!$esAdmin && $empleadoActual) {
+            $query->where('ejecutivo', $empleadoActual->nombre);
+            $statsQuery->where('ejecutivo', $empleadoActual->nombre);
+        }
+
+        // Aplicar filtros
+        // Filtro por período (semanal, mensual, anual)
+        if ($request->filled('periodo')) {
+            $periodo = $request->periodo;
+            if ($periodo === 'semanal') {
+                $query->where('created_at', '>=', now()->subWeek());
+                $statsQuery->where('created_at', '>=', now()->subWeek());
+            } elseif ($periodo === 'mensual') {
+                $query->where('created_at', '>=', now()->subMonth());
+                $statsQuery->where('created_at', '>=', now()->subMonth());
+            } elseif ($periodo === 'anual') {
+                $query->where('created_at', '>=', now()->subYear());
+                $statsQuery->where('created_at', '>=', now()->subYear());
+            }
+        }
+
+        // Filtro por mes y año específicos
+        if ($request->filled('mes') && $request->filled('anio')) {
+            $query->whereMonth('created_at', $request->mes)
+                  ->whereYear('created_at', $request->anio);
+            $statsQuery->whereMonth('created_at', $request->mes)
+                       ->whereYear('created_at', $request->anio);
+        }
+
+        // Filtro por cliente
+        if ($request->filled('cliente')) {
+            $query->where('cliente', 'like', '%' . $request->cliente . '%');
+            $statsQuery->where('cliente', 'like', '%' . $request->cliente . '%');
+        }
+
+        // Filtro por status
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'Done') {
+                $query->where('status_manual', 'Done');
+                $statsQuery->where('status_manual', 'Done');
+            } elseif ($status === 'In Process') {
+                $query->where(function($q){
+                    $q->where(function($qq){
+                        $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+                    })->where('status_calculado', 'In Process');
+                });
+                $statsQuery->where(function($q){
+                    $q->where(function($qq){
+                        $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+                    })->where('status_calculado', 'In Process');
+                });
+            } elseif ($status === 'Out of Metric') {
+                $query->where(function($q){
+                    $q->where(function($qq){
+                        $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+                    })->where('status_calculado', 'Out of Metric');
+                });
+                $statsQuery->where(function($q){
+                    $q->where(function($qq){
+                        $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+                    })->where('status_calculado', 'Out of Metric');
+                });
+            }
+        }
+
+        // Filtro por rango de fechas
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+            $statsQuery->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            $statsQuery->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+
+        // Obtener operaciones con filtros aplicados
+        $operaciones = $query->orderByDesc('created_at')->limit(500)->get();
+
+        // Contar por status actual con filtros aplicados
+        $enProceso = (clone $statsQuery)->where(function($q){
+            $q->where(function($qq){
+                $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+            })->where('status_calculado', 'In Process');
+        })->count();
+        
+        $fueraMetrica = (clone $statsQuery)->where(function($q){
+            $q->where(function($qq){
+                $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+            })->where('status_calculado', 'Out of Metric');
+        })->count();
+        
+        $done = (clone $statsQuery)->where('status_manual', 'Done')->count();
+
+        $stats = [
+            'en_proceso' => $enProceso,
+            'fuera_metrica' => $fueraMetrica,
+            'done' => $done,
+        ];
+
+        // Obtener lista de clientes únicos para el filtro
+        $clientes = OperacionLogistica::select('cliente')
+            ->distinct()
+            ->orderBy('cliente')
+            ->pluck('cliente');
+
+        return view('Logistica.reportes', compact('operaciones','stats','clientes'));
+    }
+
+    /**
+     * Obtener operaciones de un cliente específico para reporte por correo
+     */
+    public function getOperacionesPorCliente(Request $request)
+    {
+        try {
+            $clienteNombre = $request->cliente;
+            
+            if (!$clienteNombre) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cliente no especificado'
+                ], 400);
+            }
+
+            // Obtener operaciones del cliente
+            $operaciones = OperacionLogistica::where('cliente', $clienteNombre)
+                ->orderByDesc('created_at')
+                ->get();
+
+            // Buscar cliente en catálogo para obtener correos
+            $clienteData = Cliente::where('cliente', $clienteNombre)->first();
+            $correos = $clienteData && $clienteData->correos ? $clienteData->correos : [];
+
+            // Preparar datos para vista previa con todos los campos del CSV
+            $operacionesData = $operaciones->map(function($op, $index) {
+                $statusFinal = ($op->status_manual === 'Done') ? 'Done' : $op->status_calculado;
+                $statusDisplay = match($statusFinal) {
+                    'In Process' => 'En Proceso',
+                    'Out of Metric' => 'Fuera de Métrica',
+                    'Done' => 'Completado',
+                    default => $statusFinal ?? 'En Proceso'
+                };
+
+                // Obtener post-operaciones
+                $postOps = $op->postOperaciones ?? collect();
+                $postOpsCompletas = $postOps->where('estado', 'completa')->pluck('nombre')->join(', ');
+                $postOpsPendientes = $postOps->where('estado', 'pendiente')->pluck('nombre')->join(', ');
+
+                // Obtener comentarios del campo texto (no es una relación)
+                $comentariosTexto = $op->comentarios ?? '-';
+                
+                return [
+                    'no' => $index + 1,
+                    'ejecutivo' => $op->ejecutivo ?? 'Sin asignar',
+                    'operacion' => $op->operacion ?? '-',
+                    'cliente' => $op->cliente ?? '-',
+                    'proveedor_cliente_final' => $op->proveedor_o_cliente ?? '-',
+                    'fecha_embarque' => optional($op->fecha_embarque)->format('d/m/Y') ?? '-',
+                    'no_factura' => $op->no_factura ?? '-',
+                    'tipo_operacion' => $op->tipo_operacion_enum ?? '-',
+                    'clave' => $op->clave ?? '-',
+                    'referencia_interna' => $op->referencia_interna ?? '-',
+                    'aduana' => $op->aduana ?? '-',
+                    'aa' => $op->agente_aduanal ?? '-',
+                    'referencia_aa' => $op->referencia_aa ?? '-',
+                    'no_pedimento' => $op->no_pedimento ?? '-',
+                    'transporte' => $op->transporte ?? '-',
+                    'fecha_arribo_aduana' => optional($op->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
+                    'guia_bl' => $op->guia_bl ?? '-',
+                    'status' => $statusDisplay,
+                    'fecha_modulacion' => optional($op->fecha_modulacion)->format('d/m/Y') ?? '-',
+                    'fecha_arribo_planta' => optional($op->fecha_arribo_planta)->format('d/m/Y') ?? '-',
+                    'resultado' => $op->resultado ?? '-',
+                    'target' => $op->target ?? '-',
+                    'dias_transito' => $op->dias_transito ?? '-',
+                    'post_operaciones_completas' => $postOpsCompletas ?: '-',
+                    'post_operaciones_pendientes' => $postOpsPendientes ?: '-',
+                    'comentarios' => $comentariosTexto ?: '-',
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'operaciones' => $operacionesData,
+                'correos' => $correos,
+                'total' => $operaciones->count(),
+                'cliente' => $clienteNombre
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener operaciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Exportar CSV de operaciones
+    public function exportCSV(Request $request)
+    {
+        // Obtener usuario actual y verificar permisos
+        $usuarioActual = auth()->user();
+        $empleadoActual = null;
+        $esAdmin = false;
+
+        if ($usuarioActual) {
+            $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        $filename = 'operaciones_logisticas_' . now()->format('Ymd_His') . '.csv';
+        // Columnas en el MISMO ORDEN que aparecen en la matriz de seguimiento
+        $columns = [
+            'No.',
+            'Ejecutivo',
+            'Operación',
+            'Cliente',
+            'Proveedor/Cliente Final',
+            'Fecha de Embarque',
+            'No. Factura',
+            'T. Operación',
+            'Clave',
+            'Referencia Interna',
+            'Aduana',
+            'A.A',
+            'Referencia A.A',
+            'No Ped',
+            'Transporte',
+            'Fecha de Arribo a Aduana',
+            'Guía //BL',
+            'Status',
+            'Fecha de Modulación',
+            'Fecha de Arribo a Planta',
+            'Resultado',
+            'Target',
+            'Días en Tránsito',
+            'Post-Operaciones',
+            'Comentarios'
+        ];
+
+        $callback = function() use ($columns, $request, $esAdmin, $empleadoActual) {
+            $handle = fopen('php://output', 'w');
+            // BOM UTF-8 para Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, $columns);
+
+            // Aplicar mismos filtros que en reportes
+            $query = OperacionLogistica::with('ejecutivo');
+            
+            // Si no es admin, filtrar solo sus operaciones
+            if (!$esAdmin && $empleadoActual) {
+                $query->where('ejecutivo', $empleadoActual->nombre);
+            }
+            
+            if ($request->filled('periodo')) {
+                $periodo = $request->periodo;
+                if ($periodo === 'semanal') $query->where('created_at', '>=', now()->subWeek());
+                elseif ($periodo === 'mensual') $query->where('created_at', '>=', now()->subMonth());
+                elseif ($periodo === 'anual') $query->where('created_at', '>=', now()->subYear());
+            }
+            if ($request->filled('mes') && $request->filled('anio')) {
+                $query->whereMonth('created_at', $request->mes)->whereYear('created_at', $request->anio);
+            }
+            if ($request->filled('cliente')) {
+                $query->where('cliente', 'like', '%' . $request->cliente . '%');
+            }
+            if ($request->filled('status')) {
+                $status = $request->status;
+                if ($status === 'Done') $query->where('status_manual', 'Done');
+                elseif ($status === 'In Process') {
+                    $query->where(function($q){
+                        $q->where(function($qq){ $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual'); })
+                          ->where('status_calculado', 'In Process');
+                    });
+                } elseif ($status === 'Out of Metric') {
+                    $query->where(function($q){
+                        $q->where(function($qq){ $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual'); })
+                          ->where('status_calculado', 'Out of Metric');
+                    });
+                }
+            }
+            if ($request->filled('fecha_desde')) $query->whereDate('created_at', '>=', $request->fecha_desde);
+            if ($request->filled('fecha_hasta')) $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            
+            $query->orderByDesc('created_at')->chunk(500, function($chunk) use ($handle) {
+                foreach ($chunk as $op) {
+                    // Calcular status actual (prioriza Done manual, sino usa calculado)
+                    $statusFinal = ($op->status_manual === 'Done') ? 'Done' : $op->status_calculado;
+                    $statusDisplay = match($statusFinal) {
+                        'In Process' => 'En Proceso',
+                        'Out of Metric' => 'Fuera de Métrica',
+                        'Done' => 'Completado',
+                        default => $statusFinal ?? 'En Proceso'
+                    };
+
+                    fputcsv($handle, [
+                        // No.
+                        $op->id,
+                        // Ejecutivo
+                        $op->ejecutivo ?? 'Sin asignar',
+                        // Operación
+                        $op->operacion ?? '-',
+                        // Cliente
+                        $op->cliente ?? 'Sin cliente',
+                        // Proveedor/Cliente Final
+                        $op->proveedor_o_cliente ?? '-',
+                        // Fecha de Embarque
+                        optional($op->fecha_embarque)->format('d/m/Y') ?? '-',
+                        // No. Factura
+                        $op->no_factura ?? '-',
+                        // T. Operación
+                        $op->tipo_operacion_enum ?? '-',
+                        // Clave
+                        $op->clave ?? '-',
+                        // Referencia Interna
+                        $op->referencia_interna ?? '-',
+                        // Aduana
+                        $op->aduana ?? '-',
+                        // A.A (Agente Aduanal)
+                        $op->agente_aduanal ?? '-',
+                        // Referencia A.A
+                        $op->referencia_aa ?? '-',
+                        // No Ped (No. Pedimento)
+                        $op->no_pedimento ?? '-',
+                        // Transporte
+                        $op->transporte ?? '-',
+                        // Fecha de Arribo a Aduana
+                        optional($op->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
+                        // Guía //BL
+                        $op->guia_bl ?? '-',
+                        // Status (actual calculado)
+                        $statusDisplay,
+                        // Fecha de Modulación
+                        optional($op->fecha_modulacion)->format('d/m/Y') ?? '-',
+                        // Fecha de Arribo a Planta
+                        optional($op->fecha_arribo_planta)->format('d/m/Y') ?? '-',
+                        // Resultado (días entre arribo aduana y modulación)
+                        $op->resultado ?? '-',
+                        // Target
+                        $op->target ?? '-',
+                        // Días en Tránsito (embarque a arribo planta)
+                        $op->dias_transito ?? '-',
+                        // Post-Operaciones
+                        $op->post_operacion_id ?? '-',
+                        // Comentarios
+                        $op->comentarios ?? '-',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function create()
     {
         // Obtener datos para los selects
@@ -203,8 +583,8 @@ class OperacionLogisticaController extends Controller
             'comentarios' => $request->comentarios,
             // Target se calcula automáticamente basado en tipo_operacion_enum
             'target' => null, // Se calculará automáticamente
-            // Status manual inicial
-            'status_manual' => 'In Process',
+            // status_manual solo se usa cuando el usuario lo cambia manualmente, por defecto es null
+            'status_manual' => null,
             // status_calculado y color_status se calculan automáticamente en el modelo
         ]);
 
@@ -213,6 +593,9 @@ class OperacionLogisticaController extends Controller
         if ($targetCalculado !== null) {
             $operacion->target = $targetCalculado;
         }
+
+        // Calcular resultado y días en tránsito automáticamente
+        $operacion->calcularDiasTransito();
 
         // *** GUARDAR PRIMERO, LUEGO CALCULAR STATUS ***
         $operacion->save();
@@ -306,6 +689,9 @@ class OperacionLogisticaController extends Controller
             if ($targetCalculado !== null) {
                 $operacion->target = $targetCalculado;
             }
+
+            // Recalcular resultado y días en tránsito automáticamente
+            $operacion->calcularDiasTransito();
 
             $operacion->save();
 

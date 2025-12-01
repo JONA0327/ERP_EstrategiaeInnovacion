@@ -79,6 +79,18 @@ class OperacionLogistica extends Model
     ];
 
     /**
+     * Status actual de la operación (sin histórico):
+     * Prioriza status_manual si existe, de lo contrario usa status_calculado.
+     */
+    public function getStatusActualAttribute()
+    {
+        if (!empty($this->status_manual)) {
+            return $this->status_manual;
+        }
+        return $this->status_calculado;
+    }
+
+    /**
      * Relación con el empleado ejecutivo
      * Solo empleados del área de logística
      */
@@ -175,6 +187,21 @@ class OperacionLogistica extends Model
      */
     public function calcularDiasTransito()
     {
+        // Calcular RESULTADO: días entre fecha_arribo_aduana y fecha_modulacion
+        if ($this->fecha_arribo_aduana && $this->fecha_modulacion) {
+            $this->resultado = $this->fecha_arribo_aduana->diffInDays($this->fecha_modulacion);
+        } else {
+            $this->resultado = null;
+        }
+
+        // Calcular DIAS_TRANSITO: días entre fecha_embarque y fecha_arribo_planta
+        if ($this->fecha_embarque && $this->fecha_arribo_planta) {
+            $this->dias_transito = $this->fecha_embarque->diffInDays($this->fecha_arribo_planta);
+        } else {
+            $this->dias_transito = null;
+        }
+
+        // Calcular días transcurridos para el sistema de status
         if (!$this->fecha_embarque) {
             $this->dias_transcurridos_calculados = 0;
             $this->status_calculado = 'Pendiente';

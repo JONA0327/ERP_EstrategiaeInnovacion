@@ -68,6 +68,25 @@
                         </div>
                     </div>
                 @endforeach
+                    <div class="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-white/90 backdrop-blur shadow-lg shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                        <div class="absolute -top-20 -right-16 w-40 h-40 bg-gradient-to-br from-blue-200/50 to-transparent blur-3xl"></div>
+                        <div class="relative p-8">
+                            <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600 shadow-inner shadow-white/40 mx-auto mb-6">
+                                <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-center text-slate-900 mb-3">Reportes</h3>
+                            <p class="text-center text-slate-600 leading-relaxed mb-8">Descarga CSV y gráfico de status</p>
+                            <a href="{{ route('logistica.reportes') }}" class="group inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:from-blue-700 hover:to-blue-800">
+                                <svg class="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Abrir módulo
+                            </a>
+                            <p class="mt-3 text-center text-[11px] text-slate-400">Disponible</p>
+                        </div>
+                    </div>
             </div>
         </div>
     </main>

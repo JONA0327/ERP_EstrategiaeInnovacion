@@ -121,31 +121,24 @@
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
-                                        @if($operacion->status_manual === 'Done')
-                                            <span class="status-badge status-verde text-xs">
-                                                ✓ Done (Manual)
-                                            </span>
-                                        @else
-                                            <!-- Status Automático -->
-                                            <span class="status-badge {{
-                                                $operacion->color_status === 'verde' ? 'status-verde' :
-                                                ($operacion->color_status === 'amarillo' ? 'status-amarillo' :
-                                                ($operacion->color_status === 'rojo' ? 'status-rojo' : 'status-sin-fecha'))
-                                            }} text-xs">
-                                                @php
-                                                    $statusDisplay = match($operacion->status_calculado) {
-                                                        'In Process' => 'En Proceso',
-                                                        'Out of Metric' => 'Fuera de Métrica',
-                                                        'Done' => 'Completado',
-                                                        default => $operacion->status_calculado ?? 'En Proceso'
-                                                    };
-                                                @endphp
-                                                {{ $statusDisplay }}
-                                            </span>
-                                            <span class="text-xs text-gray-500">
-                                                Manual: {{ $operacion->status_manual ?? 'In Process' }}
-                                            </span>
-                                        @endif
+                                        @php
+                                            // Priorizar status_manual si existe y es Done, sino usar status_calculado
+                                            $statusFinal = ($operacion->status_manual === 'Done') ? 'Done' : $operacion->status_calculado;
+                                            $colorFinal = ($operacion->status_manual === 'Done') ? 'verde' : $operacion->color_status;
+                                            $statusDisplay = match($statusFinal) {
+                                                'In Process' => 'En Proceso',
+                                                'Out of Metric' => 'Fuera de Métrica',
+                                                'Done' => 'Completado',
+                                                default => $statusFinal ?? 'En Proceso'
+                                            };
+                                        @endphp
+                                        <span class="status-badge {{
+                                            $colorFinal === 'verde' ? 'status-verde' :
+                                            ($colorFinal === 'amarillo' ? 'status-amarillo' :
+                                            ($colorFinal === 'rojo' ? 'status-rojo' : 'status-sin-fecha'))
+                                        }} text-xs">
+                                            {{ $statusDisplay }}@if($operacion->status_manual === 'Done') <span class="ml-1">(Manual)</span>@endif
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-' }}</td>
@@ -635,7 +628,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-600 mb-2">Número de Pedimento</label>
-                                    <input type="text" name="no_pedimento" class="form-input bg-white" placeholder="Se llena después">
+                                    <input type="text" name="no_pedimento" id="no_pedimento" class="form-input bg-white" placeholder="Ej: 25 24 1029 5002294" maxlength="18">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-600 mb-2">Referencia del Agente</label>

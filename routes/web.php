@@ -44,6 +44,10 @@ Route::middleware(['auth','area.rh'])->group(function () {
 Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
     Route::get('/logistica/matriz-seguimiento', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'index'])->name('logistica.matriz-seguimiento');
+    // Reportes: página y exportación CSV
+    Route::get('/logistica/reportes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'reportes'])->name('logistica.reportes');
+    Route::get('/logistica/reportes/export', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportCSV'])->name('logistica.reportes.export');
+    Route::get('/logistica/reportes/cliente', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getOperacionesPorCliente'])->name('logistica.reportes.cliente');
     Route::get('/logistica/catalogos', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'catalogos'])->name('logistica.catalogos');
     Route::get('/test-routes', function () { return view('test_routes'); });
     Route::get('/logistica/operaciones/create', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'create'])->name('logistica.operaciones.create');

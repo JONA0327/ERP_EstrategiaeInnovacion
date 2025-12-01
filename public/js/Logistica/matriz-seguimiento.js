@@ -1737,3 +1737,41 @@ window.guardarNuevaAduana = function() {
         mostrarAlerta('Error de conexión al crear la aduana', 'error');
     });
 };
+
+// ========================================
+// FORMATEO AUTOMÁTICO DE NÚMERO DE PEDIMENTO
+// ========================================
+
+/**
+ * Formatea el número de pedimento con la estructura: XX XX XXXX XXXXXXX
+ * Ejemplo: 25 24 1029 5002294
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const pedimentoInput = document.getElementById('no_pedimento');
+    
+    if (pedimentoInput) {
+        pedimentoInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, ''); // Quitar espacios
+            let formatted = '';
+            
+            // Solo permitir números
+            value = value.replace(/\D/g, '');
+            
+            // Aplicar formato: XX XX XXXX XXXXXXX
+            if (value.length > 0) {
+                formatted = value.substring(0, 2); // Primeros 2 dígitos
+            }
+            if (value.length > 2) {
+                formatted += ' ' + value.substring(2, 4); // Siguientes 2 dígitos
+            }
+            if (value.length > 4) {
+                formatted += ' ' + value.substring(4, 8); // Siguientes 4 dígitos
+            }
+            if (value.length > 8) {
+                formatted += ' ' + value.substring(8, 15); // Últimos 7 dígitos
+            }
+            
+            e.target.value = formatted;
+        });
+    }
+});
