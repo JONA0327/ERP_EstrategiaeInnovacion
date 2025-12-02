@@ -308,44 +308,57 @@ class OperacionLogisticaController extends Controller
             'total_operaciones' => count($comportamientoTemporal)
         ];
 
-        // Obtener lista de clientes únicos con correos para el filtro (versión segura final)
-        $clientes = [];
+        // Para el filtro: obtener clientes únicos simples
+        $clientes = array_unique(array_filter($clientes_unicos));
+        sort($clientes);
+        
+        // Para el modal de email: obtener solo clientes asignados al ejecutivo actual
+        $clientesEmail = [];
         try {
-            $clientesDB = \App\Models\Logistica\Cliente::select('cliente', 'correos')
-                ->whereNotNull('cliente')
-                ->where('cliente', '!=', '')
-                ->orderBy('cliente')
-                ->limit(50)
-                ->get();
+            if ($empleadoActual && $empleadoActual->nombre) {
+                // Obtener clientes que tienen operaciones con este ejecutivo
+                $clientesDelEjecutivo = OperacionLogistica::where('ejecutivo', $empleadoActual->nombre)
+                    ->whereNotNull('cliente')
+                    ->where('cliente', '!=', '')
+                    ->distinct()
+                    ->pluck('cliente')
+                    ->toArray();
                 
-            foreach ($clientesDB as $cliente) {
-                if ($cliente->cliente && is_string($cliente->cliente)) {
-                    $correosString = '';
-                    if ($cliente->correos) {
-                        if (is_array($cliente->correos)) {
-                            $correosLimpio = array_filter($cliente->correos, function($email) {
-                                return is_string($email) && !empty(trim($email));
-                            });
-                            $correosString = implode(', ', $correosLimpio);
-                        } elseif (is_string($cliente->correos)) {
-                            $correosString = trim($cliente->correos);
+                if (!empty($clientesDelEjecutivo)) {
+                    $clientesDB = \App\Models\Logistica\Cliente::select('cliente', 'correos')
+                        ->whereIn('cliente', $clientesDelEjecutivo)
+                        ->orderBy('cliente')
+                        ->get();
+                        
+                    foreach ($clientesDB as $cliente) {
+                        if ($cliente->cliente && is_string($cliente->cliente)) {
+                            $correosString = '';
+                            if ($cliente->correos) {
+                                if (is_array($cliente->correos)) {
+                                    $correosLimpio = array_filter($cliente->correos, function($email) {
+                                        return is_string($email) && !empty(trim($email));
+                                    });
+                                    $correosString = implode(', ', $correosLimpio);
+                                } elseif (is_string($cliente->correos)) {
+                                    $correosString = trim($cliente->correos);
+                                }
+                            }
+                            
+                            $clientesEmail[] = [
+                                'cliente' => trim($cliente->cliente),
+                                'correos' => $correosString
+                            ];
                         }
                     }
-                    
-                    $clientes[] = [
-                        'cliente' => trim($cliente->cliente),
-                        'correos' => $correosString
-                    ];
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Error obteniendo clientes: ' . $e->getMessage());
-            // Fallback con datos mínimos
-            $clientes = [];
+            \Log::error('Error obteniendo clientes del ejecutivo: ' . $e->getMessage());
+            $clientesEmail = [];
         }
 
         return view('Logistica.reportes', compact(
-            'operaciones', 'stats', 'clientes', 'comportamientoTemporal', 
+            'operaciones', 'stats', 'clientes', 'clientesEmail', 'comportamientoTemporal', 
             'statsTemporales', 'esAdmin', 'empleadoActual'
         ));
     }
@@ -3019,23 +3032,30 @@ class OperacionLogisticaController extends Controller
     public function enviarReporte(Request $request)
     {
         try {
+            // Log para debug
+            \Log::info('Datos recibidos en enviarReporte:', $request->all());
+            
             $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-                'destinatarios' => 'required|string',
-                'asunto' => 'required|string|max:255',
-                'mensaje' => 'required|string',
-                'incluir_datos' => 'boolean',
-                'formato_datos' => 'nullable|string|in:csv,excel',
+                'destinatarios' => 'required|string|min:1',
+                'asunto' => 'required|string|max:255|min:1',
+                'mensaje' => 'required|string|min:1',
+                'incluir_datos' => 'nullable', // Puede ser string "true"/"false" o boolean
+                'formato_datos' => 'nullable|string',
                 'operaciones_ids' => 'nullable|string', // Viene como JSON string
                 'correos_cc' => 'nullable|string' // Viene como JSON string
             ]);
 
             if ($validator->fails()) {
+                \Log::error('Validación fallida en enviarReporte:', $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'errors' => $validator->errors()
                 ], 422);
             }
 
+            // Procesar incluir_datos
+            $incluirDatos = in_array($request->incluir_datos, ['1', 'true', true], true);
+            
             // Obtener correos CC desde el frontend (ya filtrados por el usuario)
             $correosCC = [];
             if ($request->correos_cc) {
@@ -3059,7 +3079,7 @@ class OperacionLogisticaController extends Controller
             ];
 
             // Si se solicita incluir datos, preparar el archivo adjunto
-            if ($request->incluir_datos) {
+            if ($incluirDatos) {
                 $operacionesIds = [];
                 if ($request->operaciones_ids) {
                     $operacionesDecoded = json_decode($request->operaciones_ids, true);
@@ -3102,9 +3122,12 @@ class OperacionLogisticaController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error al enviar reporte: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            \Log::error('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Error interno al enviar el correo. Por favor, intente nuevamente.'
+                'message' => 'Error interno al enviar el correo: ' . $e->getMessage(),
+                'error_details' => config('app.debug') ? $e->getTraceAsString() : null
             ], 500);
         }
     }
@@ -3169,6 +3192,8 @@ class OperacionLogisticaController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error al procesar envío de correo: ' . $e->getMessage());
+            \Log::error('Stack trace de envío correo: ' . $e->getTraceAsString());
+            \Log::error('Datos del correo: ' . json_encode($datos, JSON_PRETTY_PRINT));
             return [
                 'success' => false,
                 'message' => 'Error al enviar el correo: ' . $e->getMessage()
@@ -3555,7 +3580,7 @@ class OperacionLogisticaController extends Controller
                     'nombre_remitente' => $datosCorreo['nombreRemitente']
                 ],
                 'datos_adicionales' => [
-                    'incluir_datos' => $request->incluir_datos ?? false,
+                    'incluir_datos' => $incluirDatos,
                     'formato_datos' => $request->formato_datos ?? null,
                     'operaciones_ids' => $request->operaciones_ids ?? [],
                     'usuario_envio' => [

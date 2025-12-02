@@ -114,9 +114,13 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
                         <select name="cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos los Clientes</option>
-                            <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($c); ?>" <?php echo e(request('cliente') === $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php if(isset($clientes) && is_array($clientes)): ?>
+                                <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if(is_string($c)): ?>
+                                        <option value="<?php echo e($c); ?>" <?php echo e(request('cliente') === $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
+                                    <?php endif; ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -262,7 +266,7 @@
                             $targetPromedio = round($statsTemporales['promedio_target'] ?? 3, 1);
                         ?>
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Eficiencia:</span> <?php echo e($eficienciaGeneral); ?>% 
+                            <span class="font-semibold">Eficiencia:</span> <?php echo e(isset($stats['eficiencia_general']) && is_scalar($stats['eficiencia_general']) ? $stats['eficiencia_general'] : 0); ?>% 
                             <?php if($eficienciaGeneral >= 80): ?>
                                 <span class="text-green-300">🟢 Excelente</span>
                             <?php elseif($eficienciaGeneral >= 60): ?>
@@ -272,18 +276,18 @@
                             <?php endif; ?>
                         </p>
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Tiempo Promedio:</span> <?php echo e($promedioEjecucion); ?> días 
-                            (Target: <?php echo e($targetPromedio); ?> días)
+                            <span class="font-semibold">Tiempo Promedio:</span> <?php echo e(isset($stats['promedio_ejecucion']) ? $stats['promedio_ejecucion'] : 0); ?> días 
+                            (Target: <?php echo e(isset($stats['target_promedio']) ? $stats['target_promedio'] : 0); ?> días)
                         </p>
                     </div>
                     <div>
                         <h3 class="font-medium mb-2">⚠️ Alertas y Recomendaciones</h3>
                         <div class="text-sm space-y-1">
                             <?php if($statsTemporales['con_retraso'] > 0): ?>
-                                <p class="text-red-300">• <?php echo e($statsTemporales['con_retraso']); ?> operaciones con retraso activo</p>
+                                <p class="text-red-300">• <?php echo e(isset($statsTemporales['con_retraso']) ? $statsTemporales['con_retraso'] : 0); ?> operaciones con retraso activo</p>
                             <?php endif; ?>
                             <?php if($statsTemporales['en_riesgo'] > 0): ?>
-                                <p class="text-yellow-300">• <?php echo e($statsTemporales['en_riesgo']); ?> operaciones en riesgo de retraso</p>
+                                <p class="text-yellow-300">• <?php echo e(isset($statsTemporales['en_riesgo']) ? $statsTemporales['en_riesgo'] : 0); ?> operaciones en riesgo de retraso</p>
                             <?php endif; ?>
                             <?php if($eficienciaGeneral < 70): ?>
                                 <p class="text-orange-300">• Considerar revisión de procesos operativos</p>
@@ -307,7 +311,7 @@
                             <?php else: ?>
                                 Mostrando solo tus operaciones asignadas
                             <?php endif; ?>
-                            (<?php echo e($statsTemporales['total_operaciones']); ?> operaciones)
+                            (<?php echo e(isset($statsTemporales['total_operaciones']) ? $statsTemporales['total_operaciones'] : 0); ?> operaciones)
                         </p>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -366,23 +370,23 @@
                 <!-- Métricas rápidas -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-green-600"><?php echo e($statsTemporales['en_tiempo']); ?></div>
+                        <div class="text-2xl font-bold text-green-600"><?php echo e(isset($statsTemporales['en_tiempo']) ? $statsTemporales['en_tiempo'] : 0); ?></div>
                         <div class="text-xs text-green-700">En Tiempo</div>
                     </div>
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-yellow-600"><?php echo e($statsTemporales['en_riesgo']); ?></div>
+                        <div class="text-2xl font-bold text-yellow-600"><?php echo e(isset($statsTemporales['en_riesgo']) && is_scalar($statsTemporales['en_riesgo']) ? $statsTemporales['en_riesgo'] : 0); ?></div>
                         <div class="text-xs text-yellow-700">En Riesgo</div>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-red-600"><?php echo e($statsTemporales['con_retraso']); ?></div>
+                        <div class="text-2xl font-bold text-red-600"><?php echo e(isset($statsTemporales['con_retraso']) && is_scalar($statsTemporales['con_retraso']) ? $statsTemporales['con_retraso'] : 0); ?></div>
                         <div class="text-xs text-red-700">Con Retraso</div>
                     </div>
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-blue-600"><?php echo e($statsTemporales['completado_tiempo']); ?></div>
+                        <div class="text-2xl font-bold text-blue-600"><?php echo e(isset($statsTemporales['completado_tiempo']) && is_scalar($statsTemporales['completado_tiempo']) ? $statsTemporales['completado_tiempo'] : 0); ?></div>
                         <div class="text-xs text-blue-700">Completado a Tiempo</div>
                     </div>
                     <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-purple-600"><?php echo e($statsTemporales['completado_retraso']); ?></div>
+                        <div class="text-2xl font-bold text-purple-600"><?php echo e(isset($statsTemporales['completado_retraso']) && is_scalar($statsTemporales['completado_retraso']) ? $statsTemporales['completado_retraso'] : 0); ?></div>
                         <div class="text-xs text-purple-700">Completado con Retraso</div>
                     </div>
                 </div>
@@ -1007,12 +1011,14 @@
                                 onchange="cargarCorreosCliente()" required>
                             <option value="">Seleccionar cliente...</option>
                             <option value="">Seleccionar cliente...</option>
-                            <?php if($clientes && is_array($clientes)): ?>
-                                <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($cliente['cliente']); ?>" data-correos="<?php echo e($cliente['correos']); ?>">
-                                        <?php echo e($cliente['cliente']); ?>
+                            <?php if(isset($clientesEmail) && is_array($clientesEmail)): ?>
+                                <?php $__currentLoopData = $clientesEmail; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if(is_array($cliente) && isset($cliente['cliente']) && is_string($cliente['cliente'])): ?>
+                                        <option value="<?php echo e($cliente['cliente']); ?>" data-correos="<?php echo e(isset($cliente['correos']) && is_string($cliente['correos']) ? $cliente['correos'] : ''); ?>">
+                                            <?php echo e($cliente['cliente']); ?>
 
-                                    </option>
+                                        </option>
+                                    <?php endif; ?>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             <?php endif; ?>
                         </select>
@@ -1118,10 +1124,11 @@ Saludos cordiales,
         // Variables globales para manejar correos CC
         let correosCC = [];
         
-        function openEmailModal() {
+        // Ensure functions are available in global scope
+        window.openEmailModal = function() {
             document.getElementById('emailModal').classList.remove('hidden');
             cargarCorreosCC();
-        }
+        };
         
         // Cargar correos del cliente seleccionado
         function cargarCorreosCliente() {
@@ -1218,7 +1225,7 @@ Saludos cordiales,
             return operacionesIds;
         }
 
-        function closeEmailModal() {
+        window.closeEmailModal = function() {
             document.getElementById('emailModal').classList.add('hidden');
             // Resetear formulario
             document.getElementById('emailForm').reset();
@@ -1245,11 +1252,28 @@ Saludos cordiales,
             btnTexto.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
             
             try {
+                // Validar campos requeridos
+                const destinatarios = document.getElementById('destinatarios').value.trim();
+                const asunto = document.getElementById('asunto').value.trim();
+                const mensaje = document.getElementById('mensaje').value.trim();
+                
+                if (!destinatarios) {
+                    throw new Error('Por favor ingrese al menos un destinatario');
+                }
+                
+                if (!asunto) {
+                    throw new Error('Por favor ingrese un asunto');
+                }
+                
+                if (!mensaje) {
+                    throw new Error('Por favor ingrese un mensaje');
+                }
+                
                 const formData = new FormData();
-                formData.append('destinatarios', document.getElementById('destinatarios').value);
-                formData.append('asunto', document.getElementById('asunto').value);
-                formData.append('mensaje', document.getElementById('mensaje').value);
-                formData.append('incluir_datos', document.getElementById('incluirDatos').checked);
+                formData.append('destinatarios', destinatarios);
+                formData.append('asunto', asunto);
+                formData.append('mensaje', mensaje);
+                formData.append('incluir_datos', document.getElementById('incluirDatos').checked ? '1' : '0');
                 formData.append('formato_datos', document.getElementById('formatoDatos').value);
                 
                 // Incluir correos CC activos
