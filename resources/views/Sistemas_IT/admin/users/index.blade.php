@@ -329,9 +329,4 @@
             </div>
         </footer>
 
-        <!-- Scripts -->
-        @push('scripts')
-            @vite('resources/js/Sistemas_IT/admin-users-index.js')
-        @endpush
-
 @endsection

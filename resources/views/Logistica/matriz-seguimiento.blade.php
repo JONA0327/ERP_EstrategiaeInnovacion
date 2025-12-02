@@ -658,6 +658,7 @@
                                 <select name="status_manual" id="statusManualSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white">
                                     <option value="In Process">🔄 In Process (En Proceso)</option>
                                     <option value="Done">✅ Done (Completado)</option>
+                                    <option value="Out of Metric">🔴 Out of Metric (Fuera de Métrica)</option>
                                 </select>
                                 <p class="text-xs text-rose-600 mt-2 font-medium">💡 Cambia manualmente el estado si es necesario</p>
                             </div>

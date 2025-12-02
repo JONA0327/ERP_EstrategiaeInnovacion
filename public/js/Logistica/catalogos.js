@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function checkDataExistenceAndUpdateButtons() {
     try {
         // Verificar ADUANAS
-        const ADUANASResponse = await fetch('/logistica/ADUANAS/check', {
+        const ADUANASResponse = await fetch('/logistica/aduanas/check', {
             method: 'GET',
             headers: getAuthHeaders()
         });
@@ -1401,7 +1401,7 @@ async function importADUANAS() {
             progressText.textContent = 'Procesando archivo...';
         }
 
-        const response = await fetch('/logistica/ADUANAS/import', {
+        const response = await fetch('/logistica/aduanas/import', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: formData
@@ -1500,7 +1500,7 @@ async function eliminarAduana(id) {
 // Función auxiliar para ejecutar la eliminación
 async function executeEliminarAduana(id) {
     try {
-        const response = await fetch(`/logistica/ADUANAS/${id}`, {
+        const response = await fetch(`/logistica/aduanas/${id}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1540,7 +1540,7 @@ async function clearAllADUANAS() {
 // FunciÃ³n auxiliar para ejecutar la limpieza
 async function executeClearAllADUANAS() {
     try {
-        const response = await fetch('/logistica/ADUANAS', {
+        const response = await fetch('/logistica/aduanas', {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1975,7 +1975,7 @@ async function guardarNuevaAduanaCatalogo() {
             saveBtn.querySelector('.loading-text').classList.remove('hidden');
         }
 
-        const response = await fetch('/logistica/ADUANAS', {
+        const response = await fetch('/logistica/aduanas', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: formData
@@ -2068,7 +2068,7 @@ async function actualizarAduana() {
             updateBtn.querySelector('.loading-text').classList.remove('hidden');
         }
 
-        const response = await fetch(`/logistica/ADUANAS/${aduanaId}`, {
+        const response = await fetch(`/logistica/aduanas/${aduanaId}`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

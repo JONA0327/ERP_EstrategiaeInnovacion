@@ -12,6 +12,7 @@ use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
 use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con barra de progreso
 use App\Http\Controllers\Logistica\OperacionLogisticaController;
+use App\Http\Controllers\Logistica\LogisticaCorreoCCController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -133,6 +134,27 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica/operaciones/{id}/reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteWord'])->name('logistica.operaciones.reporte-word');
     Route::post('/logistica/operaciones/reporte-multiple-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteMultiple'])->name('logistica.operaciones.reporte-multiple-word');
     Route::get('/logistica/operaciones/{id}/guardar-reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'guardarReporteWord'])->name('logistica.operaciones.guardar-reporte-word');
+
+    // Ruta para envío de reportes por correo con CC
+    Route::post('/logistica/reportes/enviar-correo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'enviarReporte'])->name('logistica.reportes.enviar-correo');
+    
+    // Ruta para exportar Excel profesional
+    Route::get('/logistica/reportes/export-excel', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportExcelProfesional'])->name('logistica.reportes.export-excel');
+
+    // Rutas para Catálogo de Correos CC
+    Route::prefix('logistica/correos-cc')->name('logistica.correos-cc.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'index'])->name('index');
+        Route::get('/crear', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'store'])->name('store');
+        Route::get('/{correoCC}/editar', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'edit'])->name('edit');
+        Route::put('/{correoCC}', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'update'])->name('update');
+        Route::delete('/{correoCC}', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'destroy'])->name('destroy');
+        Route::patch('/{correoCC}/toggle-activo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'toggleActivo'])->name('toggle-activo');
+        
+        // API endpoints para obtener correos CC
+        Route::get('/api/por-tipo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'apiPorTipo'])->name('api.por-tipo');
+        Route::get('/api/todos-activos', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'apiTodosActivos'])->name('api.todos-activos');
+    });
 });
 
 // Rutas de autenticación

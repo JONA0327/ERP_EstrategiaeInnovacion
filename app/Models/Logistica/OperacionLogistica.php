@@ -204,8 +204,8 @@ class OperacionLogistica extends Model
         // Calcular días transcurridos para el sistema de status
         if (!$this->fecha_embarque) {
             $this->dias_transcurridos_calculados = 0;
-            $this->status_calculado = 'Pendiente';
-            $this->color_status = 'gray';
+            $this->status_calculado = 'In Process'; // Usar valor válido del enum
+            $this->color_status = 'sin_fecha'; // Usar valor válido del enum
             return null;
         }
 
@@ -217,32 +217,13 @@ class OperacionLogistica extends Model
         // Actualizar campos calculados
         $this->dias_transcurridos_calculados = $diasTranscurridos;
 
-        // Calcular status descriptivo
-        $this->status_calculado = $this->calcularStatusDescriptivo();
-
-        // Calcular color basado en target
-        $this->color_status = $this->calcularColorStatus($diasTranscurridos);
+        // NO establecer status_calculado aquí - se hace en calcularStatusPorDias()
+        // Solo calcular los campos de días y dejar que el otro método maneje el status
 
         return $diasTranscurridos;
     }
 
-    /**
-     * Calcular status descriptivo basado en el progreso de la operación
-     */
-    private function calcularStatusDescriptivo()
-    {
-        if ($this->fecha_arribo_planta) {
-            return 'Entregado';
-        } elseif ($this->fecha_modulacion) {
-            return 'Modulado';
-        } elseif ($this->fecha_arribo_aduana) {
-            return 'En Aduana';
-        } elseif ($this->fecha_embarque) {
-            return 'En Tránsito';
-        } else {
-            return 'Pendiente';
-        }
-    }
+    // Método calcularStatusDescriptivo eliminado - se usa calcularStatusPorDias() en su lugar
 
     /**
      * Calcular color del status basado en target y días transcurridos
@@ -250,22 +231,22 @@ class OperacionLogistica extends Model
     private function calcularColorStatus($diasTranscurridos)
     {
         if (!$this->fecha_embarque) {
-            return 'gray';
+            return 'sin_fecha'; // Usar valor válido del enum
         }
 
         $target = $this->target ?? $this->dias_transito ?? 30;
 
         if ($this->fecha_arribo_planta) {
             // Operación completada: verde si dentro del target, rojo si excedió
-            return $diasTranscurridos <= $target ? 'green' : 'red';
+            return $diasTranscurridos <= $target ? 'verde' : 'rojo'; // Usar valores válidos del enum
         } else {
             // Operación en curso: rojo si ya excedió, amarillo si cerca, verde si bien
             if ($diasTranscurridos > $target) {
-                return 'red'; // Fuera de métrica
+                return 'rojo'; // Fuera de métrica - usar valor válido del enum
             } elseif ($diasTranscurridos >= ($target * 0.8)) {
-                return 'yellow'; // Cerca del límite (80% del target)
+                return 'amarillo'; // Cerca del límite - usar valor válido del enum
             } else {
-                return 'green'; // Dentro de métrica
+                return 'verde'; // Dentro de métrica - usar valor válido del enum
             }
         }
     }

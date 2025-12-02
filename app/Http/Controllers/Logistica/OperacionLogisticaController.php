@@ -18,6 +18,8 @@ use App\Models\Empleado;
 use App\Services\WordDocumentService;
 use App\Services\ClienteImportService;
 use App\Services\PedimentoImportService;
+use App\Services\ExcelReportService;
+use App\Services\ExcelChartService;
 
 class OperacionLogisticaController extends Controller
 {
@@ -121,7 +123,10 @@ class OperacionLogisticaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin'));
+        // Obtener correos CC
+        $correosCC = \App\Models\Logistica\LogisticaCorreoCC::orderBy('tipo')->orderBy('nombre')->get();
+
+        return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos', 'correosCC', 'empleadoActual', 'esAdmin'));
     }
 
     // Reportes: página con export y gráfico
@@ -244,13 +249,74 @@ class OperacionLogisticaController extends Controller
             'done' => $done,
         ];
 
+        // *** DATOS PARA ANÁLISIS TEMPORAL ***
+        $analisisTemporalQuery = clone $statsQuery;
+        $datosTemporales = $analisisTemporalQuery->select([
+            'id', 'cliente', 'ejecutivo', 'dias_transcurridos_calculados',
+            'target', 'status_calculado', 'status_manual', 'color_status',
+            'fecha_embarque', 'fecha_arribo_aduana', 'created_at'
+        ])->get();
+
+        // Preparar datos de comportamiento por días transcurridos vs target
+        $comportamientoTemporal = [];
+        $clientes_unicos = [];
+        
+        foreach ($datosTemporales as $op) {
+            $diasTranscurridos = $op->dias_transcurridos_calculados ?? 0;
+            $target = $op->target ?? 3;
+            $statusFinal = ($op->status_manual === 'Done') ? 'Done' : $op->status_calculado;
+            $retraso = max(0, $diasTranscurridos - $target);
+            
+            // Categorizar el estado temporal
+            $categoria = 'En Tiempo';
+            if ($statusFinal === 'Done') {
+                $categoria = $diasTranscurridos <= $target ? 'Completado a Tiempo' : 'Completado con Retraso';
+            } elseif ($diasTranscurridos > $target) {
+                $categoria = 'Con Retraso';
+            } elseif ($diasTranscurridos >= ($target * 0.8)) {
+                $categoria = 'En Riesgo';
+            }
+            
+            $comportamientoTemporal[] = [
+                'id' => $op->id,
+                'cliente' => $op->cliente,
+                'ejecutivo' => $op->ejecutivo,
+                'dias_transcurridos' => $diasTranscurridos,
+                'target' => $target,
+                'retraso' => $retraso,
+                'status' => $statusFinal,
+                'categoria' => $categoria,
+                'porcentaje_progreso' => min(100, ($diasTranscurridos / max($target, 1)) * 100)
+            ];
+            
+            // Recopilar clientes únicos
+            if (!in_array($op->cliente, $clientes_unicos)) {
+                $clientes_unicos[] = $op->cliente;
+            }
+        }
+
+        // Estadísticas del análisis temporal
+        $statsTemporales = [
+            'en_tiempo' => collect($comportamientoTemporal)->where('categoria', 'En Tiempo')->count(),
+            'en_riesgo' => collect($comportamientoTemporal)->where('categoria', 'En Riesgo')->count(),
+            'con_retraso' => collect($comportamientoTemporal)->where('categoria', 'Con Retraso')->count(),
+            'completado_tiempo' => collect($comportamientoTemporal)->where('categoria', 'Completado a Tiempo')->count(),
+            'completado_retraso' => collect($comportamientoTemporal)->where('categoria', 'Completado con Retraso')->count(),
+            'promedio_dias' => collect($comportamientoTemporal)->avg('dias_transcurridos'),
+            'promedio_target' => collect($comportamientoTemporal)->avg('target'),
+            'total_operaciones' => count($comportamientoTemporal)
+        ];
+
         // Obtener lista de clientes únicos para el filtro
         $clientes = OperacionLogistica::select('cliente')
             ->distinct()
             ->orderBy('cliente')
             ->pluck('cliente');
 
-        return view('Logistica.reportes', compact('operaciones','stats','clientes'));
+        return view('Logistica.reportes', compact(
+            'operaciones', 'stats', 'clientes', 'comportamientoTemporal', 
+            'statsTemporales', 'esAdmin', 'empleadoActual'
+        ));
     }
 
     /**
@@ -523,8 +589,9 @@ class OperacionLogisticaController extends Controller
 
     public function store(Request $request)
     {
-        // VALIDACIÓN SEGÚN FLUJO CORPORATIVO - Solo campos obligatorios al crear
-        $request->validate([
+        try {
+            // VALIDACIÓN SEGÚN FLUJO CORPORATIVO - Solo campos obligatorios al crear
+            $request->validate([
             // === CAMPOS OBLIGATORIOS AL INICIO (12 máximo) ===
 
             // A. Información Básica
@@ -560,7 +627,7 @@ class OperacionLogisticaController extends Controller
         ]);
 
         // Crear la operación - el status se calcula automáticamente en el modelo
-        $operacion = OperacionLogistica::create([
+        $data = [
             'ejecutivo' => $request->ejecutivo,
             'cliente' => $request->cliente,
             'agente_aduanal' => $request->agente_aduanal,
@@ -583,10 +650,11 @@ class OperacionLogisticaController extends Controller
             'comentarios' => $request->comentarios,
             // Target se calcula automáticamente basado en tipo_operacion_enum
             'target' => null, // Se calculará automáticamente
-            // status_manual solo se usa cuando el usuario lo cambia manualmente, por defecto es null
-            'status_manual' => null,
+            // NO incluir status_manual como null - dejamos que use el default de la base de datos
             // status_calculado y color_status se calculan automáticamente en el modelo
-        ]);
+        ];
+        
+        $operacion = OperacionLogistica::create($data);
 
         // Calcular target automáticamente basado en el tipo de operación
         $targetCalculado = $operacion->calcularTargetAutomatico();
@@ -609,11 +677,23 @@ class OperacionLogisticaController extends Controller
         );
         $operacion->saveQuietly(); // Guardar sin disparar eventos otra vez
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Operación creada exitosamente',
-            'operacion' => $operacion->fresh()
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Operación creada exitosamente',
+                'operacion' => $operacion->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al crear operación en OperacionLogisticaController@store', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear la operación: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
@@ -644,7 +724,7 @@ class OperacionLogisticaController extends Controller
                 'target' => 'nullable|integer|min:0',
                 'resultado' => 'nullable|integer|min:0',
                 'dias_transito' => 'nullable|integer|min:0',
-                'status_manual' => 'nullable|in:In Process,Done',
+                'status_manual' => 'nullable|in:In Process,Done,Out of Metric',
             ]);
 
             // Guardar el status anterior para el historial
@@ -654,8 +734,8 @@ class OperacionLogisticaController extends Controller
                 'status_manual' => $operacion->status_manual
             ];
 
-            // Actualizar todos los campos
-            $operacion->update([
+            // Preparar datos para actualizar
+            $updateData = [
                 'ejecutivo' => $request->ejecutivo,
                 'cliente' => $request->cliente,
                 'agente_aduanal' => $request->agente_aduanal,
@@ -676,13 +756,15 @@ class OperacionLogisticaController extends Controller
                 'fecha_arribo_planta' => $request->fecha_arribo_planta,
                 'resultado' => $request->resultado,
                 'comentarios' => $request->comentarios,
-                // Solo actualizar status_manual si se envía explícitamente
-            ]);
+            ];
             
-            // Actualizar status_manual solo si se envió en el request
-            if ($request->has('status_manual')) {
-                $operacion->status_manual = $request->status_manual;
+            // Solo incluir status_manual si se envía y no es null
+            if ($request->has('status_manual') && !is_null($request->status_manual)) {
+                $updateData['status_manual'] = $request->status_manual;
             }
+            
+            // Actualizar todos los campos
+            $operacion->update($updateData);
 
             // Recalcular target si cambió el tipo de operación
             $targetCalculado = $operacion->calcularTargetAutomatico();
@@ -2698,6 +2780,438 @@ class OperacionLogisticaController extends Controller
                 'success' => false,
                 'message' => 'Error al realizar la búsqueda. Por favor, intente nuevamente.'
             ], 500);
+        }
+    }
+
+    /**
+     * Enviar reporte por correo con CC automático al administrador de logística
+     */
+    public function enviarReporte(Request $request)
+    {
+        try {
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'destinatarios' => 'required|string',
+                'asunto' => 'required|string|max:255',
+                'mensaje' => 'required|string',
+                'incluir_datos' => 'boolean',
+                'formato_datos' => 'nullable|string|in:csv,excel',
+                'operaciones_ids' => 'nullable|array',
+                'operaciones_ids.*' => 'integer|exists:operaciones_logistica,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Obtener correos CC activos (administradores siempre, otros según configuración)
+            $correosCC = \App\Models\Logistica\LogisticaCorreoCC::activos()
+                ->get()
+                ->pluck('email')
+                ->toArray();
+
+            // Preparar los destinatarios principales
+            $destinatariosPrincipales = array_filter(array_map('trim', explode(',', $request->destinatarios)));
+
+            // Preparar datos del correo
+            $datosCorreo = [
+                'destinatarios' => $destinatariosPrincipales,
+                'correosCC' => $correosCC,
+                'asunto' => $request->asunto,
+                'mensaje' => $request->mensaje,
+                'remitente' => auth()->user()->email ?? 'sistemas@estrategiaeinnovacion.com.mx',
+                'nombreRemitente' => auth()->user()->name ?? 'Sistema de Logística'
+            ];
+
+            // Si se solicita incluir datos, preparar el archivo adjunto
+            if ($request->incluir_datos) {
+                $operacionesIds = $request->operaciones_ids ?? [];
+                $formato = $request->formato_datos ?? 'csv';
+                
+                if (!empty($operacionesIds)) {
+                    $operaciones = OperacionLogistica::with('ejecutivo')
+                        ->whereIn('id', $operacionesIds)
+                        ->get();
+                    
+                    $datosCorreo['adjunto'] = $this->generarArchivoReporte($operaciones, $formato);
+                }
+            }
+
+            // Enviar el correo
+            $resultadoEnvio = $this->procesarEnvioCorreo($datosCorreo);
+
+            return response()->json([
+                'success' => $resultadoEnvio['success'],
+                'message' => $resultadoEnvio['message'],
+                'detalles' => [
+                    'destinatarios_principales' => count($destinatariosPrincipales),
+                    'correos_cc' => count($correosCC),
+                    'cc_incluidos' => $correosCC
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al enviar reporte: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al enviar el correo. Por favor, intente nuevamente.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Procesar el envío del correo con CC automático
+     */
+    private function procesarEnvioCorreo($datos)
+    {
+        try {
+            // Usar Laravel Mail para enviar el correo
+            \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($datos) {
+                $message->from($datos['remitente'], $datos['nombreRemitente'])
+                        ->to($datos['destinatarios'])
+                        ->subject($datos['asunto']);
+                
+                // Agregar CC si hay correos configurados
+                if (!empty($datos['correosCC'])) {
+                    $message->cc($datos['correosCC']);
+                }
+
+                // Cuerpo del mensaje
+                $html = '
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #2563eb; margin: 0;">Reporte de Logística</h2>
+                        <p style="margin: 10px 0 0 0; color: #6b7280;">Sistema de Gestión Logística - Estrategia e Innovación</p>
+                    </div>
+                    
+                    <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        ' . nl2br(htmlspecialchars($datos['mensaje'])) . '
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background-color: #eff6ff; border-radius: 8px; border-left: 4px solid #2563eb;">
+                        <p style="margin: 0; font-size: 14px; color: #1e40af;">
+                            <strong>Enviado por:</strong> ' . htmlspecialchars($datos['nombreRemitente']) . ' (' . htmlspecialchars($datos['remitente']) . ')<br>
+                            <strong>Fecha:</strong> ' . now()->format('d/m/Y H:i') . '
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center; font-size: 12px; color: #9ca3af;">
+                        <p>Este correo fue enviado automáticamente por el Sistema de Logística<br>
+                        Estrategia e Innovación © ' . date('Y') . '</p>
+                    </div>
+                </div>';
+
+                $message->setBody($html, 'text/html');
+
+                // Agregar adjunto si existe
+                if (isset($datos['adjunto'])) {
+                    $message->attach($datos['adjunto']['path'], [
+                        'as' => $datos['adjunto']['nombre'],
+                        'mime' => $datos['adjunto']['mime']
+                    ]);
+                }
+            });
+
+            return [
+                'success' => true,
+                'message' => 'Reporte enviado exitosamente con CC al administrador de logística'
+            ];
+
+        } catch (\Exception $e) {
+            \Log::error('Error al procesar envío de correo: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error al enviar el correo: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Generar archivo de reporte para adjuntar
+     */
+    private function generarArchivoReporte($operaciones, $formato)
+    {
+        $timestamp = date('Y-m-d_H-i-s');
+        
+        // Crear directorio temporal si no existe
+        $tempDir = storage_path('app/temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        if ($formato === 'csv') {
+            $nombreArchivo = 'reporte_logistica_' . $timestamp . '.csv';
+            $rutaCompleta = $tempDir . '/' . $nombreArchivo;
+            $this->generarCSV($operaciones, $rutaCompleta);
+            return [
+                'path' => $rutaCompleta,
+                'nombre' => $nombreArchivo,
+                'mime' => 'text/csv'
+            ];
+        } elseif ($formato === 'excel') {
+            $nombreArchivo = 'Reporte_Logistica_Profesional_' . $timestamp . '.xlsx';
+            $rutaCompleta = $tempDir . '/' . $nombreArchivo;
+            
+            // Preparar estadísticas para el Excel
+            $estadisticas = $this->calcularEstadisticasReporte($operaciones);
+            
+            // Generar Excel profesional con gráficos
+            $excelService = new ExcelReportService();
+            $excelService->generateLogisticsReport($operaciones, [], $estadisticas);
+            $excelService->save($rutaCompleta);
+            
+            return [
+                'path' => $rutaCompleta,
+                'nombre' => $nombreArchivo,
+                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Calcular estadísticas para el reporte Excel
+     */
+    private function calcularEstadisticasReporte($operaciones)
+    {
+        $total = $operaciones->count();
+        $completadas = $operaciones->where('status_manual', 'Done')->count();
+        $enProceso = $operaciones->where(function($op) {
+            return $op->status_manual !== 'Done' && $op->status_manual !== 'Out of Metric';
+        })->count();
+        $fueraMetrica = $operaciones->where('status_manual', 'Out of Metric')->count();
+        
+        return [
+            'total' => $total,
+            'completadas' => $completadas,
+            'en_proceso' => $enProceso,
+            'fuera_metrica' => $fueraMetrica,
+            'eficiencia' => $total > 0 ? round(($completadas / $total) * 100, 1) : 0,
+            'promedio_dias' => $total > 0 ? round($operaciones->avg(function($op) {
+                return $op->calcularDiasTranscurridos();
+            }), 1) : 0
+        ];
+    }
+
+    /**
+     * Generar archivo CSV con los datos de operaciones
+     */
+    private function generarCSV($operaciones, $rutaArchivo)
+    {
+        $archivo = fopen($rutaArchivo, 'w');
+        
+        // Escribir BOM para caracteres especiales
+        fprintf($archivo, chr(0xEF).chr(0xBB).chr(0xBF));
+        
+        // Cabeceras mejoradas
+        fputcsv($archivo, [
+            'ID',
+            'Cliente',
+            'Ejecutivo',
+            'Fecha Creación',
+            'ETA',
+            'Agente Aduanal',
+            'Pedimento',
+            'Transporte',
+            'Status Calculado',
+            'Status Manual',
+            'Días Transcurridos',
+            'Target Días',
+            'Resultado Performance',
+            'Eficiencia %',
+            'Comentarios',
+            'Post-Op Completas',
+            'Post-Op Pendientes'
+        ]);
+
+        // Datos con cálculos adicionales
+        foreach ($operaciones as $operacion) {
+            $dias = $operacion->calcularDiasTranscurridos();
+            $target = $operacion->dias_objetivo ?? 5;
+            $resultado = $this->calcularResultadoPerformance($operacion);
+            $eficiencia = $this->calcularEficienciaOperacion($operacion);
+            
+            fputcsv($archivo, [
+                $operacion->id,
+                $operacion->cliente,
+                $operacion->ejecutivo,
+                $operacion->created_at->format('Y-m-d H:i:s'),
+                $operacion->eta ? $operacion->eta->format('Y-m-d') : '',
+                $operacion->agente_aduanal,
+                $operacion->pedimento,
+                $operacion->transporte,
+                $operacion->status_calculado,
+                $operacion->status_manual ?? $operacion->status_calculado,
+                $dias,
+                $target,
+                $resultado,
+                $eficiencia . '%',
+                $operacion->comentarios ?? '',
+                $operacion->postOperacionesCompletas ?? 0,
+                $operacion->postOperacionesPendientes ?? 0
+            ]);
+        }
+        
+        fclose($archivo);
+    }
+
+    /**
+     * Calcular resultado de performance de operación
+     */
+    private function calcularResultadoPerformance($operacion)
+    {
+        $dias = $operacion->calcularDiasTranscurridos();
+        $target = $operacion->dias_objetivo ?? 5;
+        
+        if ($operacion->status_manual === 'Done') {
+            return $dias <= $target ? 'Completado a Tiempo' : 'Completado con Retraso';
+        } elseif ($operacion->status_manual === 'Out of Metric') {
+            return 'Fuera de Métrica';
+        } else {
+            if ($dias <= $target) return 'En Tiempo';
+            elseif ($dias <= $target + 2) return 'En Riesgo';
+            else return 'Con Retraso';
+        }
+    }
+
+    /**
+     * Calcular eficiencia de operación
+     */
+    private function calcularEficienciaOperacion($operacion)
+    {
+        $dias = $operacion->calcularDiasTranscurridos();
+        $target = $operacion->dias_objetivo ?? 5;
+        
+        if ($dias == 0) return 100;
+        if ($operacion->status_manual === 'Done') {
+            return max(0, round((1 - (($dias - $target) / $target)) * 100, 1));
+        }
+        
+        return round((1 - ($dias / ($target + 5))) * 100, 1);
+    }
+
+    /**
+     * Exportar Excel profesional con gráficos y diseño moderno
+     */
+    public function exportExcelProfesional(Request $request)
+    {
+        try {
+            // Obtener usuario actual y verificar permisos
+            $usuarioActual = auth()->user();
+            $empleadoActual = null;
+            $esAdmin = false;
+
+            if ($usuarioActual) {
+                $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                    ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                    ->first();
+                $esAdmin = $usuarioActual->hasRole('admin');
+            }
+
+            // Construir query con los mismos filtros que el reporte normal
+            $query = OperacionLogistica::with('ejecutivo');
+
+            // Aplicar filtros de permisos
+            if (!$esAdmin && $empleadoActual) {
+                $query->where('ejecutivo', $empleadoActual->nombre);
+            }
+
+            // Aplicar todos los filtros de la request
+            $this->aplicarFiltrosReporte($query, $request);
+
+            // Obtener operaciones
+            $operaciones = $query->get();
+
+            // Calcular estadísticas
+            $estadisticas = $this->calcularEstadisticasReporte($operaciones);
+
+            // Preparar filtros aplicados para mostrar en el reporte
+            $filtrosAplicados = [
+                'periodo' => $request->periodo,
+                'mes' => $request->mes,
+                'anio' => $request->anio,
+                'cliente' => $request->cliente,
+                'status' => $request->status,
+                'fecha_desde' => $request->fecha_desde,
+                'fecha_hasta' => $request->fecha_hasta,
+                'usuario' => $usuarioActual->name ?? 'Sistema'
+            ];
+
+            // Generar Excel profesional
+            $excelService = new ExcelReportService();
+            $excelService->generateLogisticsReport($operaciones, $filtrosAplicados, $estadisticas);
+
+            // Configurar respuesta para descarga
+            $filename = 'Reporte_Logistica_Profesional_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            return response()->streamDownload(function() use ($excelService) {
+                echo $excelService->output();
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'max-age=0'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al generar Excel profesional: ' . $e->getMessage());
+            return back()->with('error', 'Error al generar el reporte Excel: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Aplicar filtros comunes para reportes
+     */
+    private function aplicarFiltrosReporte($query, Request $request)
+    {
+        // Filtro por período
+        if ($request->filled('periodo')) {
+            $periodo = $request->periodo;
+            if ($periodo === 'semanal') {
+                $query->where('created_at', '>=', now()->subWeek());
+            } elseif ($periodo === 'mensual') {
+                $query->where('created_at', '>=', now()->subMonth());
+            } elseif ($periodo === 'anual') {
+                $query->where('created_at', '>=', now()->subYear());
+            }
+        }
+
+        // Filtro por mes y año específicos
+        if ($request->filled('mes') && $request->filled('anio')) {
+            $query->whereMonth('created_at', $request->mes)
+                  ->whereYear('created_at', $request->anio);
+        }
+
+        // Filtro por cliente
+        if ($request->filled('cliente')) {
+            $query->where('cliente', 'like', '%' . $request->cliente . '%');
+        }
+
+        // Filtro por status
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'Done') {
+                $query->where('status_manual', 'Done');
+            } elseif ($status === 'In Process') {
+                $query->where(function($q){
+                    $q->where(function($qq){
+                        $qq->where('status_manual', '!=', 'Done')->orWhereNull('status_manual');
+                    })->where('status_calculado', 'In Process');
+                });
+            } elseif ($status === 'Out of Metric') {
+                $query->where('status_manual', 'Out of Metric');
+            }
+        }
+
+        // Filtros por fechas específicas
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
     }
 }

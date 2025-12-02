@@ -109,6 +109,14 @@
                             Pedimentos
                             <span class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">{{ $pedimentos->total() }}</span>
                         </button>
+                        <button data-tab="correos-cc" id="tab-correos-cc"
+                                class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Correos CC
+                            <span class="ml-2 bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs">{{ $correosCC->count() ?? 0 }}</span>
+                        </button>
                     </nav>
                 </div>
 
@@ -719,6 +727,100 @@
                         @if($pedimentos->hasPages())
                         <div class="mt-6 flex justify-center">
                             {{ $pedimentos->appends(['tab' => 'pedimentos'])->links() }}
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Correos CC Tab -->
+                <div id="correos-cc-content" class="tab-content hidden">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-semibold text-slate-800">Correos CC para Reportes</h2>
+                            <div class="flex items-center space-x-3">
+                                <a href="{{ route('logistica.correos-cc.index') }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Gestionar Correos CC
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-lg font-medium text-blue-900">Administración de Correos CC</h3>
+                                    <div class="mt-2 text-sm text-blue-700">
+                                        <p class="mb-2">Los correos configurados en esta sección serán incluidos automáticamente como CC al enviar reportes de logística.</p>
+                                        <ul class="list-disc ml-4 space-y-1">
+                                            <li><strong>Administradores:</strong> Siempre incluidos en CC independientemente del estado</li>
+                                            <li><strong>Supervisores:</strong> Incluidos según configuración específica del envío</li>
+                                            <li><strong>Notificaciones:</strong> Para alertas automáticas y notificaciones del sistema</li>
+                                        </ul>
+                                        <div class="mt-4 flex items-center justify-between">
+                                            <p class="text-sm">
+                                                <strong>Correos activos configurados:</strong> <span class="bg-blue-200 px-2 py-1 rounded text-blue-800">{{ $correosCC->count() ?? 0 }}</span>
+                                            </p>
+                                            <a href="{{ route('logistica.correos-cc.index') }}" 
+                                               class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                                Ver detalles
+                                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(isset($correosCC) && $correosCC->count() > 0)
+                        <div class="mt-6">
+                            <h4 class="text-sm font-medium text-slate-700 mb-3">Vista previa de correos configurados:</h4>
+                            <div class="grid gap-2 max-h-40 overflow-y-auto">
+                                @foreach($correosCC->take(5) as $correo)
+                                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                            @if($correo->tipo === 'administrador') bg-red-100 text-red-800
+                                            @elseif($correo->tipo === 'supervisor') bg-yellow-100 text-yellow-800
+                                            @else bg-blue-100 text-blue-800
+                                            @endif">
+                                            {{ ucfirst($correo->tipo) }}
+                                        </span>
+                                        <span class="font-medium">{{ $correo->nombre }}</span>
+                                        <span class="text-gray-600">{{ $correo->email }}</span>
+                                    </div>
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                        {{ $correo->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        {{ $correo->activo ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                                </div>
+                                @endforeach
+                                @if($correosCC->count() > 5)
+                                <div class="text-center">
+                                    <a href="{{ route('logistica.correos-cc.index') }}" 
+                                       class="text-blue-600 hover:text-blue-800 text-sm">
+                                        Ver todos ({{ $correosCC->count() }} correos)
+                                    </a>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @else
+                        <div class="mt-6 text-center py-8 text-gray-500">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <p>No hay correos CC configurados</p>
+                            <p class="text-sm">Agrega el primer correo CC para comenzar</p>
                         </div>
                         @endif
                     </div>
