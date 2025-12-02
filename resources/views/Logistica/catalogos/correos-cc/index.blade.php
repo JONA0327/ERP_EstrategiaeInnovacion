@@ -2,6 +2,11 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
+    <!-- Botón regresar -->
+    <a href="{{ route('logistica.catalogos') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors">
+        <span class="mr-2">&larr;</span> Regresar al Catálogo
+    </a>
+    
     <div class="bg-white rounded-lg shadow-md">
         <!-- Header -->
         <div class="p-6 border-b border-gray-200">

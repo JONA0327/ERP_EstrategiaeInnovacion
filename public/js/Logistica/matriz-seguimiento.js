@@ -148,6 +148,25 @@ window.cerrarModal = function() {
 
 document.addEventListener('DOMContentLoaded', function() {
 
+// Funciones utilitarias para conversión a mayúsculas
+function convertirAMayusculas(input) {
+    const valor = input.value;
+    const inicio = input.selectionStart;
+    const fin = input.selectionEnd;
+    input.value = valor.toUpperCase();
+    input.setSelectionRange(inicio, fin);
+}
+
+// Función para aplicar conversión automática a mayúsculas a un campo
+function aplicarMayusculasAutomaticas(elementId) {
+    const elemento = document.getElementById(elementId);
+    if (elemento) {
+        elemento.addEventListener('input', function() {
+            convertirAMayusculas(this);
+        });
+    }
+}
+
 // Funciones para nuevo cliente
 window.mostrarNuevoCliente = function() {
     const form = document.getElementById('nuevoClienteForm');
@@ -168,7 +187,7 @@ window.guardarNuevoCliente = function() {
         return;
     }
     
-    const nombre = nombreInput.value.trim();
+    const nombre = nombreInput.value.trim().toUpperCase();
     if (!nombre) {
         mostrarAlerta('Por favor, ingrese el nombre del cliente', 'warning');
         return;
@@ -196,15 +215,15 @@ window.guardarNuevoCliente = function() {
     })
     .then(data => {
         if (data.success) {
-            // Agregar el nuevo cliente al select
+            // Agregar el nuevo cliente al select (el servidor retorna el nombre en mayúsculas)
             const clienteSelect = document.getElementById('clienteSelect');
-            if (clienteSelect) {
+            if (clienteSelect && data.cliente) {
                 const option = document.createElement('option');
-                option.value = nombre;
-                option.textContent = nombre;
+                option.value = data.cliente.cliente;
+                option.textContent = data.cliente.cliente;
                 clienteSelect.appendChild(option);
                 // Seleccionar el nuevo cliente
-                clienteSelect.value = nombre;
+                clienteSelect.value = data.cliente.cliente;
             }
             
             cancelarNuevoCliente();
@@ -219,48 +238,7 @@ window.guardarNuevoCliente = function() {
     });
 };
 
-window.guardarNuevoCliente = function() {
-        const nombre = document.getElementById('nuevoClienteNombre').value.trim();
-        if (!nombre) {
-            mostrarAlerta('Por favor, ingrese el nombre del cliente', 'warning');
-            return;
-        }
-
-        fetch('/logistica/clientes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ cliente: nombre })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Agregar al datalist
-                const datalist = document.getElementById('clientesList');
-                if (datalist) {
-                    const option = document.createElement('option');
-                    option.value = data.cliente.cliente;
-                    datalist.appendChild(option);
-                }
-                
-                // Establecer valor en el input
-                const input = document.querySelector('input[name="cliente"]');
-                if (input) {
-                    input.value = data.cliente.cliente;
-                }
-                
-                cancelarNuevoCliente();
-            } else {
-                mostrarAlerta('Error al guardar el cliente: ' + (data.message || 'Error desconocido'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarAlerta('Error de conexión', 'error');
-        });
-    };
+// Función duplicada eliminada - usar la versión principal más arriba
 
 // Funciones para nuevo agente
 window.mostrarNuevoAgente = function() {
@@ -282,7 +260,7 @@ window.guardarNuevoAgente = function() {
         return;
     }
     
-    const nombre = nombreInput.value.trim();
+    const nombre = nombreInput.value.trim().toUpperCase();
     if (!nombre) {
         mostrarAlerta('Por favor, ingrese el nombre del agente aduanal', 'warning');
         return;
@@ -310,23 +288,15 @@ window.guardarNuevoAgente = function() {
     })
     .then(data => {
         if (data.success) {
-            // Actualizar el campo del formulario con el nuevo nombre
-            const agenteInput = document.querySelector('input[name="agente_aduanal"]');
-            if (agenteInput) {
-                agenteInput.value = nombre;
-            }
-            
-            // Agregar al datalist si existe
-            const datalist = document.getElementById('agentesList');
-            if (datalist) {
+            // Agregar el nuevo agente al select
+            const agenteSelect = document.getElementById('agenteSelect');
+            if (agenteSelect) {
                 const option = document.createElement('option');
                 option.value = nombre;
-                datalist.appendChild(option);
-            } else {
-                console.warn('Datalist agentesList not found - verificando DOM...');
-                // Intentar encontrar el datalist por su atributo
-                const allDatalist = document.querySelectorAll('datalist');
-
+                option.textContent = nombre;
+                agenteSelect.appendChild(option);
+                // Seleccionar el nuevo agente
+                agenteSelect.value = nombre;
             }
             
             cancelarNuevoAgente();
@@ -389,21 +359,33 @@ window.actualizarTransportes = function() {
     // Calcular target automáticamente cuando cambia el tipo de operación
     calcularTargetAutomatico();
     
-    // Filtrar transportes en el datalist según el tipo de operación
+    // Filtrar transportes en el select según el tipo de operación
     const tipoOperacion = document.querySelector('select[name="tipo_operacion_enum"]').value;
-    const datalist = document.getElementById('transportesList');
+    const transporteSelect = document.getElementById('transporteSelect');
     
-    if (datalist && tipoOperacion) {
+    if (transporteSelect && tipoOperacion) {
+        // Guardar el valor actual seleccionado
+        const valorActual = transporteSelect.value;
+        
         // Ocultar/mostrar opciones según el tipo de operación
-        const options = datalist.querySelectorAll('option');
+        const options = transporteSelect.querySelectorAll('option');
+        let tieneOpcionesValidas = false;
+        
         options.forEach(option => {
             const optionTipo = option.getAttribute('data-tipo');
-            if (optionTipo === tipoOperacion) {
+            if (option.value === '' || optionTipo === tipoOperacion) {
                 option.style.display = '';
+                if (option.value !== '') tieneOpcionesValidas = true;
             } else {
                 option.style.display = 'none';
             }
         });
+        
+        // Si el valor actual no es válido para el nuevo tipo, resetear
+        const opcionActual = transporteSelect.querySelector(`option[value="${valorActual}"]`);
+        if (opcionActual && opcionActual.getAttribute('data-tipo') !== tipoOperacion && valorActual !== '') {
+            transporteSelect.value = '';
+        }
     }
 };window.mostrarNuevoTransporte = function() {
     const select = document.querySelector('select[name="tipo_operacion_enum"]');
@@ -430,7 +412,7 @@ window.guardarNuevoTransporte = function() {
         return;
     }
     
-    const nombre = nombreInput.value.trim();
+    const nombre = nombreInput.value.trim().toUpperCase();
     const tipoOperacionSelect = document.querySelector('select[name="tipo_operacion_enum"]');
     const tipoOperacion = tipoOperacionSelect ? tipoOperacionSelect.value : '';
     
@@ -502,7 +484,7 @@ window.guardarNuevoTransporte = function() {
 };
 
     window.guardarNuevoTransporte = function() {
-        const nombre = document.getElementById('nuevoTransporteNombre').value.trim();
+        const nombre = document.getElementById('nuevoTransporteNombre').value.trim().toUpperCase();
         const tipoOperacion = document.querySelector('select[name="tipo_operacion_enum"]').value;
         
         if (!nombre) {
@@ -529,19 +511,16 @@ window.guardarNuevoTransporte = function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Agregar al datalist con el tipo de operación
-                const datalist = document.getElementById('transportesList');
-                if (datalist) {
+                // Agregar el nuevo transporte al select
+                const transporteSelect = document.getElementById('transporteSelect');
+                if (transporteSelect) {
                     const option = document.createElement('option');
                     option.value = data.transporte.transporte;
+                    option.textContent = data.transporte.transporte;
                     option.setAttribute('data-tipo', tipoOperacion);
-                    datalist.appendChild(option);
-                }
-                
-                // Establecer valor en el input
-                const input = document.querySelector('input[name="transporte"]');
-                if (input) {
-                    input.value = data.transporte.transporte;
+                    transporteSelect.appendChild(option);
+                    // Seleccionar el nuevo transporte
+                    transporteSelect.value = data.transporte.transporte;
                 }
                 
                 if (!transportes[tipoOperacion]) {
@@ -559,6 +538,38 @@ window.guardarNuevoTransporte = function() {
             mostrarAlerta('Error de conexión', 'error');
         });
     };
+
+    // Inicializar conversión automática a mayúsculas para campos específicos
+    const camposConMayusculas = [
+        'nuevoClienteNombre',
+        'nuevoAgenteNombre', 
+        'nuevoTransporteNombre',
+        'nuevaAduanaDenominacion',
+        'no_pedimento'
+    ];
+
+    camposConMayusculas.forEach(function(campoId) {
+        aplicarMayusculasAutomaticas(campoId);
+    });
+
+    // También aplicar a campos de texto que deben ser en mayúsculas por su name
+    const camposPorName = [
+        'proveedor_o_cliente',
+        'no_factura', 
+        'referencia_interna',
+        'aduana',
+        'agente_aduanal',
+        'transporte'
+    ];
+
+    camposPorName.forEach(function(campoName) {
+        const elemento = document.querySelector(`input[name="${campoName}"]`);
+        if (elemento) {
+            elemento.addEventListener('input', function() {
+                convertirAMayusculas(this);
+            });
+        }
+    });
 
 // Cálculos automáticos
 window.calcularResultado = function() {
@@ -668,7 +679,7 @@ window.cerrarModalHistorial = function() {
                         </div>
                         <div>
                             <span class="text-slate-600">Status:</span>
-                            <p class="font-medium">${operacion.status || '-'}</p>
+                            <p class="font-medium">${operacion.status_actual || operacion.status_manual || operacion.status_calculado || '-'}</p>
                         </div>
                         <div>
                             <span class="text-slate-600">ID:</span>
@@ -676,6 +687,18 @@ window.cerrarModalHistorial = function() {
                         </div>
                     </div>
                 </div>
+
+                <!-- Observaciones del Ejecutivo -->
+                ${operacion.comentarios ? `
+                <div class="bg-amber-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-3">
+                        <i class="fas fa-user-tie text-amber-600 mr-2"></i>Observaciones del Ejecutivo
+                    </h3>
+                    <div class="bg-white rounded-lg p-3 border border-amber-200">
+                        <p class="text-slate-700 whitespace-pre-wrap">${(operacion.comentarios || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+                ` : ''}
 
                 <!-- Operaciones Relacionadas del Cliente -->
                 ${operacionesRelacionadas.length > 0 ? `
@@ -702,9 +725,11 @@ window.cerrarModalHistorial = function() {
                     </div>
                 ` : ''}
 
-                <!-- Historial de Estados -->
+                <!-- Observaciones del Sistema -->
                 <div class="bg-white rounded-lg border p-4">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Historial de Estados</h3>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">
+                        <i class="fas fa-cogs text-blue-600 mr-2"></i>Observaciones del Sistema
+                    </h3>
                     ${historial.length > 0 ? `
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -970,10 +995,21 @@ window.eliminarOperacion = function(operacionId) {
         }
     });
 
+    // MODAL DE OPERACIÓN: NO se cierra al hacer clic fuera para evitar pérdida de datos
+    // Solo se puede cerrar con el botón X o después de guardar
     document.getElementById('modalOperacion').addEventListener('click', function(e) {
-        if (e.target === this) {
-            cerrarModal();
-        }
+        // Comentado para evitar cierre accidental y pérdida de trabajo
+        // if (e.target === this) {
+        //     cerrarModal();
+        // }
+    });
+
+    // MODAL DE COMENTARIOS/OBSERVACIONES: También protegido contra cierre accidental
+    document.getElementById('modalComentarios').addEventListener('click', function(e) {
+        // Comentado para evitar cierre accidental y pérdida de trabajo al editar observaciones
+        // if (e.target === this) {
+        //     cerrarModalComentarios();
+        // }
     });
 
     document.getElementById('modalHistorial').addEventListener('click', function(e) {
@@ -1417,15 +1453,17 @@ window.cerrarModalComentarios = function() {
 };
 
 function cargarComentariosPorOperacion(operacionId) {
-    fetch(`/logistica/operaciones/${operacionId}/comentarios`)
+    // Cargar historial de observaciones (agregar timestamp para evitar caché)
+    const timestamp = new Date().getTime();
+    fetch(`/logistica/operaciones/${operacionId}/observaciones-historial?v=${timestamp}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                mostrarComentarios(data.comentarios);
+                mostrarHistorialObservaciones(data.observaciones, data.operacion);
             } else {
                 document.getElementById('listaComentarios').innerHTML = `
                     <div class="text-center py-4 text-red-500">
-                        <p>Error al cargar comentarios</p>
+                        <p>Error al cargar observaciones</p>
                     </div>
                 `;
             }
@@ -1440,103 +1478,159 @@ function cargarComentariosPorOperacion(operacionId) {
         });
 }
 
-function mostrarComentarios(comentarios) {
+function mostrarHistorialObservaciones(observaciones, operacion) {
     const contenedor = document.getElementById('listaComentarios');
     
-    if (comentarios.length === 0) {
-        contenedor.innerHTML = `
-            <div class="text-center py-8 text-slate-500">
-                <svg class="w-12 h-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
-                <p class="text-lg font-medium">No hay comentarios</p>
-                <p class="text-sm">Añada el primer comentario para esta operación</p>
-            </div>
-        `;
-        return;
-    }
+    // Mostrar información de la operación
+    const infoOperacion = `
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900">Operación: ${operacion.operacion}</h4>
+            <p class="text-sm text-blue-700">Cliente: ${operacion.cliente}</p>
+            ${operacion.no_pedimento ? `<p class="text-sm text-blue-700">Pedimento: ${operacion.no_pedimento}</p>` : ''}
+            <p class="text-sm text-blue-700">Status actual: ${operacion.status_actual}</p>
+        </div>
+    `;
     
-    contenedor.innerHTML = comentarios.map(comentario => `
-        <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
-            <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <p class="text-slate-800">${comentario.texto}</p>
-                    <div class="flex justify-between items-center mt-2">
-                        <p class="text-xs text-slate-500">
-                            ${comentario.autor} - ${comentario.fecha}
-                        </p>
-                        <button onclick="editarComentario(${comentario.id}, '${comentario.texto.replace(/'/g, "\\'")}', '${comentario.autor}')" 
-                                class="text-blue-600 hover:text-blue-800 text-xs">
-                            Editar
-                        </button>
-                    </div>
+    // Mostrar observación actual editable
+    const observacionActual = operacion.observacion_actual || '';
+    const formularioEdicion = `
+        <div class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h4 class="font-semibold text-orange-900 mb-3">👤 Observaciones del Ejecutivo</h4>
+            <form id="formEditarObservaciones" class="space-y-3">
+                <textarea id="observacionesActuales" rows="4" 
+                    class="w-full p-3 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" 
+                    placeholder="Escriba aquí sus observaciones como ejecutivo...">${observacionActual}</textarea>
+                <div class="flex space-x-2">
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 transition-colors">
+                        💾 Agregar al Historial
+                    </button>
+                    <button type="button" onclick="cancelarEdicionObservaciones()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // Mostrar historial completo de observaciones (ordenado del más reciente al más antiguo)
+    let historialHTML = '';
+    if (observaciones && observaciones.length > 0) {
+        // Ordenar del más reciente al más antiguo
+        const observacionesOrdenadas = [...observaciones].reverse();
+        
+        historialHTML = `
+            <div class="mb-4">
+                <h5 class="font-medium text-gray-700 mb-3">📋 Historial Completo de Observaciones</h5>
+                <div class="space-y-2">
+                    ${observacionesOrdenadas.map((obs, index) => {
+                        const esReciente = index === 0;
+                        const colorBorde = esReciente ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50';
+                        const indicadorReciente = esReciente ? '<span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>' : '';
+                        
+                        return `
+                            <div class="border ${colorBorde} rounded-lg p-3 text-sm">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center space-x-2">
+                                        ${indicadorReciente}
+                                        <span class="font-medium text-gray-700">${obs.usuario}</span>
+                                        ${obs.status ? `<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">${obs.status}</span>` : ''}
+                                        ${esReciente ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-medium">MÁS RECIENTE</span>' : ''}
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-500">${obs.fecha_formateada}</div>
+                                        <div class="text-xs text-gray-400">${obs.tiempo_relativo}</div>
+                                    </div>
+                                </div>
+                                <p class="text-gray-800 leading-relaxed">${obs.observaciones}</p>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div class="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                    💡 <strong>Nota:</strong> Cada vez que agregue una observación, se creará un nuevo registro en el historial preservando todas las observaciones anteriores.
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    } else {
+        historialHTML = `
+            <div class="mb-4 text-center py-6 text-gray-500">
+                <div class="text-4xl mb-2">📝</div>
+                <p>No hay observaciones previas en el historial</p>
+                <p class="text-xs mt-1">Su primera observación aparecerá aquí</p>
+            </div>
+        `;
+    }
+    
+    contenedor.innerHTML = infoOperacion + formularioEdicion + historialHTML;
+    
+    // Agregar event listener al formulario
+    document.getElementById('formEditarObservaciones').addEventListener('submit', function(e) {
+        e.preventDefault();
+        guardarObservaciones();
+    });
 }
 
-// Función para editar comentario
-window.editarComentario = function(comentarioId, texto, autor) {
-    document.getElementById('comentarioId').value = comentarioId;
-    document.getElementById('textoComentario').value = texto;
-    document.getElementById('tituloComentario').textContent = 'Editar Comentario';
-    document.getElementById('textoBotonComentario').textContent = 'Actualizar Comentario';
-    document.getElementById('btnCancelarComentario').classList.remove('hidden');
-};
-
-window.cancelarEdicionComentario = function() {
-    document.getElementById('comentarioId').value = '';
-    document.getElementById('textoComentario').value = '';
-    document.getElementById('tituloComentario').textContent = 'Añadir Comentario';
-    document.getElementById('textoBotonComentario').textContent = 'Guardar Comentario';
-    document.getElementById('btnCancelarComentario').classList.add('hidden');
-};
-
-// Manejar formulario de comentarios
-document.getElementById('formComentario').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
+// Funciones para manejar observaciones
+window.guardarObservaciones = function() {
     if (!operacionActualComentarios) {
         mostrarAlerta('No se ha seleccionado una operación', 'error');
         return;
     }
     
-    const comentarioId = document.getElementById('comentarioId').value;
-    const texto = document.getElementById('textoComentario').value;
-    const isEdit = comentarioId !== '';
+    const observacionesTexto = document.getElementById('observacionesActuales').value.trim();
     
-    const formData = new FormData();
-    formData.append('comentario', texto);
-    formData.append('operacion_logistica_id', operacionActualComentarios);
+    if (!observacionesTexto) {
+        mostrarAlerta('Las observaciones no pueden estar vacías', 'warning');
+        return;
+    }
     
-    const url = isEdit 
-        ? `/logistica/comentarios/${comentarioId}` 
-        : '/logistica/comentarios';
+    // Deshabilitar el botón mientras se procesa
+    const submitButton = document.querySelector('#formEditarObservaciones button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '⏳ Guardando...';
     
-    const method = isEdit ? 'PUT' : 'POST';
-    
-    fetch(url, {
-        method: method,
-        body: formData,
+    fetch(`/logistica/operaciones/${operacionActualComentarios}/observaciones`, {
+        method: 'PUT',
         headers: {
+            'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
+        },
+        body: JSON.stringify({
+            observaciones: observacionesTexto
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            cancelarEdicionComentario();
+            mostrarAlerta('Nueva observación agregada al historial exitosamente', 'success');
+            // Recargar las observaciones para mostrar la nueva entrada
             cargarComentariosPorOperacion(operacionActualComentarios);
+            // Recargar la tabla para mostrar cambios
+            if (typeof actualizarStatusOperacion === 'function') {
+                actualizarStatusOperacion(operacionActualComentarios);
+            }
         } else {
-            mostrarAlerta('Error al guardar: ' + (data.message || 'Error desconocido'), 'error');
+            mostrarAlerta('Error al guardar observaciones: ' + data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        mostrarAlerta('Error de conexión', 'error');
+        mostrarAlerta('Error de conexión al guardar observaciones', 'error');
+    })
+    .finally(() => {
+        // Restaurar el botón
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
     });
-});
+};
+
+window.cancelarEdicionObservaciones = function() {
+    // Recargar las observaciones originales
+    cargarComentariosPorOperacion(operacionActualComentarios);
+};
+
+
 
 // ============================================
 // FUNCIONES PARA GESTIÓN GLOBAL DE POST-OPERACIONES
@@ -1711,18 +1805,18 @@ window.guardarNuevaAduana = function() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Añadir la nueva opción al datalist
-            const datalist = document.getElementById('aduanasList');
-            if (datalist) {
+            // Agregar la nueva aduana al select
+            const aduanaSelect = document.getElementById('aduanaSelect');
+            if (aduanaSelect) {
                 const option = document.createElement('option');
-                option.value = `${codigo}${seccion} - ${denominacion}`;
-                datalist.appendChild(option);
-            }
-
-            // Llenar automáticamente el campo principal
-            const aduanaInput = document.querySelector('input[name="aduana"]');
-            if (aduanaInput) {
-                aduanaInput.value = `${codigo}${seccion} - ${denominacion}`;
+                const valorCompleto = `${codigo}${seccion}`;
+                const textoCompleto = `${codigo}${seccion} - ${denominacion}`;
+                option.value = valorCompleto;
+                option.textContent = textoCompleto;
+                option.setAttribute('data-denominacion', denominacion);
+                aduanaSelect.appendChild(option);
+                // Seleccionar la nueva aduana
+                aduanaSelect.value = valorCompleto;
             }
 
             // Limpiar y ocultar formulario

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Logistica\OperacionLogistica;
+use App\Models\Logistica\OperacionComentario;
 use App\Models\Logistica\Cliente;
 use App\Models\Logistica\AgenteAduanal;
 use App\Models\Logistica\Transporte;
@@ -307,11 +308,41 @@ class OperacionLogisticaController extends Controller
             'total_operaciones' => count($comportamientoTemporal)
         ];
 
-        // Obtener lista de clientes únicos para el filtro
-        $clientes = OperacionLogistica::select('cliente')
-            ->distinct()
-            ->orderBy('cliente')
-            ->pluck('cliente');
+        // Obtener lista de clientes únicos con correos para el filtro (versión segura final)
+        $clientes = [];
+        try {
+            $clientesDB = \App\Models\Logistica\Cliente::select('cliente', 'correos')
+                ->whereNotNull('cliente')
+                ->where('cliente', '!=', '')
+                ->orderBy('cliente')
+                ->limit(50)
+                ->get();
+                
+            foreach ($clientesDB as $cliente) {
+                if ($cliente->cliente && is_string($cliente->cliente)) {
+                    $correosString = '';
+                    if ($cliente->correos) {
+                        if (is_array($cliente->correos)) {
+                            $correosLimpio = array_filter($cliente->correos, function($email) {
+                                return is_string($email) && !empty(trim($email));
+                            });
+                            $correosString = implode(', ', $correosLimpio);
+                        } elseif (is_string($cliente->correos)) {
+                            $correosString = trim($cliente->correos);
+                        }
+                    }
+                    
+                    $clientes[] = [
+                        'cliente' => trim($cliente->cliente),
+                        'correos' => $correosString
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error obteniendo clientes: ' . $e->getMessage());
+            // Fallback con datos mínimos
+            $clientes = [];
+        }
 
         return view('Logistica.reportes', compact(
             'operaciones', 'stats', 'clientes', 'comportamientoTemporal', 
@@ -668,14 +699,12 @@ class OperacionLogisticaController extends Controller
         // *** GUARDAR PRIMERO, LUEGO CALCULAR STATUS ***
         $operacion->save();
 
-        // Ahora calcular status (ya que created_at existe) y generar historial inicial SIEMPRE
+        // Crear comentario inicial (incluye el status automáticamente)
+        $operacion->crearComentarioInicialOperacion($request->comentarios);
+        
+        // Calcular status final y guardar
         $resultado = $operacion->calcularStatusPorDias();
-        $operacion->generarHistorialCambioStatus(
-            $resultado,
-            false, // No es acción manual
-            'Creación de operación - Registro inicial (tentativo)'
-        );
-        $operacion->saveQuietly(); // Guardar sin disparar eventos otra vez
+        $operacion->saveQuietly();
 
             return response()->json([
                 'success' => true,
@@ -763,8 +792,46 @@ class OperacionLogisticaController extends Controller
                 $updateData['status_manual'] = $request->status_manual;
             }
             
+            // Verificar si cambió el comentario para crear nueva entrada
+            $comentarioAnterior = $operacion->comentarios;
+            $comentarioNuevo = $request->comentarios;
+            
             // Actualizar todos los campos
             $operacion->update($updateData);
+
+            // Si se cambió el comentario, crear NUEVO registro en el historial
+            if ($comentarioNuevo && $comentarioNuevo !== $comentarioAnterior) {
+                // Obtener el registro más reciente para copiar sus datos de status
+                $historialReciente = $operacion->historicoMatrizSgm()
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                    
+                if ($historialReciente) {
+                    // Crear un NUEVO registro en el historial manteniendo el status actual
+                    // pero con las nuevas observaciones
+                    $operacion->historicoMatrizSgm()->create([
+                        'fecha_registro' => now(),
+                        'fecha_arribo_aduana' => $historialReciente->fecha_arribo_aduana,
+                        'dias_transcurridos' => $historialReciente->dias_transcurridos,
+                        'target_dias' => $historialReciente->target_dias,
+                        'color_status' => $historialReciente->color_status,
+                        'operacion_status' => $historialReciente->operacion_status,
+                        'observaciones' => $comentarioNuevo
+                    ]);
+                    
+                    \Log::info('Nuevo registro de historial creado desde update:', [
+                        'operacion_id' => $operacion->id,
+                        'comentario_anterior' => $comentarioAnterior,
+                        'comentario_nuevo' => $comentarioNuevo
+                    ]);
+                }
+                
+                // También crear entrada en el sistema de comentarios
+                $operacion->crearComentario(
+                    $comentarioNuevo,
+                    'edicion_comentario'
+                );
+            }
 
             // Recalcular target si cambió el tipo de operación
             $targetCalculado = $operacion->calcularTargetAutomatico();
@@ -1436,6 +1503,7 @@ class OperacionLogisticaController extends Controller
                     'comentarios' => $operacion->comentarios,
                     'status_calculado' => $operacion->status_calculado,
                     'status_manual' => $operacion->status_manual,
+                    'status_actual' => $operacion->status_actual,
                     'color_status' => $operacion->color_status,
                     'target' => $operacion->target,
                     'resultado' => $operacion->resultado,
@@ -1499,7 +1567,7 @@ class OperacionLogisticaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Operación marcada como completada exitosamente',
-                'operacion' => $operacion->load(['ejecutivo', 'cliente', 'agenteAduanal', 'transporte', 'postOperacion'])
+                'operacion' => $operacion->load(['ejecutivo', 'postOperacion'])
             ]);
 
         } catch (\Exception $e) {
@@ -1944,29 +2012,191 @@ class OperacionLogisticaController extends Controller
     public function updateComentario(Request $request, $id)
     {
         try {
-            $validatedData = $request->validate([
-                'comentario' => 'required|string'
+            // Debug: Log los datos que llegan
+            \Log::info('updateComentario recibido:', [
+                'comentario_id' => $id,
+                'request_data' => $request->all(),
+                'comentario_value' => $request->input('comentario'),
+                'comentario_length' => strlen($request->input('comentario', ''))
+            ]);
+            
+            // Validación más flexible temporalmente
+            $comentarioTexto = trim($request->input('comentario', ''));
+            
+            if (empty($comentarioTexto)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El comentario no puede estar vacío'
+                ], 400);
+            }
+            
+            $validatedData = ['comentario' => $comentarioTexto];
+
+            // Buscar el comentario específico a actualizar
+            $comentario = OperacionComentario::findOrFail($id);
+            
+            // Verificar que el comentario a editar no sea del sistema
+            if (in_array($comentario->usuario_nombre, ['Sistema', 'Sistema Automático', 'Sistema de Prueba'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pueden editar comentarios del sistema'
+                ], 403);
+            }
+
+            // Actualizar solo el texto del comentario (sin crear nueva entrada)
+            $comentario->update([
+                'comentario' => $validatedData['comentario']
             ]);
 
-            // Para simplicidad, actualizamos directamente el campo comentarios
-            // En una implementación más compleja se usaría una tabla separada
-            $operacion = OperacionLogistica::where('id', $request->operacion_logistica_id)->first();
-
+            // Actualizar también el campo legacy en la operación principal
+            $operacion = $comentario->operacionLogistica;
             if ($operacion) {
                 $operacion->update([
-                    'comentarios' => $validatedData['comentario'] . " (Editado: " . now()->format('d/m/Y H:i') . ")"
+                    'comentarios' => $validatedData['comentario'] . " (Última actualización: " . now()->format('d/m/Y H:i') . ")"
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Comentario actualizado exitosamente'
+                'message' => 'Comentario actualizado exitosamente',
+                'comentario' => $comentario->fresh()
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error en updateComentario:', [
+                'comentario_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar comentario: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener el historial de observaciones de una operación
+     */
+    public function obtenerHistorialObservaciones($operacionId)
+    {
+        try {
+            $operacion = OperacionLogistica::with(['ejecutivo'])
+                ->findOrFail($operacionId);
+
+            // Obtener el historial de observaciones ordenado cronológicamente
+            $historialObservaciones = $operacion->historicoMatrizSgm()
+                ->whereNotNull('observaciones')
+                ->where('observaciones', '!=', '')
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(function ($registro) {
+                    return [
+                        'id' => $registro->id,
+                        'observaciones' => $registro->observaciones,
+                        'status' => $registro->operacion_status ?? $registro->status ?? 'N/A',
+                        'created_at' => $registro->created_at,
+                        'updated_at' => $registro->updated_at,
+                        'usuario' => 'Sistema', // Por ahora será "Sistema" hasta que agreguemos el campo empleado_id
+                        'fecha_formateada' => $registro->created_at->format('d/m/Y H:i'),
+                        'tiempo_relativo' => $registro->created_at->diffForHumans()
+                    ];
+                });
+
+            // Obtener observaciones actuales de la operación
+            $observacionActual = $operacion->comentarios ?? '';
+
+            return response()->json([
+                'success' => true,
+                'observaciones' => $historialObservaciones,
+                'operacion' => [
+                    'id' => $operacion->id,
+                    'operacion' => $operacion->operacion,
+                    'cliente' => $operacion->cliente,
+                    'no_pedimento' => $operacion->no_pedimento,
+                    'status_actual' => $operacion->status_calculado,
+                    'observacion_actual' => $observacionActual
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en obtenerHistorialObservaciones:', [
+                'operacion_id' => $operacionId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener historial de observaciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar directamente las observaciones del historial
+     */
+    public function updateObservacionesHistorial(Request $request, $operacionId)
+    {
+        try {
+            $comentarioTexto = trim($request->input('observaciones', ''));
+            
+            if (empty($comentarioTexto)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Las observaciones no pueden estar vacías'
+                ], 400);
+            }
+
+            $operacion = OperacionLogistica::findOrFail($operacionId);
+            
+            // Obtener el registro más reciente del historial para copiar sus datos
+            $historialReciente = $operacion->historicoMatrizSgm()
+                ->orderBy('created_at', 'desc')
+                ->first();
+                
+            if (!$historialReciente) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró historial base para crear el nuevo registro'
+                ], 404);
+            }
+
+            // Crear un NUEVO registro en el historial manteniendo los datos del status actual
+            // pero con las nuevas observaciones
+            $nuevoHistorial = $operacion->historicoMatrizSgm()->create([
+                'fecha_registro' => now(),
+                'fecha_arribo_aduana' => $historialReciente->fecha_arribo_aduana,
+                'dias_transcurridos' => $historialReciente->dias_transcurridos,
+                'target_dias' => $historialReciente->target_dias,
+                'color_status' => $historialReciente->color_status,
+                'operacion_status' => $historialReciente->operacion_status,
+                'observaciones' => $comentarioTexto
+            ]);
+            
+            // También actualizar el campo comentarios de la operación principal
+            $operacion->update(['comentarios' => $comentarioTexto]);
+
+            \Log::info('Nuevo registro de historial creado:', [
+                'operacion_id' => $operacionId,
+                'historial_id' => $nuevoHistorial->id,
+                'observaciones' => $comentarioTexto
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observaciones guardadas exitosamente en el historial'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en updateObservacionesHistorial:', [
+                'operacion_id' => $operacionId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar observaciones: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -2795,8 +3025,8 @@ class OperacionLogisticaController extends Controller
                 'mensaje' => 'required|string',
                 'incluir_datos' => 'boolean',
                 'formato_datos' => 'nullable|string|in:csv,excel',
-                'operaciones_ids' => 'nullable|array',
-                'operaciones_ids.*' => 'integer|exists:operaciones_logistica,id'
+                'operaciones_ids' => 'nullable|string', // Viene como JSON string
+                'correos_cc' => 'nullable|string' // Viene como JSON string
             ]);
 
             if ($validator->fails()) {
@@ -2806,11 +3036,14 @@ class OperacionLogisticaController extends Controller
                 ], 422);
             }
 
-            // Obtener correos CC activos (administradores siempre, otros según configuración)
-            $correosCC = \App\Models\Logistica\LogisticaCorreoCC::activos()
-                ->get()
-                ->pluck('email')
-                ->toArray();
+            // Obtener correos CC desde el frontend (ya filtrados por el usuario)
+            $correosCC = [];
+            if ($request->correos_cc) {
+                $correosCCDecoded = json_decode($request->correos_cc, true);
+                if (is_array($correosCCDecoded)) {
+                    $correosCC = $correosCCDecoded;
+                }
+            }
 
             // Preparar los destinatarios principales
             $destinatariosPrincipales = array_filter(array_map('trim', explode(',', $request->destinatarios)));
@@ -2827,7 +3060,14 @@ class OperacionLogisticaController extends Controller
 
             // Si se solicita incluir datos, preparar el archivo adjunto
             if ($request->incluir_datos) {
-                $operacionesIds = $request->operaciones_ids ?? [];
+                $operacionesIds = [];
+                if ($request->operaciones_ids) {
+                    $operacionesDecoded = json_decode($request->operaciones_ids, true);
+                    if (is_array($operacionesDecoded)) {
+                        $operacionesIds = $operacionesDecoded;
+                    }
+                }
+                
                 $formato = $request->formato_datos ?? 'csv';
                 
                 if (!empty($operacionesIds)) {
@@ -2836,11 +3076,18 @@ class OperacionLogisticaController extends Controller
                         ->get();
                     
                     $datosCorreo['adjunto'] = $this->generarArchivoReporte($operaciones, $formato);
+                } else {
+                    // Si no se especifican IDs, incluir todas las operaciones (para mantener compatibilidad)
+                    $operaciones = OperacionLogistica::with('ejecutivo')->get();
+                    $datosCorreo['adjunto'] = $this->generarArchivoReporte($operaciones, $formato);
                 }
             }
 
             // Enviar el correo
             $resultadoEnvio = $this->procesarEnvioCorreo($datosCorreo);
+
+            // Enviar también al webhook de N8N
+            $resultadoWebhook = $this->enviarWebhookLogistica($datosCorreo, $request);
 
             return response()->json([
                 'success' => $resultadoEnvio['success'],
@@ -2848,7 +3095,8 @@ class OperacionLogisticaController extends Controller
                 'detalles' => [
                     'destinatarios_principales' => count($destinatariosPrincipales),
                     'correos_cc' => count($correosCC),
-                    'cc_incluidos' => $correosCC
+                    'cc_incluidos' => $correosCC,
+                    'webhook_enviado' => $resultadoWebhook['success']
                 ]
             ]);
 
@@ -3212,6 +3460,167 @@ class OperacionLogisticaController extends Controller
 
         if ($request->filled('fecha_hasta')) {
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+    }
+
+    /**
+     * Obtener historial completo de comentarios de una operación
+     */
+    public function obtenerHistorialComentarios($id)
+    {
+        try {
+            $operacion = OperacionLogistica::with('comentariosCronologicos')->findOrFail($id);
+
+            $comentarios = $operacion->comentariosCronologicos
+                ->filter(function ($comentario) {
+                    // Filtrar comentarios del sistema, solo mostrar los del ejecutivo
+                    return !in_array($comentario->usuario_nombre, ['Sistema', 'Sistema Automático', 'Sistema de Prueba']);
+                })
+                ->map(function ($comentario) use ($operacion) {
+                    // Cambiar el título de actualizacion_automatica por el número de pedimento
+                    $tipoAccion = $comentario->tipo_accion;
+                    if ($tipoAccion === 'actualizacion_automatica' && $operacion->no_pedimento) {
+                        $tipoAccion = $operacion->no_pedimento;
+                    }
+                    
+                    // Para mostrar: extraer solo la parte después de "Comentarios:" si existe
+                    $comentarioTextoMostrar = $comentario->comentario;
+                    $comentarioTextoEdicion = $comentario->comentario; // Siempre usar texto completo para edición
+                    
+                    if (strpos($comentarioTextoMostrar, 'Comentarios: ') !== false) {
+                        $comentarioTextoExtraido = trim(substr($comentarioTextoMostrar, strpos($comentarioTextoMostrar, 'Comentarios: ') + 13));
+                        if (!empty($comentarioTextoExtraido)) {
+                            $comentarioTextoMostrar = $comentarioTextoExtraido;
+                            $comentarioTextoEdicion = $comentarioTextoExtraido; // Para edición usar el texto extraído
+                        }
+                    }
+                    
+                    return [
+                        'id' => $comentario->id,
+                        'comentario' => $comentarioTextoMostrar,
+                        'comentario_edicion' => $comentarioTextoEdicion, // Texto específico para edición
+                        'status_en_momento' => $comentario->status_en_momento,
+                        'tipo_accion' => $tipoAccion,
+                        'icono_accion' => $comentario->icono_accion,
+                        'usuario_nombre' => $comentario->usuario_nombre,
+                        'fecha_formateada' => $comentario->fecha_formateada,
+                        'created_at' => $comentario->created_at->toISOString(),
+                    ];
+                })
+                ->values(); // Reindexar después del filtro
+
+            return response()->json([
+                'success' => true,
+                'comentarios' => $comentarios,
+                'operacion' => [
+                    'id' => $operacion->id,
+                    'operacion' => $operacion->operacion,
+                    'cliente' => $operacion->cliente,
+                    'no_pedimento' => $operacion->no_pedimento,
+                    'status_actual' => $operacion->status_actual,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener historial de comentarios: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Enviar información del email y archivo al webhook de N8N
+     */
+    private function enviarWebhookLogistica($datosCorreo, $request)
+    {
+        try {
+            $webhookUrl = config('services.n8n.logistica_webhook_url');
+            
+            if (empty($webhookUrl)) {
+                \Log::info('Webhook de logística no configurado. Se omite notificación.');
+                return ['success' => false, 'message' => 'Webhook no configurado'];
+            }
+
+            // Preparar payload con toda la información del email
+            $payload = [
+                'tipo' => 'reporte_logistica',
+                'timestamp' => now()->toISOString(),
+                'email' => [
+                    'destinatarios' => $datosCorreo['destinatarios'],
+                    'correos_cc' => $datosCorreo['correosCC'] ?? [],
+                    'asunto' => $datosCorreo['asunto'],
+                    'mensaje' => $datosCorreo['mensaje'],
+                    'remitente' => $datosCorreo['remitente'],
+                    'nombre_remitente' => $datosCorreo['nombreRemitente']
+                ],
+                'datos_adicionales' => [
+                    'incluir_datos' => $request->incluir_datos ?? false,
+                    'formato_datos' => $request->formato_datos ?? null,
+                    'operaciones_ids' => $request->operaciones_ids ?? [],
+                    'usuario_envio' => [
+                        'id' => auth()->id(),
+                        'name' => auth()->user()->name ?? 'Usuario desconocido',
+                        'email' => auth()->user()->email ?? 'correo@desconocido.com'
+                    ]
+                ]
+            ];
+
+            // Si hay archivo adjunto, incluir información del archivo
+            if (isset($datosCorreo['adjunto'])) {
+                $archivoPath = $datosCorreo['adjunto']['path'];
+                
+                // Convertir archivo a base64 para enviar en el webhook
+                if (file_exists($archivoPath)) {
+                    $archivoContenido = base64_encode(file_get_contents($archivoPath));
+                    $payload['archivo'] = [
+                        'nombre' => $datosCorreo['adjunto']['nombre'],
+                        'mime_type' => $datosCorreo['adjunto']['mime'],
+                        'size' => filesize($archivoPath),
+                        'contenido_base64' => $archivoContenido
+                    ];
+                }
+            }
+
+            // Enviar al webhook (sin verificación SSL para desarrollo)
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                ->timeout(30)
+                ->post($webhookUrl, $payload);
+
+            if ($response->successful()) {
+                \Log::info('Webhook de logística enviado correctamente.', [
+                    'url' => $webhookUrl,
+                    'destinatarios' => count($datosCorreo['destinatarios']),
+                    'tiene_archivo' => isset($datosCorreo['adjunto'])
+                ]);
+                
+                return [
+                    'success' => true,
+                    'message' => 'Webhook enviado correctamente'
+                ];
+            } else {
+                \Log::error('No se pudo enviar el webhook de logística.', [
+                    'url' => $webhookUrl,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                
+                return [
+                    'success' => false,
+                    'message' => 'Error al enviar webhook: ' . $response->status()
+                ];
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Error al enviar el webhook de logística.', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Error interno del webhook: ' . $e->getMessage()
+            ];
         }
     }
 }

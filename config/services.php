@@ -37,6 +37,7 @@ return [
 
     'n8n' => [
         'webhook_url' => env('N8N_WEBHOOK_URL'),
+        'logistica_webhook_url' => env('N8N_LOGISTICA_WEBHOOK_URL', 'https://n8n.autodevsystems.com/webhook-test/erp_estrategiaeinnovacion'),
     ],
 
 ];

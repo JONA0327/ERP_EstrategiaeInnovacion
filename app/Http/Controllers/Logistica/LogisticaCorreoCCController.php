@@ -17,6 +17,19 @@ class LogisticaCorreoCCController extends Controller
         $correos = LogisticaCorreoCC::orderBy('tipo')->orderBy('nombre')->get();
         return view('Logistica.catalogos.correos-cc.index', compact('correos'));
     }
+    
+    /**
+     * API para obtener correos CC activos
+     */
+    public function api()
+    {
+        $correos = LogisticaCorreoCC::activos()
+            ->orderBy('tipo')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'email', 'tipo']);
+            
+        return response()->json($correos);
+    }
 
     /**
      * Mostrar formulario para crear nuevo correo CC

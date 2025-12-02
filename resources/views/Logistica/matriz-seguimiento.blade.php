@@ -347,14 +347,20 @@
     <div id="modalOperacion" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
         <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header fijo -->
-            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
+            <div class="bg-white border-b border-slate-200 p-4 rounded-t-xl">
+                <div class="flex justify-between items-center mb-2">
                     <h2 id="modalTitle" class="text-lg font-semibold text-slate-800">
                         <span class="text-blue-600 mr-2 text-xl">⊕</span>
                         Añadir Nueva Operación
                     </h2>
-                    <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                    <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold" title="Cerrar modal">
                         <span>&times;</span>
                     </button>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                    <span>🔒</span>
+                    <span><strong>Protegido:</strong> Este modal no se cierra al hacer clic fuera para evitar pérdida de datos. Use el botón × para cerrar.</span>
+                </div>
             </div>
 
             <!-- Contenido del formulario con scroll -->
@@ -439,17 +445,18 @@
                                             }
                                         }
                                     @endphp
-                                    <input type="text" name="ejecutivo" required class="form-input text-base" 
-                                           placeholder="Nombre del ejecutivo" 
-                                           @if(isset($esAdmin) && $esAdmin) list="ejecutivosList" @endif
-                                           value="{{ $valorEjecutivo }}"
-                                           @if($soloLectura) readonly @endif>
                                     @if(isset($esAdmin) && $esAdmin)
-                                        <datalist id="ejecutivosList">
+                                        <select name="ejecutivo" id="ejecutivoSelect" required class="form-input text-base w-full">
+                                            <option value="">Selecciona un ejecutivo</option>
                                             @foreach($empleados as $empleado)
-                                                <option value="{{ $empleado->nombre }}">
+                                                <option value="{{ $empleado->nombre }}" {{ $empleado->nombre == $valorEjecutivo ? 'selected' : '' }}>{{ $empleado->nombre }}</option>
                                             @endforeach
-                                        </datalist>
+                                        </select>
+                                    @else
+                                        <input type="text" name="ejecutivo" required class="form-input text-base" 
+                                               placeholder="Nombre del ejecutivo" 
+                                               value="{{ $valorEjecutivo }}"
+                                               readonly>
                                     @endif
                                     @if($soloLectura)
                                         <p class="text-xs text-slate-500 mt-1">📌 Tu nombre está asignado automáticamente</p>
@@ -509,14 +516,12 @@
                                             <span class="mr-1">+</span> Agregar nueva
                                         </button>
                                     </div>
-                                    <input type="text" name="aduana" required class="form-input text-base" placeholder="Ej: 010, 021, etc." list="aduanasList">
-                                    <datalist id="aduanasList">
+                                    <select name="aduana" id="aduanaSelect" required class="form-input text-base w-full">
+                                        <option value="">Selecciona una aduana</option>
                                         @foreach($aduanas ?? [] as $aduana)
-                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }}" data-denominacion="{{ $aduana->denominacion }}">
-                                                {{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}
-                                            </option>
+                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }}" data-denominacion="{{ $aduana->denominacion }}">{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}</option>
                                         @endforeach
-                                    </datalist>
+                                    </select>
                                     <div id="nuevaAduanaForm" class="hidden mt-3 p-3 bg-white border-2 border-violet-200 rounded-lg shadow-sm">
                                         <div class="grid grid-cols-3 gap-2 mb-2">
                                             <input type="text" id="nuevaAduanaCodigo" placeholder="Código" class="form-input text-sm" maxlength="2">
@@ -550,12 +555,12 @@
                                             <span class="mr-1">+</span> Agregar nuevo
                                         </button>
                                     </div>
-                                    <input type="text" name="agente_aduanal" required class="form-input text-base" placeholder="Nombre del agente aduanal" list="agentesList">
-                                    <datalist id="agentesList">
+                                    <select name="agente_aduanal" id="agenteSelect" required class="form-input text-base w-full">
+                                        <option value="">Selecciona un agente aduanal</option>
                                         @foreach($agentesAduanales as $agente)
-                                            <option value="{{ $agente->agente_aduanal }}">
+                                            <option value="{{ $agente->agente_aduanal }}">{{ $agente->agente_aduanal }}</option>
                                         @endforeach
-                                    </datalist>
+                                    </select>
                                     <div id="nuevoAgenteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoAgenteNombre" placeholder="Nombre del nuevo agente" class="form-input mb-2">
                                         <div class="flex space-x-2">
@@ -576,12 +581,12 @@
                                             <span class="mr-1">+</span> Agregar nuevo
                                         </button>
                                     </div>
-                                    <input type="text" name="transporte" class="form-input text-base" placeholder="Nombre de la empresa" list="transportesList">
-                                    <datalist id="transportesList">
+                                    <select name="transporte" id="transporteSelect" class="form-input text-base w-full">
+                                        <option value="">Selecciona una empresa de transporte</option>
                                         @foreach($transportes as $transporte)
-                                            <option value="{{ $transporte->transporte }}" data-tipo="{{ $transporte->tipo_operacion }}">
+                                            <option value="{{ $transporte->transporte }}" data-tipo="{{ $transporte->tipo_operacion }}">{{ $transporte->transporte }}</option>
                                         @endforeach
-                                    </datalist>
+                                    </select>
                                     <div id="nuevoTransporteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoTransporteNombre" placeholder="Nombre de la empresa" class="form-input mb-2">
                                         <div class="flex space-x-2">
@@ -732,56 +737,32 @@
     <div id="modalComentarios" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
         <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <!-- Header fijo -->
-            <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl">
-                <h2 class="text-lg font-semibold text-slate-800">
-                    <span class="text-green-600 mr-2 text-xl">💬</span>
-                    Comentarios - Operación #<span id="operacionIdComentarios"></span>
-                </h2>
-                <button onclick="cerrarModalComentarios()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">
-                    <span>&times;</span>
-                </button>
+            <div class="bg-white border-b border-slate-200 p-4 rounded-t-xl">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold text-slate-800">
+                        <span class="text-green-600 mr-2 text-xl">📋</span>
+                        Observaciones - Operación #<span id="operacionIdComentarios"></span>
+                    </h2>
+                    <button onclick="cerrarModalComentarios()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold" title="Cerrar modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                    <span>🔒</span>
+                    <span><strong>Protegido:</strong> Este modal no se cierra al hacer clic fuera para evitar pérdida de observaciones. Use el botón × para cerrar.</span>
+                </div>
             </div>
 
             <!-- Contenido -->
             <div class="flex-1 overflow-y-auto p-4">
-                <!-- Comentarios actuales -->
+                <!-- Observaciones actuales -->
                 <div class="mb-6">
-                    <h3 class="text-md font-semibold text-slate-800 mb-3">Comentarios Actuales</h3>
                     <div id="listaComentarios" class="space-y-3">
                         <!-- Se carga dinámicamente -->
                     </div>
                 </div>
 
-                <!-- Formulario para añadir/editar comentario -->
-                <div class="p-4 border-t border-slate-200">
-                    <h3 class="text-md font-semibold text-slate-800 mb-3">
-                        <span id="tituloComentario">Añadir Comentario</span>
-                    </h3>
-                    <form id="formComentario">
-                        <input type="hidden" id="comentarioId" value="">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                Comentario <span class="text-red-500">*</span>
-                            </label>
-                            <textarea id="textoComentario"
-                                     name="comentario"
-                                     rows="4"
-                                     required
-                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                     placeholder="Escriba su comentario aquí..."></textarea>
-                        </div>
-                        <div class="flex justify-end mt-4 space-x-3">
-                            <button type="button" onclick="cancelarEdicionComentario()" id="btnCancelarComentario" class="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors hidden">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
-                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                                <i class="fas fa-comment mr-2"></i>
-                                <span id="textoBotonComentario">Guardar Comentario</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+
             </div>
         </div>
     </div>

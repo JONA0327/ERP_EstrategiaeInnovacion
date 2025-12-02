@@ -1,19 +1,17 @@
-@extends('layouts.erp')
+<?php $__env->startSection('title','Reportes - Logística'); ?>
 
-@section('title','Reportes - Logística')
+<?php $__env->startPush('styles'); ?>
+    <link rel="stylesheet" href="<?php echo e(asset('css/logistica/matriz-seguimiento.css')); ?>">
+    <link href="<?php echo e(asset('css/logistica/export-styles.css')); ?>" rel="stylesheet">
+<?php $__env->stopPush(); ?>
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/logistica/matriz-seguimiento.css') }}">
-    <link href="{{ asset('css/logistica/export-styles.css') }}" rel="stylesheet">
-@endpush
 
-{{-- Cargar Chart.js directamente (evitar conflictos con stacks) --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="bg-gradient-to-br from-white via-indigo-50 to-indigo-100 min-h-screen">
         <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <a href="{{ route('logistica.index') }}" class="inline-flex items-center text-indigo-700 hover:text-indigo-900 mb-4">
+            <a href="<?php echo e(route('logistica.index')); ?>" class="inline-flex items-center text-indigo-700 hover:text-indigo-900 mb-4">
                 <span class="mr-2">&larr;</span> Regresar
             </a>
             <div class="flex items-center justify-between mb-6">
@@ -34,7 +32,7 @@
                         <div id="exportDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-64 rounded-lg export-dropdown bg-white ring-1 ring-black ring-opacity-5 z-50">
                             <div class="py-1">
                                 <!-- CSV Básico -->
-                                <a href="{{ route('logistica.reportes.export', request()->query()) }}" 
+                                <a href="<?php echo e(route('logistica.reportes.export', request()->query())); ?>" 
                                    class="export-option flex items-center px-4 py-3 text-sm text-gray-700">
                                     <i class="fas fa-file-csv text-green-600 mr-3 w-4 file-icon"></i>
                                     <div>
@@ -44,7 +42,7 @@
                                 </a>
                                 
                                 <!-- Excel Profesional -->
-                                <a href="{{ route('logistica.reportes.export-excel', request()->query()) }}" 
+                                <a href="<?php echo e(route('logistica.reportes.export-excel', request()->query())); ?>" 
                                    class="export-option flex items-center px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
                                     <i class="fas fa-file-excel text-emerald-600 mr-3 w-4 file-icon"></i>
                                     <div>
@@ -80,15 +78,15 @@
 
             <!-- Filtros -->
             <div class="bg-white rounded-xl shadow p-6 mb-6">
-                <form method="GET" action="{{ route('logistica.reportes') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <form method="GET" action="<?php echo e(route('logistica.reportes')); ?>" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Período -->
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Período</label>
                         <select name="periodo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos</option>
-                            <option value="semanal" {{ request('periodo') === 'semanal' ? 'selected' : '' }}>Última Semana</option>
-                            <option value="mensual" {{ request('periodo') === 'mensual' ? 'selected' : '' }}>Último Mes</option>
-                            <option value="anual" {{ request('periodo') === 'anual' ? 'selected' : '' }}>Último Año</option>
+                            <option value="semanal" <?php echo e(request('periodo') === 'semanal' ? 'selected' : ''); ?>>Última Semana</option>
+                            <option value="mensual" <?php echo e(request('periodo') === 'mensual' ? 'selected' : ''); ?>>Último Mes</option>
+                            <option value="anual" <?php echo e(request('periodo') === 'anual' ? 'selected' : ''); ?>>Último Año</option>
                         </select>
                     </div>
 
@@ -98,15 +96,15 @@
                         <div class="flex gap-2">
                             <select name="mes" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Mes</option>
-                                @for($m = 1; $m <= 12; $m++)
-                                    <option value="{{ $m }}" {{ request('mes') == $m ? 'selected' : '' }}>{{ \Carbon\Carbon::create(null, $m)->format('M') }}</option>
-                                @endfor
+                                <?php for($m = 1; $m <= 12; $m++): ?>
+                                    <option value="<?php echo e($m); ?>" <?php echo e(request('mes') == $m ? 'selected' : ''); ?>><?php echo e(\Carbon\Carbon::create(null, $m)->format('M')); ?></option>
+                                <?php endfor; ?>
                             </select>
                             <select name="anio" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Año</option>
-                                @for($y = now()->year; $y >= now()->year - 5; $y--)
-                                    <option value="{{ $y }}" {{ request('anio') == $y ? 'selected' : '' }}>{{ $y }}</option>
-                                @endfor
+                                <?php for($y = now()->year; $y >= now()->year - 5; $y--): ?>
+                                    <option value="<?php echo e($y); ?>" <?php echo e(request('anio') == $y ? 'selected' : ''); ?>><?php echo e($y); ?></option>
+                                <?php endfor; ?>
                             </select>
                         </div>
                     </div>
@@ -116,9 +114,9 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
                         <select name="cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos los Clientes</option>
-                            @foreach($clientes as $c)
-                                <option value="{{ $c }}" {{ request('cliente') === $c ? 'selected' : '' }}>{{ $c }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($c); ?>" <?php echo e(request('cliente') === $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -127,22 +125,22 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
                         <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos los Status</option>
-                            <option value="In Process" {{ request('status') === 'In Process' ? 'selected' : '' }}>En Proceso</option>
-                            <option value="Out of Metric" {{ request('status') === 'Out of Metric' ? 'selected' : '' }}>Fuera de Métrica</option>
-                            <option value="Done" {{ request('status') === 'Done' ? 'selected' : '' }}>Completado</option>
+                            <option value="In Process" <?php echo e(request('status') === 'In Process' ? 'selected' : ''); ?>>En Proceso</option>
+                            <option value="Out of Metric" <?php echo e(request('status') === 'Out of Metric' ? 'selected' : ''); ?>>Fuera de Métrica</option>
+                            <option value="Done" <?php echo e(request('status') === 'Done' ? 'selected' : ''); ?>>Completado</option>
                         </select>
                     </div>
 
                     <!-- Fecha Desde -->
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Desde</label>
-                        <input type="date" name="fecha_desde" value="{{ request('fecha_desde') }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <input type="date" name="fecha_desde" value="<?php echo e(request('fecha_desde')); ?>" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     </div>
 
                     <!-- Fecha Hasta -->
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Hasta</label>
-                        <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <input type="date" name="fecha_hasta" value="<?php echo e(request('fecha_hasta')); ?>" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     </div>
 
                     <!-- Botones -->
@@ -150,7 +148,7 @@
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                             Filtrar
                         </button>
-                        <a href="{{ route('logistica.reportes') }}" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+                        <a href="<?php echo e(route('logistica.reportes')); ?>" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
                             Limpiar
                         </a>
                     </div>
@@ -203,14 +201,14 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($operaciones as $op)
-                                    <tr class="border-b" data-operacion-id="{{ $op->id ?? '' }}">
-                                        <td class="px-3 py-2">{{ $op->id ?? '-' }}</td>
-                                        <td class="px-3 py-2">{{ is_string($op->ejecutivo) ? $op->ejecutivo : '-' }}</td>
-                                        <td class="px-3 py-2">{{ is_string($op->cliente) ? $op->cliente : '-' }}</td>
-                                        <td class="px-3 py-2">{{ is_string($op->tipo_operacion_enum) ? $op->tipo_operacion_enum : '-' }}</td>
+                                <?php $__empty_1 = true; $__currentLoopData = $operaciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $op): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <tr class="border-b" data-operacion-id="<?php echo e($op->id ?? ''); ?>">
+                                        <td class="px-3 py-2"><?php echo e($op->id ?? '-'); ?></td>
+                                        <td class="px-3 py-2"><?php echo e(is_string($op->ejecutivo) ? $op->ejecutivo : '-'); ?></td>
+                                        <td class="px-3 py-2"><?php echo e(is_string($op->cliente) ? $op->cliente : '-'); ?></td>
+                                        <td class="px-3 py-2"><?php echo e(is_string($op->tipo_operacion_enum) ? $op->tipo_operacion_enum : '-'); ?></td>
                                         <td class="px-3 py-2">
-                                            @php
+                                            <?php
                                                 $statusFinal = ($op->status_manual === 'Done') ? 'Done' : $op->status_calculado;
                                                 $colorFinal = ($op->status_manual === 'Done') ? 'verde' : $op->color_status;
                                                 $statusDisplay = match($statusFinal) {
@@ -225,19 +223,20 @@
                                                     'rojo' => 'bg-red-100 text-red-800',
                                                     default => 'bg-gray-100 text-gray-800'
                                                 };
-                                            @endphp
-                                            <span class="px-2 py-1 rounded text-xs {{ $badgeClass }}">
-                                                {{ $statusDisplay }}
+                                            ?>
+                                            <span class="px-2 py-1 rounded text-xs <?php echo e($badgeClass); ?>">
+                                                <?php echo e($statusDisplay); ?>
+
                                             </span>
                                         </td>
-                                        <td class="px-3 py-2">{{ $op->resultado ?? '-' }}</td>
-                                        <td class="px-3 py-2">{{ $op->dias_transito ?? '-' }}</td>
+                                        <td class="px-3 py-2"><?php echo e($op->resultado ?? '-'); ?></td>
+                                        <td class="px-3 py-2"><?php echo e($op->dias_transito ?? '-'); ?></td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="7" class="px-3 py-6 text-center text-slate-500">Sin operaciones recientes</td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -249,48 +248,49 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-semibold">📊 Resumen Ejecutivo</h2>
                     <div class="text-sm opacity-75">
-                        {{ now()->format('d/m/Y H:i') }}
+                        <?php echo e(now()->format('d/m/Y H:i')); ?>
+
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h3 class="font-medium mb-2">🎯 Rendimiento General</h3>
-                        @php
+                        <?php
                             $totalOps = $statsTemporales['total_operaciones'];
                             $eficienciaGeneral = $totalOps > 0 ? round((($statsTemporales['en_tiempo'] + $statsTemporales['completado_tiempo']) / $totalOps) * 100, 1) : 0;
                             $promedioEjecucion = round($statsTemporales['promedio_dias'] ?? 0, 1);
                             $targetPromedio = round($statsTemporales['promedio_target'] ?? 3, 1);
-                        @endphp
+                        ?>
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Eficiencia:</span> {{ $eficienciaGeneral }}% 
-                            @if($eficienciaGeneral >= 80)
+                            <span class="font-semibold">Eficiencia:</span> <?php echo e($eficienciaGeneral); ?>% 
+                            <?php if($eficienciaGeneral >= 80): ?>
                                 <span class="text-green-300">🟢 Excelente</span>
-                            @elseif($eficienciaGeneral >= 60)
+                            <?php elseif($eficienciaGeneral >= 60): ?>
                                 <span class="text-yellow-300">🟡 Regular</span>
-                            @else
+                            <?php else: ?>
                                 <span class="text-red-300">🔴 Requiere Atención</span>
-                            @endif
+                            <?php endif; ?>
                         </p>
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Tiempo Promedio:</span> {{ $promedioEjecucion }} días 
-                            (Target: {{ $targetPromedio }} días)
+                            <span class="font-semibold">Tiempo Promedio:</span> <?php echo e($promedioEjecucion); ?> días 
+                            (Target: <?php echo e($targetPromedio); ?> días)
                         </p>
                     </div>
                     <div>
                         <h3 class="font-medium mb-2">⚠️ Alertas y Recomendaciones</h3>
                         <div class="text-sm space-y-1">
-                            @if($statsTemporales['con_retraso'] > 0)
-                                <p class="text-red-300">• {{ $statsTemporales['con_retraso'] }} operaciones con retraso activo</p>
-                            @endif
-                            @if($statsTemporales['en_riesgo'] > 0)
-                                <p class="text-yellow-300">• {{ $statsTemporales['en_riesgo'] }} operaciones en riesgo de retraso</p>
-                            @endif
-                            @if($eficienciaGeneral < 70)
+                            <?php if($statsTemporales['con_retraso'] > 0): ?>
+                                <p class="text-red-300">• <?php echo e($statsTemporales['con_retraso']); ?> operaciones con retraso activo</p>
+                            <?php endif; ?>
+                            <?php if($statsTemporales['en_riesgo'] > 0): ?>
+                                <p class="text-yellow-300">• <?php echo e($statsTemporales['en_riesgo']); ?> operaciones en riesgo de retraso</p>
+                            <?php endif; ?>
+                            <?php if($eficienciaGeneral < 70): ?>
                                 <p class="text-orange-300">• Considerar revisión de procesos operativos</p>
-                            @endif
-                            @if($statsTemporales['con_retraso'] == 0 && $statsTemporales['en_riesgo'] == 0)
+                            <?php endif; ?>
+                            <?php if($statsTemporales['con_retraso'] == 0 && $statsTemporales['en_riesgo'] == 0): ?>
                                 <p class="text-green-300">✅ Todas las operaciones están en tiempo</p>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -302,12 +302,12 @@
                     <div>
                         <h2 class="text-xl font-semibold text-slate-700">Análisis Temporal de Operaciones</h2>
                         <p class="text-sm text-slate-500 mt-1">
-                            @if($esAdmin ?? false)
+                            <?php if($esAdmin ?? false): ?>
                                 Mostrando datos de todos los ejecutivos
-                            @else
+                            <?php else: ?>
                                 Mostrando solo tus operaciones asignadas
-                            @endif
-                            ({{ $statsTemporales['total_operaciones'] }} operaciones)
+                            <?php endif; ?>
+                            (<?php echo e($statsTemporales['total_operaciones']); ?> operaciones)
                         </p>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -366,23 +366,23 @@
                 <!-- Métricas rápidas -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ $statsTemporales['en_tiempo'] }}</div>
+                        <div class="text-2xl font-bold text-green-600"><?php echo e($statsTemporales['en_tiempo']); ?></div>
                         <div class="text-xs text-green-700">En Tiempo</div>
                     </div>
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-yellow-600">{{ $statsTemporales['en_riesgo'] }}</div>
+                        <div class="text-2xl font-bold text-yellow-600"><?php echo e($statsTemporales['en_riesgo']); ?></div>
                         <div class="text-xs text-yellow-700">En Riesgo</div>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-red-600">{{ $statsTemporales['con_retraso'] }}</div>
+                        <div class="text-2xl font-bold text-red-600"><?php echo e($statsTemporales['con_retraso']); ?></div>
                         <div class="text-xs text-red-700">Con Retraso</div>
                     </div>
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-blue-600">{{ $statsTemporales['completado_tiempo'] }}</div>
+                        <div class="text-2xl font-bold text-blue-600"><?php echo e($statsTemporales['completado_tiempo']); ?></div>
                         <div class="text-xs text-blue-700">Completado a Tiempo</div>
                     </div>
                     <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-purple-600">{{ $statsTemporales['completado_retraso'] }}</div>
+                        <div class="text-2xl font-bold text-purple-600"><?php echo e($statsTemporales['completado_retraso']); ?></div>
                         <div class="text-xs text-purple-700">Completado con Retraso</div>
                     </div>
                 </div>
@@ -427,7 +427,7 @@
             console.error('Chart.js no se cargó correctamente');
         }
         
-        const stats = @json($stats);
+        const stats = <?php echo json_encode($stats, 15, 512) ?>;
         const total = (stats.en_proceso || 0) + (stats.fuera_metrica || 0) + (stats.done || 0);
         const showEmptyMsg = total === 0;
         const ctx = document.getElementById('statusChart').getContext('2d');
@@ -602,8 +602,8 @@
 
         // ==================== SEGUNDO GRÁFICO: ANÁLISIS TEMPORAL ====================
         
-        const comportamientoTemporal = @json($comportamientoTemporal ?? []);
-        const statsTemporales = @json($statsTemporales ?? []);
+        const comportamientoTemporal = <?php echo json_encode($comportamientoTemporal ?? [], 15, 512) ?>;
+        const statsTemporales = <?php echo json_encode($statsTemporales ?? [], 15, 512) ?>;
         const temporalCtx = document.getElementById('temporalChart').getContext('2d');
         let currentTemporalChart = null;
         let fullScreenTemporalChart = null;
@@ -1007,13 +1007,14 @@
                                 onchange="cargarCorreosCliente()" required>
                             <option value="">Seleccionar cliente...</option>
                             <option value="">Seleccionar cliente...</option>
-                            @if($clientes && is_array($clientes))
-                                @foreach($clientes as $cliente)
-                                    <option value="{{ $cliente['cliente'] }}" data-correos="{{ $cliente['correos'] }}">
-                                        {{ $cliente['cliente'] }}
+                            <?php if($clientes && is_array($clientes)): ?>
+                                <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($cliente['cliente']); ?>" data-correos="<?php echo e($cliente['correos']); ?>">
+                                        <?php echo e($cliente['cliente']); ?>
+
                                     </option>
-                                @endforeach
-                            @endif
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -1036,7 +1037,7 @@
                         </label>
                         <input type="text" id="asunto" name="asunto" 
                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                               value="Reporte de Operaciones Logísticas - {{ date('d/m/Y') }}"
+                               value="Reporte de Operaciones Logísticas - <?php echo e(date('d/m/Y')); ?>"
                                required>
                     </div>
 
@@ -1049,12 +1050,12 @@
                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                   required>Estimados,
 
-Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha {{ date('d/m/Y') }}.
+Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha <?php echo e(date('d/m/Y')); ?>.
 
 El reporte incluye todas las operaciones registradas en el sistema según los filtros aplicados.
 
 Saludos cordiales,
-{{ auth()->user()->name ?? 'Equipo de Logística' }}</textarea>
+<?php echo e(auth()->user()->name ?? 'Equipo de Logística'); ?></textarea>
                     </div>
 
                     <!-- Opciones de adjunto -->
@@ -1089,7 +1090,7 @@ Saludos cordiales,
                         </div>
                         <p class="text-xs text-slate-500 mt-1">
                             Los correos CC se cargan automáticamente del catálogo. 
-                            <a href="{{ route('logistica.correos-cc.index') }}" target="_blank" 
+                            <a href="<?php echo e(route('logistica.correos-cc.index')); ?>" target="_blank" 
                                class="text-blue-600 hover:text-blue-800 underline">
                                 Ver configuración
                             </a>
@@ -1143,7 +1144,7 @@ Saludos cordiales,
         
         // Cargar correos CC desde el servidor
         function cargarCorreosCC() {
-            fetch('{{ route("logistica.correos-cc.api") }}')
+            fetch('<?php echo e(route("logistica.correos-cc.api")); ?>')
                 .then(response => response.json())
                 .then(data => {
                     correosCC = data.map(item => ({
@@ -1221,15 +1222,15 @@ Saludos cordiales,
             document.getElementById('emailModal').classList.add('hidden');
             // Resetear formulario
             document.getElementById('emailForm').reset();
-            document.getElementById('asunto').value = 'Reporte de Operaciones Logísticas - {{ date("d/m/Y") }}';
+            document.getElementById('asunto').value = 'Reporte de Operaciones Logísticas - <?php echo e(date("d/m/Y")); ?>';
             document.getElementById('mensaje').value = `Estimados,
 
-Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha {{ date('d/m/Y') }}.
+Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha <?php echo e(date('d/m/Y')); ?>.
 
 El reporte incluye todas las operaciones registradas en el sistema según los filtros aplicados.
 
 Saludos cordiales,
-{{ auth()->user()->name ?? 'Equipo de Logística' }}`;
+<?php echo e(auth()->user()->name ?? 'Equipo de Logística'); ?>`;
         }
 
         // Manejar el envío del formulario
@@ -1261,7 +1262,7 @@ Saludos cordiales,
                     formData.append('operaciones_ids', JSON.stringify(operacionesIds));
                 }
                 
-                const response = await fetch('{{ route("logistica.reportes.enviar-correo") }}', {
+                const response = await fetch('<?php echo e(route("logistica.reportes.enviar-correo")); ?>', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1370,7 +1371,7 @@ Saludos cordiales,
             const params = currentUrl.searchParams;
             params.set('dashboard', 'true');
             
-            const exportUrl = `{{ route('logistica.reportes.export-excel') }}?${params.toString()}`;
+            const exportUrl = `<?php echo e(route('logistica.reportes.export-excel')); ?>?${params.toString()}`;
             
             // Crear enlace de descarga invisible
             const link = document.createElement('a');
@@ -1456,4 +1457,6 @@ Saludos cordiales,
             }, 3000);
         }
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\SISTEMAS\Downloads\ERP EstrategiaeInnovacion\Sistema_Tickets_E-I\resources\views/Logistica/reportes.blade.php ENDPATH**/ ?>

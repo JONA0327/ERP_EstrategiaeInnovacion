@@ -91,12 +91,36 @@ class OperacionLogistica extends Model
     }
 
     /**
+     * Mutator para convertir transporte a mayúsculas
+     */
+    public function setTransporteAttribute($value)
+    {
+        $this->attributes['transporte'] = $value ? strtoupper(trim($value)) : $value;
+    }
+
+    /**
      * Relación con el empleado ejecutivo
      * Solo empleados del área de logística
      */
     public function ejecutivo()
     {
         return $this->belongsTo(Empleado::class, 'ejecutivo_empleado_id');
+    }
+
+    /**
+     * Relación con los comentarios de la operación
+     */
+    public function comentarios()
+    {
+        return $this->hasMany(OperacionComentario::class, 'operacion_logistica_id');
+    }
+
+    /**
+     * Obtener comentarios ordenados cronológicamente
+     */
+    public function comentariosCronologicos()
+    {
+        return $this->hasMany(OperacionComentario::class, 'operacion_logistica_id')->cronologico();
     }
 
     /**
@@ -180,6 +204,44 @@ class OperacionLogistica extends Model
     public function scopeEnTransito($query)
     {
         return $query->whereIn('status', ['En Tránsito', 'En Aduana', 'Pendiente']);
+    }
+
+    /**
+     * Crear un comentario con contexto completo de la operación
+     */
+    public function crearComentario($comentario, $tipoAccion = 'comentario', $usuario = null)
+    {
+        return $this->comentarios()->create([
+            'comentario' => $comentario,
+            'status_en_momento' => $this->status_actual,
+            'tipo_accion' => $tipoAccion,
+            'usuario_nombre' => $usuario['nombre'] ?? auth()->user()->name ?? 'Sistema',
+            'usuario_id' => $usuario['id'] ?? auth()->id() ?? null,
+            'contexto_operacion' => [
+                'status_calculado' => $this->status_calculado,
+                'status_manual' => $this->status_manual,
+                'color_status' => $this->color_status,
+                'target' => $this->target,
+                'resultado' => $this->resultado,
+                'dias_transcurridos' => $this->dias_transcurridos_calculados ?? 0,
+                'fecha_arribo_aduana' => $this->fecha_arribo_aduana?->format('Y-m-d'),
+                'fecha_arribo_planta' => $this->fecha_arribo_planta?->format('Y-m-d'),
+            ]
+        ]);
+    }
+
+    /**
+     * Crear comentario inicial cuando se registra una operación nueva
+     */
+    public function crearComentarioInicialOperacion($comentarioInicial = null)
+    {
+        $comentario = $comentarioInicial ?: ($this->comentarios_campo ?: 'Operación registrada en el sistema');
+        
+        return $this->crearComentario(
+            $comentario, 
+            'creacion',
+            ['nombre' => 'Sistema', 'id' => null]
+        );
     }
 
     /**
@@ -399,9 +461,14 @@ class OperacionLogistica extends Model
      */
     public function generarHistorialCambioStatus($resultado, $esManual = false, $accionManual = null)
     {
-        // Si es creación inicial o manual, SIEMPRE crear historial
+        // Si es creación inicial, no crear historial duplicado aquí 
+        // porque se maneja en crearComentarioInicialOperacion()
+        if (str_contains($accionManual ?? '', 'Creación') || str_contains($accionManual ?? '', 'Registro inicial')) {
+            return null;
+        }
+
         // Si es actualización automática, solo crear si hubo cambio
-        if (!$esManual && !str_contains($accionManual ?? '', 'Creación') && !str_contains($accionManual ?? '', 'Actualización')) {
+        if (!$esManual && !str_contains($accionManual ?? '', 'Actualización')) {
             if (!$resultado['cambio'] && $this->historicoMatrizSgm()->exists()) {
                 return null;
             }
@@ -435,6 +502,9 @@ class OperacionLogistica extends Model
             $descripcion .= ". Fecha entrega: " . \Carbon\Carbon::parse($this->fecha_arribo_planta)->format('d/m/Y');
         }
 
+        // Usar comentarios del ejecutivo como observaciones principales
+        $observaciones = !empty($this->comentarios) ? $this->comentarios : $descripcion;
+
         // Crear registro de historial (solo si la operación ya fue guardada)
         if ($this->exists) {
             $historial = $this->historicoMatrizSgm()->create([
@@ -444,8 +514,13 @@ class OperacionLogistica extends Model
                 'target_dias' => $resultado['target'],
                 'color_status' => $resultado['color'],
                 'operacion_status' => $resultado['status'],
-                'observaciones' => $descripcion
+                'observaciones' => $observaciones
             ]);
+
+            // TAMBIÉN crear comentario en el nuevo sistema
+            $tipoAccion = $esManual ? 'cambio_manual_status' : 'actualizacion_automatica';
+            $this->crearComentario($descripcion, $tipoAccion);
+            
             return $historial;
         }
 

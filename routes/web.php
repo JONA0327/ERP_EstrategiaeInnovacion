@@ -99,8 +99,12 @@ Route::middleware(['auth','area.logistica'])->group(function () {
 
     // Rutas para Comentarios
     Route::get('/logistica/operaciones/{id}/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getComentariosByOperacion']);
+    Route::get('/logistica/operaciones/{id}/comentarios-historial', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'obtenerHistorialComentarios']);
     Route::post('/logistica/comentarios', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storeComentario']);
     Route::put('/logistica/comentarios/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateComentario']);
+    // Nuevas rutas para observaciones del historial
+    Route::get('/logistica/operaciones/{id}/observaciones-historial', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'obtenerHistorialObservaciones']);
+    Route::put('/logistica/operaciones/{id}/observaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateObservacionesHistorial']);
 
     // Rutas para Aduanas
     Route::get('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'index']);
@@ -144,6 +148,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     // Rutas para Catálogo de Correos CC
     Route::prefix('logistica/correos-cc')->name('logistica.correos-cc.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'index'])->name('index');
+        Route::get('/api', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'api'])->name('api');
         Route::get('/crear', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'store'])->name('store');
         Route::get('/{correoCC}/editar', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'edit'])->name('edit');
@@ -152,6 +157,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         Route::patch('/{correoCC}/toggle-activo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'toggleActivo'])->name('toggle-activo');
         
         // API endpoints para obtener correos CC
+        Route::get('/api', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'api'])->name('api');
         Route::get('/api/por-tipo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'apiPorTipo'])->name('api.por-tipo');
         Route::get('/api/todos-activos', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'apiTodosActivos'])->name('api.todos-activos');
     });
