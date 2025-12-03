@@ -37,22 +37,22 @@ class ExcelReportService
     {
         // 1. Configurar propiedades del documento
         $this->setDocumentProperties();
-        
+
         // 2. Crear portada profesional
         $this->createCoverPage($filtros, $estadisticas);
-        
+
         // 3. Crear hoja de resumen ejecutivo con gráficos
         $this->createExecutiveSummary($estadisticas);
-        
+
         // 4. Crear hoja de datos detallados
         $this->createDataSheet($operaciones);
-        
+
         // 5. Crear hoja de análisis temporal
         $this->createTemporalAnalysis($operaciones);
-        
+
         // 6. Crear hoja de performance por ejecutivo
         $this->createExecutivePerformance($operaciones);
-        
+
         return $this->spreadsheet;
     }
 
@@ -133,7 +133,7 @@ class ExcelReportService
     private function addCoverStatistics($sheet, $estadisticas)
     {
         $row = 15;
-        
+
         // Header de estadísticas
         $sheet->mergeCells("A{$row}:D{$row}");
         $sheet->setCellValue("A{$row}", 'RESUMEN EJECUTIVO');
@@ -141,9 +141,9 @@ class ExcelReportService
             'font' => ['size' => 18, 'bold' => true, 'color' => ['rgb' => '2E4BC6']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
         ]);
-        
+
         $row += 2;
-        
+
         $stats = [
             'Total de Operaciones' => $estadisticas['total'] ?? 0,
             'En Proceso' => $estadisticas['en_proceso'] ?? 0,
@@ -154,14 +154,14 @@ class ExcelReportService
         foreach ($stats as $label => $value) {
             $sheet->setCellValue("A{$row}", $label);
             $sheet->setCellValue("C{$row}", $value);
-            
+
             // Estilos para las métricas
             $sheet->getStyle("A{$row}:C{$row}")->applyFromArray([
                 'font' => ['size' => 12, 'bold' => true],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F8F9FA']],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
             ]);
-            
+
             $row++;
         }
     }
@@ -194,12 +194,128 @@ class ExcelReportService
     }
 
     /**
+     * Crear gráfico de tendencias temporales
+     */
+    private function createTrendsChart($sheet, $estadisticas)
+    {
+        // Datos de ejemplo para tendencias (últimos 6 meses)
+        $meses = ['Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        $tendencias = [
+            'Completadas' => [45, 52, 48, 61, 58, ($estadisticas['completadas'] ?? 0)],
+            'En Proceso' => [12, 15, 18, 14, 16, ($estadisticas['en_proceso'] ?? 0)],
+            'Fuera Métrica' => [8, 6, 9, 7, 5, ($estadisticas['fuera_metrica'] ?? 0)]
+        ];
+
+        $row = 28; // Posición debajo del gráfico de pie
+
+        // Título del gráfico
+        $sheet->mergeCells('A' . ($row - 1) . ':F' . ($row - 1));
+        $sheet->setCellValue('A' . ($row - 1), 'TENDENCIAS ÚLTIMOS 6 MESES');
+        $sheet->getStyle('A' . ($row - 1))->applyFromArray([
+            'font' => ['size' => 14, 'bold' => true, 'color' => ['rgb' => '2E4BC6']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ]);
+
+        // Encabezados
+        $sheet->setCellValue('A' . $row, 'Mes');
+        $col = 'B';
+        foreach (array_keys($tendencias) as $serie) {
+            $sheet->setCellValue($col . $row, $serie);
+            $col++;
+        }
+
+        // Datos
+        foreach ($meses as $index => $mes) {
+            $currentRow = $row + 1 + $index;
+            $sheet->setCellValue('A' . $currentRow, $mes);
+
+            $col = 'B';
+            foreach ($tendencias as $serie => $datos) {
+                $sheet->setCellValue($col . $currentRow, $datos[$index]);
+                $col++;
+            }
+        }
+
+        // Aplicar formato a los headers
+        $headerRange = 'A' . $row . ':D' . $row;
+        $sheet->getStyle($headerRange)->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E4BC6']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ]);
+
+        // Aplicar formato alternado a las filas de datos
+        for ($i = 1; $i <= count($meses); $i++) {
+            $dataRow = $row + $i;
+            if ($i % 2 == 0) {
+                $sheet->getStyle('A' . $dataRow . ':D' . $dataRow)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8F9FA');
+            }
+        }
+
+        // Crear gráfico de líneas para tendencias
+        $this->createLineChart($sheet, 'A' . $row . ':D' . ($row + count($meses)), 'F' . ($row - 1) . ':L' . ($row + 15), 'Tendencias de Operaciones');
+    }
+
+    /**
+     * Crear gráfico de líneas
+     */
+    private function createLineChart($sheet, $dataRange, $chartPosition, $title)
+    {
+        // Configurar categorías (meses)
+        $categories = [
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $sheet->getTitle() . '!' . 'A29:A34', null, 6)
+        ];
+
+        // Configurar series de datos
+        $dataSeriesLabels = [
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $sheet->getTitle() . '!' . 'B28:D28', null, 3)
+        ];
+
+        $dataSeriesValues = [
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $sheet->getTitle() . '!' . 'B29:B34', null, 6),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $sheet->getTitle() . '!' . 'C29:C34', null, 6),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $sheet->getTitle() . '!' . 'D29:D34', null, 6)
+        ];
+
+        // Crear serie de datos
+        $series = new DataSeries(
+            DataSeries::TYPE_LINECHART,
+            DataSeries::GROUPING_STANDARD,
+            range(0, count($dataSeriesValues) - 1),
+            $dataSeriesLabels,
+            $categories,
+            $dataSeriesValues
+        );
+
+        // Configurar propiedades de la serie
+        $series->setPlotDirection(DataSeries::DIRECTION_COL);
+
+        // Configurar área de ploteo
+        $plotArea = new PlotArea(null, [$series]);
+
+        // Configurar leyenda
+        $legend = new Legend(Legend::POSITION_BOTTOM, null, false);
+
+        // Crear título del gráfico
+        $chartTitle = new Title($title);
+
+        // Crear el gráfico
+        $chart = new Chart('trendChart', $chartTitle, $legend, $plotArea);
+        $chart->setTopLeftPosition($chartPosition);
+        $chart->setBottomRightPosition(chr(ord(substr($chartPosition, 0, 1)) + 6) . (intval(substr($chartPosition, 1)) + 16));
+
+        // Agregar gráfico a la hoja
+        $sheet->addChart($chart);
+    }
+
+    /**
      * Crear tarjetas KPI en el resumen
      */
     private function createKPICards($sheet, $estadisticas)
     {
         $row = 4;
-        
+
         $kpis = [
             ['titulo' => 'TOTAL OPERACIONES', 'valor' => $estadisticas['total'] ?? 0, 'color' => '2196F3'],
             ['titulo' => 'EFICIENCIA (%)', 'valor' => number_format(($estadisticas['completadas'] ?? 0) / max(($estadisticas['total'] ?? 1), 1) * 100, 1) . '%', 'color' => '4CAF50'],
@@ -212,10 +328,10 @@ class ExcelReportService
             // Crear tarjeta KPI
             $range = $col . $row . ':' . chr(ord($col) + 1) . ($row + 2);
             $sheet->mergeCells($range);
-            
+
             $sheet->setCellValue($col . $row, $kpi['titulo']);
             $sheet->setCellValue($col . ($row + 1), $kpi['valor']);
-            
+
             // Estilos para la tarjeta
             $sheet->getStyle($range)->applyFromArray([
                 'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -223,10 +339,10 @@ class ExcelReportService
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THICK, 'color' => ['rgb' => '000000']]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER]
             ]);
-            
+
             $sheet->getStyle($col . $row)->getFont()->setSize(10);
             $sheet->getStyle($col . ($row + 1))->getFont()->setSize(18);
-            
+
             $col = chr(ord($col) + 3); // Saltar 3 columnas para el siguiente KPI
         }
     }
@@ -240,7 +356,7 @@ class ExcelReportService
         $row = 10;
         $sheet->setCellValue('A' . $row, 'Status');
         $sheet->setCellValue('B' . $row, 'Cantidad');
-        
+
         $data = [
             ['En Proceso', $estadisticas['en_proceso'] ?? 0],
             ['Completadas', $estadisticas['completadas'] ?? 0],
@@ -267,9 +383,14 @@ class ExcelReportService
         $dataSeriesLabels = [
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $sheet->getTitle() . '!' . 'A11:A13', null, 3)
         ];
-        
+
         $dataSeriesValues = [
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $sheet->getTitle() . '!' . 'B11:B13', null, 3)
+        ];
+
+        // Crear categorías para el gráfico
+        $plotCategories = [
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $sheet->getTitle() . '!' . 'A11:A13', null, 3)
         ];
 
         // Crear serie de datos
@@ -278,19 +399,19 @@ class ExcelReportService
             DataSeries::GROUPING_STANDARD,
             range(0, count($dataSeriesValues) - 1),
             $dataSeriesLabels,
-            null,
+            $plotCategories,
             $dataSeriesValues
         );
 
         // Configurar área de ploteo
         $plotArea = new PlotArea(null, [$series]);
-        
+
         // Configurar leyenda
         $legend = new Legend(Legend::POSITION_RIGHT, null, false);
-        
+
         // Crear título del gráfico
         $chartTitle = new Title($title);
-        
+
         // Crear el gráfico
         $chart = new Chart('chart1', $chartTitle, $legend, $plotArea);
         $chart->setTopLeftPosition($chartPosition);
@@ -346,13 +467,13 @@ class ExcelReportService
             $dataSheet->setCellValue('J' . $row, $operacion->status_manual ?? $operacion->status_calculado);
             $dataSheet->setCellValue('K' . $row, $operacion->calcularDiasTranscurridos());
             $dataSheet->setCellValue('L' . $row, $operacion->dias_objetivo ?? 5);
-            
+
             // Colorear resultado basado en performance
             $resultado = $this->calculateResult($operacion);
             $dataSheet->setCellValue('M' . $row, $resultado['texto']);
             $dataSheet->getStyle('M' . $row)->getFill()->setFillType(Fill::FILL_SOLID);
             $dataSheet->getStyle('M' . $row)->getFill()->getStartColor()->setRGB($resultado['color']);
-            
+
             $dataSheet->setCellValue('N' . $row, $operacion->comentarios ?? '');
             $dataSheet->setCellValue('O' . $row, $operacion->postOperacionesCompletas ?? 0);
             $dataSheet->setCellValue('P' . $row, $operacion->postOperacionesPendientes ?? 0);
@@ -363,7 +484,7 @@ class ExcelReportService
                 $dataSheet->getStyle($rowRange)->getFill()->setFillType(Fill::FILL_SOLID);
                 $dataSheet->getStyle($rowRange)->getFill()->getStartColor()->setRGB('F8F9FA');
             }
-            
+
             $row++;
         }
 
@@ -400,22 +521,22 @@ class ExcelReportService
     private function processMonthlyData($operaciones)
     {
         $monthlyData = [];
-        
+
         foreach ($operaciones as $operacion) {
             $month = $operacion->created_at->format('Y-m');
             if (!isset($monthlyData[$month])) {
                 $monthlyData[$month] = ['total' => 0, 'completadas' => 0, 'en_proceso' => 0];
             }
-            
+
             $monthlyData[$month]['total']++;
-            
+
             if ($operacion->status_manual === 'Done' || $operacion->status_calculado === 'Done') {
                 $monthlyData[$month]['completadas']++;
             } else {
                 $monthlyData[$month]['en_proceso']++;
             }
         }
-        
+
         return $monthlyData;
     }
 
@@ -425,19 +546,19 @@ class ExcelReportService
     private function createMonthlyChart($sheet, $monthlyData)
     {
         $row = 4;
-        
+
         // Headers
         $sheet->setCellValue('A' . $row, 'Mes');
         $sheet->setCellValue('B' . $row, 'Total');
         $sheet->setCellValue('C' . $row, 'Completadas');
         $sheet->setCellValue('D' . $row, 'En Proceso');
-        
+
         $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray([
             'font' => ['bold' => true],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E4BC6']],
             'font' => ['color' => ['rgb' => 'FFFFFF']]
         ]);
-        
+
         $currentRow = $row + 1;
         foreach ($monthlyData as $month => $data) {
             $sheet->setCellValue('A' . $currentRow, $month);
@@ -475,10 +596,10 @@ class ExcelReportService
     private function processExecutiveData($operaciones)
     {
         $execData = [];
-        
+
         foreach ($operaciones as $operacion) {
             $ejecutivo = $operacion->ejecutivo ?? 'Sin Asignar';
-            
+
             if (!isset($execData[$ejecutivo])) {
                 $execData[$ejecutivo] = [
                     'total' => 0,
@@ -489,10 +610,10 @@ class ExcelReportService
                     'total_dias' => 0
                 ];
             }
-            
+
             $execData[$ejecutivo]['total']++;
             $execData[$ejecutivo]['total_dias'] += $operacion->calcularDiasTranscurridos();
-            
+
             if ($operacion->status_manual === 'Done') {
                 $execData[$ejecutivo]['completadas']++;
             } elseif ($operacion->status_manual === 'Out of Metric') {
@@ -501,15 +622,15 @@ class ExcelReportService
                 $execData[$ejecutivo]['en_proceso']++;
             }
         }
-        
+
         // Calcular promedios
         foreach ($execData as $ejecutivo => $data) {
-            $execData[$ejecutivo]['promedio_dias'] = $data['total'] > 0 ? 
+            $execData[$ejecutivo]['promedio_dias'] = $data['total'] > 0 ?
                 round($data['total_dias'] / $data['total'], 1) : 0;
             $execData[$ejecutivo]['eficiencia'] = $data['total'] > 0 ?
                 round(($data['completadas'] / $data['total']) * 100, 1) : 0;
         }
-        
+
         return $execData;
     }
 
@@ -520,17 +641,17 @@ class ExcelReportService
     {
         $row = 4;
         $headers = ['Ejecutivo', 'Total Ops', 'Completadas', 'En Proceso', 'Fuera Métrica', 'Promedio Días', 'Eficiencia %'];
-        
+
         foreach ($headers as $col => $header) {
             $sheet->setCellValue(chr(65 + $col) . $row, $header);
         }
-        
+
         $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E4BC6']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
         ]);
-        
+
         $currentRow = $row + 1;
         foreach ($execData as $ejecutivo => $data) {
             $sheet->setCellValue('A' . $currentRow, $ejecutivo);
@@ -540,15 +661,15 @@ class ExcelReportService
             $sheet->setCellValue('E' . $currentRow, $data['fuera_metrica']);
             $sheet->setCellValue('F' . $currentRow, $data['promedio_dias']);
             $sheet->setCellValue('G' . $currentRow, $data['eficiencia'] . '%');
-            
+
             // Colorear eficiencia
             $eficienciaColor = $data['eficiencia'] >= 80 ? '4CAF50' : ($data['eficiencia'] >= 60 ? 'FF9800' : 'F44336');
             $sheet->getStyle('G' . $currentRow)->getFill()->setFillType(Fill::FILL_SOLID);
             $sheet->getStyle('G' . $currentRow)->getFill()->getStartColor()->setRGB($eficienciaColor);
-            
+
             $currentRow++;
         }
-        
+
         // Autoajustar columnas
         foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
@@ -562,7 +683,7 @@ class ExcelReportService
     {
         $dias = $operacion->calcularDiasTranscurridos();
         $target = $operacion->dias_objetivo ?? 5;
-        
+
         if ($operacion->status_manual === 'Done') {
             if ($dias <= $target) {
                 return ['texto' => 'Completado a Tiempo', 'color' => '4CAF50'];
@@ -588,13 +709,13 @@ class ExcelReportService
     public function save($filename)
     {
         $writer = new Xlsx($this->spreadsheet);
-        
+
         // Asegurar que el directorio existe
         $directory = dirname($filename);
         if (!file_exists($directory)) {
             mkdir($directory, 0755, true);
         }
-        
+
         $writer->save($filename);
         return $filename;
     }
@@ -605,12 +726,12 @@ class ExcelReportService
     public function output()
     {
         $writer = new Xlsx($this->spreadsheet);
-        
+
         ob_start();
         $writer->save('php://output');
         $content = ob_get_contents();
         ob_end_clean();
-        
+
         return $content;
     }
 }
