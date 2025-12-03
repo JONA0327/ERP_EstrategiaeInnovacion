@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Logistica;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\Logistica\operacionLogistica;
-use App\Models\Logistica\operacionComentario;
+use App\Models\Logistica\OperacionLogistica;
+use App\Models\Logistica\OperacionComentario;
 use App\Models\Logistica\Cliente;
 use App\Models\Logistica\AgenteAduanal;
 use App\Models\Logistica\Transporte;
-use App\Models\Logistica\Postoperacion;
-use App\Models\Logistica\Postoperacionoperacion;
+use App\Models\Logistica\PostOperacion;
+use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Logistica\Aduana;
 use App\Models\Logistica\Pedimento;
@@ -22,7 +22,7 @@ use App\Services\PedimentoImportService;
 use App\Services\ExcelReportService;
 use App\Services\ExcelChartService;
 
-class operacionLogisticaController extends Controller
+class OperacionLogisticaController extends Controller
 {
     public function index()
     {
@@ -1573,7 +1573,7 @@ class operacionLogisticaController extends Controller
     public function indexPostoperaciones()
     {
         try {
-            $postoperaciones = Postoperacion::with('operacionLogistica')
+            $postoperaciones = PostOperacion::with('operacionLogistica')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -1616,7 +1616,7 @@ class operacionLogisticaController extends Controller
                 'operacion_logistica_id' => 'nullable|exists:operaciones_logisticas,id'
             ]);
 
-            $postoperacion = Postoperacion::create([
+            $postoperacion = PostOperacion::create([
                 'nombre' => $validatedData['nombre'],
                 'descripcion' => $validatedData['descripcion'] ?? null,
                 'operacion_logistica_id' => $validatedData['operacion_logistica_id'] ?? null,
@@ -1650,7 +1650,7 @@ class operacionLogisticaController extends Controller
     public function markPostoperacionDone($id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
+            $postoperacion = PostOperacion::findOrFail($id);
 
             $postoperacion->update([
                 'status' => 'Completado',
@@ -1676,7 +1676,7 @@ class operacionLogisticaController extends Controller
     public function destroyPostoperacion($id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
+            $postoperacion = PostOperacion::findOrFail($id);
             $postoperacion->delete();
 
             return response()->json([
@@ -1723,12 +1723,12 @@ class operacionLogisticaController extends Controller
             }
 
             // Obtener TODAS las post-operaciones globales (plantillas)
-            $postoperacionesGlobales = Postoperacion::where('status', 'Plantilla')
+            $postoperacionesGlobales = PostOperacion::where('status', 'Plantilla')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
             // Obtener las asignaciones especficas de esta operacion
-            $asignacionesEspecificas = Postoperacionoperacion::where('operacion_logistica_id', $operacionId)
+            $asignacionesEspecificas = PostoperacionOperacion::where('operacion_logistica_id', $operacionId)
                 ->with('postoperacion')
                 ->get()
                 ->keyBy('post_operacion_id'); // Indexar por ID de post-operacion para bsqueda rpida
@@ -1776,7 +1776,7 @@ class operacionLogisticaController extends Controller
     public function updatePostoperacionEstado(Request $request, $id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
+            $postoperacion = PostOperacion::findOrFail($id);
 
             $validatedData = $request->validate([
                 'estado' => 'required|in:Completado,No Aplica,Pendiente'
@@ -1810,7 +1810,7 @@ class operacionLogisticaController extends Controller
     public function indexPostoperacionesGlobales()
     {
         try {
-            $postoperaciones = Postoperacion::whereNull('operacion_logistica_id')
+            $postoperaciones = PostOperacion::whereNull('operacion_logistica_id')
                 ->orderBy('nombre')
                 ->get();
 
@@ -1847,7 +1847,7 @@ class operacionLogisticaController extends Controller
                 'descripcion' => 'nullable|string'
             ]);
 
-            $postoperacion = Postoperacion::create([
+            $postoperacion = PostOperacion::create([
                 'nombre' => $validatedData['nombre'],
                 'descripcion' => $validatedData['descripcion'] ?? null,
                 'operacion_logistica_id' => null, // Global
@@ -1881,7 +1881,7 @@ class operacionLogisticaController extends Controller
     public function destroyPostoperacionGlobal($id)
     {
         try {
-            $postoperacion = Postoperacion::whereNull('operacion_logistica_id')->findOrFail($id);
+            $postoperacion = PostOperacion::whereNull('operacion_logistica_id')->findOrFail($id);
             $postoperacion->delete();
 
             return response()->json([
@@ -2003,7 +2003,7 @@ class operacionLogisticaController extends Controller
             $validatedData = ['comentario' => $comentarioTexto];
 
             // Buscar el comentario especfico a actualizar
-            $comentario = operacionComentario::findOrFail($id);
+            $comentario = OperacionComentario::findOrFail($id);
 
             // Verificar que el comentario a editar no sea del sistema
             if (in_array($comentario->usuario_nombre, ['Sistema', 'Sistema Automtico', 'Sistema de Prueba'])) {
@@ -2201,13 +2201,13 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Verificar que la post-operacion global existe
-                $postoperacionGlobal = Postoperacion::find($postoperacionId);
+                $postoperacionGlobal = PostOperacion::find($postoperacionId);
                 if (!$postoperacionGlobal) {
                     continue;
                 }
 
                 // Buscar si ya existe una asignacin para esta operacion
-                $asignacionExistente = Postoperacionoperacion::where('post_operacion_id', $postoperacionId)
+                $asignacionExistente = PostoperacionOperacion::where('post_operacion_id', $postoperacionId)
                     ->where('operacion_logistica_id', $operacionId)
                     ->first();
 
@@ -2227,7 +2227,7 @@ class operacionLogisticaController extends Controller
                         $actualizados++;
                     } else {
                         // Crear nueva asignacin
-                        Postoperacionoperacion::create([
+                        PostoperacionOperacion::create([
                             'post_operacion_id' => $postoperacionId,
                             'operacion_logistica_id' => $operacionId,
                             'status' => $estado,
@@ -2913,7 +2913,7 @@ class operacionLogisticaController extends Controller
                 ->get();
 
             // Obtener post-operaciones a travs de la tabla pivot
-            $postoperaciones = \App\Models\Logistica\Postoperacionoperacion::where('operacion_logistica_id', $operacion->id)
+            $postoperaciones = \App\Models\Logistica\PostoperacionOperacion::where('operacion_logistica_id', $operacion->id)
                 ->with('postoperacion')
                 ->orderBy('created_at', 'desc')
                 ->get();
