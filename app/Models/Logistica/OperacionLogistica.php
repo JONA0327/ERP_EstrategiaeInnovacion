@@ -129,7 +129,7 @@ class OperacionLogistica extends Model
      * - 'cliente' (texto) en lugar de 'cliente_id' (FK)
      * - 'agente_aduanal' (texto) en lugar de 'agente_aduanal_id' (FK)
      * - 'transporte' (texto) en lugar de 'transporte_id' (FK)
-     * 
+     *
      * Las columnas FK fueron eliminadas en la migración:
      * 2025_11_25_171611_fix_post_operaciones_and_clean_operaciones_logisticas.php
      */
@@ -236,9 +236,9 @@ class OperacionLogistica extends Model
     public function crearComentarioInicialOperacion($comentarioInicial = null)
     {
         $comentario = $comentarioInicial ?: ($this->comentarios_campo ?: 'Operación registrada en el sistema');
-        
+
         return $this->crearComentario(
-            $comentario, 
+            $comentario,
             'creacion',
             ['nombre' => 'Sistema', 'id' => null]
         );
@@ -330,6 +330,15 @@ class OperacionLogistica extends Model
     public function calcularStatusAutomatico()
     {
         return $this->calcularDiasTransito();
+    }
+
+    /**
+     * Calcular días transcurridos (alias para calcularDiasTransito para compatibilidad)
+     */
+    public function calcularDiasTranscurridos()
+    {
+        $this->calcularDiasTransito();
+        return $this->dias_transcurridos_calculados ?? 0;
     }
 
     /**
@@ -461,7 +470,7 @@ class OperacionLogistica extends Model
      */
     public function generarHistorialCambioStatus($resultado, $esManual = false, $accionManual = null)
     {
-        // Si es creación inicial, no crear historial duplicado aquí 
+        // Si es creación inicial, no crear historial duplicado aquí
         // porque se maneja en crearComentarioInicialOperacion()
         if (str_contains($accionManual ?? '', 'Creación') || str_contains($accionManual ?? '', 'Registro inicial')) {
             return null;
@@ -520,7 +529,7 @@ class OperacionLogistica extends Model
             // TAMBIÉN crear comentario en el nuevo sistema
             $tipoAccion = $esManual ? 'cambio_manual_status' : 'actualizacion_automatica';
             $this->crearComentario($descripcion, $tipoAccion);
-            
+
             return $historial;
         }
 

@@ -123,11 +123,11 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::delete('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'clear']);
     Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
     Route::get('/logistica/pedimentos/subcategorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getSubcategorias']);
-    
+
     // Rutas para verificar existencia de datos
     Route::get('/logistica/aduanas/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkAduanas']);
     Route::get('/logistica/pedimentos/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkPedimentos']);
-    
+
     // Rutas para búsqueda de empleados (solo admin)
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/logistica/empleados/search', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'searchEmployees']);
@@ -141,9 +141,12 @@ Route::middleware(['auth','area.logistica'])->group(function () {
 
     // Ruta para envío de reportes por correo con CC
     Route::post('/logistica/reportes/enviar-correo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'enviarReporte'])->name('logistica.reportes.enviar-correo');
-    
+
     // Ruta para exportar Excel profesional
     Route::get('/logistica/reportes/export-excel', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportExcelProfesional'])->name('logistica.reportes.export-excel');
+
+    // Ruta para limpiar archivos temporales
+    Route::delete('/logistica/reportes/limpiar-temporales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'limpiarArchivosTemporales'])->name('logistica.reportes.limpiar-temporales');
 
     // Rutas para Catálogo de Correos CC
     Route::prefix('logistica/correos-cc')->name('logistica.correos-cc.')->group(function () {
@@ -155,7 +158,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         Route::put('/{correoCC}', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'update'])->name('update');
         Route::delete('/{correoCC}', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'destroy'])->name('destroy');
         Route::patch('/{correoCC}/toggle-activo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'toggleActivo'])->name('toggle-activo');
-        
+
         // API endpoints para obtener correos CC
         Route::get('/api', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'api'])->name('api');
         Route::get('/api/por-tipo', [\App\Http\Controllers\Logistica\LogisticaCorreoCCController::class, 'apiPorTipo'])->name('api.por-tipo');
