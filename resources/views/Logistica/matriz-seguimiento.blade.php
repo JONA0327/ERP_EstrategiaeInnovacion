@@ -3,7 +3,7 @@
 @section('title', 'Matriz de Seguimiento - Logística')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/logistica/matriz-seguimiento.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}">
 @endpush
 
 @push('scripts')
@@ -11,7 +11,7 @@
         // Variable global para transportes
         window.transportes = @json($transportes->groupBy('tipo_operacion'));
     </script>
-    <script src="{{ asset('js/logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
+    <script src="{{ asset('js/Logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
 @endpush
 
 @section('content')

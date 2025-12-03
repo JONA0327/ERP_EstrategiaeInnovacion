@@ -3,8 +3,8 @@
 @section('title','Reportes - Logística')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/logistica/matriz-seguimiento.css') }}">
-    <link href="{{ asset('css/logistica/export-styles.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}">
+    <link href="{{ asset('css/Logistica/export-styles.css') }}" rel="stylesheet">
 @endpush
 
 {{-- Cargar Chart.js directamente (evitar conflictos con stacks) --}}
