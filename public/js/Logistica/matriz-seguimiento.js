@@ -1222,7 +1222,7 @@ function cargarPostOperacionesPorOperacion(operacionId) {
     fetch(`/logistica/operaciones/${operacionId}/post-operaciones`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.postOperaciones && Array.isArray(data.postOperaciones)) {
                 mostrarPostOperacionesOperacion(data.postOperaciones);
             } else {
                 document.getElementById('contenidoPostOperaciones').innerHTML = `
@@ -1244,6 +1244,16 @@ function cargarPostOperacionesPorOperacion(operacionId) {
 
 function mostrarPostOperacionesOperacion(postOperaciones) {
     const contenedor = document.getElementById('contenidoPostOperaciones');
+    
+    // Validar que postOperaciones sea un array válido
+    if (!postOperaciones || !Array.isArray(postOperaciones)) {
+        contenedor.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <p>Error: Datos de post-operaciones no válidos</p>
+            </div>
+        `;
+        return;
+    }
     
     if (postOperaciones.length === 0) {
         contenedor.innerHTML = `

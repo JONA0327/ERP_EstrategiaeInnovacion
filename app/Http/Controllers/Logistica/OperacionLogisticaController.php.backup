@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Logistica;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\Logistica\operacionLogistica;
-use App\Models\Logistica\operacionComentario;
+use App\Models\Logistica\OperacionLogistica;
+use App\Models\Logistica\OperacionComentario;
 use App\Models\Logistica\Cliente;
 use App\Models\Logistica\AgenteAduanal;
 use App\Models\Logistica\Transporte;
-use App\Models\Logistica\Postoperacion;
-use App\Models\Logistica\Postoperacionoperacion;
+use App\Models\Logistica\PostOperacion;
+use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Logistica\Aduana;
 use App\Models\Logistica\Pedimento;
@@ -22,14 +22,14 @@ use App\Services\PedimentoImportService;
 use App\Services\ExcelReportService;
 use App\Services\ExcelChartService;
 
-class operacionLogisticaController extends Controller
+class OperacionLogisticaController extends Controller
 {
     public function index()
     {
-        // *** VERIFICACION AUTOMATICA DE STATUS AL CONSULTAR ***
-        $this->verificarYActualizarStatusoperaciones();
+        // *** VERIFICACIÃƒâ€œN AUTOMÃƒÂTICA DE STATUS AL CONSULTAR ***
+        $this->verificarYActualizarStatusOperaciones();
 
-        $operaciones = operacionLogistica::with(['ejecutivo', 'postoperacion'])
+        $operaciones = OperacionLogistica::with(['ejecutivo', 'postOperacion'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -50,23 +50,23 @@ class operacionLogisticaController extends Controller
         // Para ejecutivos normales (no admin), solo mostrar sus clientes asignados
         // Para admin, mostrar todos los clientes
         if (!$esAdmin && $empleadoActual) {
-            // Solo mostrar clientes asignados especficamente a este ejecutivo
+            // Solo mostrar clientes asignados especÃƒÂ­ficamente a este ejecutivo
             $clientes = Cliente::where('ejecutivo_asignado_id', $empleadoActual->id)
                 ->orderBy('cliente')->get();
         } elseif ($esAdmin) {
             // Administrador ve todos los clientes
             $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->get();
         } else {
-            // Si no es admin y no se encontr el empleado, no mostrar clientes
+            // Si no es admin y no se encontrÃƒÂ³ el empleado, no mostrar clientes
             $clientes = collect();
         }
 
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->get();
-        // Solo empleados del rea de LOGISTICA
+        // Solo empleados del ÃƒÂ¡rea de logÃƒÂ­stica
         $empleados = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
+                $query->where('area', 'like', '%LogÃƒÂ­stica%')
                       ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
+                      ->orWhere('area', 'like', '%LOGÃƒÂSTICA%')
                       ->orWhere('area', 'like', '%LOGISTICA%');
             })
             ->orderBy('nombre')
@@ -104,21 +104,21 @@ class operacionLogisticaController extends Controller
         // Agregar pedimentos
         $pedimentos = \App\Models\Logistica\Pedimento::orderBy('clave')->paginate(15, ['*'], 'pedimentos_page');
 
-        // Solo empleados del rea de LOGISTICA
+        // Solo empleados del ÃƒÂ¡rea de logÃƒÂ­stica
         $ejecutivos = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
+                $query->where('area', 'like', '%LogÃƒÂ­stica%')
                       ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
+                      ->orWhere('area', 'like', '%LOGÃƒÂSTICA%')
                       ->orWhere('area', 'like', '%LOGISTICA%');
             })
             ->orderBy('nombre')
             ->paginate(15, ['*'], 'ejecutivos_page');
 
-        // Obtener todos los ejecutivos para el select de asignacin
+        // Obtener todos los ejecutivos para el select de asignaciÃƒÂ³n
         $todosEjecutivos = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
+                $query->where('area', 'like', '%LogÃƒÂ­stica%')
                       ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
+                      ->orWhere('area', 'like', '%LOGÃƒÂSTICA%')
                       ->orWhere('area', 'like', '%LOGISTICA%');
             })
             ->orderBy('nombre')
@@ -130,7 +130,7 @@ class operacionLogisticaController extends Controller
         return view('Logistica.catalogos', compact('clientes', 'agentesAduanales', 'transportes', 'ejecutivos', 'todosEjecutivos', 'aduanas', 'pedimentos', 'correosCC', 'empleadoActual', 'esAdmin'));
     }
 
-    // Reportes: pgina con export y grfico
+    // Reportes: pÃƒÂ¡gina con export y grÃƒÂ¡fico
     public function reportes(Request $request)
     {
         // Obtener usuario actual y verificar permisos
@@ -146,8 +146,8 @@ class operacionLogisticaController extends Controller
         }
 
         // Construir query base
-        $query = operacionLogistica::with('ejecutivo');
-        $statsQuery = operacionLogistica::query();
+        $query = OperacionLogistica::with('ejecutivo');
+        $statsQuery = OperacionLogistica::query();
 
         // Si no es admin, filtrar solo sus operaciones
         if (!$esAdmin && $empleadoActual) {
@@ -156,7 +156,7 @@ class operacionLogisticaController extends Controller
         }
 
         // Aplicar filtros
-        // Filtro por perodo (semanal, mensual, anual)
+        // Filtro por perÃƒÂ­odo (semanal, mensual, anual)
         if ($request->filled('periodo')) {
             $periodo = $request->periodo;
             if ($periodo === 'semanal') {
@@ -171,7 +171,7 @@ class operacionLogisticaController extends Controller
             }
         }
 
-        // Filtro por mes y ao especficos
+        // Filtro por mes y aÃƒÂ±o especÃƒÂ­ficos
         if ($request->filled('mes') && $request->filled('anio')) {
             $query->whereMonth('created_at', $request->mes)
                   ->whereYear('created_at', $request->anio);
@@ -250,7 +250,7 @@ class operacionLogisticaController extends Controller
             'done' => $done,
         ];
 
-        // *** DATOS PARA ANLISIS TEMPORAL ***
+        // *** DATOS PARA ANÃƒÂLISIS TEMPORAL ***
         $analisisTemporalQuery = clone $statsQuery;
         $datosTemporales = $analisisTemporalQuery->select([
             'id', 'cliente', 'ejecutivo', 'dias_transcurridos_calculados',
@@ -258,7 +258,7 @@ class operacionLogisticaController extends Controller
             'fecha_embarque', 'fecha_arribo_aduana', 'created_at'
         ])->get();
 
-        // Preparar datos de comportamiento por das transcurridos vs target
+        // Preparar datos de comportamiento por dÃƒÂ­as transcurridos vs target
         $comportamientoTemporal = [];
         $clientes_unicos = [];
 
@@ -282,7 +282,7 @@ class operacionLogisticaController extends Controller
                 'id' => $op->id,
                 'cliente' => $op->cliente,
                 'ejecutivo' => $op->ejecutivo,
-                'dias_transcurridos' => (int)round($diasTranscurridos),
+                'dias_transcurridos' => $diasTranscurridos,
                 'target' => $target,
                 'retraso' => $retraso,
                 'status' => $statusFinal,
@@ -290,13 +290,13 @@ class operacionLogisticaController extends Controller
                 'porcentaje_progreso' => min(100, ($diasTranscurridos / max($target, 1)) * 100)
             ];
 
-            // Recopilar clientes nicos
+            // Recopilar clientes ÃƒÂºnicos
             if (!in_array($op->cliente, $clientes_unicos)) {
                 $clientes_unicos[] = $op->cliente;
             }
         }
 
-        // Estadsticas del anlisis temporal
+        // EstadÃƒÂ­sticas del anÃƒÂ¡lisis temporal
         $statsTemporales = [
             'en_tiempo' => collect($comportamientoTemporal)->where('categoria', 'En Tiempo')->count(),
             'en_riesgo' => collect($comportamientoTemporal)->where('categoria', 'En Riesgo')->count(),
@@ -308,7 +308,7 @@ class operacionLogisticaController extends Controller
             'total_operaciones' => count($comportamientoTemporal)
         ];
 
-        // Para el filtro: obtener clientes nicos simples
+        // Para el filtro: obtener clientes ÃƒÂºnicos simples
         $clientes = array_unique(array_filter($clientes_unicos));
         sort($clientes);
 
@@ -317,7 +317,7 @@ class operacionLogisticaController extends Controller
         try {
             if ($empleadoActual && $empleadoActual->nombre) {
                 // Obtener clientes que tienen operaciones con este ejecutivo
-                $clientesDelEjecutivo = operacionLogistica::where('ejecutivo', $empleadoActual->nombre)
+                $clientesDelEjecutivo = OperacionLogistica::where('ejecutivo', $empleadoActual->nombre)
                     ->whereNotNull('cliente')
                     ->where('cliente', '!=', '')
                     ->distinct()
@@ -364,9 +364,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Obtener operaciones de un cliente especfico para reporte por correo
+     * Obtener operaciones de un cliente especÃƒÂ­fico para reporte por correo
      */
-    public function getoperacionesPorCliente(Request $request)
+    public function getOperacionesPorCliente(Request $request)
     {
         try {
             $clienteNombre = $request->cliente;
@@ -379,11 +379,11 @@ class operacionLogisticaController extends Controller
             }
 
             // Obtener operaciones del cliente
-            $operaciones = operacionLogistica::where('cliente', $clienteNombre)
+            $operaciones = OperacionLogistica::where('cliente', $clienteNombre)
                 ->orderByDesc('created_at')
                 ->get();
 
-            // Buscar cliente en catlogo para obtener correos
+            // Buscar cliente en catÃƒÂ¡logo para obtener correos
             $clienteData = Cliente::where('cliente', $clienteNombre)->first();
             $correos = $clienteData && $clienteData->correos ? $clienteData->correos : [];
 
@@ -398,11 +398,11 @@ class operacionLogisticaController extends Controller
                 };
 
                 // Obtener post-operaciones
-                $postOps = $op->postoperaciones ?? collect();
+                $postOps = $op->postOperaciones ?? collect();
                 $postOpsCompletas = $postOps->where('estado', 'completa')->pluck('nombre')->join(', ');
                 $postOpsPendientes = $postOps->where('estado', 'pendiente')->pluck('nombre')->join(', ');
 
-                // Obtener comentarios del campo texto (no es una relacin)
+                // Obtener comentarios del campo texto (no es una relaciÃƒÂ³n)
                 $comentariosTexto = $op->comentarios ?? '-';
 
                 return [
@@ -451,7 +451,7 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // Exportar CSV de operaciones - MISMO FORMATO que envio por correo
+    // Exportar CSV de operaciones - MISMO FORMATO que envÃ­o por correo
     public function exportCSV(Request $request)
     {
         try {
@@ -468,7 +468,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Construir query con los mismos filtros que usa enviarReporte
-            $query = operacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+            $query = OperacionLogistica::with('ejecutivo');
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -481,7 +481,7 @@ class operacionLogisticaController extends Controller
             // Obtener operaciones
             $operaciones = $query->get();
 
-            // Crear archivo temporal usando el MISMO metodo que enviarReporte
+            // Crear archivo temporal usando el MISMO mÃ©todo que enviarReporte
             $archivoInfo = $this->generarArchivoReporte($operaciones, 'csv');
 
             // Retornar descarga directa
@@ -508,7 +508,7 @@ class operacionLogisticaController extends Controller
             'clientes' => $clientes,
             'agentesAduanales' => $agentesAduanales,
             'ejecutivos' => $ejecutivos,
-            'tiposoperacion' => ['Aerea', 'Terrestre', 'Maritima', 'Ferrocarril'],
+            'tiposOperacion' => ['Aerea', 'Terrestre', 'Maritima', 'Ferrocarril'],
             'operaciones' => ['Exportacion', 'Importacion'],
             'statusOptions' => ['In Process', 'Done', 'Out of Metric']
         ]);
@@ -517,11 +517,11 @@ class operacionLogisticaController extends Controller
     public function store(Request $request)
     {
         try {
-            // validacion SEGN FLUJO CORPORATIVO - Solo campos obligatorios al crear
+            // VALIDACIÃƒâ€œN SEGÃƒÅ¡N FLUJO CORPORATIVO - Solo campos obligatorios al crear
             $request->validate([
-            // === CAMPOS OBLIGATORIOS AL INICIO (12 mximo) ===
+            // === CAMPOS OBLIGATORIOS AL INICIO (12 mÃƒÂ¡ximo) ===
 
-            // A. Informacin Bsica
+            // A. InformaciÃƒÂ³n BÃƒÂ¡sica
             'operacion' => 'required|in:EXPORTACION,IMPORTACION',
             'tipo_operacion_enum' => 'required|in:Terrestre,Aerea,Maritima,Ferrocarril',
 
@@ -529,10 +529,10 @@ class operacionLogisticaController extends Controller
             'cliente' => 'required|string|max:255',
             'ejecutivo' => 'required|string|max:255',
 
-            // C. Fecha Inicial (la nica obligatoria)
+            // C. Fecha Inicial (la ÃƒÂºnica obligatoria)
             'fecha_embarque' => 'required|date',
 
-            // D. Informacin Inicial Adicional
+            // D. InformaciÃƒÂ³n Inicial Adicional
             'proveedor_o_cliente' => 'required|string|max:255',
             'no_factura' => 'required|string|max:255',
             'clave' => 'required|string|max:100',
@@ -540,7 +540,7 @@ class operacionLogisticaController extends Controller
             'aduana' => 'required|string|max:255',
             'agente_aduanal' => 'required|string|max:255',
 
-            // === CAMPOS OPCIONALES (se llenan despus) ===
+            // === CAMPOS OPCIONALES (se llenan despuÃƒÂ©s) ===
             'referencia_aa' => 'nullable|string|max:255',
             'no_pedimento' => 'nullable|string|max:255',
             'transporte' => 'nullable|string|max:255',
@@ -553,7 +553,7 @@ class operacionLogisticaController extends Controller
             'dias_transito' => 'nullable|integer|min:0',
         ]);
 
-        // Crear la operacion - el status se calcula automticamente en el modelo
+        // Crear la operaciÃƒÂ³n - el status se calcula automÃƒÂ¡ticamente en el modelo
         $data = [
             'ejecutivo' => $request->ejecutivo,
             'cliente' => $request->cliente,
@@ -575,28 +575,28 @@ class operacionLogisticaController extends Controller
             'fecha_arribo_planta' => $request->fecha_arribo_planta,
             'resultado' => $request->resultado,
             'comentarios' => $request->comentarios,
-            // Target se calcula automticamente basado en tipo_operacion_enum
-            'target' => null, // Se calcular automticamente
+            // Target se calcula automÃƒÂ¡ticamente basado en tipo_operacion_enum
+            'target' => null, // Se calcularÃƒÂ¡ automÃƒÂ¡ticamente
             // NO incluir status_manual como null - dejamos que use el default de la base de datos
-            // status_calculado y color_status se calculan automticamente en el modelo
+            // status_calculado y color_status se calculan automÃƒÂ¡ticamente en el modelo
         ];
 
-        $operacion = operacionLogistica::create($data);
+        $operacion = OperacionLogistica::create($data);
 
-        // Calcular target automticamente basado en el tipo de operacion
+        // Calcular target automÃƒÂ¡ticamente basado en el tipo de operaciÃƒÂ³n
         $targetCalculado = $operacion->calcularTargetAutomatico();
         if ($targetCalculado !== null) {
             $operacion->target = $targetCalculado;
         }
 
-        // Calcular resultado y das en trnsito automticamente
+        // Calcular resultado y dÃƒÂ­as en trÃƒÂ¡nsito automÃƒÂ¡ticamente
         $operacion->calcularDiasTransito();
 
         // *** GUARDAR PRIMERO, LUEGO CALCULAR STATUS ***
         $operacion->save();
 
-        // Crear comentario inicial (incluye el status automticamente)
-        $operacion->crearComentarioInicialoperacion($request->comentarios);
+        // Crear comentario inicial (incluye el status automÃƒÂ¡ticamente)
+        $operacion->crearComentarioInicialOperacion($request->comentarios);
 
         // Calcular status final y guardar
         $resultado = $operacion->calcularStatusPorDias();
@@ -604,19 +604,19 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'operacion creada exitosamente',
+                'message' => 'OperaciÃƒÂ³n creada exitosamente',
                 'operacion' => $operacion->fresh()
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error al crear operacion en operacionLogisticaController@store', [
+            Log::error('Error al crear operaciÃƒÂ³n en OperacionLogisticaController@store', [
                 'error' => $e->getMessage(),
                 'request_data' => $request->all()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear la operacion: ' . $e->getMessage()
+                'message' => 'Error al crear la operaciÃƒÂ³n: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -624,9 +624,9 @@ class operacionLogisticaController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
-            // validacion
+            // ValidaciÃƒÂ³n
             $request->validate([
                 'operacion' => 'required|in:EXPORTACION,IMPORTACION',
                 'tipo_operacion_enum' => 'required|in:Terrestre,Aerea,Maritima,Ferrocarril',
@@ -686,12 +686,12 @@ class operacionLogisticaController extends Controller
                 'comentarios' => $request->comentarios,
             ];
 
-            // Solo incluir status_manual si se enva y no es null
+            // Solo incluir status_manual si se envÃƒÂ­a y no es null
             if ($request->has('status_manual') && !is_null($request->status_manual)) {
                 $updateData['status_manual'] = $request->status_manual;
             }
 
-            // Verificar si cambi el comentario para crear nueva entrada
+            // Verificar si cambiÃƒÂ³ el comentario para crear nueva entrada
             $comentarioAnterior = $operacion->comentarios;
             $comentarioNuevo = $request->comentarios;
 
@@ -703,7 +703,7 @@ class operacionLogisticaController extends Controller
                 if ($request->fecha_arribo_aduana && !$statusAnterior['fecha_arribo_aduana']) {
                     $fechasImportantesCambiaron[] = [
                         'tipo' => 'fecha_arribo_aduana',
-                        'mensaje' => 'La Mercanca lleg a la Aduana',
+                        'mensaje' => 'La Mercancía llegó a la Aduana',
                         'fecha' => $request->fecha_arribo_aduana
                     ];
                 } elseif ($request->fecha_arribo_aduana && $statusAnterior['fecha_arribo_aduana']) {
@@ -715,18 +715,18 @@ class operacionLogisticaController extends Controller
                 }
             }
             
-            // Verificar cambio en fecha modulacin
+            // Verificar cambio en fecha modulación
             if ($request->fecha_modulacion != $statusAnterior['fecha_modulacion']) {
                 if ($request->fecha_modulacion && !$statusAnterior['fecha_modulacion']) {
                     $fechasImportantesCambiaron[] = [
                         'tipo' => 'fecha_modulacion',
-                        'mensaje' => 'Mercanca fue modulada en aduana',
+                        'mensaje' => 'Mercancía fue modulada en aduana',
                         'fecha' => $request->fecha_modulacion
                     ];
                 } elseif ($request->fecha_modulacion && $statusAnterior['fecha_modulacion']) {
                     $fechasImportantesCambiaron[] = [
                         'tipo' => 'fecha_modulacion', 
-                        'mensaje' => 'Fecha de modulacin actualizada',
+                        'mensaje' => 'Fecha de modulación actualizada',
                         'fecha' => $request->fecha_modulacion
                     ];
                 }
@@ -737,7 +737,7 @@ class operacionLogisticaController extends Controller
                 if ($request->fecha_arribo_planta && !$statusAnterior['fecha_arribo_planta']) {
                     $fechasImportantesCambiaron[] = [
                         'tipo' => 'fecha_arribo_planta',
-                        'mensaje' => 'Mercanca arrib a planta/destino final',
+                        'mensaje' => 'Mercancía arribó a planta/destino final',
                         'fecha' => $request->fecha_arribo_planta
                     ];
                 } elseif ($request->fecha_arribo_planta && $statusAnterior['fecha_arribo_planta']) {
@@ -757,9 +757,9 @@ class operacionLogisticaController extends Controller
                 $this->crearRegistroHistorialFechasConsolidado($operacion, $fechasImportantesCambiaron);
             }
 
-            // Si se cambi el comentario, crear NUEVO registro en el historial
+            // Si se cambiÃƒÂ³ el comentario, crear NUEVO registro en el historial
             if ($comentarioNuevo && $comentarioNuevo !== $comentarioAnterior) {
-                // Obtener el registro ms reciente para copiar sus datos de status
+                // Obtener el registro mÃƒÂ¡s reciente para copiar sus datos de status
                 $historialReciente = $operacion->historicoMatrizSgm()
                     ->orderBy('created_at', 'desc')
                     ->first();
@@ -770,7 +770,7 @@ class operacionLogisticaController extends Controller
                     $operacion->historicoMatrizSgm()->create([
                         'fecha_registro' => now(),
                         'fecha_arribo_aduana' => $historialReciente->fecha_arribo_aduana,
-                        'dias_transcurridos' => (int)round($historialReciente->dias_transcurridos ?? 0),
+                        'dias_transcurridos' => $historialReciente->dias_transcurridos,
                         'target_dias' => $historialReciente->target_dias,
                         'color_status' => $historialReciente->color_status,
                         'operacion_status' => $historialReciente->operacion_status,
@@ -784,20 +784,20 @@ class operacionLogisticaController extends Controller
                     ]);
                 }
 
-                // Tambin crear entrada en el sistema de comentarios
+                // TambiÃƒÂ©n crear entrada en el sistema de comentarios
                 $operacion->crearComentario(
                     $comentarioNuevo,
                     'edicion_comentario'
                 );
             }
 
-            // Recalcular target si cambi el tipo de operacion
+            // Recalcular target si cambiÃƒÂ³ el tipo de operaciÃƒÂ³n
             $targetCalculado = $operacion->calcularTargetAutomatico();
             if ($targetCalculado !== null) {
                 $operacion->target = $targetCalculado;
             }
 
-            // Recalcular resultado y das en trnsito automticamente
+            // Recalcular resultado y dÃƒÂ­as en trÃƒÂ¡nsito automÃƒÂ¡ticamente
             $operacion->calcularDiasTransito();
 
             $operacion->save();
@@ -807,12 +807,12 @@ class operacionLogisticaController extends Controller
 
             // SIEMPRE generar historial al editar
             if ($request->has('status_manual') && $request->status_manual !== $statusAnterior['status_manual']) {
-                // Si se cambi el status manual (especialmente a Done)
+                // Si se cambiÃƒÂ³ el status manual (especialmente a Done)
                 if ($request->status_manual === 'Done') {
                     $operacion->generarHistorialCambioStatus(
                         $resultado,
                         true,
-                        'Marcado como DONE manualmente - operacion completada'
+                        'Marcado como DONE manualmente - OperaciÃƒÂ³n completada'
                     );
                 } else {
                     $operacion->generarHistorialCambioStatus(
@@ -822,7 +822,7 @@ class operacionLogisticaController extends Controller
                     );
                 }
             } else {
-                // Edicin de campos (fechas, datos, etc) - siempre registrar
+                // EdiciÃƒÂ³n de campos (fechas, datos, etc) - siempre registrar
                 $cambios = [];
                 if ($request->fecha_arribo_aduana && $request->fecha_arribo_aduana !== $statusAnterior['status_calculado']) {
                     $cambios[] = 'fecha de aduana';
@@ -832,8 +832,8 @@ class operacionLogisticaController extends Controller
                 }
 
                 $descripcionCambio = count($cambios) > 0
-                    ? 'Actualizacin de operacion - Cambios en: ' . implode(', ', $cambios)
-                    : 'Actualizacin de operacion';
+                    ? 'ActualizaciÃƒÂ³n de operaciÃƒÂ³n - Cambios en: ' . implode(', ', $cambios)
+                    : 'ActualizaciÃƒÂ³n de operaciÃƒÂ³n';
 
                 $operacion->generarHistorialCambioStatus(
                     $resultado,
@@ -846,15 +846,15 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'operacion actualizada exitosamente',
+                'message' => 'OperaciÃƒÂ³n actualizada exitosamente',
                 'operacion' => $operacion->fresh()
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error al actualizar operacion: ' . $e->getMessage());
+            Log::error('Error al actualizar operaciÃƒÂ³n: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar la operacion: ' . $e->getMessage()
+                'message' => 'Error al actualizar la operaciÃƒÂ³n: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -873,7 +873,7 @@ class operacionLogisticaController extends Controller
         try {
             \Log::info('Datos recibidos para cliente:', $request->all());
 
-            // Convertir el nombre del cliente a maysculas
+            // Convertir el nombre del cliente a mayÃƒÂºsculas
             $nombreCliente = strtoupper($request->cliente);
 
             $request->validate([
@@ -883,7 +883,7 @@ class operacionLogisticaController extends Controller
                 'periodicidad_reporte' => 'nullable|string|max:50'
             ]);
 
-            // Verificar si el cliente ya existe (en maysculas)
+            // Verificar si el cliente ya existe (en mayÃƒÂºsculas)
             if (Cliente::whereRaw('UPPER(cliente) = ?', [$nombreCliente])->exists()) {
                 return response()->json([
                     'success' => false,
@@ -891,7 +891,7 @@ class operacionLogisticaController extends Controller
                 ], 422);
             }
 
-            // Procesar correos si se envan
+            // Procesar correos si se envÃƒÂ­an
             $correosArray = null;
             if ($request->correos) {
                 $correosArray = json_decode($request->correos, true);
@@ -915,7 +915,7 @@ class operacionLogisticaController extends Controller
             }
 
             $cliente = Cliente::create([
-                'cliente' => $nombreCliente, // Guardar en maysculas
+                'cliente' => $nombreCliente, // Guardar en mayÃƒÂºsculas
                 'ejecutivo_asignado_id' => $ejecutivoAsignadoId,
                 'correos' => $correosArray,
                 'periodicidad_reporte' => $request->periodicidad_reporte ?? 'Diario',
@@ -931,10 +931,10 @@ class operacionLogisticaController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Error de validacion en storeCliente:', $e->errors());
+            \Log::error('Error de validación en storeCliente:', $e->errors());
             return response()->json([
                 'success' => false,
-                'message' => 'Error de validacion: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Error de validación: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
         } catch (\Exception $e) {
             \Log::error('Error en storeCliente:', [
@@ -972,10 +972,10 @@ class operacionLogisticaController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Error de validacion en storeAgente:', $e->errors());
+            \Log::error('Error de validación en storeAgente:', $e->errors());
             return response()->json([
                 'success' => false,
-                'message' => 'Error de validacion: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Error de validación: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
         } catch (\Exception $e) {
             \Log::error('Error en storeAgente:', [
@@ -991,7 +991,7 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // Mtodos de actualizacin
+    // MÃƒÂ©todos de actualizaciÃƒÂ³n
     public function updateCliente(Request $request, $id)
     {
         try {
@@ -1014,7 +1014,7 @@ class operacionLogisticaController extends Controller
                 }
             }
 
-            // Convertir nombre a maysculas
+            // Convertir nombre a mayÃƒÂºsculas
             $nombreCliente = strtoupper($request->cliente);
 
             $request->validate([
@@ -1037,7 +1037,7 @@ class operacionLogisticaController extends Controller
                 'ejecutivo_asignado_id' => $request->ejecutivo_asignado_id ?? null
             ];
 
-            // Solo actualizar campos opcionales si se envan en la request
+            // Solo actualizar campos opcionales si se envÃƒÂ­an en la request
             if ($request->has('correos')) {
                 $correosArray = null;
                 if ($request->correos) {
@@ -1123,7 +1123,7 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // Mtodos de eliminacin
+    // MÃƒÂ©todos de eliminaciÃƒÂ³n
     public function destroyCliente($id)
     {
         try {
@@ -1147,7 +1147,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Verificar si tiene operaciones asociadas por el campo texto 'cliente'
-            $operacionesAsociadas = operacionLogistica::where('cliente', $cliente->cliente)->count();
+            $operacionesAsociadas = OperacionLogistica::where('cliente', $cliente->cliente)->count();
 
             if ($operacionesAsociadas > 0) {
                 return response()->json([
@@ -1251,10 +1251,10 @@ class operacionLogisticaController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Error de validacion en storeTransporte:', $e->errors());
+            \Log::error('Error de validación en storeTransporte:', $e->errors());
             return response()->json([
                 'success' => false,
-                'message' => 'Error de validacion: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Error de validación: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
         } catch (\Exception $e) {
             \Log::error('Error en storeTransporte:', [
@@ -1271,7 +1271,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Asignar mltiples clientes a un ejecutivo
+     * Asignar mÃƒÂºltiples clientes a un ejecutivo
      */
     public function asignarClientesEjecutivo(Request $request)
     {
@@ -1281,7 +1281,7 @@ class operacionLogisticaController extends Controller
             if (!$usuarioActual || !$usuarioActual->hasRole('admin')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permisos para realizar esta accin'
+                    'message' => 'No tienes permisos para realizar esta acciÃƒÂ³n'
                 ], 403);
             }
 
@@ -1330,7 +1330,7 @@ class operacionLogisticaController extends Controller
             if ($usuarioActual && $usuarioActual->hasRole('admin')) {
                 $clientes = Cliente::with('ejecutivoAsignado')->orderBy('cliente')->get();
             } elseif ($empleadoActual) {
-                // Si no es admin, solo los clientes asignados a l
+                // Si no es admin, solo los clientes asignados a ÃƒÂ©l
                 $clientes = Cliente::where('ejecutivo_asignado_id', $empleadoActual->id)
                     ->orWhereNull('ejecutivo_asignado_id')
                     ->orderBy('cliente')->get();
@@ -1352,7 +1352,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Generar historial inicial cuando se crea una operacion
+     * Generar historial inicial cuando se crea una operaciÃƒÂ³n
      */
     private function generarHistorialInicial($operacion)
     {
@@ -1362,14 +1362,14 @@ class operacionLogisticaController extends Controller
                 'operacion_logistica_id' => $operacion->id,
                 'fecha_arribo_aduana' => $operacion->fecha_arribo_aduana,
                 'fecha_registro' => now()->format('Y-m-d'),
-                'dias_transcurridos' => (int)round($operacion->dias_transcurridos_calculados ?? 0),
+                'dias_transcurridos' => $operacion->dias_transcurridos_calculados ?? 0,
                 'target_dias' => $operacion->target ?? 0,
                 'color_status' => $operacion->color_status ?? 'sin_fecha',
                 'operacion_status' => $operacion->status_calculado ?? 'In Process',
-                'observaciones' => 'operacion creada - Estado inicial'
+                'observaciones' => 'OperaciÃƒÂ³n creada - Estado inicial'
             ]);
 
-            \Log::info("Historial inicial generado para operacion ID: {$operacion->id}");
+            \Log::info("Historial inicial generado para operaciÃƒÂ³n ID: {$operacion->id}");
 
         } catch (\Exception $e) {
             \Log::error("Error generando historial inicial: " . $e->getMessage());
@@ -1377,17 +1377,17 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Obtener el historial de una operacion
-     * Ahora incluye todas las operaciones del mismo cliente y No Ped si estn disponibles
+     * Obtener el historial de una operaciÃƒÂ³n
+     * Ahora incluye todas las operaciones del mismo cliente y No Ped si estÃƒÂ¡n disponibles
      */
     public function obtenerHistorial($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'historicoMatrizSgm'
             ])->findOrFail($id);
 
-            // Obtener historial de la operacion especfica
+            // Obtener historial de la operaciÃƒÂ³n especÃƒÂ­fica
             $historialRecords = $operacion->historicoMatrizSgm()
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -1408,7 +1408,7 @@ class operacionLogisticaController extends Controller
                             (is_string($registro->fecha_registro) ? $registro->fecha_registro : $registro->fecha_registro->format('d/m/Y')) : null,
                         'fecha_arribo_aduana' => $registro->fecha_arribo_aduana ?
                             (is_string($registro->fecha_arribo_aduana) ? $registro->fecha_arribo_aduana : $registro->fecha_arribo_aduana->format('d/m/Y')) : null,
-                        'dias_transcurridos' => (int)round($registro->dias_transcurridos ?? 0),
+                        'dias_transcurridos' => $registro->dias_transcurridos ?? 0,
                         'target_dias' => $registro->target_dias ?? 0,
                         'color_status' => $registro->color_status ?? 'sin_fecha',
                         'operacion_status' => $registro->operacion_status ?? 'In Process',
@@ -1420,18 +1420,18 @@ class operacionLogisticaController extends Controller
             // Buscar otras operaciones del mismo cliente y No Ped para historial completo
             $operacionesRelacionadas = [];
             if ($operacion->cliente && $operacion->no_pedimento) {
-                $operacionesRelacionadas = operacionLogistica::where('cliente', $operacion->cliente)
+                $operacionesRelacionadas = OperacionLogistica::where('cliente', $operacion->cliente)
                     ->where('no_pedimento', $operacion->no_pedimento)
                     ->where('id', '!=', $operacion->id)
                     ->with('historicoMatrizSgm')
                     ->get();
             } else if ($operacion->cliente) {
                 // Si no hay No Ped, buscar por cliente
-                $operacionesRelacionadas = operacionLogistica::where('cliente', $operacion->cliente)
+                $operacionesRelacionadas = OperacionLogistica::where('cliente', $operacion->cliente)
                     ->where('id', '!=', $operacion->id)
                     ->with('historicoMatrizSgm')
                     ->orderBy('created_at', 'desc')
-                    ->limit(5) // Limitar a las 5 ms recientes
+                    ->limit(5) // Limitar a las 5 mÃƒÂ¡s recientes
                     ->get();
             }
 
@@ -1477,7 +1477,7 @@ class operacionLogisticaController extends Controller
                         'historial_count' => $op->historicoMatrizSgm->count()
                     ];
                 }),
-                'message' => $historial->count() > 0 ? 'Historial cargado correctamente' : 'Historial generado automticamente'
+                'message' => $historial->count() > 0 ? 'Historial cargado correctamente' : 'Historial generado automÃƒÂ¡ticamente'
             ];
 
             return response()->json($response);
@@ -1494,29 +1494,29 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Actualizar solo el status manual de una operacion (solo se puede cambiar a 'Done')
+     * Actualizar solo el status manual de una operaciÃƒÂ³n (solo se puede cambiar a 'Done')
      */
     public function updateStatus(Request $request, $id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
             $request->validate([
                 'status' => 'required|in:Done'
             ]);
 
-            // NUEVA LGICA: Solo actualizar el status MANUAL, no el automtico
+            // NUEVA LÃƒâ€œGICA: Solo actualizar el status MANUAL, no el automÃƒÂ¡tico
             $operacion->status_manual = 'Done';
             $operacion->fecha_status_manual = now();
 
-            // Recalcular el status automtico (que tomar en cuenta el status manual)
+            // Recalcular el status automÃƒÂ¡tico (que tomarÃƒÂ¡ en cuenta el status manual)
             $resultado = $operacion->calcularStatusPorDias();
 
-            // Generar historial especfico para accin manual
+            // Generar historial especÃƒÂ­fico para acciÃƒÂ³n manual
             $operacion->generarHistorialCambioStatus(
                 $resultado,
-                true, // Es accin manual
-                'operacion marcada como completada manualmente por el usuario'
+                true, // Es acciÃƒÂ³n manual
+                'OperaciÃƒÂ³n marcada como completada manualmente por el usuario'
             );
 
             // Guardar cambios
@@ -1524,8 +1524,8 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'operacion marcada como completada exitosamente',
-                'operacion' => $operacion->load(['ejecutivo', 'postoperacion'])
+                'message' => 'OperaciÃƒÂ³n marcada como completada exitosamente',
+                'operacion' => $operacion->load(['ejecutivo', 'postOperacion'])
             ]);
 
         } catch (\Exception $e) {
@@ -1537,55 +1537,55 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Eliminar una operacion
+     * Eliminar una operaciÃƒÂ³n
      */
     public function destroy($id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
             // Eliminar registros del historial primero (por integridad referencial)
             $operacion->historicoMatrizSgm()->delete();
 
-            // Eliminar la operacion
+            // Eliminar la operaciÃƒÂ³n
             $operacion->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'operacion eliminada exitosamente'
+                'message' => 'OperaciÃƒÂ³n eliminada exitosamente'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar la operacion: ' . $e->getMessage()
+                'message' => 'Error al eliminar la operaciÃƒÂ³n: ' . $e->getMessage()
             ], 500);
         }
     }
 
     // =================================
-    // MTODOS PARA POST-operacionES
+    // MÃƒâ€°TODOS PARA POST-OPERACIONES
     // =================================
 
     /**
      * Listar todas las post-operaciones
      */
-    public function indexPostoperaciones()
+    public function indexPostOperaciones()
     {
         try {
-            $postoperaciones = Postoperacion::with('operacionLogistica')
+            $postOperaciones = PostOperacion::with('operacionLogistica')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $postoperacionesData = $postoperaciones->map(function($postOp) {
+            $postOperacionesData = $postOperaciones->map(function($postOp) {
                 return [
                     'id' => $postOp->id,
                     'nombre' => $postOp->nombre,
                     'descripcion' => $postOp->descripcion,
                     'status' => $postOp->status ?? 'Pendiente',
                     'operacion_relacionada' => $postOp->operacionLogistica
-                        ? ($postOp->operacionLogistica->operacion ?? 'operacion #' . $postOp->operacionLogistica->id)
-                        : 'Sin operacion especfica',
+                        ? ($postOp->operacionLogistica->operacion ?? 'OperaciÃƒÂ³n #' . $postOp->operacionLogistica->id)
+                        : 'Sin operaciÃƒÂ³n especÃƒÂ­fica',
                     'fecha_creacion' => $postOp->created_at ? $postOp->created_at->format('d/m/Y') : '-',
                     'fecha_completado' => $postOp->fecha_completado ? $postOp->fecha_completado->format('d/m/Y H:i') : null
                 ];
@@ -1593,7 +1593,7 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'postoperaciones' => $postoperacionesData
+                'postOperaciones' => $postOperacionesData
             ]);
 
         } catch (\Exception $e) {
@@ -1605,9 +1605,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Crear nueva post-operacion
+     * Crear nueva post-operaciÃƒÂ³n
      */
-    public function storePostoperacion(Request $request)
+    public function storePostOperacion(Request $request)
     {
         try {
             $validatedData = $request->validate([
@@ -1616,7 +1616,7 @@ class operacionLogisticaController extends Controller
                 'operacion_logistica_id' => 'nullable|exists:operaciones_logisticas,id'
             ]);
 
-            $postoperacion = Postoperacion::create([
+            $postOperacion = PostOperacion::create([
                 'nombre' => $validatedData['nombre'],
                 'descripcion' => $validatedData['descripcion'] ?? null,
                 'operacion_logistica_id' => $validatedData['operacion_logistica_id'] ?? null,
@@ -1626,115 +1626,105 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'postoperacion' => $postoperacion,
-                'message' => 'Post-operacion creada exitosamente'
+                'postOperacion' => $postOperacion,
+                'message' => 'Post-operaciÃƒÂ³n creada exitosamente'
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Datos de validacion incorrectos: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Datos de validaciÃƒÂ³n incorrectos: ' . implode(', ', $e->validator->errors()->all())
             ], 400);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear post-operacion: ' . $e->getMessage()
+                'message' => 'Error al crear post-operaciÃƒÂ³n: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Marcar post-operacion como completada
+     * Marcar post-operaciÃƒÂ³n como completada
      */
-    public function markPostoperacionDone($id)
+    public function markPostOperacionDone($id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
+            $postOperacion = PostOperacion::findOrFail($id);
 
-            $postoperacion->update([
+            $postOperacion->update([
                 'status' => 'Completado',
                 'fecha_completado' => now()
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post-operacion marcada como completada'
+                'message' => 'Post-operaciÃƒÂ³n marcada como completada'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al marcar post-operacion como completada: ' . $e->getMessage()
+                'message' => 'Error al marcar post-operaciÃƒÂ³n como completada: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Eliminar post-operacion
+     * Eliminar post-operaciÃƒÂ³n
      */
-    public function destroyPostoperacion($id)
+    public function destroyPostOperacion($id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
-            $postoperacion->delete();
+            $postOperacion = PostOperacion::findOrFail($id);
+            $postOperacion->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post-operacion eliminada exitosamente'
+                'message' => 'Post-operaciÃƒÂ³n eliminada exitosamente'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar post-operacion: ' . $e->getMessage()
+                'message' => 'Error al eliminar post-operaciÃƒÂ³n: ' . $e->getMessage()
             ], 500);
         }
     }
 
     // =================================
-    // MTODOS PARA POST-operacionES POR operacion
+    // MÃƒâ€°TODOS PARA POST-OPERACIONES POR OPERACIÃƒâ€œN
     // =================================
 
     /**
-     * Obtener post-operaciones de una operacion especfica
+     * Obtener post-operaciones de una operaciÃƒÂ³n especÃƒÂ­fica
      */
-    public function getPostoperacionesByoperacion($operacionId)
+    public function getPostOperacionesByOperacion($operacionId)
     {
         try {
-            // Validar que el ID sea válido
-            if (!$operacionId || !is_numeric($operacionId)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID de operacion invalido',
-                    'postOperaciones' => []
-                ], 400);
-            }
-
-            // Obtener informacin de la operacion
-            $operacion = operacionLogistica::find($operacionId);
+            // Obtener informaciÃƒÂ³n de la operaciÃƒÂ³n
+            $operacion = OperacionLogistica::find($operacionId);
 
             if (!$operacion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'operacion no encontrada',
-                    'postOperaciones' => []
+                    'message' => 'OperaciÃƒÂ³n no encontrada'
                 ], 404);
             }
 
             // Obtener TODAS las post-operaciones globales (plantillas)
-            $postoperacionesGlobales = Postoperacion::where('status', 'Plantilla')
+            $postOperacionesGlobales = PostOperacion::where('status', 'Plantilla')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Obtener las asignaciones especficas de esta operacion
-            $asignacionesEspecificas = Postoperacionoperacion::where('operacion_logistica_id', $operacionId)
-                ->with('postoperacion')
+            // Obtener las asignaciones especÃƒÂ­ficas de esta operaciÃƒÂ³n
+            $asignacionesEspecificas = PostOperacionOperacion::where('operacion_logistica_id', $operacionId)
+                ->with('postOperacion')
                 ->get()
-                ->keyBy('post_operacion_id'); // Indexar por ID de post-operacion para bsqueda rpida
+                ->keyBy('post_operacion_id'); // Indexar por ID de post-operaciÃƒÂ³n para bÃƒÂºsqueda rÃƒÂ¡pida
 
-            // Combinar datos: todas las plantillas + estados especficos si existen
-            $postoperacionesData = $postoperacionesGlobales->map(function($postOpGlobal) use ($asignacionesEspecificas, $operacion) {
+            // Combinar datos: todas las plantillas + estados especÃƒÂ­ficos si existen
+            $postOperacionesData = $postOperacionesGlobales->map(function($postOpGlobal) use ($asignacionesEspecificas, $operacion) {
                 $asignacion = $asignacionesEspecificas->get($postOpGlobal->id);
 
                 return [
@@ -1747,13 +1737,13 @@ class operacionLogisticaController extends Controller
                     'fecha_asignacion' => $asignacion && $asignacion->fecha_asignacion ? $asignacion->fecha_asignacion->format('d/m/Y H:i') : null,
                     'fecha_completado' => $asignacion && $asignacion->fecha_completado ? $asignacion->fecha_completado->format('d/m/Y H:i') : null,
                     'notas_especificas' => $asignacion ? $asignacion->notas_especificas : null,
-                    'es_plantilla' => !$asignacion, // true si no est asignada especficamente
+                    'es_plantilla' => !$asignacion, // true si no estÃƒÂ¡ asignada especÃƒÂ­ficamente
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'postOperaciones' => $postoperacionesData,
+                'postOperaciones' => $postOperacionesData,
                 'operacion_info' => [
                     'id' => $operacion->id,
                     'no_pedimento' => $operacion->no_pedimento
@@ -1761,28 +1751,26 @@ class operacionLogisticaController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error al cargar post-operaciones para operacion ' . $operacionId . ': ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cargar post-operaciones: ' . $e->getMessage(),
-                'postOperaciones' => []
+                'message' => 'Error al cargar post-operaciones: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Actualizar estado de post-operacion (Completado/No Aplica)
+     * Actualizar estado de post-operaciÃƒÂ³n (Completado/No Aplica)
      */
-    public function updatePostoperacionEstado(Request $request, $id)
+    public function updatePostOperacionEstado(Request $request, $id)
     {
         try {
-            $postoperacion = Postoperacion::findOrFail($id);
+            $postOperacion = PostOperacion::findOrFail($id);
 
             $validatedData = $request->validate([
                 'estado' => 'required|in:Completado,No Aplica,Pendiente'
             ]);
 
-            $postoperacion->update([
+            $postOperacion->update([
                 'status' => $validatedData['estado'],
                 'fecha_completado' => $validatedData['estado'] !== 'Pendiente' ? now() : null
             ]);
@@ -1801,20 +1789,20 @@ class operacionLogisticaController extends Controller
     }
 
     // =================================
-    // MTODOS PARA POST-operacionES GLOBALES
+    // MÃƒâ€°TODOS PARA POST-OPERACIONES GLOBALES
     // =================================
 
     /**
      * Listar post-operaciones globales (plantillas)
      */
-    public function indexPostoperacionesGlobales()
+    public function indexPostOperacionesGlobales()
     {
         try {
-            $postoperaciones = Postoperacion::whereNull('operacion_logistica_id')
+            $postOperaciones = PostOperacion::whereNull('operacion_logistica_id')
                 ->orderBy('nombre')
                 ->get();
 
-            $postoperacionesData = $postoperaciones->map(function($postOp) {
+            $postOperacionesData = $postOperaciones->map(function($postOp) {
                 return [
                     'id' => $postOp->id,
                     'nombre' => $postOp->nombre,
@@ -1825,7 +1813,7 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'postoperaciones' => $postoperacionesData
+                'postOperaciones' => $postOperacionesData
             ]);
 
         } catch (\Exception $e) {
@@ -1837,9 +1825,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Crear post-operacion global (plantilla)
+     * Crear post-operaciÃƒÂ³n global (plantilla)
      */
-    public function storePostoperacionGlobal(Request $request)
+    public function storePostOperacionGlobal(Request $request)
     {
         try {
             $validatedData = $request->validate([
@@ -1847,7 +1835,7 @@ class operacionLogisticaController extends Controller
                 'descripcion' => 'nullable|string'
             ]);
 
-            $postoperacion = Postoperacion::create([
+            $postOperacion = PostOperacion::create([
                 'nombre' => $validatedData['nombre'],
                 'descripcion' => $validatedData['descripcion'] ?? null,
                 'operacion_logistica_id' => null, // Global
@@ -1857,60 +1845,60 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'postoperacion' => $postoperacion,
-                'message' => 'Post-operacion global creada exitosamente'
+                'postOperacion' => $postOperacion,
+                'message' => 'Post-operaciÃƒÂ³n global creada exitosamente'
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Datos de validacion incorrectos: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Datos de validaciÃƒÂ³n incorrectos: ' . implode(', ', $e->validator->errors()->all())
             ], 400);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear post-operacion global: ' . $e->getMessage()
+                'message' => 'Error al crear post-operaciÃƒÂ³n global: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Eliminar post-operacion global
+     * Eliminar post-operaciÃƒÂ³n global
      */
-    public function destroyPostoperacionGlobal($id)
+    public function destroyPostOperacionGlobal($id)
     {
         try {
-            $postoperacion = Postoperacion::whereNull('operacion_logistica_id')->findOrFail($id);
-            $postoperacion->delete();
+            $postOperacion = PostOperacion::whereNull('operacion_logistica_id')->findOrFail($id);
+            $postOperacion->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post-operacion global eliminada exitosamente'
+                'message' => 'Post-operaciÃƒÂ³n global eliminada exitosamente'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar post-operacion global: ' . $e->getMessage()
+                'message' => 'Error al eliminar post-operaciÃƒÂ³n global: ' . $e->getMessage()
             ], 500);
         }
     }
 
     // =================================
-    // MTODOS PARA COMENTARIOS
+    // MÃƒâ€°TODOS PARA COMENTARIOS
     // =================================
 
     /**
-     * Obtener comentarios de una operacion
+     * Obtener comentarios de una operaciÃƒÂ³n
      */
-    public function getComentariosByoperacion($operacionId)
+    public function getComentariosByOperacion($operacionId)
     {
         try {
-            // Primero obtenemos la operacion
-            $operacion = operacionLogistica::findOrFail($operacionId);
+            // Primero obtenemos la operaciÃƒÂ³n
+            $operacion = OperacionLogistica::findOrFail($operacionId);
 
-            // Por ahora usamos el campo comentarios de la operacion
+            // Por ahora usamos el campo comentarios de la operaciÃƒÂ³n
             // En el futuro se puede crear una tabla separada de comentarios
             $comentarios = [];
             if ($operacion->comentarios) {
@@ -1946,9 +1934,9 @@ class operacionLogisticaController extends Controller
                 'operacion_logistica_id' => 'required|exists:operaciones_logisticas,id'
             ]);
 
-            $operacion = operacionLogistica::findOrFail($validatedData['operacion_logistica_id']);
+            $operacion = OperacionLogistica::findOrFail($validatedData['operacion_logistica_id']);
 
-            // Por ahora guardamos en el campo comentarios de la operacion
+            // Por ahora guardamos en el campo comentarios de la operaciÃƒÂ³n
             // Concatenamos si ya hay comentarios previos
             $comentarioExistente = $operacion->comentarios;
             $nuevoComentario = $validatedData['comentario'];
@@ -1990,23 +1978,23 @@ class operacionLogisticaController extends Controller
                 'comentario_length' => strlen($request->input('comentario', ''))
             ]);
 
-            // validacion ms flexible temporalmente
+            // ValidaciÃƒÂ³n mÃƒÂ¡s flexible temporalmente
             $comentarioTexto = trim($request->input('comentario', ''));
 
             if (empty($comentarioTexto)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'El comentario no puede estar vaco'
+                    'message' => 'El comentario no puede estar vacÃƒÂ­o'
                 ], 400);
             }
 
             $validatedData = ['comentario' => $comentarioTexto];
 
-            // Buscar el comentario especfico a actualizar
-            $comentario = operacionComentario::findOrFail($id);
+            // Buscar el comentario especÃƒÂ­fico a actualizar
+            $comentario = OperacionComentario::findOrFail($id);
 
             // Verificar que el comentario a editar no sea del sistema
-            if (in_array($comentario->usuario_nombre, ['Sistema', 'Sistema Automtico', 'Sistema de Prueba'])) {
+            if (in_array($comentario->usuario_nombre, ['Sistema', 'Sistema AutomÃƒÂ¡tico', 'Sistema de Prueba'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se pueden editar comentarios del sistema'
@@ -2018,11 +2006,11 @@ class operacionLogisticaController extends Controller
                 'comentario' => $validatedData['comentario']
             ]);
 
-            // Actualizar tambin el campo legacy en la operacion principal
+            // Actualizar tambiÃƒÂ©n el campo legacy en la operaciÃƒÂ³n principal
             $operacion = $comentario->operacionLogistica;
             if ($operacion) {
                 $operacion->update([
-                    'comentarios' => $validatedData['comentario'] . " (ltima actualizacin: " . now()->format('d/m/Y H:i') . ")"
+                    'comentarios' => $validatedData['comentario'] . " (ÃƒÅ¡ltima actualizaciÃƒÂ³n: " . now()->format('d/m/Y H:i') . ")"
                 ]);
             }
 
@@ -2047,15 +2035,15 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Obtener el historial de observaciones de una operacion
+     * Obtener el historial de observaciones de una operaciÃƒÂ³n
      */
     public function obtenerHistorialObservaciones($operacionId)
     {
         try {
-            $operacion = operacionLogistica::with(['ejecutivo'])
+            $operacion = OperacionLogistica::with(['ejecutivo'])
                 ->findOrFail($operacionId);
 
-            // Obtener el historial de observaciones ordenado cronolgicamente
+            // Obtener el historial de observaciones ordenado cronolÃƒÂ³gicamente
             $historialObservaciones = $operacion->historicoMatrizSgm()
                 ->whereNotNull('observaciones')
                 ->where('observaciones', '!=', '')
@@ -2068,13 +2056,13 @@ class operacionLogisticaController extends Controller
                         'status' => $registro->operacion_status ?? $registro->status ?? 'N/A',
                         'created_at' => $registro->created_at,
                         'updated_at' => $registro->updated_at,
-                        'usuario' => 'Sistema', // Por ahora ser "Sistema" hasta que agreguemos el campo empleado_id
+                        'usuario' => 'Sistema', // Por ahora serÃƒÂ¡ "Sistema" hasta que agreguemos el campo empleado_id
                         'fecha_formateada' => $registro->created_at->format('d/m/Y H:i'),
                         'tiempo_relativo' => $registro->created_at->diffForHumans()
                     ];
                 });
 
-            // Obtener observaciones actuales de la operacion
+            // Obtener observaciones actuales de la operaciÃƒÂ³n
             $observacionActual = $operacion->comentarios ?? '';
 
             return response()->json([
@@ -2114,13 +2102,13 @@ class operacionLogisticaController extends Controller
             if (empty($comentarioTexto)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Las observaciones no pueden estar vacas'
+                    'message' => 'Las observaciones no pueden estar vacÃƒÂ­as'
                 ], 400);
             }
 
-            $operacion = operacionLogistica::findOrFail($operacionId);
+            $operacion = OperacionLogistica::findOrFail($operacionId);
 
-            // Obtener el registro ms reciente del historial para copiar sus datos
+            // Obtener el registro mÃƒÂ¡s reciente del historial para copiar sus datos
             $historialReciente = $operacion->historicoMatrizSgm()
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -2128,7 +2116,7 @@ class operacionLogisticaController extends Controller
             if (!$historialReciente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se encontr historial base para crear el nuevo registro'
+                    'message' => 'No se encontrÃƒÂ³ historial base para crear el nuevo registro'
                 ], 404);
             }
 
@@ -2137,14 +2125,14 @@ class operacionLogisticaController extends Controller
             $nuevoHistorial = $operacion->historicoMatrizSgm()->create([
                 'fecha_registro' => now(),
                 'fecha_arribo_aduana' => $historialReciente->fecha_arribo_aduana,
-                'dias_transcurridos' => (int)round($historialReciente->dias_transcurridos ?? 0),
+                'dias_transcurridos' => $historialReciente->dias_transcurridos,
                 'target_dias' => $historialReciente->target_dias,
                 'color_status' => $historialReciente->color_status,
                 'operacion_status' => $historialReciente->operacion_status,
                 'observaciones' => $comentarioTexto
             ]);
 
-            // Tambin actualizar el campo comentarios de la operacion principal
+            // TambiÃƒÂ©n actualizar el campo comentarios de la operaciÃƒÂ³n principal
             $operacion->update(['comentarios' => $comentarioTexto]);
 
             \Log::info('Nuevo registro de historial creado:', [
@@ -2172,10 +2160,10 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Actualizar estados de mltiples post-operaciones asociadas a una operacion
-     * Usa tabla pivot para mantener limpia la separacin entre plantillas y asignaciones
+     * Actualizar estados de mÃƒÂºltiples post-operaciones asociadas a una operaciÃƒÂ³n
+     * Usa tabla pivot para mantener limpia la separaciÃƒÂ³n entre plantillas y asignaciones
      */
-    public function actualizarEstadosPostoperaciones(Request $request, $operacionId)
+    public function actualizarEstadosPostOperaciones(Request $request, $operacionId)
     {
         try {
             $validatedData = $request->validate([
@@ -2194,41 +2182,41 @@ class operacionLogisticaController extends Controller
                 $idGlobal = $cambioData['id_global'] ?? null;
 
                 // Usar ID global si es plantilla, sino usar el ID directo
-                $postoperacionId = $esPlantilla ? $idGlobal : $postOpId;
+                $postOperacionId = $esPlantilla ? $idGlobal : $postOpId;
 
-                if (!$postoperacionId) {
+                if (!$postOperacionId) {
                     continue;
                 }
 
-                // Verificar que la post-operacion global existe
-                $postoperacionGlobal = Postoperacion::find($postoperacionId);
-                if (!$postoperacionGlobal) {
+                // Verificar que la post-operaciÃƒÂ³n global existe
+                $postOperacionGlobal = PostOperacion::find($postOperacionId);
+                if (!$postOperacionGlobal) {
                     continue;
                 }
 
-                // Buscar si ya existe una asignacin para esta operacion
-                $asignacionExistente = Postoperacionoperacion::where('post_operacion_id', $postoperacionId)
+                // Buscar si ya existe una asignaciÃƒÂ³n para esta operaciÃƒÂ³n
+                $asignacionExistente = PostOperacionOperacion::where('post_operacion_id', $postOperacionId)
                     ->where('operacion_logistica_id', $operacionId)
                     ->first();
 
                 if ($estado === 'Pendiente') {
-                    // Si se marca como pendiente y existe asignacin, eliminarla
+                    // Si se marca como pendiente y existe asignaciÃƒÂ³n, eliminarla
                     if ($asignacionExistente) {
                         $asignacionExistente->delete();
                         $actualizados++;
                     }
                 } else {
-                    // Crear o actualizar asignacin para estados Completado/No Aplica
+                    // Crear o actualizar asignaciÃƒÂ³n para estados Completado/No Aplica
                     if ($asignacionExistente) {
-                        // Actualizar asignacin existente
+                        // Actualizar asignaciÃƒÂ³n existente
                         $asignacionExistente->status = $estado;
                         $asignacionExistente->fecha_completado = $estado === 'Completado' ? now() : null;
                         $asignacionExistente->save();
                         $actualizados++;
                     } else {
-                        // Crear nueva asignacin
-                        Postoperacionoperacion::create([
-                            'post_operacion_id' => $postoperacionId,
+                        // Crear nueva asignaciÃƒÂ³n
+                        PostOperacionOperacion::create([
+                            'post_operacion_id' => $postOperacionId,
                             'operacion_logistica_id' => $operacionId,
                             'status' => $estado,
                             'fecha_asignacion' => now(),
@@ -2241,7 +2229,7 @@ class operacionLogisticaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "operacion completada: {$creados} asignaciones creadas, {$actualizados} actualizadas",
+                'message' => "OperaciÃƒÂ³n completada: {$creados} asignaciones creadas, {$actualizados} actualizadas",
                 'creados' => $creados,
                 'actualizados' => $actualizados
             ]);
@@ -2249,7 +2237,7 @@ class operacionLogisticaController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Datos invlidos: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Datos invÃƒÂ¡lidos: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
@@ -2260,18 +2248,18 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Recalcular automticamente todos los status de las operaciones usando nueva lgica
+     * Recalcular automÃƒÂ¡ticamente todos los status de las operaciones usando nueva lÃƒÂ³gica
      */
     public function recalcularStatus()
     {
         try {
-            $operaciones = operacionLogistica::all();
+            $operaciones = OperacionLogistica::all();
             $actualizadas = 0;
             $historialesGenerados = 0;
 
             foreach ($operaciones as $operacion) {
-                // Usar la nueva lgica de clculo por das
-                $resultado = $operacion->actualizarStatusAutomaticamente(false); // No guardar an
+                // Usar la nueva lÃƒÂ³gica de cÃƒÂ¡lculo por dÃƒÂ­as
+                $resultado = $operacion->actualizarStatusAutomaticamente(false); // No guardar aÃƒÂºn
 
                 if ($resultado['cambio']) {
                     $operacion->save(); // Guardar cambios
@@ -2296,9 +2284,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Calcular el status de una operacion basado en sus fechas
+     * Calcular el status de una operaciÃƒÂ³n basado en sus fechas
      */
-    private function calcularStatusoperacion($operacion)
+    private function calcularStatusOperacion($operacion)
     {
         if ($operacion->fecha_arribo_planta) {
             return 'Entregado';
@@ -2307,14 +2295,14 @@ class operacionLogisticaController extends Controller
         } elseif ($operacion->fecha_arribo_aduana) {
             return 'En Aduana';
         } elseif ($operacion->fecha_embarque) {
-            return 'En Trnsito';
+            return 'En TrÃƒÂ¡nsito';
         } else {
             return 'Pendiente';
         }
     }
 
     /**
-     * Calcular das transcurridos: fecha embarque vs fecha arribo a planta (o fecha actual si no hay arribo)
+     * Calcular dÃƒÂ­as transcurridos: fecha embarque vs fecha arribo a planta (o fecha actual si no hay arribo)
      */
     private function calcularDiasTranscurridos($operacion)
     {
@@ -2331,12 +2319,12 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Determinar color del status basado en target y das transcurridos
+     * Determinar color del status basado en target y dÃƒÂ­as transcurridos
      */
     private function determinarColorStatus($operacion, $status, $diasTranscurridos)
     {
         if ($status === 'Entregado') {
-            // Si ya se entreg, verificar si fue dentro del target
+            // Si ya se entregÃƒÂ³, verificar si fue dentro del target
             $target = $operacion->target ?? $operacion->dias_transito ?? 30;
             return $diasTranscurridos <= $target ? 'green' : 'red';
         }
@@ -2347,21 +2335,21 @@ class operacionLogisticaController extends Controller
         if ($diasTranscurridos > $target) {
             return 'red'; // Fuera de METRICA
         } elseif ($diasTranscurridos >= ($target * 0.8)) {
-            return 'yellow'; // Cerca del lmite
+            return 'yellow'; // Cerca del lÃƒÂ­mite
         } else {
             return 'green'; // Dentro de METRICA
         }
     }
 
     /**
-     * Verificar y actualizar automticamente el status de operaciones al consultar
-     * Solo actualiza operaciones que han cambiado desde la ltima verificacin
+     * Verificar y actualizar automÃƒÂ¡ticamente el status de operaciones al consultar
+     * Solo actualiza operaciones que han cambiado desde la ÃƒÂºltima verificaciÃƒÂ³n
      */
-    private function verificarYActualizarStatusoperaciones()
+    private function verificarYActualizarStatusOperaciones()
     {
         try {
             // Verificar todas las operaciones activas (no Done)
-            $operacionesActivas = operacionLogistica::where('status_calculado', '!=', 'Done')
+            $operacionesActivas = OperacionLogistica::where('status_calculado', '!=', 'Done')
                 ->where(function($query) {
                     // Verificar operaciones que no se han calculado hoy o que nunca se han calculado
                     $query->whereNull('fecha_ultimo_calculo')
@@ -2380,33 +2368,33 @@ class operacionLogisticaController extends Controller
 
             // Log para monitoreo (opcional)
             if ($actualizadas > 0) {
-                \Log::info("VERIFICACION AUTOMATICA: {$actualizadas} operaciones actualizadas");
+                \Log::info("VerificaciÃƒÂ³n automÃƒÂ¡tica: {$actualizadas} operaciones actualizadas");
             }
 
         } catch (\Exception $e) {
-            \Log::error("Error en VERIFICACION AUTOMATICA de status: " . $e->getMessage());
+            \Log::error("Error en verificaciÃƒÂ³n automÃƒÂ¡tica de status: " . $e->getMessage());
         }
     }
 
     /**
-     * Generar reporte Word de una operacion especfica
+     * Generar reporte Word de una operaciÃƒÂ³n especÃƒÂ­fica
      */
     public function generarReporteWord($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'ejecutivo',
                 'cliente',
                 'agenteAduanal',
                 'transporte',
-                'postoperaciones',
+                'postOperaciones',
                 'historial' => function($query) {
                     $query->orderBy('created_at', 'desc')->limit(20);
                 }
             ])->findOrFail($id);
 
             $wordService = new WordDocumentService();
-            $wordService->crearReporteoperacion($operacion);
+            $wordService->crearReporteOperacion($operacion);
 
             $nombreArchivo = 'reporte_operacion_' . ($operacion->numero_operacion ?? $operacion->id) . '_' . date('Y-m-d_H-i-s') . '.docx';
 
@@ -2423,12 +2411,12 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Generar reporte Word de mltiples operaciones (con filtros)
+     * Generar reporte Word de mÃƒÂºltiples operaciones (con filtros)
      */
     public function generarReporteMultiple(Request $request)
     {
         try {
-            $query = operacionLogistica::with(['ejecutivo']);
+            $query = OperacionLogistica::with(['ejecutivo']);
 
             // Aplicar filtros si existen
             if ($request->filled('cliente')) {
@@ -2451,7 +2439,7 @@ class operacionLogisticaController extends Controller
                 $query->where('ejecutivo_id', $request->ejecutivo_id);
             }
 
-            // Limitar a mximo 100 operaciones para evitar documentos muy grandes
+            // Limitar a mÃƒÂ¡ximo 100 operaciones para evitar documentos muy grandes
             $operaciones = $query->orderBy('created_at', 'desc')->limit(100)->get();
 
             if ($operaciones->isEmpty()) {
@@ -2463,7 +2451,7 @@ class operacionLogisticaController extends Controller
 
             $wordService = new WordDocumentService();
 
-            $titulo = 'REPORTE DE operacionES LOGISTICAS';
+            $titulo = 'REPORTE DE OPERACIONES LOGÃƒÂSTICAS';
             if ($request->filled('cliente')) {
                 $titulo .= ' - ' . $request->cliente;
             }
@@ -2476,7 +2464,7 @@ class operacionLogisticaController extends Controller
             $wordService->descargar($nombreArchivo);
 
         } catch (\Exception $e) {
-            \Log::error("Error generando reporte mltiple Word: " . $e->getMessage());
+            \Log::error("Error generando reporte mÃƒÂºltiple Word: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al generar el reporte: ' . $e->getMessage()
@@ -2490,19 +2478,19 @@ class operacionLogisticaController extends Controller
     public function guardarReporteWord($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'ejecutivo',
                 'cliente',
                 'agenteAduanal',
                 'transporte',
-                'postoperaciones',
+                'postOperaciones',
                 'historial' => function($query) {
                     $query->orderBy('created_at', 'desc')->limit(20);
                 }
             ])->findOrFail($id);
 
             $wordService = new WordDocumentService();
-            $wordService->crearReporteoperacion($operacion);
+            $wordService->crearReporteOperacion($operacion);
 
             $nombreArchivo = 'reporte_operacion_' . ($operacion->numero_operacion ?? $operacion->id) . '_' . date('Y-m-d_H-i-s');
 
@@ -2538,7 +2526,7 @@ class operacionLogisticaController extends Controller
                 ]);
             }
 
-            // Buscar empleados que no sean ya ejecutivos de LOGISTICA
+            // Buscar empleados que no sean ya ejecutivos de logÃƒÂ­stica
             $empleadosEjecutivos = Empleado::where('area', 'Logistica')->pluck('id');
 
             $empleados = Empleado::where(function($query) use ($search) {
@@ -2564,7 +2552,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Agregar empleado como ejecutivo de LOGISTICA
+     * Agregar empleado como ejecutivo de logÃƒÂ­stica
      */
     public function addEjecutivo(Request $request)
     {
@@ -2575,22 +2563,22 @@ class operacionLogisticaController extends Controller
 
             $empleado = Empleado::findOrFail($request->empleado_id);
 
-            // Verificar que no sea ya ejecutivo de LOGISTICA
+            // Verificar que no sea ya ejecutivo de logÃƒÂ­stica
             if ($empleado->area === 'Logistica') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Este empleado ya es ejecutivo de LOGISTICA'
+                    'message' => 'Este empleado ya es ejecutivo de logÃƒÂ­stica'
                 ], 422);
             }
 
-            // Actualizar el rea del empleado a LOGISTICA
+            // Actualizar el ÃƒÂ¡rea del empleado a LogÃƒÂ­stica
             $empleado->update([
                 'area' => 'Logistica'
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Empleado agregado como ejecutivo de LOGISTICA exitosamente',
+                'message' => 'Empleado agregado como ejecutivo de logÃƒÂ­stica exitosamente',
                 'empleado' => $empleado
             ]);
 
@@ -2638,13 +2626,13 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // === MTODOS DE IMPORTACIN DE CLIENTES ===
+    // === MÃƒâ€°TODOS DE IMPORTACIÃƒâ€œN DE CLIENTES ===
 
     public function importClientes(Request $request)
     {
         try {
             $request->validate([
-                'clientes_file' => 'required|file|mimes:xlsx,xls|max:10240' // 10MB mximo
+                'clientes_file' => 'required|file|mimes:xlsx,xls|max:10240' // 10MB mÃƒÂ¡ximo
             ]);
 
             $file = $request->file('clientes_file');
@@ -2659,21 +2647,21 @@ class operacionLogisticaController extends Controller
             $filename = 'clientes_' . time() . '.' . $file->getClientOriginalExtension();
             $fullPath = $uploadsDir . DIRECTORY_SEPARATOR . $filename;
 
-            Log::info("Iniciando importacin de clientes desde archivo: {$filename}");
+            Log::info("Iniciando importaciÃƒÂ³n de clientes desde archivo: {$filename}");
             Log::info("Intentando guardar archivo en: {$fullPath}");
-            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'S' : 'No'));
-            Log::info("Archivo original vlido: " . ($file->isValid() ? 'S' : 'No'));
+            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'SÃƒÂ­' : 'No'));
+            Log::info("Archivo original vÃƒÂ¡lido: " . ($file->isValid() ? 'SÃƒÂ­' : 'No'));
 
             try {
-                // Usar mtodo directo para guardar el archivo
+                // Usar mÃƒÂ©todo directo para guardar el archivo
                 $saved = $file->move($uploadsDir, $filename);
 
                 if ($saved) {
                     Log::info("Archivo guardado exitosamente usando move()");
-                    Log::info("??Archivo existe despus de move()? " . (file_exists($fullPath) ? 'S' : 'No'));
-                    Log::info("Tamao del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
+                    Log::info("Ã‚Â¿Archivo existe despuÃƒÂ©s de move()? " . (file_exists($fullPath) ? 'SÃƒÂ­' : 'No'));
+                    Log::info("TamaÃƒÂ±o del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
                 } else {
-                    throw new \Exception("El mtodo move() retorn false");
+                    throw new \Exception("El mÃƒÂ©todo move() retornÃƒÂ³ false");
                 }
             } catch (\Exception $moveException) {
                 Log::error("Error al mover archivo: " . $moveException->getMessage());
@@ -2691,18 +2679,18 @@ class operacionLogisticaController extends Controller
             // Preparar la respuesta
             $response = response()->json([
                 'success' => true,
-                'message' => 'Importacin completada exitosamente',
+                'message' => 'ImportaciÃƒÂ³n completada exitosamente',
                 'resultados' => $resultados
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error en importacin de clientes: " . $e->getMessage());
+            Log::error("Error en importaciÃƒÂ³n de clientes: " . $e->getMessage());
             $response = response()->json([
                 'success' => false,
                 'message' => 'Error al importar clientes: ' . $e->getMessage()
             ], 500);
         } finally {
-            // Limpiar archivo temporal siempre, sin importar si hubo xito o error
+            // Limpiar archivo temporal siempre, sin importar si hubo ÃƒÂ©xito o error
             if (isset($fullPath) && file_exists($fullPath)) {
                 unlink($fullPath);
                 Log::info("Archivo temporal de clientes eliminado: {$fullPath}");
@@ -2739,7 +2727,7 @@ class operacionLogisticaController extends Controller
             if (!auth()->user() || !auth()->user()->hasRole('admin')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permisos para realizar esta accin'
+                    'message' => 'No tienes permisos para realizar esta acciÃƒÂ³n'
                 ], 403);
             }
 
@@ -2772,7 +2760,7 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // === MTODOS DE IMPORTACIN DE PEDIMENTOS ===
+    // === MÃƒâ€°TODOS DE IMPORTACIÃƒâ€œN DE PEDIMENTOS ===
 
     public function importPedimentos(Request $request)
     {
@@ -2795,7 +2783,7 @@ class operacionLogisticaController extends Controller
             $file = $request->file('pedimentos_file') ?? $request->file('file');
 
             if (!$file) {
-                throw new \Exception('No se ha proporcionado ningn archivo de pedimentos.');
+                throw new \Exception('No se ha proporcionado ningÃƒÂºn archivo de pedimentos.');
             }
 
             // Crear directorio si no existe
@@ -2808,21 +2796,21 @@ class operacionLogisticaController extends Controller
             $filename = 'pedimentos_' . time() . '.' . $file->getClientOriginalExtension();
             $fullPath = $uploadsDir . DIRECTORY_SEPARATOR . $filename;
 
-            Log::info("Iniciando importacin de pedimentos desde archivo: {$filename}");
+            Log::info("Iniciando importaciÃƒÂ³n de pedimentos desde archivo: {$filename}");
             Log::info("Intentando guardar archivo en: {$fullPath}");
-            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'S' : 'No'));
-            Log::info("Archivo original vlido: " . ($file->isValid() ? 'S' : 'No'));
+            Log::info("Directorio de destino existe: " . (file_exists($uploadsDir) ? 'SÃƒÂ­' : 'No'));
+            Log::info("Archivo original vÃƒÂ¡lido: " . ($file->isValid() ? 'SÃƒÂ­' : 'No'));
 
             try {
-                // Usar mtodo directo para guardar el archivo
+                // Usar mÃƒÂ©todo directo para guardar el archivo
                 $saved = $file->move($uploadsDir, $filename);
 
                 if ($saved) {
                     Log::info("Archivo guardado exitosamente usando move()");
-                    Log::info("??Archivo existe despus de move()? " . (file_exists($fullPath) ? 'S' : 'No'));
-                    Log::info("Tamao del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
+                    Log::info("Ã‚Â¿Archivo existe despuÃƒÂ©s de move()? " . (file_exists($fullPath) ? 'SÃƒÂ­' : 'No'));
+                    Log::info("TamaÃƒÂ±o del archivo guardado: " . (file_exists($fullPath) ? filesize($fullPath) . ' bytes' : 'N/A'));
                 } else {
-                    throw new \Exception("El mtodo move() retorn false");
+                    throw new \Exception("El mÃƒÂ©todo move() retornÃƒÂ³ false");
                 }
             } catch (\Exception $moveException) {
                 Log::error("Error al mover archivo: " . $moveException->getMessage());
@@ -2842,21 +2830,21 @@ class operacionLogisticaController extends Controller
             if ($resultados['success']) {
                 $totalImported = $resultados['total_imported'] ?? 0;
                 $totalSkipped = $resultados['total_skipped'] ?? 0;
-                $message = "Importacin completada: {$totalImported} pedimentos importados";
+                $message = "ImportaciÃƒÂ³n completada: {$totalImported} pedimentos importados";
                 if ($totalSkipped > 0) {
                     $message .= ", {$totalSkipped} omitidos";
                 }
                 $response = back()->with('success', $message);
             } else {
-                $message = $resultados['message'] ?? 'Error en la importacin';
+                $message = $resultados['message'] ?? 'Error en la importaciÃƒÂ³n';
                 $response = back()->with('error', $message);
             }
 
         } catch (\Exception $e) {
-            Log::error("Error en importacin de pedimentos: " . $e->getMessage());
+            Log::error("Error en importaciÃƒÂ³n de pedimentos: " . $e->getMessage());
             $response = back()->with('error', 'Error al importar pedimentos: ' . $e->getMessage());
         } finally {
-            // Limpiar archivo temporal siempre, sin importar si hubo xito o error
+            // Limpiar archivo temporal siempre, sin importar si hubo ÃƒÂ©xito o error
             if (isset($fullPath) && file_exists($fullPath)) {
                 unlink($fullPath);
                 Log::info("Archivo temporal eliminado: {$fullPath}");
@@ -2865,11 +2853,11 @@ class operacionLogisticaController extends Controller
             }
         }
 
-        return $response ?? back()->with('error', 'Error desconocido en la importacin');
+        return $response ?? back()->with('error', 'Error desconocido en la importaciÃƒÂ³n');
     }
 
     /**
-     * Vista pblica para consulta de operaciones (sin autenticacin)
+     * Vista pÃƒÂºblica para consulta de operaciones (sin autenticaciÃƒÂ³n)
      */
     public function consultaPublica()
     {
@@ -2877,9 +2865,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Bsqueda pblica de operacion por pedimento o factura
+     * BÃƒÂºsqueda pÃƒÂºblica de operaciÃƒÂ³n por pedimento o factura
      */
-    public function buscaroperacionPublica(Request $request)
+    public function buscarOperacionPublica(Request $request)
     {
         try {
             $request->validate([
@@ -2890,7 +2878,7 @@ class operacionLogisticaController extends Controller
             $tipoBusqueda = $request->tipo_busqueda;
             $valor = $request->valor;
 
-            $query = operacionLogistica::query();
+            $query = OperacionLogistica::query();
 
             if ($tipoBusqueda === 'pedimento') {
                 $query->where('no_pedimento', $valor);
@@ -2903,44 +2891,20 @@ class operacionLogisticaController extends Controller
             if (!$operacion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se encontro ninguna operacion con ese ' . ($tipoBusqueda === 'pedimento' ? 'numero de pedimento' : 'numero de factura')
+                    'message' => 'No se encontró ninguna operación con ese ' . ($tipoBusqueda === 'pedimento' ? 'número de pedimento' : 'número de factura')
                 ]);
             }
 
-            // Cargar relaciones con verificacin
+            // Cargar relaciones con verificaciÃƒÂ³n
             $historial = \App\Models\Logistica\HistoricoMatrizSgm::where('operacion_logistica_id', $operacion->id)
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Obtener post-operaciones a travs de la tabla pivot
-            $postoperaciones = \App\Models\Logistica\Postoperacionoperacion::where('operacion_logistica_id', $operacion->id)
-                ->with('postoperacion')
+            // Obtener post-operaciones a travÃƒÂ©s de la tabla pivot
+            $postOperaciones = \App\Models\Logistica\PostOperacionOperacion::where('operacion_logistica_id', $operacion->id)
+                ->with('postOperacion')
                 ->orderBy('created_at', 'desc')
                 ->get();
-
-            // Obtener todos los comentarios de la matriz de seguimiento (tabla comentarios)
-            $comentariosMatriz = \App\Models\Logistica\OperacionComentario::where('operacion_logistica_id', $operacion->id)
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($comentario) use ($operacion) {
-                    // Extraer solo la parte después de "Comentarios:" si existe
-                    $comentarioTexto = $comentario->comentario;
-                    if (strpos($comentarioTexto, 'Comentarios: ') !== false) {
-                        $comentarioExtraido = trim(substr($comentarioTexto, strpos($comentarioTexto, 'Comentarios: ') + 13));
-                        if (!empty($comentarioExtraido)) {
-                            $comentarioTexto = $comentarioExtraido;
-                        }
-                    }
-
-                    return [
-                        'id' => $comentario->id,
-                        'comentario' => $comentarioTexto,
-                        'usuario' => $comentario->usuario_nombre ?? 'Sistema',
-                        'fecha' => $comentario->created_at->format('d/m/Y H:i:s'),
-                        'tipo_accion' => $comentario->tipo_accion,
-                        'status_en_momento' => $comentario->status_en_momento,
-                    ];
-                });
 
             // Formatear datos
             $data = [
@@ -2967,10 +2931,9 @@ class operacionLogisticaController extends Controller
                     'status_manual' => $operacion->status_manual,
                     'color_status' => $operacion->color_status,
                     'target' => $operacion->target,
-                    'dias_transcurridos' => (int)round($operacion->dias_transcurridos_calculados ?? 0),
+                    'dias_transcurridos' => $operacion->dias_transcurridos_calculados,
                     'comentarios' => $operacion->comentarios,
                 ],
-                'comentarios_matriz' => $comentariosMatriz,
                 'historial' => $historial->map(function($item) {
                     return [
                         'id' => $item->id,
@@ -2978,17 +2941,17 @@ class operacionLogisticaController extends Controller
                         'status' => $item->operacion_status ?? 'N/A',
                         'color' => $item->color_status ?? 'sin_fecha',
                         'descripcion' => $item->observaciones ?? 'Sin observaciones',
-                        'dias_transcurridos' => (int)round($item->dias_transcurridos ?? 0),
+                        'dias_transcurridos' => $item->dias_transcurridos,
                         'target_dias' => $item->target_dias,
                         'fecha_arribo_aduana' => $item->fecha_arribo_aduana?->format('d/m/Y'),
                         'fecha_registro' => $item->fecha_registro?->format('d/m/Y'),
                     ];
                 }),
-                'post_operaciones' => $postoperaciones->map(function($item) {
+                'post_operaciones' => $postOperaciones->map(function($item) {
                     return [
                         'id' => $item->id,
-                        'nombre' => $item->postoperacion->nombre ?? 'N/A',
-                        'descripcion' => $item->postoperacion->descripcion ?? '',
+                        'nombre' => $item->postOperacion->nombre ?? 'N/A',
+                        'descripcion' => $item->postOperacion->descripcion ?? '',
                         'status' => $item->status,
                         'fecha_asignacion' => $item->fecha_asignacion?->format('d/m/Y'),
                         'fecha_completado' => $item->fecha_completado?->format('d/m/Y'),
@@ -3000,16 +2963,16 @@ class operacionLogisticaController extends Controller
             return response()->json($data);
 
         } catch (\Exception $e) {
-            \Log::error('Error en bsqueda pblica: ' . $e->getMessage());
+            \Log::error('Error en bÃƒÂºsqueda pÃƒÂºblica: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al realizar la bsqueda. Por favor, intente nuevamente.'
+                'message' => 'Error al realizar la bÃƒÂºsqueda. Por favor, intente nuevamente.'
             ], 500);
         }
     }
 
     /**
-     * Enviar reporte por correo con CC automtico al administrador de LOGISTICA
+     * Enviar reporte por correo con CC automÃƒÂ¡tico al administrador de logÃƒÂ­stica
      */
     public function enviarReporte(Request $request)
     {
@@ -3028,7 +2991,7 @@ class operacionLogisticaController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::error('validacion fallida en enviarReporte:', $validator->errors()->toArray());
+                \Log::error('Validación fallida en enviarReporte:', $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'errors' => $validator->errors()
@@ -3057,7 +3020,7 @@ class operacionLogisticaController extends Controller
                 'asunto' => $request->asunto,
                 'mensaje' => $request->mensaje,
                 'remitente' => auth()->user()->email ?? 'sistemas@estrategiaeinnovacion.com.mx',
-                'nombreRemitente' => auth()->user()->name ?? 'Sistema de LOGISTICA'
+                'nombreRemitente' => auth()->user()->name ?? 'Sistema de LogÃƒÂ­stica'
             ];
 
             // Si se solicita incluir datos, preparar el archivo adjunto
@@ -3075,7 +3038,7 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = operacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+                $query = OperacionLogistica::with('ejecutivo');
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3083,24 +3046,13 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Aplicar todos los filtros de la request (MISMOS que usa exportCSV)
-                \Log::info('Filtros aplicados en enviarReporte:', $request->all());
                 $this->aplicarFiltrosReporte($query, $request);
 
                 // Obtener operaciones con los MISMOS filtros que exportCSV
                 $operaciones = $query->get();
-                \Log::info('Operaciones obtenidas después de aplicar filtros en enviarReporte:', ['total' => $operaciones->count()]);
 
                 $formato = $request->formato_datos ?? 'csv';
-                $archivoInfo = $this->generarArchivoReporte($operaciones, $formato);
-                $datosCorreo['adjunto'] = $archivoInfo;
-
-                // Generar asunto personalizado basado en el cliente
-                $asuntoPersonalizado = $request->asunto;
-                if ($archivoInfo['cliente_especifico']) {
-                    $asuntoPersonalizado = "Reporte {$archivoInfo['nombre_cliente']} - {$archivoInfo['fecha_envio']}";
-                }
-            } else {
-                $asuntoPersonalizado = $request->asunto;
+                $datosCorreo['adjunto'] = $this->generarArchivoReporte($operaciones, $formato);
             }
 
             // Preparar respuesta para abrir Outlook y descargar archivo
@@ -3110,7 +3062,7 @@ class operacionLogisticaController extends Controller
                 'outlook_data' => [
                     'to' => implode(';', $destinatariosPrincipales),
                     'cc' => implode(';', $correosCC),
-                    'subject' => $asuntoPersonalizado,
+                    'subject' => $request->asunto,
                     'body' => $request->mensaje
                 ],
                 'detalles' => [
@@ -3135,7 +3087,7 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = operacionLogistica::with('ejecutivo');
+                $query = OperacionLogistica::with('ejecutivo');
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3151,11 +3103,11 @@ class operacionLogisticaController extends Controller
                 $formato = $request->formato_datos ?? 'csv';
                 $archivoInfo = $this->generarArchivoReporte($operaciones, $formato);
 
-                // Crear URL de descarga temporal con timestamp nico
+                // Crear URL de descarga temporal con timestamp ÃƒÂºnico
                 $nombreArchivoDescarga = time() . '_' . basename($archivoInfo['path']);
                 $rutaPublica = 'temp/' . $nombreArchivoDescarga;
 
-                // Copiar archivo a directorio pblico temporal
+                // Copiar archivo a directorio pÃƒÂºblico temporal
                 $rutaPublicaCompleta = public_path($rutaPublica);
                 if (!file_exists(dirname($rutaPublicaCompleta))) {
                     mkdir(dirname($rutaPublicaCompleta), 0755, true);
@@ -3166,7 +3118,7 @@ class operacionLogisticaController extends Controller
                 $respuesta['download_filename'] = $archivoInfo['nombre'];
 
                 // Programar limpieza del archivo temporal (opcional - se puede hacer manualmente)
-                // El archivo se eliminar despus de 1 hora
+                // El archivo se eliminarÃƒÂ¡ despuÃƒÂ©s de 1 hora
                 $this->programarLimpiezaArchivo($rutaPublicaCompleta);
             }
 
@@ -3185,18 +3137,18 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * FUNCIN DESHABILITADA: Los correos ahora se envan solo por webhook
+     * FUNCIÃƒâ€œN DESHABILITADA: Los correos ahora se envÃƒÂ­an solo por webhook
      *
-     * Esta funcin se mantuvo comentada para referencia histrica,
-     * pero todos los envos de correo se procesan a travs del webhook de N8N
+     * Esta funciÃƒÂ³n se mantuvo comentada para referencia histÃƒÂ³rica,
+     * pero todos los envÃƒÂ­os de correo se procesan a travÃƒÂ©s del webhook de N8N
      */
     /*
     private function procesarEnvioCorreo($datos)
     {
-        // FUNCIN DESHABILITADA - SE USA WEBHOOK
+        // FUNCIÃƒâ€œN DESHABILITADA - SE USA WEBHOOK
         return [
             'success' => false,
-            'message' => 'Funcin deshabilitada - usar webhook'
+            'message' => 'FunciÃƒÂ³n deshabilitada - usar webhook'
         ];
     }
     */    /**
@@ -3216,51 +3168,39 @@ class operacionLogisticaController extends Controller
         // Obtener cliente(s) para el nombre del archivo
         $clientes = $operaciones->pluck('cliente')->unique()->filter();
         $clienteNombre = '';
-        $esClienteEspecifico = false;
-        
         if ($clientes->count() == 1) {
             // Un solo cliente
             $clienteNombre = $clientes->first();
-            $esClienteEspecifico = true;
         } elseif ($clientes->count() > 1) {
-            // Mltiples clientes
+            // Múltiples clientes
             $clienteNombre = 'Multiples_Clientes';
         } else {
-            // Sin cliente especfico
+            // Sin cliente específico
             $clienteNombre = 'Todos_Clientes';
         }
 
-        // Generar nombre de archivo según si es cliente específico o no
-        if ($esClienteEspecifico) {
-            // Para cliente específico: "[Nombre del Cliente] - [Fecha].xlsx"
-            $nombreArchivo = "{$clienteNombre} - {$fechaEnvio}.xlsx";
-        } else {
-            // Para múltiples clientes o todos: formato original
-            $clienteLimpio = preg_replace('/[^a-zA-Z0-9_-]/', '_', $clienteNombre);
-            $clienteLimpio = preg_replace('/_+/', '_', $clienteLimpio);
-            $clienteLimpio = trim($clienteLimpio, '_');
-            $nombreArchivo = "Reporte de operaciones logistica {$clienteLimpio} {$fechaEnvio}.xlsx";
-        }
+        // Limpiar nombre del cliente para uso en nombre de archivo
+        $clienteLimpio = preg_replace('/[^a-zA-Z0-9_-]/', '_', $clienteNombre);
+        $clienteLimpio = preg_replace('/_+/', '_', $clienteLimpio);
+        $clienteLimpio = trim($clienteLimpio, '_');
 
         if ($formato === 'csv') {
+            $nombreArchivo = "Reporte de operaciones logistica {$clienteLimpio} {$fechaEnvio}.xlsx";
             $rutaCompleta = $tempDir . '/' . $nombreArchivo;
             $this->generarExcelTSV($operaciones, $rutaCompleta);
             return [
                 'path' => $rutaCompleta,
                 'nombre' => $nombreArchivo,
-                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'cliente_especifico' => $esClienteEspecifico,
-                'nombre_cliente' => $esClienteEspecifico ? $clienteNombre : null,
-                'fecha_envio' => $fechaEnvio
+                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             ];
         } elseif ($formato === 'excel') {
-            // Usar el mismo nombreArchivo ya generado arriba
+            $nombreArchivo = "Reporte de operaciones logistica {$clienteLimpio} {$fechaEnvio}.xlsx";
             $rutaCompleta = $tempDir . '/' . $nombreArchivo;
 
-            // Preparar estadsticas para el Excel
+            // Preparar estadÃƒÂ­sticas para el Excel
             $estadisticas = $this->calcularEstadisticasReporte($operaciones);
 
-            // Generar Excel profesional con grficos
+            // Generar Excel profesional con grÃƒÂ¡ficos
             $excelService = new ExcelReportService();
             $excelService->generateLogisticsReport($operaciones, [], $estadisticas);
             $excelService->save($rutaCompleta);
@@ -3268,10 +3208,7 @@ class operacionLogisticaController extends Controller
             return [
                 'path' => $rutaCompleta,
                 'nombre' => $nombreArchivo,
-                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'cliente_especifico' => $esClienteEspecifico,
-                'nombre_cliente' => $esClienteEspecifico ? $clienteNombre : null,
-                'fecha_envio' => $fechaEnvio
+                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             ];
         }
 
@@ -3279,7 +3216,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Calcular estadsticas para el reporte Excel
+     * Calcular estadÃƒÂ­sticas para el reporte Excel
      */
     private function calcularEstadisticasReporte($operaciones)
     {
@@ -3303,23 +3240,23 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Generar archivo Excel con diseo profesional y TODAS las columnas de la matriz
+     * Generar archivo Excel con diseño profesional y TODAS las columnas de la matriz
      */
     private function generarExcelTSV($operaciones, $rutaArchivo)
     {
-        // Usar PhpSpreadsheet para generar Excel nativo con diseo
+        // Usar PhpSpreadsheet para generar Excel nativo con diseño
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('operaciones Logisticas');        // CABECERAS SIN ACENTOS PARA EVITAR PROBLEMAS DE CODIFICACION
+        $sheet->setTitle('Operaciones Logisticas');        // CABECERAS SIN ACENTOS PARA EVITAR PROBLEMAS DE CODIFICACION
         $cabeceras = [
             'No.',
             'Ejecutivo',
-            'operacion',
+            'Operacion',
             'Cliente',
             'Proveedor/Cliente Final',
             'Fecha de Embarque',
             'No. Factura',
-            'T. operacion',
+            'T. Operacion',
             'Clave',
             'Referencia Interna',
             'Aduana',
@@ -3335,7 +3272,7 @@ class operacionLogisticaController extends Controller
             'Resultado',
             'Target',
             'Dias en Transito',
-            'Post-operaciones',
+            'Post-Operaciones',
             'Comentarios'
         ];
 
@@ -3359,7 +3296,7 @@ class operacionLogisticaController extends Controller
         }
 
         // DATOS COMPLETOS DE LA MATRIZ DE SEGUIMIENTO
-        $filaExcel = 2; // Comenzar despus de las cabeceras
+        $filaExcel = 2; // Comenzar después de las cabeceras
         foreach ($operaciones as $operacion) {
             // Calcular status actual (prioriza Done manual, sino usa calculado)
             $statusFinal = ($operacion->status_manual === 'Done') ? 'Done' : $operacion->status_calculado;
@@ -3375,7 +3312,7 @@ class operacionLogisticaController extends Controller
                 $operacion->id,
                 // Ejecutivo
                 $operacion->ejecutivo ?? 'Sin asignar',
-                // operacion
+                // Operación
                 $operacion->operacion ?? '-',
                 // Cliente
                 $operacion->cliente ?? 'Sin cliente',
@@ -3385,7 +3322,7 @@ class operacionLogisticaController extends Controller
                 optional($operacion->fecha_embarque)->format('d/m/Y') ?? '-',
                 // No. Factura
                 $operacion->no_factura ?? '-',
-                // T. operacion
+                // T. Operación
                 $operacion->tipo_operacion_enum ?? '-',
                 // Clave
                 $operacion->clave ?? '-',
@@ -3403,11 +3340,11 @@ class operacionLogisticaController extends Controller
                 $operacion->transporte ?? '-',
                 // Fecha de Arribo a Aduana
                 optional($operacion->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
-                // Gua //BL
+                // Guía //BL
                 $operacion->guia_bl ?? '-',
                 // Status
                 $statusDisplay,
-                // Fecha de Modulacin
+                // Fecha de Modulación
                 optional($operacion->fecha_modulacion)->format('d/m/Y') ?? '-',
                 // Fecha de Arribo a Planta
                 optional($operacion->fecha_arribo_planta)->format('d/m/Y') ?? '-',
@@ -3415,10 +3352,10 @@ class operacionLogisticaController extends Controller
                 $operacion->resultado ?? '-',
                 // Target
                 $operacion->target ?? '-',
-                // Das en Trnsito (embarque a arribo planta)
+                // Días en Tránsito (embarque a arribo planta)
                 $operacion->dias_transito ?? '-',
-                // Post-operaciones
-                $this->formatearPostOperaciones($operacion),
+                // Post-Operaciones
+                $operacion->post_operacion_id ?? '-',
                 // Comentarios
                 $this->limpiarTexto($operacion->comentarios ?? '-')
             ];
@@ -3438,7 +3375,7 @@ class operacionLogisticaController extends Controller
                 $columna++;
             }
             
-            $filaExcel++; // Incrementar fila para la siguiente iteracin
+            $filaExcel++; // Incrementar fila para la siguiente iteración
         }
 
         // Guardar archivo Excel
@@ -3447,26 +3384,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Formatear post-operaciones para mostrar en Excel
-     */
-    private function formatearPostOperaciones($operacion)
-    {
-        if (!$operacion->asignacionesPostOperaciones || $operacion->asignacionesPostOperaciones->isEmpty()) {
-            return '-';
-        }
-
-        $postOpsTexto = [];
-        foreach ($operacion->asignacionesPostOperaciones as $asignacion) {
-            $nombre = $asignacion->postOperacion->nombre ?? 'Sin nombre';
-            $status = $asignacion->status ?? 'Pendiente';
-            $postOpsTexto[] = "{$nombre} ({$status})";
-        }
-
-        return implode('; ', $postOpsTexto);
-    }
-
-    /**
-     * Limpiar texto para CSV eliminando TODOS los caracteres problemticos
+     * Limpiar texto para CSV eliminando TODOS los caracteres problemáticos
      */
     private function limpiarTexto($texto)
     {
@@ -3475,27 +3393,27 @@ class operacionLogisticaController extends Controller
         // Convertir a string si no lo es
         $texto = (string)$texto;
 
-        // Reemplazos especficos para casos conocidos
+        // Reemplazos específicos para casos conocidos
         $reemplazos = [
-            'M????????xico' => 'MEXICO',
-            'M????XICO' => 'MEXICO',
-            'M????%????XI' => 'MEXICO',
-            'M????%????' => 'MEX',
-            '????????' => 'a', '????????' => 'e', '????????' => 'i', '????????' => 'o', '????????' => 'u',
-            '????????' => 'n', '????????' => 'u'
+            'MÃ©xico' => 'MEXICO',
+            'MÃXICO' => 'MEXICO',
+            'MÃ%ÃXI' => 'MEXICO',
+            'MÃ%Ã' => 'MEX',
+            'Ã¡' => 'a', 'Ã©' => 'e', 'Ã­' => 'i', 'Ã³' => 'o', 'Ãº' => 'u',
+            'Ã±' => 'n', 'Ã¼' => 'u'
         ];
 
         foreach ($reemplazos as $buscar => $reemplazar) {
             $texto = str_replace($buscar, $reemplazar, $texto);
         }
 
-        // Eliminar caracteres no ASCII problemticos
+        // Eliminar caracteres no ASCII problemáticos
         $texto = preg_replace('/[\x80-\xFF]/', '', $texto);
 
-        // Solo permitir caracteres bsicos
+        // Solo permitir caracteres básicos
         $texto = preg_replace('/[^A-Za-z0-9\s\-\_\.\,\/\(\)]/', ' ', $texto);
 
-        // Limpiar espacios mltiples
+        // Limpiar espacios múltiples
         $texto = preg_replace('/\s+/', ' ', trim($texto));
 
         // Truncar si es muy largo
@@ -3519,20 +3437,20 @@ class operacionLogisticaController extends Controller
         }
     }
 
-    // metodos auxiliares para el reporte
+    // MÃ©todos auxiliares para el reporte
     private function formatearStatusConIconos($status)
     {
         switch ($status) {
             case 'Done':
-                return '???????? COMPLETADO';
+                return 'Ã¢Å“â€¦ COMPLETADO';
             case 'In Process':
-                return '???????? EN PROCESO';
+                return 'Ã°Å¸â€â€ž EN PROCESO';
             case 'Out of Metric':
-                return '???????? FUERA METRICA';
+                return 'Ã¢Å¡Â Ã¯Â¸Â FUERA METRICA';
             case 'In Time':
-                return '???????? EN TIEMPO';
+                return 'Ã¢ÂÂ° EN TIEMPO';
             default:
-                return '???????? ' . mb_strtoupper($status ?? 'INDEFINIDO');
+                return 'Ã¢Ââ€œ ' . mb_strtoupper($status ?? 'INDEFINIDO');
         }
     }
 
@@ -3543,15 +3461,15 @@ class operacionLogisticaController extends Controller
     {
         switch($resultado) {
             case 'excelente':
-                return '???????? EXCELENTE';
+                return 'Ã°Å¸Ââ€  EXCELENTE';
             case 'bueno':
-                return '???????? BUENO';
+                return 'Ã¢Å“â€¦ BUENO';
             case 'regular':
-                return '???????? REGULAR';
+                return 'Ã¢Å¡Â Ã¯Â¸Â REGULAR';
             case 'malo':
-                return '???????? DEFICIENTE';
+                return 'Ã¢ÂÅ’ DEFICIENTE';
             default:
-                return '???????? SIN EVALUAR';
+                return 'Ã¢Ââ€ SIN EVALUAR';
         }
     }
 
@@ -3563,13 +3481,13 @@ class operacionLogisticaController extends Controller
         $eficienciaNum = round($eficiencia, 1);
 
         if ($eficienciaNum >= 90) {
-            return "???????? {$eficienciaNum}%";
+            return "Ã°Å¸Å¸Â¢ {$eficienciaNum}%";
         } elseif ($eficienciaNum >= 70) {
-            return "???????? {$eficienciaNum}%";
+            return "Ã°Å¸Å¸Â¡ {$eficienciaNum}%";
         } elseif ($eficienciaNum >= 50) {
-            return "???????? {$eficienciaNum}%";
+            return "Ã°Å¸Å¸Â  {$eficienciaNum}%";
         } else {
-            return "???????? {$eficienciaNum}%";
+            return "Ã°Å¸â€Â´ {$eficienciaNum}%";
         }
     }
 
@@ -3579,7 +3497,7 @@ class operacionLogisticaController extends Controller
     private function limpiarComentariosParaExcel($comentarios)
     {
         if (!$comentarios || trim($comentarios) === '') {
-            return '???????? Sin observaciones';
+            return 'Ã°Å¸â€œÂ Sin observaciones';
         }
 
         // Limpiar y truncar comentarios largos
@@ -3599,13 +3517,13 @@ class operacionLogisticaController extends Controller
     {
         switch ($status) {
             case 'Done':
-                return '???????? COMPLETADO';
+                return 'Ã¢Å“â€¦ COMPLETADO';
             case 'In Process':
-                return '???????? EN PROCESO';
+                return 'Ã°Å¸â€â€ž EN PROCESO';
             case 'Out of Metric':
-                return '???????? FUERA DE METRICA';
+                return 'Ã¢Å¡Â Ã¯Â¸Â FUERA DE METRICA';
             default:
-                return '???????? ' . strtoupper($status ?? 'DESCONOCIDO');
+                return 'Ã¢Ââ€œ ' . strtoupper($status ?? 'DESCONOCIDO');
         }
     }
 
@@ -3616,19 +3534,19 @@ class operacionLogisticaController extends Controller
     {
         switch ($resultado) {
             case 'Completado a Tiempo':
-                return '???????? COMPLETADO A TIEMPO';
+                return 'Ã°Å¸Ââ€  COMPLETADO A TIEMPO';
             case 'Completado con Retraso':
-                return '???????? COMPLETADO CON RETRASO';
+                return 'Ã¢ÂÂ° COMPLETADO CON RETRASO';
             case 'En Tiempo':
-                return '???????? EN TIEMPO';
+                return 'Ã¢Å“â€¦ EN TIEMPO';
             case 'En Riesgo':
-                return '???????? EN RIESGO';
+                return 'Ã¢Å¡Â Ã¯Â¸Â EN RIESGO';
             case 'Con Retraso':
-                return '???????? CON RETRASO';
+                return 'Ã°Å¸â€Â´ CON RETRASO';
             case 'Fuera de METRICA':
-                return '???????? FUERA DE METRICA';
+                return 'Ã°Å¸â€œÂµ FUERA DE METRICA';
             default:
-                return '???????? ' . strtoupper($resultado ?? 'DESCONOCIDO');
+                return 'Ã¢Ââ€œ ' . strtoupper($resultado ?? 'DESCONOCIDO');
         }
     }
 
@@ -3637,14 +3555,14 @@ class operacionLogisticaController extends Controller
      */
     private function limpiarComentarios($comentarios)
     {
-        // Remover saltos de lnea y caracteres especiales
+        // Remover saltos de lÃƒÂ­nea y caracteres especiales
         $comentarios = str_replace(["\n", "\r", "\t"], ' ', $comentarios);
         // Limitar longitud
         return strlen($comentarios) > 100 ? substr($comentarios, 0, 97) . '...' : $comentarios;
     }
 
     /**
-     * Calcular resultado de performance de operacion
+     * Calcular resultado de performance de operaciÃƒÂ³n
      */
     private function calcularResultadoPerformance($operacion)
     {
@@ -3663,9 +3581,9 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Calcular eficiencia de operacion
+     * Calcular eficiencia de operaciÃƒÂ³n
      */
-    private function calcularEficienciaoperacion($operacion)
+    private function calcularEficienciaOperacion($operacion)
     {
         $dias = $operacion->calcularDiasTranscurridos();
         $target = $operacion->dias_objetivo ?? 5;
@@ -3679,7 +3597,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Exportar Excel profesional con grficos y diseo moderno
+     * Exportar Excel profesional con grÃƒÂ¡ficos y diseÃƒÂ±o moderno
      */
     public function exportExcelProfesional(Request $request)
     {
@@ -3697,7 +3615,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Construir query con los mismos filtros que el reporte normal
-            $query = operacionLogistica::with('ejecutivo');
+            $query = OperacionLogistica::with('ejecutivo');
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -3710,7 +3628,7 @@ class operacionLogisticaController extends Controller
             // Obtener operaciones
             $operaciones = $query->get();
 
-            // Calcular estadsticas
+            // Calcular estadÃƒÂ­sticas
             $estadisticas = $this->calcularEstadisticasReporte($operaciones);
 
             // Preparar filtros aplicados para mostrar en el reporte
@@ -3751,7 +3669,7 @@ class operacionLogisticaController extends Controller
      */
     private function aplicarFiltrosReporte($query, Request $request)
     {
-        // Filtro por perodo
+        // Filtro por perÃƒÂ­odo
         if ($request->filled('periodo')) {
             $periodo = $request->periodo;
             if ($periodo === 'semanal') {
@@ -3763,7 +3681,7 @@ class operacionLogisticaController extends Controller
             }
         }
 
-        // Filtro por mes y ao especficos
+        // Filtro por mes y aÃƒÂ±o especÃƒÂ­ficos
         if ($request->filled('mes') && $request->filled('anio')) {
             $query->whereMonth('created_at', $request->mes)
                   ->whereYear('created_at', $request->anio);
@@ -3790,7 +3708,7 @@ class operacionLogisticaController extends Controller
             }
         }
 
-        // Filtros por fechas especficas
+        // Filtros por fechas especÃƒÂ­ficas
         if ($request->filled('fecha_desde')) {
             $query->whereDate('created_at', '>=', $request->fecha_desde);
         }
@@ -3798,76 +3716,44 @@ class operacionLogisticaController extends Controller
         if ($request->filled('fecha_hasta')) {
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
-
-        // Filtro por ejecutivo
-        if ($request->filled('ejecutivo')) {
-            $query->where('ejecutivo', 'like', '%' . $request->ejecutivo . '%');
-        }
-
-        // Filtro por tipo de operación
-        if ($request->filled('tipo_operacion')) {
-            $query->where('tipo_operacion_enum', $request->tipo_operacion);
-        }
-
-        // Filtro por aduana
-        if ($request->filled('aduana')) {
-            $query->where('aduana', 'like', '%' . $request->aduana . '%');
-        }
-
-        // Filtro por agente aduanal
-        if ($request->filled('agente_aduanal')) {
-            $query->where('agente_aduanal', 'like', '%' . $request->agente_aduanal . '%');
-        }
-
-        // Filtro por búsqueda general
-        if ($request->filled('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('operacion', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('cliente', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('no_pedimento', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('no_factura', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('referencia_interna', 'like', '%' . $searchTerm . '%');
-            });
-        }
     }
 
     /**
-     * Obtener historial completo de comentarios de una operacion
+     * Obtener historial completo de comentarios de una operaciÃƒÂ³n
      */
     public function obtenerHistorialComentarios($id)
     {
         try {
-            $operacion = operacionLogistica::with('comentariosCronologicos')->findOrFail($id);
+            $operacion = OperacionLogistica::with('comentariosCronologicos')->findOrFail($id);
 
             $comentarios = $operacion->comentariosCronologicos
                 ->filter(function ($comentario) {
                     // Filtrar comentarios del sistema, solo mostrar los del ejecutivo
-                    return !in_array($comentario->usuario_nombre, ['Sistema', 'Sistema Automtico', 'Sistema de Prueba']);
+                    return !in_array($comentario->usuario_nombre, ['Sistema', 'Sistema AutomÃƒÂ¡tico', 'Sistema de Prueba']);
                 })
                 ->map(function ($comentario) use ($operacion) {
-                    // Cambiar el ttulo de actualizacion_automatica por el nmero de pedimento
+                    // Cambiar el tÃƒÂ­tulo de actualizacion_automatica por el nÃƒÂºmero de pedimento
                     $tipoAccion = $comentario->tipo_accion;
                     if ($tipoAccion === 'actualizacion_automatica' && $operacion->no_pedimento) {
                         $tipoAccion = $operacion->no_pedimento;
                     }
 
-                    // Para mostrar: extraer solo la parte despus de "Comentarios:" si existe
+                    // Para mostrar: extraer solo la parte despuÃƒÂ©s de "Comentarios:" si existe
                     $comentarioTextoMostrar = $comentario->comentario;
-                    $comentarioTextoEdicion = $comentario->comentario; // Siempre usar texto completo para edicin
+                    $comentarioTextoEdicion = $comentario->comentario; // Siempre usar texto completo para ediciÃƒÂ³n
 
                     if (strpos($comentarioTextoMostrar, 'Comentarios: ') !== false) {
                         $comentarioTextoExtraido = trim(substr($comentarioTextoMostrar, strpos($comentarioTextoMostrar, 'Comentarios: ') + 13));
                         if (!empty($comentarioTextoExtraido)) {
                             $comentarioTextoMostrar = $comentarioTextoExtraido;
-                            $comentarioTextoEdicion = $comentarioTextoExtraido; // Para edicin usar el texto extrado
+                            $comentarioTextoEdicion = $comentarioTextoExtraido; // Para ediciÃƒÂ³n usar el texto extraÃƒÂ­do
                         }
                     }
 
                     return [
                         'id' => $comentario->id,
                         'comentario' => $comentarioTextoMostrar,
-                        'comentario_edicion' => $comentarioTextoEdicion, // Texto especfico para edicin
+                        'comentario_edicion' => $comentarioTextoEdicion, // Texto especÃƒÂ­fico para ediciÃƒÂ³n
                         'status_en_momento' => $comentario->status_en_momento,
                         'tipo_accion' => $tipoAccion,
                         'icono_accion' => $comentario->icono_accion,
@@ -3876,7 +3762,7 @@ class operacionLogisticaController extends Controller
                         'created_at' => $comentario->created_at->toISOString(),
                     ];
                 })
-                ->values(); // Reindexar despus del filtro
+                ->values(); // Reindexar despuÃƒÂ©s del filtro
 
             return response()->json([
                 'success' => true,
@@ -3899,7 +3785,7 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Enviar informacin del email y archivo al webhook de N8N
+     * Enviar informaciÃƒÂ³n del email y archivo al webhook de N8N
      */
     private function enviarWebhookLogistica($datosCorreo, $request)
     {
@@ -3907,11 +3793,11 @@ class operacionLogisticaController extends Controller
             $webhookUrl = config('services.n8n.logistica_webhook_url');
 
             if (empty($webhookUrl)) {
-                \Log::info('Webhook de LOGISTICA no configurado. Se omite notificacin.');
+                \Log::info('Webhook de logÃƒÂ­stica no configurado. Se omite notificaciÃƒÂ³n.');
                 return ['success' => false, 'message' => 'Webhook no configurado'];
             }
 
-            // Preparar payload con toda la informacin del email
+            // Preparar payload con toda la informaciÃƒÂ³n del email
             $payload = [
                 'tipo' => 'reporte_logistica',
                 'timestamp' => now()->toISOString(),
@@ -3935,7 +3821,7 @@ class operacionLogisticaController extends Controller
                 ]
             ];
 
-            // Si hay archivo adjunto, incluir informacin del archivo
+            // Si hay archivo adjunto, incluir informaciÃƒÂ³n del archivo
             if (isset($datosCorreo['adjunto'])) {
                 $archivoPath = $datosCorreo['adjunto']['path'];
 
@@ -3951,13 +3837,13 @@ class operacionLogisticaController extends Controller
                 }
             }
 
-            // Enviar al webhook (sin verificacin SSL para desarrollo)
+            // Enviar al webhook (sin verificaciÃƒÂ³n SSL para desarrollo)
             $response = \Illuminate\Support\Facades\Http::withoutVerifying()
                 ->timeout(30)
                 ->post($webhookUrl, $payload);
 
             if ($response->successful()) {
-                \Log::info('Webhook de LOGISTICA enviado correctamente.', [
+                \Log::info('Webhook de logÃƒÂ­stica enviado correctamente.', [
                     'url' => $webhookUrl,
                     'destinatarios' => count($datosCorreo['destinatarios']),
                     'tiene_archivo' => isset($datosCorreo['adjunto'])
@@ -3968,7 +3854,7 @@ class operacionLogisticaController extends Controller
                     'message' => 'Webhook enviado correctamente'
                 ];
             } else {
-                \Log::error('No se pudo enviar el webhook de LOGISTICA.', [
+                \Log::error('No se pudo enviar el webhook de logÃƒÂ­stica.', [
                     'url' => $webhookUrl,
                     'status' => $response->status(),
                     'response' => $response->body()
@@ -3981,7 +3867,7 @@ class operacionLogisticaController extends Controller
             }
 
         } catch (\Exception $e) {
-            \Log::error('Error al enviar el webhook de LOGISTICA.', [
+            \Log::error('Error al enviar el webhook de logÃƒÂ­stica.', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -3998,20 +3884,20 @@ class operacionLogisticaController extends Controller
      */
     private function programarLimpiezaArchivo($rutaArchivo)
     {
-        // Crear un job o comando simple para limpiar el archivo despus de 1 hora
+        // Crear un job o comando simple para limpiar el archivo despuÃƒÂ©s de 1 hora
         // Por simplicidad, lo hacemos con un archivo de control
         try {
             $timeToDelete = time() + 3600; // 1 hora
             $controlFile = dirname($rutaArchivo) . '/.cleanup_' . basename($rutaArchivo) . '.txt';
             file_put_contents($controlFile, $timeToDelete);
         } catch (\Exception $e) {
-            // Si no se puede programar la limpieza, no es crtico
+            // Si no se puede programar la limpieza, no es crÃƒÂ­tico
             Log::debug('No se pudo programar limpieza de archivo temporal: ' . $e->getMessage());
         }
     }
 
     /**
-     * Limpiar archivos temporales vencidos (se puede llamar peridicamente)
+     * Limpiar archivos temporales vencidos (se puede llamar periÃƒÂ³dicamente)
      */
     public function limpiarArchivosTemporales()
     {
@@ -4036,7 +3922,7 @@ class operacionLogisticaController extends Controller
                         $archivosEliminados++;
                     }
 
-                    // Eliminar tambin el archivo de control
+                    // Eliminar tambiÃƒÂ©n el archivo de control
                     unlink($controlFile);
                 }
             }
@@ -4054,12 +3940,12 @@ class operacionLogisticaController extends Controller
     }
 
     /**
-     * Crear UN SOLO registro de historial consolidado para mltiples cambios de fechas
+     * Crear UN SOLO registro de historial consolidado para múltiples cambios de fechas
      */
     private function crearRegistroHistorialFechasConsolidado($operacion, $cambios)
     {
         try {
-            // Calcular das transcurridos actuales
+            // Calcular días transcurridos actuales
             $resultado = $operacion->calcularStatusPorDias();
             
             // Construir mensaje consolidado
@@ -4069,14 +3955,14 @@ class operacionLogisticaController extends Controller
                 $mensajes[] = $cambio['mensaje'] . ' (' . $fechaFormateada . ')';
             }
             
-            // Unir todos los mensajes en una sola observacin
+            // Unir todos los mensajes en una sola observación
             $observacionConsolidada = implode('; ', $mensajes);
             
-            // Crear el registro nico en el historial
+            // Crear el registro único en el historial
             $historial = $operacion->historicoMatrizSgm()->create([
                 'fecha_registro' => now(),
                 'fecha_arribo_aduana' => $operacion->fecha_arribo_aduana,
-                'dias_transcurridos' => (int)round($resultado['dias_transcurridos'] ?? 0),
+                'dias_transcurridos' => $resultado['dias_transcurridos'],
                 'target_dias' => $resultado['target'],
                 'color_status' => $resultado['color'],
                 'operacion_status' => $resultado['status'],
@@ -4101,11 +3987,3 @@ class operacionLogisticaController extends Controller
         }
     }
 }
-
-
-
-
-
-
-
-

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Consulta de Operaciones - Logística</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
     <style>
         .status-verde { background-color: #10b981; color: white; }
         .status-amarillo { background-color: #f59e0b; color: white; }
@@ -171,7 +171,7 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const response = await fetch('{{ route("logistica.consulta-publica.buscar") }}?' + new URLSearchParams({
+                const response = await fetch('<?php echo e(route("logistica.consulta-publica.buscar")); ?>?' + new URLSearchParams({
                     tipo_busqueda: tipo,
                     valor: valor
                 }));
@@ -313,3 +313,4 @@
     </script>
 </body>
 </html>
+<?php /**PATH C:\Users\SISTEMAS\Downloads\ERP EstrategiaeInnovacion\Sistema_Tickets_E-I\resources\views/Logistica/consulta-publica.blade.php ENDPATH**/ ?>

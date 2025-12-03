@@ -432,7 +432,7 @@ class ExcelReportService
         // Configurar encabezados
         $headers = [
             'ID', 'Cliente', 'Ejecutivo', 'Fecha Creación', 'ETA', 'Agente Aduanal',
-            'Pedimento', 'Transporte', 'Status Calculado', 'Status Manual',
+            'Pedimento', 'Guía/BL', 'Transporte', 'Status Calculado', 'Status Manual',
             'Días Transcurridos', 'Target Días', 'Resultado', 'Comentarios',
             'Post-Operaciones Completas', 'Post-Operaciones Pendientes'
         ];
@@ -462,25 +462,26 @@ class ExcelReportService
             $dataSheet->setCellValue('E' . $row, $operacion->eta ? $operacion->eta->format('d/m/Y') : 'N/A');
             $dataSheet->setCellValue('F' . $row, $operacion->agente_aduanal);
             $dataSheet->setCellValue('G' . $row, $operacion->pedimento);
-            $dataSheet->setCellValue('H' . $row, $operacion->transporte);
-            $dataSheet->setCellValue('I' . $row, $operacion->status_calculado);
-            $dataSheet->setCellValue('J' . $row, $operacion->status_manual ?? $operacion->status_calculado);
-            $dataSheet->setCellValue('K' . $row, $operacion->calcularDiasTranscurridos());
-            $dataSheet->setCellValue('L' . $row, $operacion->dias_objetivo ?? 5);
+            $dataSheet->setCellValue('H' . $row, $operacion->guia_bl ?? 'N/A');
+            $dataSheet->setCellValue('I' . $row, $operacion->transporte);
+            $dataSheet->setCellValue('J' . $row, $operacion->status_calculado);
+            $dataSheet->setCellValue('K' . $row, $operacion->status_manual ?? $operacion->status_calculado);
+            $dataSheet->setCellValue('L' . $row, $operacion->calcularDiasTranscurridos());
+            $dataSheet->setCellValue('M' . $row, $operacion->dias_objetivo ?? 5);
 
             // Colorear resultado basado en performance
             $resultado = $this->calculateResult($operacion);
-            $dataSheet->setCellValue('M' . $row, $resultado['texto']);
-            $dataSheet->getStyle('M' . $row)->getFill()->setFillType(Fill::FILL_SOLID);
-            $dataSheet->getStyle('M' . $row)->getFill()->getStartColor()->setRGB($resultado['color']);
+            $dataSheet->setCellValue('N' . $row, $resultado['texto']);
+            $dataSheet->getStyle('N' . $row)->getFill()->setFillType(Fill::FILL_SOLID);
+            $dataSheet->getStyle('N' . $row)->getFill()->getStartColor()->setRGB($resultado['color']);
 
-            $dataSheet->setCellValue('N' . $row, $operacion->comentarios ?? '');
-            $dataSheet->setCellValue('O' . $row, $operacion->postOperacionesCompletas ?? 0);
-            $dataSheet->setCellValue('P' . $row, $operacion->postOperacionesPendientes ?? 0);
+            $dataSheet->setCellValue('O' . $row, $operacion->comentarios ?? '');
+            $dataSheet->setCellValue('P' . $row, $operacion->postOperacionesCompletas ?? 0);
+            $dataSheet->setCellValue('Q' . $row, $operacion->postOperacionesPendientes ?? 0);
 
             // Aplicar bordes alternados
             if ($row % 2 == 0) {
-                $rowRange = 'A' . $row . ':P' . $row;
+                $rowRange = 'A' . $row . ':Q' . $row;
                 $dataSheet->getStyle($rowRange)->getFill()->setFillType(Fill::FILL_SOLID);
                 $dataSheet->getStyle($rowRange)->getFill()->getStartColor()->setRGB('F8F9FA');
             }
@@ -489,7 +490,7 @@ class ExcelReportService
         }
 
         // Autoajustar columnas
-        foreach (range('A', 'P') as $col) {
+        foreach (range('A', 'Q') as $col) {
             $dataSheet->getColumnDimension($col)->setAutoSize(true);
         }
     }

@@ -83,7 +83,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::delete('/logistica/operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroy']);
 
     // Rutas para Post-Operaciones por Operación
-    Route::get('/logistica/operaciones/{id}/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getPostOperacionesByOperacion']);
+    Route::get('/logistica/operaciones/{id}/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getPostoperacionesByoperacion']);
     Route::post('/logistica/post-operaciones', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacion']);
     Route::put('/logistica/post-operaciones/{id}/estado', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updatePostOperacionEstado']);
     Route::put('/logistica/operaciones/{id}/post-operaciones/actualizar-estados', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'actualizarEstadosPostOperaciones']);
