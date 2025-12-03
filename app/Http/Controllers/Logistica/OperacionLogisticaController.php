@@ -3155,12 +3155,48 @@ class OperacionLogisticaController extends Controller
                 $nombreArchivoDescarga = time() . '_' . basename($archivoInfo['path']);
                 $rutaPublica = 'temp/' . $nombreArchivoDescarga;
 
-                // Copiar archivo a directorio pblico temporal
+                // Copiar archivo a directorio pblico temporal con manejo de errores robusto
                 $rutaPublicaCompleta = public_path($rutaPublica);
-                if (!file_exists(dirname($rutaPublicaCompleta))) {
-                    mkdir(dirname($rutaPublicaCompleta), 0755, true);
+                $directorioTemp = dirname($rutaPublicaCompleta);
+                
+                try {
+                    if (!file_exists($directorioTemp)) {
+                        // Crear directorio con permisos ms amplios para producción
+                        if (!mkdir($directorioTemp, 0775, true)) {
+                            throw new \Exception("No se pudo crear el directorio temporal");
+                        }
+                        // Intentar cambiar propietario si es posible
+                        if (function_exists('chown') && is_executable('/usr/bin/chown')) {
+                            @chown($directorioTemp, 'www-data');
+                            @chgrp($directorioTemp, 'www-data');
+                        }
+                    }
+                    
+                    // Verificar que el directorio sea escribible
+                    if (!is_writable($directorioTemp)) {
+                        throw new \Exception("El directorio temporal no tiene permisos de escritura: " . $directorioTemp);
+                    }
+                    
+                    // Intentar copiar archivo
+                    if (!copy($archivoInfo['path'], $rutaPublicaCompleta)) {
+                        throw new \Exception("Error al copiar archivo a directorio temporal");
+                    }
+                    
+                } catch (\Exception $e) {
+                    // Fallback: usar storage/app/public como alternativa
+                    \Log::warning("Error con directorio public/temp, usando storage como alternativa: " . $e->getMessage());
+                    
+                    $rutaStorage = 'temp/' . $nombreArchivoDescarga;
+                    $rutaStorageCompleta = storage_path('app/public/' . $rutaStorage);
+                    $directorioStorageTemp = dirname($rutaStorageCompleta);
+                    
+                    if (!file_exists($directorioStorageTemp)) {
+                        mkdir($directorioStorageTemp, 0775, true);
+                    }
+                    
+                    copy($archivoInfo['path'], $rutaStorageCompleta);
+                    $rutaPublica = 'storage/' . $rutaStorage;
                 }
-                copy($archivoInfo['path'], $rutaPublicaCompleta);
 
                 $respuesta['download_url'] = url($rutaPublica);
                 $respuesta['download_filename'] = $archivoInfo['nombre'];

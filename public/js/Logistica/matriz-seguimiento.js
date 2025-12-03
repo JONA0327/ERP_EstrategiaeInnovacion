@@ -1459,7 +1459,11 @@ window.verComentarios = function(operacionId) {
 window.cerrarModalComentarios = function() {
     document.getElementById('modalComentarios').classList.add('hidden');
     operacionActualComentarios = null;
-    cancelarEdicionComentario();
+    // Resetear cualquier estado de edición de comentarios
+    const textareas = document.querySelectorAll('#modalComentarios textarea');
+    textareas.forEach(textarea => textarea.style.display = 'none');
+    const spans = document.querySelectorAll('#modalComentarios .comentario-texto');
+    spans.forEach(span => span.style.display = 'block');
 };
 
 function cargarComentariosPorOperacion(operacionId) {

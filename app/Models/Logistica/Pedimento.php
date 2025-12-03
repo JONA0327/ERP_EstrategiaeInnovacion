@@ -21,7 +21,12 @@ class Pedimento extends Model
         'categoria',
         'subcategoria', 
         'clave',
-        'descripcion'
+        'descripcion',
+        'estado_pago',
+        'fecha_pago',
+        'monto',
+        'observaciones_pago',
+        'fecha_vencimiento'
     ];
 
     /**
@@ -31,7 +36,11 @@ class Pedimento extends Model
         'categoria' => 'string',
         'subcategoria' => 'string',
         'clave' => 'string',
-        'descripcion' => 'string'
+        'descripcion' => 'string',
+        'estado_pago' => 'string',
+        'fecha_pago' => 'date',
+        'monto' => 'decimal:2',
+        'fecha_vencimiento' => 'datetime'
     ];
 
     /**
@@ -91,5 +100,89 @@ class Pedimento extends Model
             ->filter()
             ->sort()
             ->values();
+    }
+
+    /**
+     * Scope para filtrar por estado de pago
+     */
+    public function scopePorEstadoPago($query, $estado)
+    {
+        return $query->where('estado_pago', $estado);
+    }
+
+    /**
+     * Scope para pedimentos pendientes
+     */
+    public function scopePendientes($query)
+    {
+        return $query->where('estado_pago', 'pendiente');
+    }
+
+    /**
+     * Scope para pedimentos pagados
+     */
+    public function scopePagados($query)
+    {
+        return $query->where('estado_pago', 'pagado');
+    }
+
+    /**
+     * Scope para pedimentos vencidos
+     */
+    public function scopeVencidos($query)
+    {
+        return $query->where('estado_pago', 'vencido');
+    }
+
+    /**
+     * Verificar si el pedimento está vencido
+     */
+    public function estaVencido()
+    {
+        if (!$this->fecha_vencimiento || $this->estado_pago === 'pagado') {
+            return false;
+        }
+        
+        return $this->fecha_vencimiento->isPast();
+    }
+
+    /**
+     * Obtener el color del estado para la UI
+     */
+    public function getColorEstado()
+    {
+        switch ($this->estado_pago) {
+            case 'pagado':
+                return 'green';
+            case 'vencido':
+                return 'red';
+            case 'pendiente':
+            default:
+                return $this->estaVencido() ? 'red' : 'yellow';
+        }
+    }
+
+    /**
+     * Obtener el texto del estado para mostrar
+     */
+    public function getTextoEstado()
+    {
+        switch ($this->estado_pago) {
+            case 'pagado':
+                return '✅ Pagado';
+            case 'vencido':
+                return '❌ Vencido';
+            case 'pendiente':
+            default:
+                return $this->estaVencido() ? '⚠️ Vencido' : '⏳ Pendiente';
+        }
+    }
+
+    /**
+     * Relación con operaciones logísticas
+     */
+    public function operaciones()
+    {
+        return $this->hasMany(OperacionLogistica::class, 'no_pedimento', 'clave');
     }
 }

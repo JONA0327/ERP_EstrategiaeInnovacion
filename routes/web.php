@@ -12,6 +12,7 @@ use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
 use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con barra de progreso
 use App\Http\Controllers\Logistica\OperacionLogisticaController;
+use App\Http\Controllers\Logistica\PedimentoController;
 use App\Http\Controllers\Logistica\LogisticaCorreoCCController;
 
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,13 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::put('/logistica/operaciones/{id}/post-operaciones/actualizar-estados', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'actualizarEstadosPostOperaciones']);
     Route::delete('/logistica/post-operaciones/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyPostOperacion']);
 
+    // Rutas para Pedimentos
+    Route::get('/logistica/pedimentos', [PedimentoController::class, 'index'])->name('logistica.pedimentos.index');
+    Route::get('/logistica/pedimentos/{id}', [PedimentoController::class, 'show'])->name('logistica.pedimentos.show');
+    Route::put('/logistica/pedimentos/{id}/estado-pago', [PedimentoController::class, 'updateEstadoPago'])->name('logistica.pedimentos.update-estado');
+    Route::delete('/logistica/pedimentos/{id}', [PedimentoController::class, 'destroy'])->name('logistica.pedimentos.destroy');
+    Route::post('/logistica/pedimentos/marcar-pagados', [PedimentoController::class, 'marcarPagados'])->name('logistica.pedimentos.marcar-pagados');
+
     // Rutas para Post-Operaciones Globales
     Route::get('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'indexPostOperacionesGlobales']);
     Route::post('/logistica/post-operaciones-globales', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'storePostOperacionGlobal']);
@@ -114,13 +122,8 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'destroy']);
     Route::delete('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'clear']);
 
-    // Rutas para Pedimentos
-    Route::get('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'index']);
-    Route::post('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'store']);
-    Route::put('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'update']);
-    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos'])->name('logistica.pedimentos.import');
-    Route::delete('/logistica/pedimentos/{id}', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'destroy']);
-    Route::delete('/logistica/pedimentos', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'clear']);
+    // Rutas para Pedimentos (Legacy Import - mantenidas para compatibilidad)
+    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos'])->name('logistica.pedimentos.import.legacy');
     Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
     Route::get('/logistica/pedimentos/subcategorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getSubcategorias']);
 
