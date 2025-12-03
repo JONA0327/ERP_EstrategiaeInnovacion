@@ -29,7 +29,7 @@ class operacionLogisticaController extends Controller
         // *** VERIFICACION AUTOMATICA DE STATUS AL CONSULTAR ***
         $this->verificarYActualizarStatusoperaciones();
 
-        $operaciones = operacionLogistica::with(['ejecutivo', 'postoperacion'])
+        $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -146,8 +146,8 @@ class operacionLogisticaController extends Controller
         }
 
         // Construir query base
-        $query = operacionLogistica::with('ejecutivo');
-        $statsQuery = operacionLogistica::query();
+        $query = OperacionLogistica::with('ejecutivo');
+        $statsQuery = OperacionLogistica::query();
 
         // Si no es admin, filtrar solo sus operaciones
         if (!$esAdmin && $empleadoActual) {
@@ -317,7 +317,7 @@ class operacionLogisticaController extends Controller
         try {
             if ($empleadoActual && $empleadoActual->nombre) {
                 // Obtener clientes que tienen operaciones con este ejecutivo
-                $clientesDelEjecutivo = operacionLogistica::where('ejecutivo', $empleadoActual->nombre)
+                $clientesDelEjecutivo = OperacionLogistica::where('ejecutivo', $empleadoActual->nombre)
                     ->whereNotNull('cliente')
                     ->where('cliente', '!=', '')
                     ->distinct()
@@ -379,7 +379,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Obtener operaciones del cliente
-            $operaciones = operacionLogistica::where('cliente', $clienteNombre)
+            $operaciones = OperacionLogistica::where('cliente', $clienteNombre)
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -468,7 +468,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Construir query con los mismos filtros que usa enviarReporte
-            $query = operacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+            $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -581,7 +581,7 @@ class operacionLogisticaController extends Controller
             // status_calculado y color_status se calculan automticamente en el modelo
         ];
 
-        $operacion = operacionLogistica::create($data);
+        $operacion = OperacionLogistica::create($data);
 
         // Calcular target automticamente basado en el tipo de operacion
         $targetCalculado = $operacion->calcularTargetAutomatico();
@@ -624,7 +624,7 @@ class operacionLogisticaController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
             // validacion
             $request->validate([
@@ -1147,7 +1147,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Verificar si tiene operaciones asociadas por el campo texto 'cliente'
-            $operacionesAsociadas = operacionLogistica::where('cliente', $cliente->cliente)->count();
+            $operacionesAsociadas = OperacionLogistica::where('cliente', $cliente->cliente)->count();
 
             if ($operacionesAsociadas > 0) {
                 return response()->json([
@@ -1383,7 +1383,7 @@ class operacionLogisticaController extends Controller
     public function obtenerHistorial($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'historicoMatrizSgm'
             ])->findOrFail($id);
 
@@ -1420,14 +1420,14 @@ class operacionLogisticaController extends Controller
             // Buscar otras operaciones del mismo cliente y No Ped para historial completo
             $operacionesRelacionadas = [];
             if ($operacion->cliente && $operacion->no_pedimento) {
-                $operacionesRelacionadas = operacionLogistica::where('cliente', $operacion->cliente)
+                $operacionesRelacionadas = OperacionLogistica::where('cliente', $operacion->cliente)
                     ->where('no_pedimento', $operacion->no_pedimento)
                     ->where('id', '!=', $operacion->id)
                     ->with('historicoMatrizSgm')
                     ->get();
             } else if ($operacion->cliente) {
                 // Si no hay No Ped, buscar por cliente
-                $operacionesRelacionadas = operacionLogistica::where('cliente', $operacion->cliente)
+                $operacionesRelacionadas = OperacionLogistica::where('cliente', $operacion->cliente)
                     ->where('id', '!=', $operacion->id)
                     ->with('historicoMatrizSgm')
                     ->orderBy('created_at', 'desc')
@@ -1499,7 +1499,7 @@ class operacionLogisticaController extends Controller
     public function updateStatus(Request $request, $id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
             $request->validate([
                 'status' => 'required|in:Done'
@@ -1542,7 +1542,7 @@ class operacionLogisticaController extends Controller
     public function destroy($id)
     {
         try {
-            $operacion = operacionLogistica::findOrFail($id);
+            $operacion = OperacionLogistica::findOrFail($id);
 
             // Eliminar registros del historial primero (por integridad referencial)
             $operacion->historicoMatrizSgm()->delete();
@@ -1712,7 +1712,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Obtener informacin de la operacion
-            $operacion = operacionLogistica::find($operacionId);
+            $operacion = OperacionLogistica::find($operacionId);
 
             if (!$operacion) {
                 return response()->json([
@@ -1908,7 +1908,7 @@ class operacionLogisticaController extends Controller
     {
         try {
             // Primero obtenemos la operacion
-            $operacion = operacionLogistica::findOrFail($operacionId);
+            $operacion = OperacionLogistica::findOrFail($operacionId);
 
             // Por ahora usamos el campo comentarios de la operacion
             // En el futuro se puede crear una tabla separada de comentarios
@@ -1946,7 +1946,7 @@ class operacionLogisticaController extends Controller
                 'operacion_logistica_id' => 'required|exists:operaciones_logisticas,id'
             ]);
 
-            $operacion = operacionLogistica::findOrFail($validatedData['operacion_logistica_id']);
+            $operacion = OperacionLogistica::findOrFail($validatedData['operacion_logistica_id']);
 
             // Por ahora guardamos en el campo comentarios de la operacion
             // Concatenamos si ya hay comentarios previos
@@ -2052,7 +2052,7 @@ class operacionLogisticaController extends Controller
     public function obtenerHistorialObservaciones($operacionId)
     {
         try {
-            $operacion = operacionLogistica::with(['ejecutivo'])
+            $operacion = OperacionLogistica::with(['ejecutivo'])
                 ->findOrFail($operacionId);
 
             // Obtener el historial de observaciones ordenado cronolgicamente
@@ -2118,7 +2118,7 @@ class operacionLogisticaController extends Controller
                 ], 400);
             }
 
-            $operacion = operacionLogistica::findOrFail($operacionId);
+            $operacion = OperacionLogistica::findOrFail($operacionId);
 
             // Obtener el registro ms reciente del historial para copiar sus datos
             $historialReciente = $operacion->historicoMatrizSgm()
@@ -2265,7 +2265,7 @@ class operacionLogisticaController extends Controller
     public function recalcularStatus()
     {
         try {
-            $operaciones = operacionLogistica::all();
+            $operaciones = OperacionLogistica::all();
             $actualizadas = 0;
             $historialesGenerados = 0;
 
@@ -2361,7 +2361,7 @@ class operacionLogisticaController extends Controller
     {
         try {
             // Verificar todas las operaciones activas (no Done)
-            $operacionesActivas = operacionLogistica::where('status_calculado', '!=', 'Done')
+            $operacionesActivas = OperacionLogistica::where('status_calculado', '!=', 'Done')
                 ->where(function($query) {
                     // Verificar operaciones que no se han calculado hoy o que nunca se han calculado
                     $query->whereNull('fecha_ultimo_calculo')
@@ -2394,7 +2394,7 @@ class operacionLogisticaController extends Controller
     public function generarReporteWord($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'ejecutivo',
                 'cliente',
                 'agenteAduanal',
@@ -2428,7 +2428,7 @@ class operacionLogisticaController extends Controller
     public function generarReporteMultiple(Request $request)
     {
         try {
-            $query = operacionLogistica::with(['ejecutivo']);
+            $query = OperacionLogistica::with(['ejecutivo']);
 
             // Aplicar filtros si existen
             if ($request->filled('cliente')) {
@@ -2490,7 +2490,7 @@ class operacionLogisticaController extends Controller
     public function guardarReporteWord($id)
     {
         try {
-            $operacion = operacionLogistica::with([
+            $operacion = OperacionLogistica::with([
                 'ejecutivo',
                 'cliente',
                 'agenteAduanal',
@@ -2890,7 +2890,7 @@ class operacionLogisticaController extends Controller
             $tipoBusqueda = $request->tipo_busqueda;
             $valor = $request->valor;
 
-            $query = operacionLogistica::query();
+            $query = OperacionLogistica::query();
 
             if ($tipoBusqueda === 'pedimento') {
                 $query->where('no_pedimento', $valor);
@@ -3075,7 +3075,7 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = operacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+                $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3135,7 +3135,7 @@ class operacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = operacionLogistica::with('ejecutivo');
+                $query = OperacionLogistica::with('ejecutivo');
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3697,7 +3697,7 @@ class operacionLogisticaController extends Controller
             }
 
             // Construir query con los mismos filtros que el reporte normal
-            $query = operacionLogistica::with('ejecutivo');
+            $query = OperacionLogistica::with('ejecutivo');
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -3838,7 +3838,7 @@ class operacionLogisticaController extends Controller
     public function obtenerHistorialComentarios($id)
     {
         try {
-            $operacion = operacionLogistica::with('comentariosCronologicos')->findOrFail($id);
+            $operacion = OperacionLogistica::with('comentariosCronologicos')->findOrFail($id);
 
             $comentarios = $operacion->comentariosCronologicos
                 ->filter(function ($comentario) {
