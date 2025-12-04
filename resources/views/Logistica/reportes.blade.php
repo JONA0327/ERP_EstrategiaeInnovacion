@@ -62,7 +62,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Período</label>
                         <select name="periodo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos</option>
+                            <option value="" {{ request('periodo') === null || request('periodo') === '' ? 'selected' : '' }}>-- Todos --</option>
                             <option value="semanal" {{ request('periodo') === 'semanal' ? 'selected' : '' }}>Última Semana</option>
                             <option value="mensual" {{ request('periodo') === 'mensual' ? 'selected' : '' }}>Último Mes</option>
                             <option value="anual" {{ request('periodo') === 'anual' ? 'selected' : '' }}>Último Año</option>
@@ -74,13 +74,13 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Mes/Año</label>
                         <div class="flex gap-2">
                             <select name="mes" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Mes</option>
+                                <option value="" {{ request('mes') === null || request('mes') === '' ? 'selected' : '' }}>-- Mes --</option>
                                 @for($m = 1; $m <= 12; $m++)
                                     <option value="{{ $m }}" {{ request('mes') == $m ? 'selected' : '' }}>{{ \Carbon\Carbon::create(null, $m)->format('M') }}</option>
                                 @endfor
                             </select>
                             <select name="anio" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Año</option>
+                                <option value="" {{ request('anio') === null || request('anio') === '' ? 'selected' : '' }}>-- Año --</option>
                                 @for($y = now()->year; $y >= now()->year - 5; $y--)
                                     <option value="{{ $y }}" {{ request('anio') == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
@@ -92,7 +92,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
                         <select name="cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos los Clientes</option>
+                            <option value="" {{ request('cliente') === null || request('cliente') === '' ? 'selected' : '' }}>-- Todos los Clientes --</option>
                             @if(isset($clientes) && is_array($clientes))
                                 @foreach($clientes as $c)
                                     @if(is_string($c))
@@ -107,7 +107,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
                         <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos los Status</option>
+                            <option value="" {{ request('status') === null || request('status') === '' ? 'selected' : '' }}>-- Todos los Status --</option>
                             <option value="In Process" {{ request('status') === 'In Process' ? 'selected' : '' }}>En Proceso</option>
                             <option value="Out of Metric" {{ request('status') === 'Out of Metric' ? 'selected' : '' }}>Fuera de Métrica</option>
                             <option value="Done" {{ request('status') === 'Done' ? 'selected' : '' }}>Completado</option>
@@ -355,7 +355,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
             <!-- Análisis Temporal - Nuevo Gráfico -->
             <div class="bg-white rounded-xl shadow p-6 mb-8">
@@ -462,7 +461,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div> <!-- Cierra panel resumen -->
 
         <!-- Modal para vista de pantalla completa -->
         <div id="fullScreenModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
@@ -480,8 +479,6 @@
                 </div>
             </div>
         </div>
-
-            </div>
 
             <!-- Panel: Reporte de pedimentos -->
             <div data-tab-panel="pedimentos" class="space-y-6 hidden">

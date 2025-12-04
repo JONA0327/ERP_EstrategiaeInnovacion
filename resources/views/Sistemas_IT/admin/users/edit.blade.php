@@ -216,7 +216,6 @@
 </main>
 
 @push('scripts')
-    @vite('resources/js/Sistemas_IT/admin-users-edit.js')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const areaSelect = document.getElementById('area');

@@ -32,6 +32,27 @@
                 </div>
             </div>
 
+            <!-- Pestañas de navegación de reportes -->
+            <div class="mb-6">
+                <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <button type="button" data-tab-target="seguimiento"
+                            class="tab-button px-4 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        Reporte de Seguimiento
+                    </button>
+                    <button type="button" data-tab-target="pedimentos"
+                            class="tab-button px-4 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 border-l border-slate-200">
+                        Reporte de Pedimentos
+                    </button>
+                    <button type="button" data-tab-target="resumen"
+                            class="tab-button px-4 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 border-l border-slate-200">
+                        Resumen Ejecutivo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel: Seguimiento de operaciones -->
+            <div data-tab-panel="seguimiento" class="space-y-8">
+
             <!-- Filtros -->
             <div class="bg-white rounded-xl shadow p-6 mb-6">
                 <form method="GET" action="<?php echo e(route('logistica.reportes')); ?>" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -39,7 +60,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Período</label>
                         <select name="periodo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos</option>
+                            <option value="" <?php echo e(request('periodo') === null || request('periodo') === '' ? 'selected' : ''); ?>>-- Todos --</option>
                             <option value="semanal" <?php echo e(request('periodo') === 'semanal' ? 'selected' : ''); ?>>Última Semana</option>
                             <option value="mensual" <?php echo e(request('periodo') === 'mensual' ? 'selected' : ''); ?>>Último Mes</option>
                             <option value="anual" <?php echo e(request('periodo') === 'anual' ? 'selected' : ''); ?>>Último Año</option>
@@ -51,13 +72,13 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Mes/Año</label>
                         <div class="flex gap-2">
                             <select name="mes" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Mes</option>
+                                <option value="" <?php echo e(request('mes') === null || request('mes') === '' ? 'selected' : ''); ?>>-- Mes --</option>
                                 <?php for($m = 1; $m <= 12; $m++): ?>
                                     <option value="<?php echo e($m); ?>" <?php echo e(request('mes') == $m ? 'selected' : ''); ?>><?php echo e(\Carbon\Carbon::create(null, $m)->format('M')); ?></option>
                                 <?php endfor; ?>
                             </select>
                             <select name="anio" class="w-1/2 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Año</option>
+                                <option value="" <?php echo e(request('anio') === null || request('anio') === '' ? 'selected' : ''); ?>>-- Año --</option>
                                 <?php for($y = now()->year; $y >= now()->year - 5; $y--): ?>
                                     <option value="<?php echo e($y); ?>" <?php echo e(request('anio') == $y ? 'selected' : ''); ?>><?php echo e($y); ?></option>
                                 <?php endfor; ?>
@@ -69,7 +90,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
                         <select name="cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos los Clientes</option>
+                            <option value="" <?php echo e(request('cliente') === null || request('cliente') === '' ? 'selected' : ''); ?>>-- Todos los Clientes --</option>
                             <?php if(isset($clientes) && is_array($clientes)): ?>
                                 <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <?php if(is_string($c)): ?>
@@ -84,7 +105,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
                         <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Todos los Status</option>
+                            <option value="" <?php echo e(request('status') === null || request('status') === '' ? 'selected' : ''); ?>>-- Todos los Status --</option>
                             <option value="In Process" <?php echo e(request('status') === 'In Process' ? 'selected' : ''); ?>>En Proceso</option>
                             <option value="Out of Metric" <?php echo e(request('status') === 'Out of Metric' ? 'selected' : ''); ?>>Fuera de Métrica</option>
                             <option value="Done" <?php echo e(request('status') === 'Done' ? 'selected' : ''); ?>>Completado</option>
@@ -203,8 +224,12 @@
                 </div>
             </div>
 
-            <!-- Resumen Ejecutivo Inteligente -->
-            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+            </div>
+
+            <!-- Panel: Resumen ejecutivo y análisis temporal -->
+            <div data-tab-panel="resumen" class="space-y-8 hidden">
+                <!-- Resumen Ejecutivo Inteligente -->
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-semibold">📊 Resumen Ejecutivo</h2>
                     <div class="text-sm opacity-75">
@@ -330,7 +355,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
             <!-- Análisis Temporal - Nuevo Gráfico -->
             <div class="bg-white rounded-xl shadow p-6 mb-8">
@@ -437,7 +461,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div> <!-- Cierra panel resumen -->
 
         <!-- Modal para vista de pantalla completa -->
         <div id="fullScreenModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
@@ -455,13 +479,157 @@
                 </div>
             </div>
         </div>
-    </main>
+
+            <!-- Panel: Reporte de pedimentos -->
+            <div data-tab-panel="pedimentos" class="space-y-6 hidden">
+                <!-- Reporte integrado de Pedimentos -->
+                <div id="pedimentos-reportes" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">Reporte de Pedimentos</h2>
+                            <p class="text-slate-600">Centraliza tus reportes: elige filtros, visualiza estadísticas y descarga el Excel correspondiente.</p>
+                        </div>
+                        <a href="#" onclick="activateTab('seguimiento'); return false;" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Volver a filtros de operaciones</a>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Pedimentos registrados</div>
+                            <div class="text-2xl font-bold text-indigo-600"><?php echo e($pedimentoStats['total'] ?? 0); ?></div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Pagados</div>
+                            <div class="text-2xl font-bold text-green-600"><?php echo e($pedimentoStats['pagados'] ?? 0); ?></div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Pendientes</div>
+                            <div class="text-2xl font-bold text-amber-500"><?php echo e($pedimentoStats['pendientes'] ?? 0); ?></div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Monto pagado</div>
+                            <div class="text-2xl font-bold text-emerald-600">$<?php echo e(number_format($pedimentoStats['montoPagado'] ?? 0, 2)); ?></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-800">Filtros de reporte</h3>
+                                <p class="text-sm text-slate-500">Genera el Excel del reporte de pedimentos con los criterios seleccionados.</p>
+                            </div>
+                            <div class="text-xs text-slate-500">Descarga inmediata</div>
+                        </div>
+                        <form id="pedimentos-report-form" action="<?php echo e(route('reportes.pedimentos.excel')); ?>" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Estado de pago</label>
+                                <select name="estado_pago" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                    <option value="">Todos</option>
+                                    <option value="pagado">Pagados</option>
+                                    <option value="pendiente">Pendientes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de operación</label>
+                                <select name="tipo_operacion" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                    <option value="">Todas</option>
+                                    <option value="importacion">Importación</option>
+                                    <option value="exportacion">Exportación</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Clave de pedimento</label>
+                                <select name="clave" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                    <option value="">Todas</option>
+                                    <?php $__currentLoopData = $pedimentoClaves; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $clave): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($clave); ?>"><?php echo e($clave); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Moneda</label>
+                                <select name="moneda" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                    <option value="">Todas</option>
+                                    <option value="MXN">MXN</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Fecha pago inicio</label>
+                                <input type="date" name="fecha_pago_inicio" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Fecha pago fin</label>
+                                <input type="date" name="fecha_pago_fin" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="incluir_tiempos" name="incluir_tiempos" value="1" class="rounded text-emerald-600">
+                                <label for="incluir_tiempos" class="text-sm text-slate-700">Incluir análisis de tiempos</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="agrupar_cliente" name="agrupar_cliente" value="1" class="rounded text-emerald-600">
+                                <label for="agrupar_cliente" class="text-sm text-slate-700">Agrupar por cliente</label>
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-4 flex justify-end space-x-3">
+                                <a href="#pedimentos-reportes" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Limpiar</a>
+                                <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center space-x-2">
+                                    <span>📊</span>
+                                    <span>Generar reporte de pedimentos</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-slate-800">Estados de pago</h3>
+                                <span class="text-xs text-slate-500">Distribución</span>
+                            </div>
+                            <canvas id="pedimentosEstadoChart" style="max-height: 320px"></canvas>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-slate-800">Montos por moneda</h3>
+                                <span class="text-xs text-slate-500">Suma de pagos registrados</span>
+                            </div>
+                            <canvas id="pedimentosMonedaChart" style="max-height: 320px"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
 
     <script>
         // Verificar que Chart esté disponible
         if (typeof Chart === 'undefined') {
             console.error('Chart.js no se cargó correctamente');
         }
+
+        const tabButtons = document.querySelectorAll('[data-tab-target]');
+        const tabPanels = document.querySelectorAll('[data-tab-panel]');
+
+        function activateTab(tabId) {
+            tabButtons.forEach(button => {
+                const isActive = button.dataset.tabTarget === tabId;
+                button.classList.toggle('bg-indigo-600', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('shadow-inner', isActive);
+                button.classList.toggle('text-slate-700', !isActive);
+            });
+
+            tabPanels.forEach(panel => {
+                panel.classList.toggle('hidden', panel.dataset.tabPanel !== tabId);
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => activateTab(button.dataset.tabTarget));
+        });
+
+        activateTab('seguimiento');
 
         const stats = <?php echo json_encode($stats, 15, 512) ?>;
         const total = (stats.en_proceso || 0) + (stats.fuera_metrica || 0) + (stats.done || 0);
@@ -1019,6 +1187,75 @@
         window.toggleExportMenu = toggleExportMenu;
         window.exportChart = exportChart;
         window.exportData = exportData;
+
+        // Gráficos de pedimentos centralizados
+        const pedimentoEstados = <?php echo json_encode($pedimentoEstados, 15, 512) ?>;
+        const pedimentoMonedas = <?php echo json_encode($pedimentoMonedas, 15, 512) ?>;
+
+        const pedimentosEstadoCtx = document.getElementById('pedimentosEstadoChart')?.getContext('2d');
+        const pedimentosMonedaCtx = document.getElementById('pedimentosMonedaChart')?.getContext('2d');
+
+        if (pedimentosEstadoCtx) {
+            const estadoLabels = Object.keys(pedimentoEstados);
+            const estadoValores = Object.values(pedimentoEstados);
+
+            if (estadoLabels.length) {
+                new Chart(pedimentosEstadoCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: estadoLabels.map(label => label === 'pagado' ? 'Pagado' : 'Pendiente'),
+                        datasets: [{
+                            data: estadoValores,
+                            backgroundColor: ['#22c55e', '#f59e0b'],
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}` } }
+                        }
+                    }
+                });
+            } else {
+                pedimentosEstadoCtx.font = '14px system-ui';
+                pedimentosEstadoCtx.fillStyle = '#94a3b8';
+                pedimentosEstadoCtx.textAlign = 'center';
+                pedimentosEstadoCtx.fillText('Sin datos de estados de pago', pedimentosEstadoCtx.canvas.width / 2, pedimentosEstadoCtx.canvas.height / 2);
+            }
+        }
+
+        if (pedimentosMonedaCtx) {
+            const monedaLabels = Object.keys(pedimentoMonedas);
+            const monedaValores = Object.values(pedimentoMonedas);
+
+            if (monedaLabels.length) {
+                new Chart(pedimentosMonedaCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monedaLabels,
+                        datasets: [{
+                            label: 'Monto pagado',
+                            data: monedaValores,
+                            backgroundColor: '#4ade80'
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } else {
+                pedimentosMonedaCtx.font = '14px system-ui';
+                pedimentosMonedaCtx.fillStyle = '#94a3b8';
+                pedimentosMonedaCtx.textAlign = 'center';
+                pedimentosMonedaCtx.fillText('Sin montos registrados', pedimentosMonedaCtx.canvas.width / 2, pedimentosMonedaCtx.canvas.height / 2);
+            }
+        }
     </script>
 
     <!-- Modal Enviar por Correo -->
@@ -1280,11 +1517,20 @@ Saludos cordiales,
             return parametros;
         }
 
-        function obtenerOperacionesActuales() {
+        function obtenerOperacionesActuales(clienteFiltro = null) {
             const operacionesIds = [];
             const filas = document.querySelectorAll('#operacionesTable tbody tr[data-operacion-id]');
 
             filas.forEach(fila => {
+                if (clienteFiltro) {
+                    const clienteCelda = fila.querySelector('td:nth-child(3)');
+                    const clienteTexto = clienteCelda ? clienteCelda.textContent.trim() : '';
+
+                    if (clienteTexto.toLowerCase() !== clienteFiltro.toLowerCase()) {
+                        return;
+                    }
+                }
+
                 const operacionId = fila.getAttribute('data-operacion-id');
                 if (operacionId) {
                     operacionesIds.push(parseInt(operacionId));
@@ -1325,6 +1571,7 @@ Saludos cordiales,
                 const destinatarios = document.getElementById('destinatarios').value.trim();
                 const asunto = document.getElementById('asunto').value.trim();
                 const mensaje = document.getElementById('mensaje').value.trim();
+                const clienteSeleccionado = document.getElementById('clienteEmail').value.trim();
 
                 if (!destinatarios) {
                     throw new Error('Por favor ingrese al menos un destinatario');
@@ -1336,6 +1583,10 @@ Saludos cordiales,
 
                 if (!mensaje) {
                     throw new Error('Por favor ingrese un mensaje');
+                }
+
+                if (!clienteSeleccionado) {
+                    throw new Error('Por favor selecciona un cliente');
                 }
 
                 const formData = new FormData();
@@ -1352,13 +1603,20 @@ Saludos cordiales,
                 // Incluir TODOS los parámetros de filtros actuales de la página
                 const parametrosFiltros = obtenerParametrosFiltrosActuales();
                 Object.keys(parametrosFiltros).forEach(key => {
+                    if (key === 'cliente') {
+                        return;
+                    }
+
                     if (parametrosFiltros[key] !== '' && parametrosFiltros[key] !== null) {
                         formData.append(key, parametrosFiltros[key]);
                     }
                 });
 
+                // Forzar el cliente seleccionado, sin importar el filtro de la página
+                formData.set('cliente', clienteSeleccionado);
+
                 // Obtener operaciones de la tabla actual (basado en filtros aplicados)
-                const operacionesIds = obtenerOperacionesActuales();
+                const operacionesIds = obtenerOperacionesActuales(clienteSeleccionado);
                 if (operacionesIds.length > 0) {
                     formData.append('operaciones_ids', JSON.stringify(operacionesIds));
                 }

@@ -181,10 +181,10 @@ class OperacionLogisticaController extends Controller
                        ->whereYear('created_at', $request->anio);
         }
 
-        // Filtro por cliente
+        // Filtro por cliente (coincidencia exacta)
         if ($request->filled('cliente')) {
-            $query->where('cliente', 'like', '%' . $request->cliente . '%');
-            $statsQuery->where('cliente', 'like', '%' . $request->cliente . '%');
+            $query->where('cliente', $request->cliente);
+            $statsQuery->where('cliente', $request->cliente);
         }
 
         // Filtro por status
