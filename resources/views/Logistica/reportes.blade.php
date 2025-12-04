@@ -455,6 +455,122 @@
                 </div>
             </div>
         </div>
+
+        <!-- Reporte integrado de Pedimentos -->
+        <div id="pedimentos-reportes" class="mt-10 space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Reporte de Pedimentos</h2>
+                    <p class="text-slate-600">Centraliza tus reportes: elige filtros, visualiza estadísticas y descarga el Excel correspondiente.</p>
+                </div>
+                <a href="#" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Volver a filtros de operaciones</a>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-sm text-slate-500">Pedimentos registrados</div>
+                    <div class="text-2xl font-bold text-indigo-600">{{ $pedimentoStats['total'] ?? 0 }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-sm text-slate-500">Pagados</div>
+                    <div class="text-2xl font-bold text-green-600">{{ $pedimentoStats['pagados'] ?? 0 }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-sm text-slate-500">Pendientes</div>
+                    <div class="text-2xl font-bold text-amber-500">{{ $pedimentoStats['pendientes'] ?? 0 }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-sm text-slate-500">Monto pagado</div>
+                    <div class="text-2xl font-bold text-emerald-600">${{ number_format($pedimentoStats['montoPagado'] ?? 0, 2) }}</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800">Filtros de reporte</h3>
+                        <p class="text-sm text-slate-500">Genera el Excel del reporte de pedimentos con los criterios seleccionados.</p>
+                    </div>
+                    <div class="text-xs text-slate-500">Descarga inmediata</div>
+                </div>
+                <form id="pedimentos-report-form" action="{{ route('reportes.pedimentos.excel') }}" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado de pago</label>
+                        <select name="estado_pago" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Todos</option>
+                            <option value="pagado">Pagados</option>
+                            <option value="pendiente">Pendientes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de operación</label>
+                        <select name="tipo_operacion" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Todas</option>
+                            <option value="importacion">Importación</option>
+                            <option value="exportacion">Exportación</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Clave de pedimento</label>
+                        <select name="clave" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Todas</option>
+                            @foreach($pedimentoClaves as $clave)
+                                <option value="{{ $clave }}">{{ $clave }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Moneda</label>
+                        <select name="moneda" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Todas</option>
+                            <option value="MXN">MXN</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha pago inicio</label>
+                        <input type="date" name="fecha_pago_inicio" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha pago fin</label>
+                        <input type="date" name="fecha_pago_fin" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="incluir_tiempos" name="incluir_tiempos" value="1" class="rounded text-emerald-600">
+                        <label for="incluir_tiempos" class="text-sm text-slate-700">Incluir análisis de tiempos</label>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="agrupar_cliente" name="agrupar_cliente" value="1" class="rounded text-emerald-600">
+                        <label for="agrupar_cliente" class="text-sm text-slate-700">Agrupar por cliente</label>
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-4 flex justify-end space-x-3">
+                        <a href="#pedimentos-reportes" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Limpiar</a>
+                        <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center space-x-2">
+                            <span>📊</span>
+                            <span>Generar reporte de pedimentos</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-slate-800">Estados de pago</h3>
+                        <span class="text-xs text-slate-500">Distribución</span>
+                    </div>
+                    <canvas id="pedimentosEstadoChart" style="max-height: 320px"></canvas>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-slate-800">Montos por moneda</h3>
+                        <span class="text-xs text-slate-500">Suma de pagos registrados</span>
+                    </div>
+                    <canvas id="pedimentosMonedaChart" style="max-height: 320px"></canvas>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -1019,6 +1135,75 @@
         window.toggleExportMenu = toggleExportMenu;
         window.exportChart = exportChart;
         window.exportData = exportData;
+
+        // Gráficos de pedimentos centralizados
+        const pedimentoEstados = @json($pedimentoEstados);
+        const pedimentoMonedas = @json($pedimentoMonedas);
+
+        const pedimentosEstadoCtx = document.getElementById('pedimentosEstadoChart')?.getContext('2d');
+        const pedimentosMonedaCtx = document.getElementById('pedimentosMonedaChart')?.getContext('2d');
+
+        if (pedimentosEstadoCtx) {
+            const estadoLabels = Object.keys(pedimentoEstados);
+            const estadoValores = Object.values(pedimentoEstados);
+
+            if (estadoLabels.length) {
+                new Chart(pedimentosEstadoCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: estadoLabels.map(label => label === 'pagado' ? 'Pagado' : 'Pendiente'),
+                        datasets: [{
+                            data: estadoValores,
+                            backgroundColor: ['#22c55e', '#f59e0b'],
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}` } }
+                        }
+                    }
+                });
+            } else {
+                pedimentosEstadoCtx.font = '14px system-ui';
+                pedimentosEstadoCtx.fillStyle = '#94a3b8';
+                pedimentosEstadoCtx.textAlign = 'center';
+                pedimentosEstadoCtx.fillText('Sin datos de estados de pago', pedimentosEstadoCtx.canvas.width / 2, pedimentosEstadoCtx.canvas.height / 2);
+            }
+        }
+
+        if (pedimentosMonedaCtx) {
+            const monedaLabels = Object.keys(pedimentoMonedas);
+            const monedaValores = Object.values(pedimentoMonedas);
+
+            if (monedaLabels.length) {
+                new Chart(pedimentosMonedaCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monedaLabels,
+                        datasets: [{
+                            label: 'Monto pagado',
+                            data: monedaValores,
+                            backgroundColor: '#4ade80'
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } else {
+                pedimentosMonedaCtx.font = '14px system-ui';
+                pedimentosMonedaCtx.fillStyle = '#94a3b8';
+                pedimentosMonedaCtx.textAlign = 'center';
+                pedimentosMonedaCtx.fillText('Sin montos registrados', pedimentosMonedaCtx.canvas.width / 2, pedimentosMonedaCtx.canvas.height / 2);
+            }
+        }
     </script>
 
     <!-- Modal Enviar por Correo -->

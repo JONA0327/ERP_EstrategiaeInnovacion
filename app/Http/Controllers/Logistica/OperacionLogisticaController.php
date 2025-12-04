@@ -15,12 +15,14 @@ use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Logistica\Aduana;
 use App\Models\Logistica\Pedimento;
+use App\Models\Logistica\PedimentoOperacion;
 use App\Models\Empleado;
 use App\Services\WordDocumentService;
 use App\Services\ClienteImportService;
 use App\Services\PedimentoImportService;
 use App\Services\ExcelReportService;
 use App\Services\ExcelChartService;
+use Illuminate\Support\Facades\DB;
 
 class OperacionLogisticaController extends Controller
 {
@@ -357,9 +359,36 @@ class OperacionLogisticaController extends Controller
             $clientesEmail = [];
         }
 
+        // Estadísticas de pedimentos para centralizar reportes
+        $pedimentoStats = [
+            'total' => PedimentoOperacion::count(),
+            'pagados' => PedimentoOperacion::pagados()->count(),
+            'pendientes' => PedimentoOperacion::porPagar()->count(),
+            'montoPagado' => PedimentoOperacion::pagados()->sum('monto'),
+        ];
+
+        $pedimentoEstados = PedimentoOperacion::select('estado_pago', DB::raw('count(*) as total'))
+            ->groupBy('estado_pago')
+            ->pluck('total', 'estado_pago')
+            ->toArray();
+
+        $pedimentoMonedas = PedimentoOperacion::select('moneda', DB::raw('sum(monto) as total'))
+            ->whereNotNull('moneda')
+            ->groupBy('moneda')
+            ->pluck('total', 'moneda')
+            ->toArray();
+
+        $pedimentoClaves = PedimentoOperacion::select('clave')
+            ->distinct()
+            ->whereNotNull('clave')
+            ->orderBy('clave')
+            ->pluck('clave')
+            ->toArray();
+
         return view('Logistica.reportes', compact(
             'operaciones', 'stats', 'clientes', 'clientesEmail', 'comportamientoTemporal',
-            'statsTemporales', 'esAdmin', 'empleadoActual'
+            'statsTemporales', 'esAdmin', 'empleadoActual', 'pedimentoStats', 'pedimentoEstados',
+            'pedimentoMonedas', 'pedimentoClaves'
         ));
     }
 
