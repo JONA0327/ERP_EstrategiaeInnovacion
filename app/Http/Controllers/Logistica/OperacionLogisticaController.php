@@ -3053,7 +3053,8 @@ class OperacionLogisticaController extends Controller
                 'incluir_datos' => 'nullable', // Puede ser string "true"/"false" o boolean
                 'formato_datos' => 'nullable|string',
                 'operaciones_ids' => 'nullable|string', // Viene como JSON string
-                'correos_cc' => 'nullable|string' // Viene como JSON string
+                'correos_cc' => 'nullable|string', // Viene como JSON string
+                'cliente' => 'nullable|string|max:255'
             ]);
 
             if ($validator->fails()) {
