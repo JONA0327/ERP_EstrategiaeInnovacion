@@ -3896,6 +3896,26 @@ class OperacionLogisticaController extends Controller
                   ->orWhere('referencia_interna', 'like', '%' . $searchTerm . '%');
             });
         }
+
+        // Filtro explícito por IDs de operaciones (usado al enviar por correo)
+        if ($request->filled('operaciones_ids')) {
+            $ids = $request->operaciones_ids;
+
+            // Puede venir como JSON string o como arreglo directo
+            if (is_string($ids)) {
+                $decoded = json_decode($ids, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $ids = $decoded;
+                }
+            }
+
+            if (is_array($ids) && !empty($ids)) {
+                $ids = array_filter($ids, fn($id) => is_numeric($id));
+                if (!empty($ids)) {
+                    $query->whereIn('id', $ids);
+                }
+            }
+        }
     }
 
     /**
