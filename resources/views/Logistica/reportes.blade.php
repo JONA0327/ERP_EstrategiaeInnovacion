@@ -1464,11 +1464,20 @@ Saludos cordiales,
             return parametros;
         }
 
-        function obtenerOperacionesActuales() {
+        function obtenerOperacionesActuales(clienteFiltro = null) {
             const operacionesIds = [];
             const filas = document.querySelectorAll('#operacionesTable tbody tr[data-operacion-id]');
 
             filas.forEach(fila => {
+                if (clienteFiltro) {
+                    const clienteCelda = fila.querySelector('td:nth-child(3)');
+                    const clienteTexto = clienteCelda ? clienteCelda.textContent.trim() : '';
+
+                    if (clienteTexto.toLowerCase() !== clienteFiltro.toLowerCase()) {
+                        return;
+                    }
+                }
+
                 const operacionId = fila.getAttribute('data-operacion-id');
                 if (operacionId) {
                     operacionesIds.push(parseInt(operacionId));
@@ -1509,6 +1518,7 @@ Saludos cordiales,
                 const destinatarios = document.getElementById('destinatarios').value.trim();
                 const asunto = document.getElementById('asunto').value.trim();
                 const mensaje = document.getElementById('mensaje').value.trim();
+                const clienteSeleccionado = document.getElementById('clienteEmail').value.trim();
 
                 if (!destinatarios) {
                     throw new Error('Por favor ingrese al menos un destinatario');
@@ -1520,6 +1530,10 @@ Saludos cordiales,
 
                 if (!mensaje) {
                     throw new Error('Por favor ingrese un mensaje');
+                }
+
+                if (!clienteSeleccionado) {
+                    throw new Error('Por favor selecciona un cliente');
                 }
 
                 const formData = new FormData();
@@ -1536,13 +1550,20 @@ Saludos cordiales,
                 // Incluir TODOS los parámetros de filtros actuales de la página
                 const parametrosFiltros = obtenerParametrosFiltrosActuales();
                 Object.keys(parametrosFiltros).forEach(key => {
+                    if (key === 'cliente') {
+                        return;
+                    }
+
                     if (parametrosFiltros[key] !== '' && parametrosFiltros[key] !== null) {
                         formData.append(key, parametrosFiltros[key]);
                     }
                 });
 
+                // Forzar el cliente seleccionado, sin importar el filtro de la página
+                formData.set('cliente', clienteSeleccionado);
+
                 // Obtener operaciones de la tabla actual (basado en filtros aplicados)
-                const operacionesIds = obtenerOperacionesActuales();
+                const operacionesIds = obtenerOperacionesActuales(clienteSeleccionado);
                 if (operacionesIds.length > 0) {
                     formData.append('operaciones_ids', JSON.stringify(operacionesIds));
                 }
