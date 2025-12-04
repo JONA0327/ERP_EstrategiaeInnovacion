@@ -492,7 +492,7 @@
                         <a href="#" onclick="activateTab('seguimiento'); return false;" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Volver a filtros de operaciones</a>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                         <div class="bg-white rounded-lg shadow p-4">
                             <div class="text-sm text-slate-500">Pedimentos registrados</div>
                             <div class="text-2xl font-bold text-indigo-600">{{ $pedimentoStats['total'] ?? 0 }}</div>
@@ -506,8 +506,16 @@
                             <div class="text-2xl font-bold text-amber-500">{{ $pedimentoStats['pendientes'] ?? 0 }}</div>
                         </div>
                         <div class="bg-white rounded-lg shadow p-4">
-                            <div class="text-sm text-slate-500">Monto pagado</div>
-                            <div class="text-2xl font-bold text-emerald-600">${{ number_format($pedimentoStats['montoPagado'] ?? 0, 2) }}</div>
+                            <div class="text-sm text-slate-500">Monto MXN</div>
+                            <div class="text-2xl font-bold text-emerald-600">${{ number_format($pedimentoStats['montoPagadoMXN'] ?? 0, 2) }}</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Monto USD</div>
+                            <div class="text-2xl font-bold text-blue-600">${{ number_format($pedimentoStats['montoPagadoUSD'] ?? 0, 2) }}</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-slate-500">Monto EUR</div>
+                            <div class="text-2xl font-bold text-purple-600">€{{ number_format($pedimentoStats['montoPagadoEUR'] ?? 0, 2) }}</div>
                         </div>
                     </div>
 
@@ -571,7 +579,11 @@
                                 <label for="agrupar_cliente" class="text-sm text-slate-700">Agrupar por cliente</label>
                             </div>
                             <div class="md:col-span-2 lg:col-span-4 flex justify-end space-x-3">
-                                <a href="#pedimentos-reportes" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Limpiar</a>
+                                <button type="button" onclick="filtrarPedimentos()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2">
+                                    <span>🔍</span>
+                                    <span>Filtrar</span>
+                                </button>
+                                <a href="#pedimentos-reportes" onclick="limpiarFiltrosPedimentos()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Limpiar</a>
                                 <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center space-x-2">
                                     <span>📊</span>
                                     <span>Generar reporte de pedimentos</span>
@@ -1256,6 +1268,31 @@
                 pedimentosMonedaCtx.fillText('Sin montos registrados', pedimentosMonedaCtx.canvas.width / 2, pedimentosMonedaCtx.canvas.height / 2);
             }
         }
+
+        // Funciones para filtrar pedimentos
+        function filtrarPedimentos() {
+            const form = document.getElementById('pedimentos-report-form');
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    params.append(key, value);
+                }
+            }
+            
+            // Mostrar mensaje de filtro aplicado (los gráficos se actualizarán con AJAX en el futuro)
+            alert('Filtros aplicados. Para ver los datos filtrados, genera el reporte de Excel.');
+        }
+
+        function limpiarFiltrosPedimentos() {
+            const form = document.getElementById('pedimentos-report-form');
+            form.reset();
+        }
+
+        // Exponer funciones globalmente
+        window.filtrarPedimentos = filtrarPedimentos;
+        window.limpiarFiltrosPedimentos = limpiarFiltrosPedimentos;
     </script>
 
     <!-- Modal Enviar por Correo -->

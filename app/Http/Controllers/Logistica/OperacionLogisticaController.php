@@ -360,11 +360,21 @@ class OperacionLogisticaController extends Controller
         }
 
         // Estadísticas de pedimentos para centralizar reportes
+        // Montos pagados separados por moneda
+        $montosPorMoneda = PedimentoOperacion::pagados()
+            ->select('moneda', DB::raw('sum(monto) as total'))
+            ->whereNotNull('moneda')
+            ->groupBy('moneda')
+            ->pluck('total', 'moneda')
+            ->toArray();
+
         $pedimentoStats = [
             'total' => PedimentoOperacion::count(),
             'pagados' => PedimentoOperacion::pagados()->count(),
             'pendientes' => PedimentoOperacion::porPagar()->count(),
-            'montoPagado' => PedimentoOperacion::pagados()->sum('monto'),
+            'montoPagadoMXN' => $montosPorMoneda['MXN'] ?? 0,
+            'montoPagadoUSD' => $montosPorMoneda['USD'] ?? 0,
+            'montoPagadoEUR' => $montosPorMoneda['EUR'] ?? 0,
         ];
 
         $pedimentoEstados = PedimentoOperacion::select('estado_pago', DB::raw('count(*) as total'))
