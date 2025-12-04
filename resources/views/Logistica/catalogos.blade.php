@@ -612,7 +612,7 @@
                                     </svg>
                                     Limpiar Todo
                                 </button>
-                                <button id="importPedimentosBtn" onclick="openImportPedimentosModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+                                <button id="importPedimentosBtn" onclick="openImportPedimentosModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm" style="display: {{ $pedimentos->total() > 0 ? 'none' : 'inline-flex' }};">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                     </svg>
@@ -656,7 +656,6 @@
                                     <tr>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Clave</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Categoría</th>
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Subcategoría</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Descripción</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Fecha</th>
                                         <th class="px-4 py-3 text-center text-sm font-semibold text-slate-700">Acciones</th>
@@ -679,20 +678,11 @@
                                                 <span class="text-slate-400">-</span>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">
-                                            @if($pedimento->subcategoria)
-                                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                                                    {{ $pedimento->subcategoria }}
-                                                </span>
-                                            @else
-                                                <span class="text-slate-400">-</span>
-                                            @endif
-                                        </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ Str::limit($pedimento->descripcion, 80) }}</td>
                                         <td class="px-4 py-3 text-sm text-slate-600">{{ $pedimento->created_at->format('d/m/Y') }}</td>
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex justify-center space-x-2">
-                                                <button onclick="editarPedimento({{ $pedimento->id }}, '{{ $pedimento->clave }}', '{{ addslashes($pedimento->descripcion) }}', '{{ addslashes($pedimento->categoria ?? '') }}', '{{ addslashes($pedimento->subcategoria ?? '') }}')"
+                                                <button onclick="editarPedimento({{ $pedimento->id }}, '{{ $pedimento->clave }}', '{{ addslashes($pedimento->descripcion) }}', '{{ addslashes($pedimento->categoria ?? '') }}')"
                                                         class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -1141,7 +1131,7 @@
                 <p class="text-sm text-gray-600 mt-1">Sube un archivo con las claves y descripciones de pedimentos</p>
             </div>
 
-            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data" action="{{ route('logistica.pedimentos.import') }}" method="POST">
+            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data" action="{{ route('logistica.pedimentos.import.legacy') }}" method="POST">
                 @csrf
                 <div class="mb-6">
                     <label for="pedimentosFile" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo de Pedimentos</label>
@@ -1227,13 +1217,6 @@
                     <p class="text-xs text-gray-500 mt-1">Opcional: Categoría principal del pedimento</p>
                 </div>
                 <div class="mb-4">
-                    <label for="pedimentoSubcategoria" class="block text-sm font-medium text-gray-700 mb-2">Subcategoría</label>
-                    <input type="text" id="pedimentoSubcategoria" name="subcategoria"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                           placeholder="AGD, IA, etc." maxlength="255">
-                    <p class="text-xs text-gray-500 mt-1">Opcional: Subcategoría o código de la categoría</p>
-                </div>
-                <div class="mb-4">
                     <label for="pedimentoDescripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
                     <textarea id="pedimentoDescripcion" name="descripcion" required rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" 
@@ -1276,13 +1259,6 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                            placeholder="DEPOSITO FISCAL, INDUSTRIA AUTOMOTRIZ, etc." maxlength="255">
                     <p class="text-xs text-gray-500 mt-1">Opcional: Categoría principal del pedimento</p>
-                </div>
-                <div class="mb-4">
-                    <label for="editPedimentoSubcategoria" class="block text-sm font-medium text-gray-700 mb-2">Subcategoría</label>
-                    <input type="text" id="editPedimentoSubcategoria" name="subcategoria"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                           placeholder="AGD, IA, etc." maxlength="255">
-                    <p class="text-xs text-gray-500 mt-1">Opcional: Subcategoría o código de la categoría</p>
                 </div>
                 <div class="mb-4">
                     <label for="editPedimentoDescripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>

@@ -25,8 +25,10 @@ class Pedimento extends Model
         'estado_pago',
         'fecha_pago',
         'monto',
+        'moneda',
         'observaciones_pago',
-        'fecha_vencimiento'
+        'fecha_tentativa_pago',
+        'operacion_logistica_id'
     ];
 
     /**
@@ -40,7 +42,8 @@ class Pedimento extends Model
         'estado_pago' => 'string',
         'fecha_pago' => 'date',
         'monto' => 'decimal:2',
-        'fecha_vencimiento' => 'datetime'
+        'moneda' => 'string',
+        'fecha_tentativa_pago' => 'date'
     ];
 
     /**
@@ -184,5 +187,13 @@ class Pedimento extends Model
     public function operaciones()
     {
         return $this->hasMany(OperacionLogistica::class, 'no_pedimento', 'clave');
+    }
+
+    /**
+     * Relación singular con operación logística (primera operación que coincide)
+     */
+    public function operacion()
+    {
+        return $this->hasOne(OperacionLogistica::class, 'no_pedimento', 'clave');
     }
 }

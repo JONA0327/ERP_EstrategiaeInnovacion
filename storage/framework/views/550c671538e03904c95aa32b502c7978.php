@@ -1,10 +1,10 @@
-@extends('layouts.erp')
 
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/Logistica/pedimentos.css') }}?v={{ time() }}">
-@endpush
 
-@section('content')
+<?php $__env->startPush('styles'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/Logistica/pedimentos.css')); ?>?v=<?php echo e(time()); ?>">
+<?php $__env->stopPush(); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-gray-50 py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
@@ -33,19 +33,19 @@
             <div class="px-6 py-4 bg-gray-50">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-blue-600">{{ $stats['total_claves'] ?? 0 }}</div>
+                        <div class="text-2xl font-bold text-blue-600"><?php echo e($stats['total_claves'] ?? 0); ?></div>
                         <div class="text-sm text-gray-600">Tipos Operación</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-indigo-600">{{ $stats['total_pedimentos'] ?? 0 }}</div>
+                        <div class="text-2xl font-bold text-indigo-600"><?php echo e($stats['total_pedimentos'] ?? 0); ?></div>
                         <div class="text-sm text-gray-600">Total Pedimentos</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-yellow-600">{{ $stats['pendientes'] }}</div>
+                        <div class="text-2xl font-bold text-yellow-600"><?php echo e($stats['pendientes']); ?></div>
                         <div class="text-sm text-gray-600">Por Pagar</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ $stats['pagados'] }}</div>
+                        <div class="text-2xl font-bold text-green-600"><?php echo e($stats['pagados']); ?></div>
                         <div class="text-sm text-gray-600">Pagados</div>
                     </div>
                 </div>
@@ -55,10 +55,10 @@
         <!-- Filtros -->
         <div class="bg-white shadow rounded-lg mb-6">
             <div class="px-6 py-4">
-                <form method="GET" action="{{ route('logistica.pedimentos.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form method="GET" action="<?php echo e(route('logistica.pedimentos.index')); ?>" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Pedimento</label>
-                        <input type="text" name="buscar" value="{{ request('buscar') }}" 
+                        <input type="text" name="buscar" value="<?php echo e(request('buscar')); ?>" 
                                placeholder="Número de pedimento..." 
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
@@ -66,9 +66,9 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Estado de Pago</label>
                         <select name="estado_pago" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Todos los estados</option>
-                            <option value="pendiente" {{ request('estado_pago') == 'pendiente' ? 'selected' : '' }}>⏳ Por Pagar</option>
-                            <option value="pagado" {{ request('estado_pago') == 'pagado' ? 'selected' : '' }}>✅ Pagado</option>
-                            <option value="vencido" {{ request('estado_pago') == 'vencido' ? 'selected' : '' }}>❌ Vencido</option>
+                            <option value="pendiente" <?php echo e(request('estado_pago') == 'pendiente' ? 'selected' : ''); ?>>⏳ Por Pagar</option>
+                            <option value="pagado" <?php echo e(request('estado_pago') == 'pagado' ? 'selected' : ''); ?>>✅ Pagado</option>
+                            <option value="vencido" <?php echo e(request('estado_pago') == 'vencido' ? 'selected' : ''); ?>>❌ Vencido</option>
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -77,7 +77,7 @@
                         </button>
                     </div>
                     <div class="flex items-end">
-                        <a href="{{ route('logistica.pedimentos.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
+                        <a href="<?php echo e(route('logistica.pedimentos.index')); ?>" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                             🔄 Limpiar
                         </a>
                     </div>
@@ -106,71 +106,74 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($paginatedPedimentos as $pedimento)
+                        <?php $__empty_1 = true; $__currentLoopData = $paginatedPedimentos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedimento): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-4 whitespace-nowrap">
-                                    @if($pedimento->estado_pago !== 'pagado')
-                                        <input type="checkbox" name="pedimentos[]" value="{{ $pedimento->id }}" onchange="updateSelectAll()" class="pedimento-checkbox rounded border-gray-300">
-                                    @endif
+                                    <?php if($pedimento->estado_pago !== 'pagado'): ?>
+                                        <input type="checkbox" name="pedimentos[]" value="<?php echo e($pedimento->id); ?>" onchange="updateSelectAll()" class="pedimento-checkbox rounded border-gray-300">
+                                    <?php endif; ?>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap">
-                                    <div class="font-bold text-blue-700 text-lg">{{ $pedimento->clave }}</div>
+                                    <div class="font-bold text-blue-700 text-lg"><?php echo e($pedimento->clave); ?></div>
                                     <div class="text-sm text-gray-500">Tipo de Operación</div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-center">
-                                    <div class="font-bold text-2xl text-indigo-600">{{ $pedimento->total_pedimentos ?? 0 }}</div>
+                                    <div class="font-bold text-2xl text-indigo-600"><?php echo e($pedimento->total_pedimentos ?? 0); ?></div>
                                     <div class="text-sm text-gray-500">pedimentos</div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-center">
-                                    <div class="font-bold text-2xl text-yellow-600">{{ $pedimento->pedimentos_por_pagar ?? 0 }}</div>
+                                    <div class="font-bold text-2xl text-yellow-600"><?php echo e($pedimento->pedimentos_por_pagar ?? 0); ?></div>
                                     <div class="text-sm text-gray-500">por pagar</div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-center">
-                                    <div class="font-bold text-2xl text-green-600">{{ $pedimento->pedimentos_pagados ?? 0 }}</div>
+                                    <div class="font-bold text-2xl text-green-600"><?php echo e($pedimento->pedimentos_pagados ?? 0); ?></div>
                                     <div class="text-sm text-gray-500">pagados</div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap max-w-xs">
-                                    <div class="font-medium text-gray-900 truncate" title="{{ $pedimento->clientes }}">
-                                        {{ Str::limit($pedimento->clientes ?? 'Sin clientes', 40) }}
+                                    <div class="font-medium text-gray-900 truncate" title="<?php echo e($pedimento->clientes); ?>">
+                                        <?php echo e(Str::limit($pedimento->clientes ?? 'Sin clientes', 40)); ?>
+
                                     </div>
-                                    <div class="text-sm text-gray-500">{{ Str::plural('Cliente', $pedimento->total_pedimentos) }}</div>
+                                    <div class="text-sm text-gray-500"><?php echo e(Str::plural('Cliente', $pedimento->total_pedimentos)); ?></div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap max-w-xs">
-                                    <div class="font-medium text-gray-700 truncate" title="{{ $pedimento->ejecutivos }}">
-                                        {{ Str::limit($pedimento->ejecutivos ?? 'Sin ejecutivos', 30) }}
+                                    <div class="font-medium text-gray-700 truncate" title="<?php echo e($pedimento->ejecutivos); ?>">
+                                        <?php echo e(Str::limit($pedimento->ejecutivos ?? 'Sin ejecutivos', 30)); ?>
+
                                     </div>
-                                    <div class="text-sm text-gray-500">{{ Str::plural('Ejecutivo', $pedimento->total_pedimentos) }}</div>
+                                    <div class="text-sm text-gray-500"><?php echo e(Str::plural('Ejecutivo', $pedimento->total_pedimentos)); ?></div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                    @if($pedimento->primera_fecha && $pedimento->ultima_fecha)
-                                        <div class="text-gray-900">{{ \Carbon\Carbon::parse($pedimento->primera_fecha)->format('d/m/Y') }}</div>
-                                        <div class="text-gray-500">al {{ \Carbon\Carbon::parse($pedimento->ultima_fecha)->format('d/m/Y') }}</div>
-                                    @else
+                                    <?php if($pedimento->primera_fecha && $pedimento->ultima_fecha): ?>
+                                        <div class="text-gray-900"><?php echo e(\Carbon\Carbon::parse($pedimento->primera_fecha)->format('d/m/Y')); ?></div>
+                                        <div class="text-gray-500">al <?php echo e(\Carbon\Carbon::parse($pedimento->ultima_fecha)->format('d/m/Y')); ?></div>
+                                    <?php else: ?>
                                         <div class="text-gray-500">Sin fechas</div>
-                                    @endif
+                                    <?php endif; ?>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap">
                                     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        @if($pedimento->estado_pago == 'pagado') bg-green-100 text-green-800
-                                        @else bg-yellow-100 text-yellow-800 @endif">
-                                        @if($pedimento->estado_pago == 'pagado') ✅ Pagado
-                                        @else ⏳ Por Pagar @endif
+                                        <?php if($pedimento->estado_pago == 'pagado'): ?> bg-green-100 text-green-800
+                                        <?php else: ?> bg-yellow-100 text-yellow-800 <?php endif; ?>">
+                                        <?php if($pedimento->estado_pago == 'pagado'): ?> ✅ Pagado
+                                        <?php else: ?> ⏳ Por Pagar <?php endif; ?>
                                     </span>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                    <button onclick="togglePedimentosClave('{{ $pedimento->clave }}')" class="text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded">
-                                        <span id="icon-{{ $pedimento->clave }}">👁️</span> <span id="text-{{ $pedimento->clave }}">Ver Pedimentos</span>
+                                    <button onclick="togglePedimentosClave('<?php echo e($pedimento->clave); ?>')" class="text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded">
+                                        <span id="icon-<?php echo e($pedimento->clave); ?>">👁️</span> <span id="text-<?php echo e($pedimento->clave); ?>">Ver Pedimentos</span>
                                     </button>
                                 </td>
                             </tr>
                             <!-- Fila expandible para mostrar pedimentos individuales -->
-                            <tr id="pedimentos-{{ $pedimento->clave }}" class="hidden bg-blue-50">
+                            <tr id="pedimentos-<?php echo e($pedimento->clave); ?>" class="hidden bg-blue-50">
                                 <td colspan="7" class="px-6 py-4">
                                     <div class="bg-white rounded-lg p-4 shadow-sm">
                                         <h4 class="text-lg font-semibold text-gray-800 mb-3">
-                                            📋 Pedimentos de la clave: {{ $pedimento->clave }}
+                                            📋 Pedimentos de la clave: <?php echo e($pedimento->clave); ?>
+
                                         </h4>
-                                        <div id="loading-{{ $pedimento->clave }}" class="text-center py-4">
+                                        <div id="loading-<?php echo e($pedimento->clave); ?>" class="text-center py-4">
                                             <div class="inline-flex items-center">
                                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -179,13 +182,13 @@
                                                 Cargando pedimentos...
                                             </div>
                                         </div>
-                                        <div id="pedimentos-lista-{{ $pedimento->clave }}" class="hidden">
+                                        <div id="pedimentos-lista-<?php echo e($pedimento->clave); ?>" class="hidden">
                                             <!-- Los pedimentos se cargarán aquí via AJAX -->
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr>
                                 <td colspan="9" class="px-4 py-8 text-center text-gray-500">
                                     <div class="flex flex-col items-center">
@@ -195,17 +198,18 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforelse
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
 
             <!-- Paginación -->
-            @if($paginatedPedimentos->hasPages())
+            <?php if($paginatedPedimentos->hasPages()): ?>
                 <div class="px-6 py-4 border-t border-gray-200">
-                    {{ $paginatedPedimentos->links() }}
+                    <?php echo e($paginatedPedimentos->links()); ?>
+
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -444,8 +448,10 @@
     </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('js/Logistica/pedimentos.js') }}?v={{ time() }}"></script>
-@endpush
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/Logistica/pedimentos.js')); ?>?v=<?php echo e(time()); ?>"></script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\SISTEMAS\Downloads\ERP EstrategiaeInnovacion\Sistema_Tickets_E-I\resources\views/Logistica/pedimentos/index.blade.php ENDPATH**/ ?>

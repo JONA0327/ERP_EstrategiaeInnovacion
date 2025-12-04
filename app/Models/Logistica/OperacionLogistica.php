@@ -576,4 +576,12 @@ class OperacionLogistica extends Model
             $operacion->saveQuietly();
         });
     }
+
+    /**
+     * Relación con PedimentoOperacion
+     */
+    public function pedimentoOperacion()
+    {
+        return $this->hasOne(PedimentoOperacion::class, 'operacion_logistica_id');
+    }
 }

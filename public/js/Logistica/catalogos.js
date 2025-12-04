@@ -2629,20 +2629,18 @@ async function guardarNuevoPedimentoCatalogo() {
 // =======================================
 
 // Abrir modal de editar pedimento
-function editarPedimento(id, clave, descripcion, categoria = '', subcategoria = '') {
+function editarPedimento(id, clave, descripcion, categoria = '') {
     const modal = document.getElementById('editPedimentoModal');
     if (modal) {
         const idField = document.getElementById('editPedimentoId');
         const claveField = document.getElementById('editPedimentoClave');
         const descripcionField = document.getElementById('editPedimentoDescripcion');
         const categoriaField = document.getElementById('editPedimentoCategoria');
-        const subcategoriaField = document.getElementById('editPedimentoSubcategoria');
         
         if (idField) idField.value = id;
         if (claveField) claveField.value = clave;
         if (descripcionField) descripcionField.value = descripcion;
         if (categoriaField) categoriaField.value = categoria;
-        if (subcategoriaField) subcategoriaField.value = subcategoria;
 
         modal.classList.remove('hidden');
         modal.classList.add('show');
