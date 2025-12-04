@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Logistica\OperacionLogistica;
 use App\Models\Logistica\PedimentoOperacion;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -68,14 +69,15 @@ class ReporteController extends Controller
             
             // Encabezados
             $headers = [
-                'ID', 'No. Pedimento', 'Clave', 'Cliente', 'Ejecutivo', 
-                'Fecha Embarque', 'Estatus', 'Naviera', 'Vessel', 
+                'ID', 'No. Pedimento', 'Clave', 'Cliente', 'Ejecutivo',
+                'Fecha Embarque', 'Estatus', 'Naviera', 'Vessel',
                 'Voyage', 'ETA', 'ETD', 'Observaciones'
             ];
-            
+
             $row = 5;
             foreach ($headers as $col => $header) {
-                $sheet->setCellValueByColumnAndRow($col + 1, $row, $header);
+                $columnLetter = Coordinate::stringFromColumnIndex($col + 1);
+                $sheet->setCellValue("{$columnLetter}{$row}", $header);
             }
             
             // Estilo encabezados
@@ -206,14 +208,15 @@ class ReporteController extends Controller
             
             // Encabezados
             $headers = [
-                'No. Pedimento', 'Clave', 'Tipo Op.', 'Cliente', 'Ejecutivo', 
+                'No. Pedimento', 'Clave', 'Tipo Op.', 'Cliente', 'Ejecutivo',
                 'Fecha Embarque', 'Estado Pago', 'Fecha Pago', 'Monto', 'Moneda',
                 'Días Proceso', 'Naviera', 'Vessel', 'Observaciones Pago', 'Observaciones Op.'
             ];
-            
+
             $row = 5;
             foreach ($headers as $col => $header) {
-                $sheet->setCellValueByColumnAndRow($col + 1, $row, $header);
+                $columnLetter = Coordinate::stringFromColumnIndex($col + 1);
+                $sheet->setCellValue("{$columnLetter}{$row}", $header);
             }
             
             // Estilo encabezados
