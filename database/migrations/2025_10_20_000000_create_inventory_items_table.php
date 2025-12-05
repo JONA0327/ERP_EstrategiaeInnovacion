@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\InventoryItem;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -21,7 +20,7 @@ return new class extends Migration
             $table->string('marca')->nullable();
             $table->string('modelo')->nullable();
             $table->string('numero_serie')->nullable();
-            $table->enum('estado', array_keys(InventoryItem::estadoLabels()))->default(InventoryItem::ESTADO_DISPONIBLE);
+            $table->enum('estado', ['disponible', 'en_uso', 'mantenimiento', 'dañado', 'baja'])->default('disponible');
             $table->boolean('es_funcional')->default(true);
             $table->string('ubicacion')->nullable();
             $table->text('descripcion_general')->nullable();
