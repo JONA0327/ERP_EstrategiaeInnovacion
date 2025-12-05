@@ -1,12 +1,10 @@
-@extends('layouts.erp')
+<?php $__env->startSection('title', 'Catálogos Maestros - Logística'); ?>
 
-@section('title', 'Catálogos Maestros - Logística')
+<?php $__env->startPush('styles'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/Logistica/catalogos.css')); ?>">
+<?php $__env->stopPush(); ?>
 
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/Logistica/catalogos.css') }}">
-@endpush
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
@@ -17,7 +15,7 @@
         <div class="relative max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-10">
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <a href="{{ route('logistica.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors">
+                    <a href="<?php echo e(route('logistica.index')); ?>" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors">
                         <span class="mr-2">←</span> Regresar
                     </a>
                     <h1 class="text-2xl font-bold text-slate-900">Catálogos Maestros</h1>
@@ -26,7 +24,7 @@
             </div>
 
             <!-- Mensajes Flash -->
-            @if(session('success'))
+            <?php if(session('success')): ?>
                 <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -35,13 +33,13 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                            <p class="text-sm font-medium text-green-800"><?php echo e(session('success')); ?></p>
                         </div>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            @if(session('error'))
+            <?php if(session('error')): ?>
                 <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -50,34 +48,34 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                            <p class="text-sm font-medium text-red-800"><?php echo e(session('error')); ?></p>
                         </div>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
 
             <!-- Pestañas -->
             <div class="bg-white/90 backdrop-blur rounded-2xl border border-blue-100/80 shadow-lg shadow-blue-500/10 overflow-hidden">
                 <!-- Tab Headers -->
                 <div class="border-b border-slate-200">
                     <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                        @if(auth()->user() && auth()->user()->hasRole('admin'))
+                        <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                         <button data-tab="clientes" id="tab-clientes"
                                 class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                             <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                             </svg>
                             Clientes
-                            <span class="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs">{{ $clientes->total() }}</span>
+                            <span class="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($clientes->total()); ?></span>
                         </button>
-                        @endif
+                        <?php endif; ?>
                         <button data-tab="agentes" id="tab-agentes"
-                                class="tab-button {{ !(auth()->user() && auth()->user()->hasRole('admin')) ? 'active' : '' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                                class="tab-button <?php echo e(!(auth()->user() && auth()->user()->hasRole('admin')) ? 'active' : ''); ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                             <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                             </svg>
                             Agentes Aduanales
-                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{{ $agentesAduanales->total() }}</span>
+                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($agentesAduanales->total()); ?></span>
                         </button>
                         <button data-tab="transportes" id="tab-transportes"
                                 class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
@@ -85,16 +83,16 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                             </svg>
                             Transportes
-                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{{ $transportes->total() }}</span>
+                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($transportes->total()); ?></span>
                         </button>
-                        @if(auth()->user() && auth()->user()->hasRole('admin'))
+                        <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                         <button data-tab="ejecutivos" id="tab-ejecutivos"
                                 class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                             <svg class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                             </svg>
                             Ejecutivos
-                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{{ $ejecutivos->total() }}</span>
+                            <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($ejecutivos->total()); ?></span>
                         </button>
                         <button data-tab="aduanas" id="tab-aduanas"
                                 class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
@@ -102,7 +100,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                             </svg>
                             Aduanas
-                            <span class="ml-2 bg-purple-100 text-purple-600 py-0.5 px-2 rounded-full text-xs">{{ $aduanas->total() }}</span>
+                            <span class="ml-2 bg-purple-100 text-purple-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($aduanas->total()); ?></span>
                         </button>
                         <button data-tab="pedimentos" id="tab-pedimentos"
                                 class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
@@ -110,7 +108,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             Pedimentos
-                            <span class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">{{ $pedimentos->total() }}</span>
+                            <span class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($pedimentos->total()); ?></span>
                         </button>
                         <button data-tab="correos-cc" id="tab-correos-cc"
                                 class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
@@ -118,22 +116,22 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                             </svg>
                             Correos CC
-                            <span class="ml-2 bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs">{{ $correosCC->count() ?? 0 }}</span>
+                            <span class="ml-2 bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs"><?php echo e($correosCC->count() ?? 0); ?></span>
                         </button>
-                        @endif
+                        <?php endif; ?>
                     </nav>
                 </div>
 
                 <!-- Tab Contents -->
 
                 <!-- Clientes Tab - Solo Admin -->
-                @if(auth()->user() && auth()->user()->hasRole('admin'))
+                <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                 <div id="clientes-content" class="tab-content">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-lg font-semibold text-slate-800">Gestión de Clientes</h2>
                             <div class="flex space-x-3">
-                                @if(auth()->user() && auth()->user()->hasRole('admin'))
+                                <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                                 <button id="assignExecutiveBtn" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm" disabled>
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -146,7 +144,7 @@
                                     </svg>
                                     Limpiar Clientes
                                 </button>
-                                @endif
+                                <?php endif; ?>
                                 <button class="btn-add inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" data-type="clientes">
                                     <span class="mr-2 font-bold">+</span>
                                     Agregar Cliente
@@ -160,11 +158,11 @@
                             <table class="w-full">
                                 <thead class="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        @if(auth()->user() && auth()->user()->hasRole('admin'))
+                                        <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                                             <input type="checkbox" id="selectAllClientes" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                         </th>
-                                        @endif
+                                        <?php endif; ?>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">ID</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Cliente</th>
                                         <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Correos</th>
@@ -175,85 +173,88 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    @forelse($clientes as $cliente)
+                                    <?php $__empty_1 = true; $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-blue-50/50 transition-colors">
-                                        @if(auth()->user() && auth()->user()->hasRole('admin'))
+                                        <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                                         <td class="px-4 py-3">
-                                            <input type="checkbox" class="cliente-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" value="{{ $cliente->id }}">
+                                            <input type="checkbox" class="cliente-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" value="<?php echo e($cliente->id); ?>">
                                         </td>
-                                        @endif
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->id }}</td>
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $cliente->cliente }}</td>
+                                        <?php endif; ?>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($cliente->id); ?></td>
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($cliente->cliente); ?></td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
-                                            @if($cliente->correos && count($cliente->correos) > 0)
+                                            <?php if($cliente->correos && count($cliente->correos) > 0): ?>
                                                 <div class="space-y-1">
-                                                    @foreach($cliente->correos as $correo)
+                                                    <?php $__currentLoopData = $cliente->correos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $correo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                         <div class="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                                                            {{ $correo }}
+                                                            <?php echo e($correo); ?>
+
                                                         </div>
-                                                    @endforeach
+                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="text-gray-400 text-xs">Sin correos</span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
-                                            @if($cliente->ejecutivoAsignado)
+                                            <?php if($cliente->ejecutivoAsignado): ?>
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    {{ $cliente->ejecutivoAsignado->nombre }}
+                                                    <?php echo e($cliente->ejecutivoAsignado->nombre); ?>
+
                                                 </span>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                                     Sin asignar
                                                 </span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
-                                            @if($cliente->periodicidad_reporte)
+                                            <?php if($cliente->periodicidad_reporte): ?>
                                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                                                    {{ $cliente->periodicidad_reporte === 'Diario' ? 'bg-red-100 text-red-800' : 
-                                                       ($cliente->periodicidad_reporte === 'Semanal' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800') }}">
-                                                    {{ $cliente->periodicidad_reporte }}
+                                                    <?php echo e($cliente->periodicidad_reporte === 'Diario' ? 'bg-red-100 text-red-800' : 
+                                                       ($cliente->periodicidad_reporte === 'Semanal' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')); ?>">
+                                                    <?php echo e($cliente->periodicidad_reporte); ?>
+
                                                 </span>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="text-gray-400 text-xs">No definida</span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $cliente->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($cliente->created_at->format('d/m/Y')); ?></td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
-                                                @php
+                                                <?php
                                                     $puedeEditar = $esAdmin ?? true;
                                                     if (!$puedeEditar && isset($empleadoActual) && $empleadoActual) {
                                                         $puedeEditar = $cliente->ejecutivo_asignado_id == $empleadoActual->id;
                                                     }
-                                                @endphp
+                                                ?>
                                                 
-                                                @if($puedeEditar)
+                                                <?php if($puedeEditar): ?>
                                                     <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                            data-id="{{ $cliente->id }}"
+                                                            data-id="<?php echo e($cliente->id); ?>"
                                                             data-type="clientes"
-                                                            data-name="{{ $cliente->cliente }}"
-                                                            data-ejecutivo-id="{{ $cliente->ejecutivo_asignado_id }}"
-                                                            data-periodicidad="{{ $cliente->periodicidad_reporte }}"
-                                                            data-correos="{{ $cliente->correos_string }}">
+                                                            data-name="<?php echo e($cliente->cliente); ?>"
+                                                            data-ejecutivo-id="<?php echo e($cliente->ejecutivo_asignado_id); ?>"
+                                                            data-periodicidad="<?php echo e($cliente->periodicidad_reporte); ?>"
+                                                            data-correos="<?php echo e($cliente->correos_string); ?>">
                                                         Editar
                                                     </button>
                                                     <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                            data-id="{{ $cliente->id }}"
+                                                            data-id="<?php echo e($cliente->id); ?>"
                                                             data-type="clientes"
-                                                            data-name="{{ $cliente->cliente }}">
+                                                            data-name="<?php echo e($cliente->cliente); ?>">
                                                         Eliminar
                                                     </button>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="text-xs text-gray-400 italic">Sin permisos</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
-                                        <td colspan="{{ auth()->user() && auth()->user()->hasRole('admin') ? 6 : 5 }}" class="px-4 py-8 text-center text-slate-500">
+                                        <td colspan="<?php echo e(auth()->user() && auth()->user()->hasRole('admin') ? 6 : 5); ?>" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
                                                 <svg class="w-12 h-12 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
@@ -262,22 +263,23 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($clientes->hasPages())
+                        <?php if($clientes->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $clientes->appends(['tab' => 'clientes'])->links() }}
+                            <?php echo e($clientes->appends(['tab' => 'clientes'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
 
                 <!-- Agentes Tab - Visible para todos -->
-                <div id="agentes-content" class="tab-content {{ !(auth()->user() && auth()->user()->hasRole('admin')) ? '' : 'hidden' }}">
+                <div id="agentes-content" class="tab-content <?php echo e(!(auth()->user() && auth()->user()->hasRole('admin')) ? '' : 'hidden'); ?>">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-lg font-semibold text-slate-800">Gestión de Agentes Aduanales</h2>
@@ -298,29 +300,29 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    @forelse($agentesAduanales as $agente)
+                                    <?php $__empty_1 = true; $__currentLoopData = $agentesAduanales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $agente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-blue-50/50 transition-colors">
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $agente->id }}</td>
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $agente->agente_aduanal }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $agente->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($agente->id); ?></td>
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($agente->agente_aduanal); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($agente->created_at->format('d/m/Y')); ?></td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
                                                 <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $agente->id }}"
+                                                        data-id="<?php echo e($agente->id); ?>"
                                                         data-type="agentes"
-                                                        data-name="{{ $agente->agente_aduanal }}">
+                                                        data-name="<?php echo e($agente->agente_aduanal); ?>">
                                                     Editar
                                                 </button>
                                                 <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $agente->id }}"
+                                                        data-id="<?php echo e($agente->id); ?>"
                                                         data-type="agentes"
-                                                        data-name="{{ $agente->agente_aduanal }}">
+                                                        data-name="<?php echo e($agente->agente_aduanal); ?>">
                                                     Eliminar
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="4" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
@@ -331,16 +333,17 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($agentesAduanales->hasPages())
+                        <?php if($agentesAduanales->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $agentesAduanales->appends(['tab' => 'agentes'])->links() }}
+                            <?php echo e($agentesAduanales->appends(['tab' => 'agentes'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -367,35 +370,36 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    @forelse($transportes as $transporte)
+                                    <?php $__empty_1 = true; $__currentLoopData = $transportes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $transporte): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-blue-50/50 transition-colors">
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $transporte->id }}</td>
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $transporte->transporte }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($transporte->id); ?></td>
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($transporte->transporte); ?></td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                {{ $transporte->tipo_operacion == 'EXPORTACION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
-                                                {{ $transporte->tipo_operacion }}
+                                                <?php echo e($transporte->tipo_operacion == 'EXPORTACION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'); ?>">
+                                                <?php echo e($transporte->tipo_operacion); ?>
+
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $transporte->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($transporte->created_at->format('d/m/Y')); ?></td>
                                         <td class="px-4 py-3 text-sm">
                                             <div class="flex space-x-2">
                                                 <button class="btn-edit px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $transporte->id }}"
+                                                        data-id="<?php echo e($transporte->id); ?>"
                                                         data-type="transportes"
-                                                        data-name="{{ $transporte->transporte }}">
+                                                        data-name="<?php echo e($transporte->transporte); ?>">
                                                     Editar
                                                 </button>
                                                 <button class="btn-delete px-3 py-1 rounded-lg text-sm font-medium transition-all"
-                                                        data-id="{{ $transporte->id }}"
+                                                        data-id="<?php echo e($transporte->id); ?>"
                                                         data-type="transportes"
-                                                        data-name="{{ $transporte->transporte }}">
+                                                        data-name="<?php echo e($transporte->transporte); ?>">
                                                     Eliminar
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="5" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
@@ -406,21 +410,22 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($transportes->hasPages())
+                        <?php if($transportes->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $transportes->appends(['tab' => 'transportes'])->links() }}
+                            <?php echo e($transportes->appends(['tab' => 'transportes'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Ejecutivos Tab - Solo Admin -->
-                @if(auth()->user() && auth()->user()->hasRole('admin'))
+                <?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
                 <div id="ejecutivos-content" class="tab-content hidden">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-6">
@@ -448,19 +453,20 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    @forelse($ejecutivos as $ejecutivo)
+                                    <?php $__empty_1 = true; $__currentLoopData = $ejecutivos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ejecutivo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-blue-50/50 transition-colors">
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $ejecutivo->id }}</td>
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $ejecutivo->nombre }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($ejecutivo->id); ?></td>
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($ejecutivo->nombre); ?></td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                {{ $ejecutivo->area }}
+                                                <?php echo e($ejecutivo->area); ?>
+
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $ejecutivo->correo ?? 'N/A' }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $ejecutivo->id_empleado ?? 'N/A' }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($ejecutivo->correo ?? 'N/A'); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($ejecutivo->id_empleado ?? 'N/A'); ?></td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="5" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
@@ -471,19 +477,20 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($ejecutivos->hasPages())
+                        <?php if($ejecutivos->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $ejecutivos->appends(['tab' => 'ejecutivos'])->links() }}
+                            <?php echo e($ejecutivos->appends(['tab' => 'ejecutivos'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
 
                 <!-- Aduanas Tab - Solo Admin -->
                 <div id="aduanas-content" class="tab-content hidden">
@@ -501,7 +508,7 @@
                                     </svg>
                                     Limpiar Todo
                                 </button>
-                                <button id="importADUANASBtn" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm" style="display: {{ $aduanas->total() > 0 ? 'none' : 'inline-flex' }};">
+                                <button id="importADUANASBtn" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm" style="display: <?php echo e($aduanas->total() > 0 ? 'none' : 'inline-flex'); ?>;">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                     </svg>
@@ -522,7 +529,7 @@
                         <div id="aduanasStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div class="bg-purple-50 p-4 rounded-lg">
                                 <h3 class="text-sm font-medium text-purple-800">Total Aduanas</h3>
-                                <p id="totalAduanas" class="text-2xl font-bold text-purple-600">{{ $aduanas->total() }}</p>
+                                <p id="totalAduanas" class="text-2xl font-bold text-purple-600"><?php echo e($aduanas->total()); ?></p>
                             </div>
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h3 class="text-sm font-medium text-blue-800">Última Importación</h3>
@@ -548,27 +555,28 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200" id="aduanasTableBody">
-                                    @forelse($aduanas as $aduana)
+                                    <?php $__empty_1 = true; $__currentLoopData = $aduanas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $aduana): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-purple-50/50 transition-colors">
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $aduana->aduana }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->seccion }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ Str::limit($aduana->denominacion, 50) }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->patente ?? 'N/A' }}</td>
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($aduana->aduana); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($aduana->seccion); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e(Str::limit($aduana->denominacion, 50)); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($aduana->patente ?? 'N/A'); ?></td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {{ $aduana->pais }}
+                                                <?php echo e($aduana->pais); ?>
+
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $aduana->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($aduana->created_at->format('d/m/Y')); ?></td>
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex justify-center space-x-2">
-                                                <button onclick="editarAduana({{ $aduana->id }}, '{{ $aduana->aduana }}', '{{ $aduana->seccion }}', '{{ addslashes($aduana->denominacion) }}', '{{ $aduana->patente }}', '{{ $aduana->pais }}')"
+                                                <button onclick="editarAduana(<?php echo e($aduana->id); ?>, '<?php echo e($aduana->aduana); ?>', '<?php echo e($aduana->seccion); ?>', '<?php echo e(addslashes($aduana->denominacion)); ?>', '<?php echo e($aduana->patente); ?>', '<?php echo e($aduana->pais); ?>')"
                                                         class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                                     </svg>
                                                 </button>
-                                                <button onclick="eliminarAduana({{ $aduana->id }})"
+                                                <button onclick="eliminarAduana(<?php echo e($aduana->id); ?>)"
                                                         class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -577,7 +585,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="7" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
@@ -589,16 +597,17 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($aduanas->hasPages())
+                        <?php if($aduanas->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $aduanas->appends(['tab' => 'aduanas'])->links() }}
+                            <?php echo e($aduanas->appends(['tab' => 'aduanas'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -618,7 +627,7 @@
                                     </svg>
                                     Limpiar Todo
                                 </button>
-                                <button id="importPedimentosBtn" onclick="openImportPedimentosModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm" style="display: {{ $pedimentos->total() > 0 ? 'none' : 'inline-flex' }};">
+                                <button id="importPedimentosBtn" onclick="openImportPedimentosModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm" style="display: <?php echo e($pedimentos->total() > 0 ? 'none' : 'inline-flex'); ?>;">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                     </svg>
@@ -644,7 +653,7 @@
                         <div id="pedimentosStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div class="bg-indigo-50 p-4 rounded-lg">
                                 <h3 class="text-sm font-medium text-indigo-800">Total Pedimentos</h3>
-                                <p id="totalPedimentos" class="text-2xl font-bold text-indigo-600">{{ $pedimentos->total() }}</p>
+                                <p id="totalPedimentos" class="text-2xl font-bold text-indigo-600"><?php echo e($pedimentos->total()); ?></p>
                             </div>
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h3 class="text-sm font-medium text-blue-800">Última Importación</h3>
@@ -668,33 +677,35 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200" id="pedimentosTableBody">
-                                    @forelse($pedimentos as $pedimento)
+                                    <?php $__empty_1 = true; $__currentLoopData = $pedimentos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedimento): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr class="hover:bg-indigo-50/50 transition-colors">
                                         <td class="px-4 py-3 text-sm font-medium text-slate-900">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                                {{ $pedimento->clave }}
+                                                <?php echo e($pedimento->clave); ?>
+
                                             </span>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600">
-                                            @if($pedimento->categoria)
+                                            <?php if($pedimento->categoria): ?>
                                                 <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ $pedimento->categoria }}
+                                                    <?php echo e($pedimento->categoria); ?>
+
                                                 </span>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="text-slate-400">-</span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ Str::limit($pedimento->descripcion, 80) }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">{{ $pedimento->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e(Str::limit($pedimento->descripcion, 80)); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><?php echo e($pedimento->created_at->format('d/m/Y')); ?></td>
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex justify-center space-x-2">
-                                                <button onclick="editarPedimento({{ $pedimento->id }}, '{{ $pedimento->clave }}', '{{ addslashes($pedimento->descripcion) }}', '{{ addslashes($pedimento->categoria ?? '') }}')"
+                                                <button onclick="editarPedimento(<?php echo e($pedimento->id); ?>, '<?php echo e($pedimento->clave); ?>', '<?php echo e(addslashes($pedimento->descripcion)); ?>', '<?php echo e(addslashes($pedimento->categoria ?? '')); ?>')"
                                                         class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                                     </svg>
                                                 </button>
-                                                <button onclick="eliminarPedimento({{ $pedimento->id }})"
+                                                <button onclick="eliminarPedimento(<?php echo e($pedimento->id); ?>)"
                                                         class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -703,7 +714,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="6" class="px-4 py-8 text-center text-slate-500">
                                             <div class="flex flex-col items-center">
@@ -715,16 +726,17 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        @if($pedimentos->hasPages())
+                        <?php if($pedimentos->hasPages()): ?>
                         <div class="mt-6 flex justify-center">
-                            {{ $pedimentos->appends(['tab' => 'pedimentos'])->links() }}
+                            <?php echo e($pedimentos->appends(['tab' => 'pedimentos'])->links()); ?>
+
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -734,7 +746,7 @@
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-semibold text-slate-800">Correos CC para Reportes</h2>
                             <div class="flex items-center space-x-3">
-                                <a href="{{ route('logistica.correos-cc.index') }}" 
+                                <a href="<?php echo e(route('logistica.correos-cc.index')); ?>" 
                                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -762,9 +774,9 @@
                                         </ul>
                                         <div class="mt-4 flex items-center justify-between">
                                             <p class="text-sm">
-                                                <strong>Correos activos configurados:</strong> <span class="bg-blue-200 px-2 py-1 rounded text-blue-800">{{ $correosCC->count() ?? 0 }}</span>
+                                                <strong>Correos activos configurados:</strong> <span class="bg-blue-200 px-2 py-1 rounded text-blue-800"><?php echo e($correosCC->count() ?? 0); ?></span>
                                             </p>
-                                            <a href="{{ route('logistica.correos-cc.index') }}" 
+                                            <a href="<?php echo e(route('logistica.correos-cc.index')); ?>" 
                                                class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium">
                                                 Ver detalles
                                                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -777,40 +789,42 @@
                             </div>
                         </div>
 
-                        @if(isset($correosCC) && $correosCC->count() > 0)
+                        <?php if(isset($correosCC) && $correosCC->count() > 0): ?>
                         <div class="mt-6">
                             <h4 class="text-sm font-medium text-slate-700 mb-3">Vista previa de correos configurados:</h4>
                             <div class="grid gap-2 max-h-40 overflow-y-auto">
-                                @foreach($correosCC->take(5) as $correo)
+                                <?php $__currentLoopData = $correosCC->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $correo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
                                     <div class="flex items-center space-x-2">
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                                            @if($correo->tipo === 'administrador') bg-red-100 text-red-800
-                                            @elseif($correo->tipo === 'supervisor') bg-yellow-100 text-yellow-800
-                                            @else bg-blue-100 text-blue-800
-                                            @endif">
-                                            {{ ucfirst($correo->tipo) }}
+                                            <?php if($correo->tipo === 'administrador'): ?> bg-red-100 text-red-800
+                                            <?php elseif($correo->tipo === 'supervisor'): ?> bg-yellow-100 text-yellow-800
+                                            <?php else: ?> bg-blue-100 text-blue-800
+                                            <?php endif; ?>">
+                                            <?php echo e(ucfirst($correo->tipo)); ?>
+
                                         </span>
-                                        <span class="font-medium">{{ $correo->nombre }}</span>
-                                        <span class="text-gray-600">{{ $correo->email }}</span>
+                                        <span class="font-medium"><?php echo e($correo->nombre); ?></span>
+                                        <span class="text-gray-600"><?php echo e($correo->email); ?></span>
                                     </div>
                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                                        {{ $correo->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $correo->activo ? 'Activo' : 'Inactivo' }}
+                                        <?php echo e($correo->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'); ?>">
+                                        <?php echo e($correo->activo ? 'Activo' : 'Inactivo'); ?>
+
                                     </span>
                                 </div>
-                                @endforeach
-                                @if($correosCC->count() > 5)
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php if($correosCC->count() > 5): ?>
                                 <div class="text-center">
-                                    <a href="{{ route('logistica.correos-cc.index') }}" 
+                                    <a href="<?php echo e(route('logistica.correos-cc.index')); ?>" 
                                        class="text-blue-600 hover:text-blue-800 text-sm">
-                                        Ver todos ({{ $correosCC->count() }} correos)
+                                        Ver todos (<?php echo e($correosCC->count()); ?> correos)
                                     </a>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
-                        @else
+                        <?php else: ?>
                         <div class="mt-6 text-center py-8 text-gray-500">
                             <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
@@ -818,7 +832,7 @@
                             <p>No hay correos CC configurados</p>
                             <p class="text-sm">Agrega el primer correo CC para comenzar</p>
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -847,9 +861,9 @@
                         <select id="editEjecutivo" name="ejecutivo_asignado_id"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <option value="">Sin asignar</option>
-                            @foreach($todosEjecutivos as $ejecutivo)
-                            <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $todosEjecutivos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ejecutivo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($ejecutivo->id); ?>"><?php echo e($ejecutivo->nombre); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -948,9 +962,9 @@
                     <select id="selectEjecutivo" name="ejecutivo_id" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                         <option value="">Seleccione un ejecutivo...</option>
-                        @foreach($todosEjecutivos as $ejecutivo)
-                        <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $todosEjecutivos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ejecutivo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($ejecutivo->id); ?>"><?php echo e($ejecutivo->nombre); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
 
@@ -1137,8 +1151,8 @@
                 <p class="text-sm text-gray-600 mt-1">Sube un archivo con las claves y descripciones de pedimentos</p>
             </div>
 
-            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data" action="{{ route('logistica.pedimentos.import.legacy') }}" method="POST">
-                @csrf
+            <form id="importPedimentosForm" class="p-6" enctype="multipart/form-data" action="<?php echo e(route('logistica.pedimentos.import.legacy')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="mb-6">
                     <label for="pedimentosFile" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo de Pedimentos</label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
@@ -1334,7 +1348,7 @@
 <!-- /Modal de Confirmación -->
 
 <!-- Modal de Búsqueda de Empleados -->
-@if(auth()->user() && auth()->user()->hasRole('admin'))
+<?php if(auth()->user() && auth()->user()->hasRole('admin')): ?>
 <div id="searchEmployeeModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform scale-95 transition-all duration-300">
         <div class="modal-header p-6 border-b border-gray-200">
@@ -1389,7 +1403,7 @@
         </div>
     </div>
 </div>
-@endif
+<?php endif; ?>
 
 <!-- Modal de Alerta (Reemplazo de alert) -->
 <div id="modalAlert" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
@@ -1436,8 +1450,10 @@
     </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('js/Logistica/catalogos.js') }}?v={{ time() }}"></script>
-@endpush
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/Logistica/catalogos.js')); ?>?v=<?php echo e(time()); ?>"></script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\SISTEMAS\Downloads\ERP EstrategiaeInnovacion\Sistema_Tickets_E-I\resources\views/Logistica/catalogos.blade.php ENDPATH**/ ?>

@@ -92,21 +92,25 @@ Route::middleware(['auth','area.logistica'])->group(function () {
 
     // Rutas para Pedimentos
     Route::get('/logistica/pedimentos', [PedimentoController::class, 'index'])->name('logistica.pedimentos.index');
+    Route::post('/logistica/pedimentos/marcar-pagados', [PedimentoController::class, 'marcarPagados'])->name('logistica.pedimentos.marcar-pagados');
+    Route::post('/logistica/pedimentos/actualizar', [PedimentoController::class, 'actualizarPedimento'])->name('logistica.pedimentos.actualizar');
+    Route::get('/logistica/pedimentos/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkPedimentos']);
+    Route::get('/logistica/pedimentos/claves', [\App\Http\Controllers\Logistica\ReporteController::class, 'getClaves'])->name('logistica.pedimentos.claves');
+    Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
+    Route::get('/logistica/pedimentos/subcategorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getSubcategorias']);
+    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos'])->name('logistica.pedimentos.import.legacy');
+    Route::get('/logistica/pedimentos/clave/{clave}', [PedimentoController::class, 'getPedimentosPorClave'])->name('logistica.pedimentos.por-clave');
+    // Rutas con parámetro {id} deben ir al final
     Route::get('/logistica/pedimentos/{id}', [PedimentoController::class, 'show'])->name('logistica.pedimentos.show');
     Route::put('/logistica/pedimentos/{id}/estado-pago', [PedimentoController::class, 'updateEstadoPago'])->name('logistica.pedimentos.update-estado');
     Route::delete('/logistica/pedimentos/{id}', [PedimentoController::class, 'destroy'])->name('logistica.pedimentos.destroy');
-    Route::post('/logistica/pedimentos/marcar-pagados', [PedimentoController::class, 'marcarPagados'])->name('logistica.pedimentos.marcar-pagados');
     
-    // Nuevas rutas para funcionalidad expandida
-    Route::get('/logistica/pedimentos/clave/{clave}', [PedimentoController::class, 'getPedimentosPorClave'])->name('logistica.pedimentos.por-clave');
-    Route::post('/logistica/pedimentos/actualizar', [PedimentoController::class, 'actualizarPedimento'])->name('logistica.pedimentos.actualizar');
     Route::get('/api/monedas', [PedimentoController::class, 'getMonedas'])->name('api.monedas');
     
     // Rutas para reportes separados
     Route::get('/reportes/pedimentos', [\App\Http\Controllers\Logistica\ReporteController::class, 'index'])->name('reportes.pedimentos.index');
     Route::get('/reportes/matriz/excel', [\App\Http\Controllers\Logistica\ReporteController::class, 'generarExcelMatriz'])->name('reportes.matriz.excel');
     Route::get('/reportes/pedimentos/excel', [\App\Http\Controllers\Logistica\ReporteController::class, 'generarExcelPedimentos'])->name('reportes.pedimentos.excel');
-    Route::get('/logistica/pedimentos/claves', [\App\Http\Controllers\Logistica\ReporteController::class, 'getClaves'])->name('logistica.pedimentos.claves');
     Route::get('/logistica/clientes', [\App\Http\Controllers\Logistica\ReporteController::class, 'getClientes'])->name('logistica.clientes');
 
     // Rutas para Post-Operaciones Globales
@@ -134,14 +138,8 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::delete('/logistica/aduanas/{id}', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'destroy']);
     Route::delete('/logistica/aduanas', [\App\Http\Controllers\Logistica\AduanaImportController::class, 'clear']);
 
-    // Rutas para Pedimentos (Legacy Import - mantenidas para compatibilidad)
-    Route::post('/logistica/pedimentos/import', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importPedimentos'])->name('logistica.pedimentos.import.legacy');
-    Route::get('/logistica/pedimentos/categorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getCategorias']);
-    Route::get('/logistica/pedimentos/subcategorias', [\App\Http\Controllers\Logistica\PedimentoImportController::class, 'getSubcategorias']);
-
     // Rutas para verificar existencia de datos
     Route::get('/logistica/aduanas/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkAduanas']);
-    Route::get('/logistica/pedimentos/check', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'checkPedimentos']);
 
     // Rutas para búsqueda de empleados (solo admin)
     Route::middleware(['auth', 'admin'])->group(function () {

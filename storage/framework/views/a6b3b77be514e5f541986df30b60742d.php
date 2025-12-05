@@ -1,20 +1,18 @@
-@extends('layouts.erp')
+<?php $__env->startSection('title', 'Matriz de Seguimiento - Logística'); ?>
 
-@section('title', 'Matriz de Seguimiento - Logística')
+<?php $__env->startPush('styles'); ?>
+    <link rel="stylesheet" href="<?php echo e(asset('css/Logistica/matriz-seguimiento.css')); ?>">
+<?php $__env->stopPush(); ?>
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}">
-@endpush
-
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
     <script>
         // Variable global para transportes
-        window.transportes = @json($transportes->groupBy('tipo_operacion'));
+        window.transportes = <?php echo json_encode($transportes->groupBy('tipo_operacion'), 15, 512) ?>;
     </script>
-    <script src="{{ asset('js/Logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
-@endpush
+    <script src="<?php echo e(asset('js/Logistica/matriz-seguimiento.js')); ?>?v=<?php echo e(md5(time())); ?>"></script>
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
@@ -25,7 +23,7 @@
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
-                    <a href="{{ route('logistica.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors">
+                    <a href="<?php echo e(route('logistica.index')); ?>" class="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -99,29 +97,29 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200" id="operacionesTable">
-                            @forelse($operaciones as $operacion)
-                            <tr class="table-row" data-operacion-id="{{ $operacion->id }}">
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->id }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-900 font-medium">{{ $operacion->ejecutivo ?? 'Sin asignar' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->operacion ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->cliente ?? 'Sin cliente' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->proveedor_o_cliente ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_factura ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_operacion_enum ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->clave ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_interna ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->aduana ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->agente_aduanal ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_aa ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_pedimento ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->transporte ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
+                            <?php $__empty_1 = true; $__currentLoopData = $operaciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $operacion): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <tr class="table-row" data-operacion-id="<?php echo e($operacion->id); ?>">
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->id); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-900 font-medium"><?php echo e($operacion->ejecutivo ?? 'Sin asignar'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->operacion ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->cliente ?? 'Sin cliente'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->proveedor_o_cliente ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->no_factura ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->tipo_operacion_enum ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->clave ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->referencia_interna ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->aduana ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->agente_aduanal ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->referencia_aa ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->no_pedimento ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->transporte ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->guia_bl ?? '-'); ?></td>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
-                                        @php
+                                        <?php
                                             // Priorizar status_manual si existe y es Done, sino usar status_calculado
                                             $statusFinal = ($operacion->status_manual === 'Done') ? 'Done' : $operacion->status_calculado;
                                             $colorFinal = ($operacion->status_manual === 'Done') ? 'verde' : $operacion->color_status;
@@ -131,34 +129,30 @@
                                                 'Done' => 'Completado',
                                                 default => $statusFinal ?? 'En Proceso'
                                             };
-                                        @endphp
-                                        <span class="status-badge {{
-                                            $colorFinal === 'verde' ? 'status-verde' :
+                                        ?>
+                                        <span class="status-badge <?php echo e($colorFinal === 'verde' ? 'status-verde' :
                                             ($colorFinal === 'amarillo' ? 'status-amarillo' :
-                                            ($colorFinal === 'rojo' ? 'status-rojo' : 'status-sin-fecha'))
-                                        }} text-xs">
-                                            {{ $statusDisplay }}@if($operacion->status_manual === 'Done') <span class="ml-1">(Manual)</span>@endif
+                                            ($colorFinal === 'rojo' ? 'status-rojo' : 'status-sin-fecha'))); ?> text-xs">
+                                            <?php echo e($statusDisplay); ?><?php if($operacion->status_manual === 'Done'): ?> <span class="ml-1">(Manual)</span><?php endif; ?>
                                         </span>
                                     </div>
                                 </td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->resultado ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->target ?? '-' }}</td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->resultado ?? '-'); ?></td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->target ?? '-'); ?></td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    @if($operacion->dias_transito !== null)
-                                        <span class="dias-indicator {{
-                                            $operacion->color_status === 'verde' ? 'dias-verde' :
-                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo')
-                                        }}">
-                                            {{ abs($operacion->dias_transito) }} días
+                                    <?php if($operacion->dias_transito !== null): ?>
+                                        <span class="dias-indicator <?php echo e($operacion->color_status === 'verde' ? 'dias-verde' :
+                                            ($operacion->color_status === 'amarillo' ? 'dias-amarillo' : 'dias-rojo')); ?>">
+                                            <?php echo e(abs($operacion->dias_transito)); ?> días
                                         </span>
-                                    @else
+                                    <?php else: ?>
                                         <span class="text-slate-400">-</span>
-                                    @endif
+                                    <?php endif; ?>
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    <button onclick="verPostOperaciones({{ $operacion->id }})"
+                                    <button onclick="verPostOperaciones(<?php echo e($operacion->id); ?>)"
                                             class="action-button btn-view"
                                             title="Ver post-operaciones">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +161,7 @@
                                     </button>
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
-                                    <button onclick="verComentarios({{ $operacion->id }})"
+                                    <button onclick="verComentarios(<?php echo e($operacion->id); ?>)"
                                             class="action-button btn-view"
                                             title="Ver comentarios">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,7 +171,7 @@
                                 </td>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
-                                        <button onclick="verHistorial({{ $operacion->id }})"
+                                        <button onclick="verHistorial(<?php echo e($operacion->id); ?>)"
                                                 class="action-button btn-view"
                                                 title="Ver historial">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,24 +179,24 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
                                         </button>
-                                        <button onclick="editarOperacion({{ $operacion->id }})"
+                                        <button onclick="editarOperacion(<?php echo e($operacion->id); ?>)"
                                                 class="action-button btn-edit"
                                                 title="Editar operación">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
                                         </button>
-                                        @if($operacion->status_manual !== 'Done')
-                                        <button onclick="marcarComoDone({{ $operacion->id }})"
+                                        <?php if($operacion->status_manual !== 'Done'): ?>
+                                        <button onclick="marcarComoDone(<?php echo e($operacion->id); ?>)"
                                                 class="action-button btn-done"
                                                 title="Marcar como Done (Manual)">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
                                         </button>
-                                        @endif
+                                        <?php endif; ?>
 
-                                        <button onclick="eliminarOperacion({{ $operacion->id }})"
+                                        <button onclick="eliminarOperacion(<?php echo e($operacion->id); ?>)"
                                                 class="action-button btn-delete"
                                                 title="Eliminar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +206,7 @@
                                     </div>
                                 </td>
                             </tr>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr>
                                 <td colspan="25" class="px-3 py-8 text-center text-slate-500">
                                     <div class="flex flex-col items-center space-y-2">
@@ -222,7 +216,7 @@
                                     </div>
                                 </td>
                             </tr>
-                            @endforelse
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -289,7 +283,7 @@
             <!-- Contenido del formulario -->
             <div class="flex-1 overflow-y-auto p-4">
                 <form id="formPostOperacion" onsubmit="guardarPostOperacion(event)" class="space-y-4">
-                    @csrf
+                    <?php echo csrf_field(); ?>
 
                     <!-- Nombre de Post-Operación -->
                     <div>
@@ -309,11 +303,12 @@
                         <select name="operacion_logistica_id" id="operacion_relacionada"
                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Sin operación específica</option>
-                            @foreach($operaciones as $operacion)
-                                <option value="{{ $operacion->id }}">
-                                    {{ $operacion->operacion ?? 'Operación #' . $operacion->id }} - {{ $operacion->cliente ?? 'Sin cliente' }}
+                            <?php $__currentLoopData = $operaciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $operacion): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($operacion->id); ?>">
+                                    <?php echo e($operacion->operacion ?? 'Operación #' . $operacion->id); ?> - <?php echo e($operacion->cliente ?? 'Sin cliente'); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -366,7 +361,7 @@
             <!-- Contenido del formulario con scroll -->
             <div class="flex-1 overflow-y-auto p-6">
                 <form id="formOperacion" class="space-y-6">
-                        @csrf
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" id="operacionId" name="operacion_id" value="">
                         <input type="hidden" id="isEditing" name="_method" value="">
 
@@ -409,18 +404,18 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <label class="block text-sm font-semibold text-slate-700">Cliente *</label>
-                                        @if(isset($esAdmin) && $esAdmin)
+                                        <?php if(isset($esAdmin) && $esAdmin): ?>
                                         <button type="button" onclick="mostrarNuevoCliente()"
                                                 class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold flex items-center">
                                             <span class="mr-1">+</span> Agregar nuevo
                                         </button>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                     <select name="cliente" id="clienteSelect" required class="form-input text-base w-full">
                                         <option value="">Selecciona un cliente</option>
-                                        @foreach($clientes as $cliente)
-                                            <option value="{{ $cliente->cliente }}">{{ $cliente->cliente }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($cliente->cliente); ?>"><?php echo e($cliente->cliente); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                     <div id="nuevoClienteForm" class="hidden mt-3 p-3 bg-white border-2 border-emerald-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoClienteNombre" placeholder="Nombre del nuevo cliente" class="form-input mb-2">
@@ -436,7 +431,7 @@
 
                                 <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Ejecutivo Responsable *</label>
-                                    @php
+                                    <?php
                                         $valorEjecutivo = '';
                                         $soloLectura = false;
                                         
@@ -446,23 +441,23 @@
                                                 $soloLectura = true;
                                             }
                                         }
-                                    @endphp
-                                    @if(isset($esAdmin) && $esAdmin)
+                                    ?>
+                                    <?php if(isset($esAdmin) && $esAdmin): ?>
                                         <select name="ejecutivo" id="ejecutivoSelect" required class="form-input text-base w-full">
                                             <option value="">Selecciona un ejecutivo</option>
-                                            @foreach($empleados as $empleado)
-                                                <option value="{{ $empleado->nombre }}" {{ $empleado->nombre == $valorEjecutivo ? 'selected' : '' }}>{{ $empleado->nombre }}</option>
-                                            @endforeach
+                                            <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $empleado): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($empleado->nombre); ?>" <?php echo e($empleado->nombre == $valorEjecutivo ? 'selected' : ''); ?>><?php echo e($empleado->nombre); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </select>
-                                    @else
+                                    <?php else: ?>
                                         <input type="text" name="ejecutivo" required class="form-input text-base" 
                                                placeholder="Nombre del ejecutivo" 
-                                               value="{{ $valorEjecutivo }}"
+                                               value="<?php echo e($valorEjecutivo); ?>"
                                                readonly>
-                                    @endif
-                                    @if($soloLectura)
+                                    <?php endif; ?>
+                                    <?php if($soloLectura): ?>
                                         <p class="text-xs text-slate-500 mt-1">📌 Tu nombre está asignado automáticamente</p>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -486,9 +481,9 @@
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Clave del Pedimento *</label>
                                     <select name="clave" required class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                                         <option value="">Seleccione una clave</option>
-                                        @foreach($pedimentos ?? [] as $pedimento)
-                                            <option value="{{ $pedimento->clave }}">{{ $pedimento->clave }} - {{ $pedimento->descripcion }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $pedimentos ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedimento): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($pedimento->clave); ?>"><?php echo e($pedimento->clave); ?> - <?php echo e($pedimento->descripcion); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
                                 <div>
@@ -513,18 +508,18 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <label class="block text-sm font-semibold text-slate-700">Aduana de Despacho *</label>
-                                        @if(isset($esAdmin) && $esAdmin)
+                                        <?php if(isset($esAdmin) && $esAdmin): ?>
                                         <button type="button" onclick="mostrarNuevaAduana()"
                                                 class="text-xs text-violet-600 hover:text-violet-800 font-semibold flex items-center">
                                             <span class="mr-1">+</span> Agregar nueva
                                         </button>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                     <select name="aduana" id="aduanaSelect" required class="form-input text-base w-full">
                                         <option value="">Selecciona una aduana</option>
-                                        @foreach($aduanas ?? [] as $aduana)
-                                            <option value="{{ $aduana->aduana }}{{ $aduana->seccion }}" data-denominacion="{{ $aduana->denominacion }}">{{ $aduana->aduana }}{{ $aduana->seccion }} - {{ $aduana->denominacion }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $aduanas ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $aduana): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($aduana->aduana); ?><?php echo e($aduana->seccion); ?>" data-denominacion="<?php echo e($aduana->denominacion); ?>"><?php echo e($aduana->aduana); ?><?php echo e($aduana->seccion); ?> - <?php echo e($aduana->denominacion); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                     <div id="nuevaAduanaForm" class="hidden mt-3 p-3 bg-white border-2 border-violet-200 rounded-lg shadow-sm">
                                         <div class="grid grid-cols-3 gap-2 mb-2">
@@ -561,9 +556,9 @@
                                     </div>
                                     <select name="agente_aduanal" id="agenteSelect" required class="form-input text-base w-full">
                                         <option value="">Selecciona un agente aduanal</option>
-                                        @foreach($agentesAduanales as $agente)
-                                            <option value="{{ $agente->agente_aduanal }}">{{ $agente->agente_aduanal }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $agentesAduanales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $agente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($agente->agente_aduanal); ?>"><?php echo e($agente->agente_aduanal); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                     <div id="nuevoAgenteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoAgenteNombre" placeholder="Nombre del nuevo agente" class="form-input mb-2">
@@ -587,9 +582,9 @@
                                     </div>
                                     <select name="transporte" id="transporteSelect" class="form-input text-base w-full">
                                         <option value="">Selecciona una empresa de transporte</option>
-                                        @foreach($transportes as $transporte)
-                                            <option value="{{ $transporte->transporte }}" data-tipo="{{ $transporte->tipo_operacion }}">{{ $transporte->transporte }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $transportes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $transporte): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($transporte->transporte); ?>" data-tipo="<?php echo e($transporte->tipo_operacion); ?>"><?php echo e($transporte->transporte); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                     <div id="nuevoTransporteForm" class="hidden mt-3 p-3 bg-white border-2 border-sky-200 rounded-lg shadow-sm">
                                         <input type="text" id="nuevoTransporteNombre" placeholder="Nombre de la empresa" class="form-input mb-2">
@@ -880,4 +875,6 @@
             </div>
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\SISTEMAS\Downloads\ERP EstrategiaeInnovacion\Sistema_Tickets_E-I\resources\views/Logistica/matriz-seguimiento.blade.php ENDPATH**/ ?>

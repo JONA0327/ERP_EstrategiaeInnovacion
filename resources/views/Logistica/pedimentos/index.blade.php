@@ -5,66 +5,70 @@
 @endpush
 
 @section('content')
-<main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
-    <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
-        <div class="absolute top-40 -right-24 w-96 h-96 bg-blue-300/30 blur-3xl rounded-full"></div>
-        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-t from-white"></div>
-    </div>
-
-    <div class="relative max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-10">
+<div class="min-h-screen bg-gray-50 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-                <a href="{{ route('logistica.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-3 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                    Regresar
-                </a>
-                <h1 class="text-3xl font-bold text-slate-900">Control de Pagos de Pedimentos</h1>
-                <p class="text-sm text-slate-600 mt-1">Gestiona el estado de pago de pedimentos extraídos de la matriz de seguimiento logístico</p>
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="history.back()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center space-x-2">
+                            <span>←</span>
+                            <span>Regresar</span>
+                        </button>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">📄 Control de Pagos de Pedimentos</h1>
+                            <p class="text-gray-600 mt-1">Gestiona el estado de pago de pedimentos extraídos de la matriz de seguimiento logístico</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-4">
+                        <a href="/reportes/pedimentos" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center space-x-2">
+                            <span>📊</span>
+                            <span>Reportes</span>
+                        </a>
+                        <button onclick="marcarPagadosSeleccionados()" id="btnMarcarPagados" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 hidden">
+                            ✅ Marcar como Pagados
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="flex space-x-4">
-                <button onclick="marcarPagadosSeleccionados()" id="btnMarcarPagados" class="bg-gradient-to-r from-green-500 to-green-600 hover:to-green-700 text-white px-5 py-2 rounded-xl shadow-lg shadow-green-500/20 transition duration-200 hidden">
-                    ✅ Marcar como Pagados
-                </button>
-            </div>
-        </div>
 
-        <!-- Estadísticas -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="pedimento-stat-card bg-white/90 backdrop-blur border border-blue-100 shadow-blue-500/10">
-                <div class="pedimento-stat-number text-blue-600">{{ $stats['total_claves'] ?? 0 }}</div>
-                <div class="pedimento-stat-label">Tipos Operación</div>
-            </div>
-            <div class="pedimento-stat-card bg-white/90 backdrop-blur border border-blue-100 shadow-blue-500/10">
-                <div class="pedimento-stat-number text-indigo-600">{{ $stats['total_pedimentos'] ?? 0 }}</div>
-                <div class="pedimento-stat-label">Total Pedimentos</div>
-            </div>
-            <div class="pedimento-stat-card bg-white/90 backdrop-blur border border-blue-100 shadow-blue-500/10">
-                <div class="pedimento-stat-number text-yellow-600">{{ $stats['pendientes'] }}</div>
-                <div class="pedimento-stat-label">Por Pagar</div>
-            </div>
-            <div class="pedimento-stat-card bg-white/90 backdrop-blur border border-blue-100 shadow-blue-500/10">
-                <div class="pedimento-stat-number text-green-600">{{ $stats['pagados'] }}</div>
-                <div class="pedimento-stat-label">Pagados</div>
+            <!-- Estadísticas -->
+            <div class="px-6 py-4 bg-gray-50">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ $stats['total_claves'] ?? 0 }}</div>
+                        <div class="text-sm text-gray-600">Tipos Operación</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-indigo-600">{{ $stats['total_pedimentos'] ?? 0 }}</div>
+                        <div class="text-sm text-gray-600">Total Pedimentos</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-yellow-600">{{ $stats['pendientes'] }}</div>
+                        <div class="text-sm text-gray-600">Por Pagar</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ $stats['pagados'] }}</div>
+                        <div class="text-sm text-gray-600">Pagados</div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Filtros -->
-        <div class="bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg shadow-blue-500/10 mb-6">
-            <div class="px-6 py-5">
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4">
                 <form method="GET" action="{{ route('logistica.pedimentos.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Buscar Pedimento</label>
-                        <input type="text" name="buscar" value="{{ request('buscar') }}"
-                               placeholder="Número de pedimento..."
-                               class="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Pedimento</label>
+                        <input type="text" name="buscar" value="{{ request('buscar') }}" 
+                               placeholder="Número de pedimento..." 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado de Pago</label>
-                        <select name="estado_pago" class="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado de Pago</label>
+                        <select name="estado_pago" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Todos los estados</option>
                             <option value="pendiente" {{ request('estado_pago') == 'pendiente' ? 'selected' : '' }}>⏳ Por Pagar</option>
                             <option value="pagado" {{ request('estado_pago') == 'pagado' ? 'selected' : '' }}>✅ Pagado</option>
@@ -72,12 +76,12 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="submit" class="w-full inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-xl shadow-md shadow-blue-500/20 transition duration-200">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
                             🔍 Filtrar
                         </button>
                     </div>
                     <div class="flex items-end">
-                        <a href="{{ route('logistica.pedimentos.index') }}" class="w-full inline-flex items-center justify-center bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 px-6 py-2 rounded-xl transition duration-200">
+                        <a href="{{ route('logistica.pedimentos.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                             🔄 Limpiar
                         </a>
                     </div>
@@ -86,7 +90,7 @@
         </div>
 
         <!-- Tabla de Pedimentos -->
-        <div class="bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg shadow-blue-500/10 overflow-hidden">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -205,10 +209,10 @@
                 <div class="px-6 py-4 border-t border-gray-200">
                     {{ $paginatedPedimentos->links() }}
                 </div>
-        @endif
+            @endif
         </div>
     </div>
-</main>
+</div>
 
 <!-- Modal de Edición -->
 <div id="modalEditar" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
