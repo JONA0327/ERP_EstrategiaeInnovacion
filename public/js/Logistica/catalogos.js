@@ -2017,7 +2017,7 @@ function editarAduana(id, codigo, seccion, denominacion, patente, pais) {
         // Llenar los campos con los datos actuales
         document.getElementById('editAduanaId').value = id;
         document.getElementById('editAduanaCodigo').value = codigo;
-        document.getElementById('editADUANASeccion').value = seccion || '0';
+        document.getElementById('editAduanaSeccion').value = seccion || '0';
         document.getElementById('editAduanaDenominacion').value = denominacion;
         document.getElementById('editAduanaPatente').value = patente || '';
         document.getElementById('editAduanaPais').value = pais || 'MX';

@@ -19,16 +19,8 @@ class Pedimento extends Model
      */
     protected $fillable = [
         'categoria',
-        'subcategoria', 
         'clave',
-        'descripcion',
-        'estado_pago',
-        'fecha_pago',
-        'monto',
-        'moneda',
-        'observaciones_pago',
-        'fecha_tentativa_pago',
-        'operacion_logistica_id'
+        'descripcion'
     ];
 
     /**
@@ -36,14 +28,8 @@ class Pedimento extends Model
      */
     protected $casts = [
         'categoria' => 'string',
-        'subcategoria' => 'string',
         'clave' => 'string',
-        'descripcion' => 'string',
-        'estado_pago' => 'string',
-        'fecha_pago' => 'date',
-        'monto' => 'decimal:2',
-        'moneda' => 'string',
-        'fecha_tentativa_pago' => 'date'
+        'descripcion' => 'string'
     ];
 
     /**
@@ -70,13 +56,7 @@ class Pedimento extends Model
         return $query->where('categoria', $categoria);
     }
 
-    /**
-     * Scope para filtrar por subcategoría
-     */
-    public function scopePorSubcategoria($query, $subcategoria)
-    {
-        return $query->where('subcategoria', $subcategoria);
-    }
+
 
     /**
      * Obtener todas las categorías únicas
@@ -91,19 +71,7 @@ class Pedimento extends Model
             ->values();
     }
 
-    /**
-     * Obtener subcategorías por categoría
-     */
-    public static function getSubcategoriasPorCategoria($categoria)
-    {
-        return self::where('categoria', $categoria)
-            ->whereNotNull('subcategoria')
-            ->distinct()
-            ->pluck('subcategoria')
-            ->filter()
-            ->sort()
-            ->values();
-    }
+
 
     /**
      * Scope para filtrar por estado de pago

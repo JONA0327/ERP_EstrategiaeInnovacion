@@ -55,7 +55,6 @@ class PedimentoImportService
         $doc = IOFactory::load($filePath);
         $rows = [];
         $currentCategoria = null;
-        $currentSubcategoria = null;
 
         // Expresiones regulares para extraer información (más flexibles)
         $pedimentoRegex = '/([A-Z]\d+)\s*[-–—]\s*(.+)/';
@@ -68,7 +67,7 @@ class PedimentoImportService
             \Log::info("Procesando sección {$sectionIndex} con " . count($section->getElements()) . " elementos");
             
             foreach ($section->getElements() as $elementIndex => $element) {
-                $this->processElementWithCategories($element, $pedimentoRegex, $categoriaRegex, $rows, $currentCategoria, $currentSubcategoria);
+                $this->processElementWithCategories($element, $pedimentoRegex, $categoriaRegex, $rows, $currentCategoria);
             }
         }
         
@@ -159,26 +158,22 @@ class PedimentoImportService
                 
                 \Log::info("Fila {$rowNumber}: Clave='{$clave}', Denominación='{$denominacion}', Tipo='{$tipo}'");
                 
-                // Determinar categoría y subcategoría basado en el tipo
+                // Determinar categoría basado en el tipo
                 $categoria = null;
-                $subcategoria = null;
                 
                 if (!empty($tipo) && $tipo !== '=') {
                     $categoria = $tipo;
-                    $subcategoria = null;
                 } else {
                     // Si no hay tipo específico, usar lógica basada en la clave
                     if (preg_match('/^[A-Z]\d+/', $clave)) {
                         $categoria = 'OPERACIONES GENERALES';
-                        $subcategoria = null;
                     }
                 }
                 
                 $rows[] = [
                     'clave' => $clave,
                     'descripcion' => $denominacion,
-                    'categoria' => $categoria,
-                    'subcategoria' => $subcategoria
+                    'categoria' => $categoria
                 ];
             } else if (!empty($rowData[0])) {
                 \Log::warning("Fila {$rowNumber} omitida - datos insuficientes: " . json_encode($rowData));
@@ -193,7 +188,7 @@ class PedimentoImportService
     /**
      * Procesar elemento del documento con detección de categorías
      */
-    private function processElementWithCategories($element, $pedimentoRegex, $categoriaRegex, &$rows, &$currentCategoria, &$currentSubcategoria)
+    private function processElementWithCategories($element, $pedimentoRegex, $categoriaRegex, &$rows, &$currentCategoria)
     {
         if (method_exists($element, 'getText')) {
             $text = trim($element->getText());
@@ -207,15 +202,13 @@ class PedimentoImportService
                     
                     // Es una categoría
                     if (strlen($text) > 20 && strpos($text, '(') !== false) {
-                        // Categoría principal con subcategoría en paréntesis
+                        // Categoría principal con subcategoría en paréntesis - solo tomar la parte principal
                         $parts = explode('(', $text);
                         $currentCategoria = trim($parts[0]);
-                        $currentSubcategoria = trim(str_replace(')', '', $parts[1] ?? ''));
-                        \Log::info("Categoría con subcategoría: '{$currentCategoria}' - '{$currentSubcategoria}'");
+                        \Log::info("Categoría detectada: '{$currentCategoria}'");
                     } else if (strlen($text) > 10 && ctype_upper(str_replace([' ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ'], '', $text))) {
                         // Categoría principal
                         $currentCategoria = $text;
-                        $currentSubcategoria = null;
                         \Log::info("Categoría principal: '{$currentCategoria}'");
                     }
                 }
@@ -228,7 +221,6 @@ class PedimentoImportService
                     if (!empty($clave) && !empty($descripcion)) {
                         $rows[] = [
                             'categoria' => $currentCategoria,
-                            'subcategoria' => $currentSubcategoria,
                             'clave' => $clave,
                             'descripcion' => $descripcion
                         ];
@@ -243,7 +235,7 @@ class PedimentoImportService
         // Procesar elementos anidados
         if (method_exists($element, 'getElements')) {
             foreach ($element->getElements() as $childElement) {
-                $this->processElementWithCategories($childElement, $pedimentoRegex, $categoriaRegex, $rows, $currentCategoria, $currentSubcategoria);
+                $this->processElementWithCategories($childElement, $pedimentoRegex, $categoriaRegex, $rows, $currentCategoria);
             }
         }
     }
@@ -266,7 +258,6 @@ class PedimentoImportService
                 if (!$existing) {
                     $pedimento = Pedimento::create([
                         'categoria' => $row['categoria'] ?? null,
-                        'subcategoria' => $row['subcategoria'] ?? null,
                         'clave' => $row['clave'],
                         'descripcion' => $row['descripcion'],
                         'created_at' => now(),
@@ -363,8 +354,7 @@ class PedimentoImportService
             $cleanRow = [
                 'clave' => strtoupper(trim($row['clave'])),
                 'descripcion' => $this->cleanDescripcion($row['descripcion']),
-                'categoria' => !empty($row['categoria']) ? trim($row['categoria']) : null,
-                'subcategoria' => !empty($row['subcategoria']) ? trim($row['subcategoria']) : null
+                'categoria' => !empty($row['categoria']) ? trim($row['categoria']) : null
             ];
             
             \Log::info("Fila limpiada: " . json_encode($cleanRow));
@@ -463,7 +453,6 @@ class PedimentoImportService
     {
         $rows = [];
         $currentCategoria = null;
-        $currentSubcategoria = null;
         
         try {
             // Obtener todo el texto del documento de una vez
@@ -487,10 +476,8 @@ class PedimentoImportService
                     if (strlen($line) > 20 && strpos($line, '(') !== false) {
                         $parts = explode('(', $line);
                         $currentCategoria = trim($parts[0]);
-                        $currentSubcategoria = trim(str_replace(')', '', $parts[1] ?? ''));
                     } else if (strlen($line) > 8) {
                         $currentCategoria = $line;
-                        $currentSubcategoria = null;
                     }
                 }
                 // Verificar si es pedimento
@@ -501,7 +488,6 @@ class PedimentoImportService
                     if (!empty($clave) && !empty($descripcion)) {
                         $rows[] = [
                             'categoria' => $currentCategoria,
-                            'subcategoria' => $currentSubcategoria,
                             'clave' => $clave,
                             'descripcion' => $descripcion
                         ];
