@@ -16,6 +16,8 @@ use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Logistica\Aduana;
 use App\Models\Logistica\Pedimento;
 use App\Models\Logistica\PedimentoOperacion;
+use App\Models\Logistica\CampoPersonalizadoMatriz;
+use App\Models\Logistica\ValorCampoPersonalizado;
 use App\Models\Empleado;
 use App\Services\WordDocumentService;
 use App\Services\ClienteImportService;
@@ -31,10 +33,6 @@ class OperacionLogisticaController extends Controller
         // *** VERIFICACION AUTOMATICA DE STATUS AL CONSULTAR ***
         $this->verificarYActualizarStatusoperaciones();
 
-        $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
-
         // Obtener datos para los selects del modal
         // Filtrar clientes por ejecutivo asignado (solo mostrar los del ejecutivo logueado)
         $usuarioActual = auth()->user();
@@ -47,6 +45,24 @@ class OperacionLogisticaController extends Controller
                 ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
                 ->first();
             $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        // Filtrar operaciones: admin ve todas, usuarios normales solo las suyas
+        if ($esAdmin) {
+            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+        } elseif ($empleadoActual) {
+            // Buscar por nombre completo del ejecutivo
+            $nombreCompleto = trim($empleadoActual->nombre . ' ' . ($empleadoActual->apellido_paterno ?? ''));
+            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
+                ->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%')
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+        } else {
+            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
+                ->where('id', 0) // No mostrar nada si no se identifica al usuario
+                ->paginate(15);
         }
 
         // Para ejecutivos normales (no admin), solo mostrar sus clientes asignados
@@ -77,7 +93,13 @@ class OperacionLogisticaController extends Controller
         $aduanas = \App\Models\Logistica\Aduana::orderBy('aduana')->orderBy('seccion')->get();
         $pedimentos = \App\Models\Logistica\Pedimento::orderBy('clave')->get();
 
-        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin'));
+        // Cargar campos personalizados activos con sus ejecutivos
+        $camposPersonalizados = CampoPersonalizadoMatriz::with('ejecutivos')
+            ->where('activo', true)
+            ->orderBy('orden')
+            ->get();
+
+        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin', 'camposPersonalizados'));
     }
 
     public function catalogos()
@@ -644,7 +666,8 @@ class OperacionLogisticaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'operacion creada exitosamente',
-                'operacion' => $operacion->fresh()
+                'operacion' => $operacion->fresh(),
+                'operacion_id' => $operacion->id
             ]);
 
         } catch (\Exception $e) {
@@ -1215,14 +1238,7 @@ class OperacionLogisticaController extends Controller
         try {
             $agente = AgenteAduanal::findOrFail($id);
 
-            // Verificar si tiene operaciones asociadas
-            if ($agente->operaciones()->count() > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar el agente aduanal porque tiene operaciones asociadas'
-                ], 400);
-            }
-
+            // Eliminar el agente (las operaciones mantienen el nombre como texto)
             $agente->delete();
 
             return response()->json([
@@ -1761,38 +1777,37 @@ class OperacionLogisticaController extends Controller
                 ], 404);
             }
 
-            // Obtener TODAS las post-operaciones globales (plantillas)
-            $postoperacionesGlobales = PostOperacion::where('status', 'Plantilla')
+            // Obtener SOLO las asignaciones especficas de esta operacion (no todas las plantillas)
+            $asignaciones = PostoperacionOperacion::where('operacion_logistica_id', $operacionId)
+                ->with('postoperacion')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Obtener las asignaciones especficas de esta operacion
-            $asignacionesEspecificas = PostoperacionOperacion::where('operacion_logistica_id', $operacionId)
-                ->with('postoperacion')
-                ->get()
-                ->keyBy('post_operacion_id'); // Indexar por ID de post-operacion para bsqueda rpida
-
-            // Combinar datos: todas las plantillas + estados especficos si existen
-            $postoperacionesData = $postoperacionesGlobales->map(function($postOpGlobal) use ($asignacionesEspecificas, $operacion) {
-                $asignacion = $asignacionesEspecificas->get($postOpGlobal->id);
+            // Mapear solo las post-operaciones que están asignadas a esta operación
+            $postoperacionesData = $asignaciones->map(function($asignacion) {
+                $postOpGlobal = $asignacion->postoperacion;
+                
+                if (!$postOpGlobal) {
+                    return null;
+                }
 
                 return [
                     'id_global' => $postOpGlobal->id,
-                    'id_asignacion' => $asignacion ? $asignacion->id : null,
+                    'id_asignacion' => $asignacion->id,
                     'nombre' => $postOpGlobal->nombre,
                     'descripcion' => $postOpGlobal->descripcion,
-                    'status' => $asignacion ? $asignacion->status : 'Pendiente',
+                    'status' => $asignacion->status ?? 'Pendiente',
                     'fecha_creacion' => $postOpGlobal->created_at ? $postOpGlobal->created_at->format('d/m/Y H:i') : '-',
-                    'fecha_asignacion' => $asignacion && $asignacion->fecha_asignacion ? $asignacion->fecha_asignacion->format('d/m/Y H:i') : null,
-                    'fecha_completado' => $asignacion && $asignacion->fecha_completado ? $asignacion->fecha_completado->format('d/m/Y H:i') : null,
-                    'notas_especificas' => $asignacion ? $asignacion->notas_especificas : null,
-                    'es_plantilla' => !$asignacion, // true si no est asignada especficamente
+                    'fecha_asignacion' => $asignacion->fecha_asignacion ? $asignacion->fecha_asignacion->format('d/m/Y H:i') : null,
+                    'fecha_completado' => $asignacion->fecha_completado ? $asignacion->fecha_completado->format('d/m/Y H:i') : null,
+                    'notas_especificas' => $asignacion->notas_especificas,
+                    'es_plantilla' => false, // Siempre false porque solo mostramos las asignadas
                 ];
-            });
+            })->filter(); // Eliminar nulls
 
             return response()->json([
                 'success' => true,
-                'postOperaciones' => $postoperacionesData,
+                'postOperaciones' => $postoperacionesData->values(),
                 'operacion_info' => [
                     'id' => $operacion->id,
                     'no_pedimento' => $operacion->no_pedimento

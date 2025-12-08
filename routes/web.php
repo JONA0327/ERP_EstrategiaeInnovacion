@@ -145,7 +145,19 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/logistica/empleados/search', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'searchEmployees']);
         Route::post('/logistica/empleados/add-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'addEjecutivo']);
+        
+        // Rutas para Campos Personalizados (solo admin)
+        Route::get('/logistica/campos-personalizados', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'index']);
+        Route::get('/logistica/campos-personalizados/ejecutivos', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'ejecutivos']);
+        Route::post('/logistica/campos-personalizados', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'store']);
+        Route::put('/logistica/campos-personalizados/{id}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'update']);
+        Route::delete('/logistica/campos-personalizados/{id}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'destroy']);
     });
+
+    // Rutas para Campos Personalizados (acceso general para obtener valores)
+    Route::get('/logistica/campos-personalizados/ejecutivo/{ejecutivoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'camposPorEjecutivo']);
+    Route::get('/logistica/campos-personalizados/operacion/{operacionId}/valores', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'valoresPorOperacion']);
+    Route::post('/logistica/campos-personalizados/valor', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarValor']);
 
     // Rutas para Reportes Word
     Route::get('/logistica/operaciones/{id}/reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteWord'])->name('logistica.operaciones.reporte-word');

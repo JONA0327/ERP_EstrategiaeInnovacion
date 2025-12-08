@@ -135,6 +135,14 @@ class OperacionLogistica extends Model
      */
 
     /**
+     * Relación con los valores de campos personalizados
+     */
+    public function valoresCamposPersonalizados()
+    {
+        return $this->hasMany(ValorCampoPersonalizado::class, 'operacion_logistica_id');
+    }
+
+    /**
      * Relación con la post operación
      */
     /**

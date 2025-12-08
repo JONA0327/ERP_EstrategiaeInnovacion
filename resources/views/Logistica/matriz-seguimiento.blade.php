@@ -52,6 +52,15 @@
                             </svg>
                             Gestionar Post-Operaciones
                         </button>
+                        @if(isset($esAdmin) && $esAdmin)
+                        <button onclick="abrirModalCamposPersonalizados()" class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Configurar Campos
+                        </button>
+                        @endif
                     </div>
                     <div class="flex gap-2">
                         <input type="text" placeholder="Buscar..." class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
@@ -95,6 +104,29 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Días en Tránsito</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Post-Operaciones</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Comentarios</th>
+                                @php
+                                    // Determinar qué campos personalizados mostrar según el usuario
+                                    $camposVisibles = collect();
+                                    if (isset($camposPersonalizados)) {
+                                        if (isset($esAdmin) && $esAdmin) {
+                                            // Admin ve todos los campos activos
+                                            $camposVisibles = $camposPersonalizados;
+                                        } elseif (isset($empleadoActual) && $empleadoActual) {
+                                            // Usuario normal ve solo campos asignados a él
+                                            $camposVisibles = $camposPersonalizados->filter(function($campo) use ($empleadoActual) {
+                                                return $campo->ejecutivos->contains('id', $empleadoActual->id);
+                                            });
+                                        }
+                                    }
+                                @endphp
+                                @foreach($camposVisibles as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center">
+                                        <span class="text-indigo-600 mr-1">★</span>
+                                        {{ $campo->nombre }}
+                                    </div>
+                                </th>
+                                @endforeach
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Acciones</th>
                             </tr>
                         </thead>
@@ -175,6 +207,32 @@
                                         </svg>
                                     </button>
                                 </td>
+                                @foreach($camposVisibles as $campo)
+                                @php
+                                    $valorCampo = $operacion->valoresCamposPersonalizados->where('campo_personalizado_id', $campo->id)->first();
+                                    $valorMostrar = $valorCampo ? $valorCampo->valor : '-';
+                                    if ($campo->tipo === 'fecha' && $valorCampo && $valorCampo->valor) {
+                                        try {
+                                            $valorMostrar = \Carbon\Carbon::parse($valorCampo->valor)->format('d/m/Y');
+                                        } catch (\Exception $e) {
+                                            $valorMostrar = $valorCampo->valor;
+                                        }
+                                    }
+                                @endphp
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-indigo-50/30 campo-personalizado-cell" 
+                                    data-campo-id="{{ $campo->id }}" 
+                                    data-operacion-id="{{ $operacion->id }}">
+                                    <div class="flex items-center justify-between">
+                                        <span class="valor-campo">{{ $valorMostrar }}</span>
+                                        <button onclick="editarCampoPersonalizado({{ $operacion->id }}, {{ $campo->id }}, '{{ $campo->tipo }}', '{{ addslashes($campo->nombre) }}')" 
+                                                class="text-indigo-400 hover:text-indigo-600 ml-2" title="Editar">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                @endforeach
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
                                         <button onclick="verHistorial({{ $operacion->id }})"
@@ -214,7 +272,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="25" class="px-3 py-8 text-center text-slate-500">
+                                <td colspan="{{ 25 + count($camposVisibles ?? []) }}" class="px-3 py-8 text-center text-slate-500">
                                     <div class="flex flex-col items-center space-y-2">
                                         <i class="fas fa-inbox text-3xl text-slate-400"></i>
                                         <p class="text-sm font-medium">No hay operaciones registradas</p>
@@ -656,6 +714,21 @@
                             </div>
                         </div>
 
+                        <!-- PASO 7: Campos Personalizados (dinámico, según ejecutivo) -->
+                        <div id="camposPersonalizadosSection" class="hidden bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border-l-4 border-indigo-500">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-indigo-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">7</div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-bold text-slate-800">Campos Personalizados</h3>
+                                    <p class="text-xs text-slate-600">Campos adicionales configurados para esta operación</p>
+                                </div>
+                            </div>
+                            <div id="camposPersonalizadosContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Los campos se cargarán dinámicamente según el ejecutivo -->
+                                <p class="text-slate-500 text-sm col-span-2">Cargando campos personalizados...</p>
+                            </div>
+                        </div>
+
                         <!-- Status Manual (solo visible al editar) -->
                         <div id="statusManualSection" class="hidden bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-5 border-l-4 border-rose-500">
                             <div class="flex items-center mb-4">
@@ -880,4 +953,195 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal de Campos Personalizados (Solo Admin) -->
+    @if(isset($esAdmin) && $esAdmin)
+    <div id="modalCamposPersonalizados" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <svg class="w-5 h-5 inline-block mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Configurar Campos Personalizados
+                </h2>
+                <button onclick="cerrarModalCamposPersonalizados()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <!-- Formulario para crear nuevo campo -->
+                <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
+                    <h3 class="font-semibold text-slate-700 mb-4">Crear Nuevo Campo</h3>
+                    <form id="formNuevoCampo" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
+                                <input type="text" id="campoNombre" required maxlength="100"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Ej: Fecha de Vencimiento">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
+                                <select id="campoTipo" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="texto">Texto</option>
+                                    <option value="fecha">Fecha</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
+                                <select id="campoMostrarDespuesDe"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">-- Al final --</option>
+                                    <option value="ejecutivo">Ejecutivo</option>
+                                    <option value="operacion">Operación</option>
+                                    <option value="cliente">Cliente</option>
+                                    <option value="proveedor">Proveedor o Cliente</option>
+                                    <option value="fecha_embarque">Fecha de Embarque</option>
+                                    <option value="no_factura">No. De Factura</option>
+                                    <option value="tipo_operacion">T. Operación</option>
+                                    <option value="clave">Clave</option>
+                                    <option value="referencia_interna">Referencia Interna</option>
+                                    <option value="aduana">Aduana</option>
+                                    <option value="agente_aduanal">A.A</option>
+                                    <option value="referencia_aa">Referencia A.A</option>
+                                    <option value="no_pedimento">No Ped</option>
+                                    <option value="transporte">Transporte</option>
+                                    <option value="fecha_arribo_aduana">Fecha de Arribo a Aduana</option>
+                                    <option value="guia_bl">Guía //BL</option>
+                                    <option value="status">Status</option>
+                                    <option value="fecha_modulacion">Fecha de Modulación</option>
+                                    <option value="fecha_arribo_planta">Fecha de Arribo a Planta</option>
+                                    <option value="resultado">Resultado</option>
+                                    <option value="target">Target</option>
+                                    <option value="dias_transito">Días en Tránsito</option>
+                                    <option value="post_operaciones">Post-Operaciones</option>
+                                    <option value="comentarios">Comentarios</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
+                            <select id="selectEjecutivosNuevoCampo" multiple
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]">
+                                <!-- Se llena dinámicamente -->
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">Mantén Ctrl para seleccionar múltiples ejecutivos</p>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Crear Campo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista de campos existentes -->
+                <div>
+                    <h3 class="font-semibold text-slate-700 mb-4">Campos Personalizados Existentes</h3>
+                    <div id="listaCamposPersonalizados" class="space-y-3">
+                        <!-- Se llena dinámicamente -->
+                        <p class="text-slate-400 text-sm text-center py-4">Cargando campos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar campo personalizado -->
+    <div id="modalEditarCampo" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-lg font-semibold text-slate-800">Editar Campo Personalizado</h2>
+                <button onclick="cerrarModalEditarCampo()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="formEditarCampo" class="p-6 space-y-4">
+                <input type="hidden" id="editarCampoId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
+                        <input type="text" id="editarCampoNombre" required maxlength="100"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
+                        <select id="editarCampoTipo" required
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="texto">Texto</option>
+                            <option value="fecha">Fecha</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
+                        <select id="editarCampoMostrarDespuesDe"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">-- Al final --</option>
+                            <option value="ejecutivo">Ejecutivo</option>
+                            <option value="operacion">Operación</option>
+                            <option value="cliente">Cliente</option>
+                            <option value="proveedor">Proveedor o Cliente</option>
+                            <option value="fecha_embarque">Fecha de Embarque</option>
+                            <option value="no_factura">No. De Factura</option>
+                            <option value="tipo_operacion">T. Operación</option>
+                            <option value="clave">Clave</option>
+                            <option value="referencia_interna">Referencia Interna</option>
+                            <option value="aduana">Aduana</option>
+                            <option value="agente_aduanal">A.A</option>
+                            <option value="referencia_aa">Referencia A.A</option>
+                            <option value="no_pedimento">No Ped</option>
+                            <option value="transporte">Transporte</option>
+                            <option value="fecha_arribo_aduana">Fecha de Arribo a Aduana</option>
+                            <option value="guia_bl">Guía //BL</option>
+                            <option value="status">Status</option>
+                            <option value="fecha_modulacion">Fecha de Modulación</option>
+                            <option value="fecha_arribo_planta">Fecha de Arribo a Planta</option>
+                            <option value="resultado">Resultado</option>
+                            <option value="target">Target</option>
+                            <option value="dias_transito">Días en Tránsito</option>
+                            <option value="post_operaciones">Post-Operaciones</option>
+                            <option value="comentarios">Comentarios</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                        <select id="editarCampoActivo"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
+                    <select id="selectEjecutivosEditarCampo" multiple
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Mantén Ctrl para seleccionar múltiples ejecutivos</p>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="cerrarModalEditarCampo()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 @endsection

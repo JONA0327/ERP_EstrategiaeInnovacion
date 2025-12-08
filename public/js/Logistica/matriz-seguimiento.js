@@ -133,6 +133,9 @@ window.abrirModal = function() {
     document.getElementById('submitButtonText').textContent = 'Guardar Operación';
     document.getElementById('statusManualSection').classList.add('hidden');
     document.getElementById('modalOperacion').classList.remove('hidden');
+    
+    // Cargar campos personalizados para el modal
+    cargarCamposParaModal();
 };
 
 window.cerrarModal = function() {
@@ -310,49 +313,6 @@ window.guardarNuevoAgente = function() {
         mostrarAlerta('Error de conexión: ' + error.message, 'error');
     });
 };
-
-    window.guardarNuevoAgente = function() {
-        const nombre = document.getElementById('nuevoAgenteNombre').value.trim();
-        if (!nombre) {
-            mostrarAlerta('Por favor, ingrese el nombre del agente aduanal', 'warning');
-            return;
-        }
-
-        fetch('/logistica/agentes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ agente_aduanal: nombre })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Agregar al datalist
-                const datalist = document.getElementById('agentesList');
-                if (datalist) {
-                    const option = document.createElement('option');
-                    option.value = data.agente.agente_aduanal;
-                    datalist.appendChild(option);
-                }
-                
-                // Establecer valor en el input
-                const input = document.querySelector('input[name="agente_aduanal"]');
-                if (input) {
-                    input.value = data.agente.agente_aduanal;
-                }
-                
-                cancelarNuevoAgente();
-            } else {
-                mostrarAlerta('Error al guardar el agente aduanal: ' + (data.message || 'Error desconocido'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarAlerta('Error de conexión', 'error');
-        });
-    };
 
 // Función para actualizar transportes y target
 window.actualizarTransportes = function() {
@@ -877,6 +837,11 @@ window.editarOperacion = function(operacionId) {
                     actualizarTransportes();
                 }
                 
+                // Cargar campos personalizados y sus valores
+                cargarCamposParaModal().then(() => {
+                    cargarValoresCamposOperacion(op.id);
+                });
+                
                 // Abrir el modal
                 document.getElementById('modalOperacion').classList.remove('hidden');
             } else {
@@ -968,11 +933,23 @@ window.eliminarOperacion = function(operacionId) {
         })
         .then(data => {
             if (data.success) {
-                submitBtn.innerHTML = '<svg class="h-5 w-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡' + (isEditing ? 'Actualizado!' : 'Guardado!');
-                setTimeout(() => {
-                    cerrarModal();
-                    window.location.reload();
-                }, 800);
+                // Guardar campos personalizados
+                const opId = data.operacion_id || operacionId;
+                if (opId) {
+                    guardarValoresCamposPersonalizados(opId).then(() => {
+                        submitBtn.innerHTML = '<svg class="h-5 w-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡' + (isEditing ? 'Actualizado!' : 'Guardado!');
+                        setTimeout(() => {
+                            cerrarModal();
+                            window.location.reload();
+                        }, 800);
+                    });
+                } else {
+                    submitBtn.innerHTML = '<svg class="h-5 w-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡' + (isEditing ? 'Actualizado!' : 'Guardado!');
+                    setTimeout(() => {
+                        cerrarModal();
+                        window.location.reload();
+                    }, 800);
+                }
             } else {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
@@ -1261,8 +1238,8 @@ function mostrarPostOperacionesOperacion(postOperaciones) {
                 <svg class="w-12 h-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                 </svg>
-                <p class="text-lg font-medium">No hay post-operaciones disponibles</p>
-                <p class="text-sm">No se han creado post-operaciones globales. Use el botón "Post-Operaciones Globales" para crear plantillas.</p>
+                <p class="text-lg font-medium">No hay post-operaciones asignadas</p>
+                <p class="text-sm">Esta operación no tiene post-operaciones asignadas.</p>
             </div>
         `;
         return;
@@ -1673,8 +1650,9 @@ function cargarPostOperacionesGlobales() {
 
 function mostrarPostOperacionesGlobales(postOperaciones) {
     const contenedor = document.getElementById('listaPostOpGlobales');
+    if (!contenedor) return;
     
-    if (postOperaciones.length === 0) {
+    if (!postOperaciones || postOperaciones.length === 0) {
         contenedor.innerHTML = `
             <div class="text-center py-4 text-slate-500">
                 <p>No hay post-operaciones definidas</p>
@@ -1883,3 +1861,531 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ========================================
+// CAMPOS PERSONALIZADOS DE MATRIZ
+// ========================================
+
+let camposPersonalizadosData = [];
+let ejecutivosData = [];
+
+/**
+ * Abre el modal de configuración de campos personalizados
+ */
+window.abrirModalCamposPersonalizados = function() {
+    const modal = document.getElementById('modalCamposPersonalizados');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        cargarCamposPersonalizados();
+        cargarEjecutivosParaCampos();
+    }
+};
+
+/**
+ * Cierra el modal de configuración de campos personalizados
+ */
+window.cerrarModalCamposPersonalizados = function() {
+    const modal = document.getElementById('modalCamposPersonalizados');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
+
+/**
+ * Carga la lista de campos personalizados existentes
+ */
+async function cargarCamposPersonalizados() {
+    try {
+        const response = await fetch('/logistica/campos-personalizados');
+        camposPersonalizadosData = await response.json();
+        renderizarCamposPersonalizados();
+    } catch (error) {
+        console.error('Error al cargar campos:', error);
+        mostrarAlerta('Error al cargar los campos personalizados', 'error');
+    }
+}
+
+/**
+ * Carga la lista de ejecutivos para asignación
+ */
+async function cargarEjecutivosParaCampos() {
+    try {
+        const response = await fetch('/logistica/campos-personalizados/ejecutivos');
+        ejecutivosData = await response.json();
+        renderizarEjecutivosNuevoCampo();
+    } catch (error) {
+        console.error('Error al cargar ejecutivos:', error);
+    }
+}
+
+/**
+ * Renderiza la lista de ejecutivos en el formulario de nuevo campo
+ */
+function renderizarEjecutivosNuevoCampo() {
+    const select = document.getElementById('selectEjecutivosNuevoCampo');
+    if (!select) return;
+
+    if (ejecutivosData.length === 0) {
+        select.innerHTML = '<option value="" disabled>No hay ejecutivos disponibles</option>';
+        return;
+    }
+
+    select.innerHTML = ejecutivosData.map(ej => 
+        `<option value="${ej.id}">${ej.nombre}</option>`
+    ).join('');
+}
+
+/**
+ * Renderiza la lista de campos personalizados existentes
+ */
+function renderizarCamposPersonalizados() {
+    const container = document.getElementById('listaCamposPersonalizados');
+    if (!container) return;
+
+    if (camposPersonalizadosData.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">No hay campos personalizados creados</p>';
+        return;
+    }
+
+    // Mapa de columnas para mostrar nombre legible
+    const columnasNombres = {
+        'ejecutivo': 'Ejecutivo',
+        'operacion': 'Operación',
+        'cliente': 'Cliente',
+        'proveedor': 'Proveedor o Cliente',
+        'fecha_embarque': 'Fecha de Embarque',
+        'no_factura': 'No. De Factura',
+        'tipo_operacion': 'T. Operación',
+        'clave': 'Clave',
+        'referencia_interna': 'Referencia Interna',
+        'aduana': 'Aduana',
+        'agente_aduanal': 'A.A',
+        'referencia_aa': 'Referencia A.A',
+        'no_pedimento': 'No Ped',
+        'transporte': 'Transporte',
+        'fecha_arribo_aduana': 'Fecha de Arribo a Aduana',
+        'guia_bl': 'Guía //BL',
+        'status': 'Status',
+        'fecha_modulacion': 'Fecha de Modulación',
+        'fecha_arribo_planta': 'Fecha de Arribo a Planta',
+        'resultado': 'Resultado',
+        'target': 'Target',
+        'dias_transito': 'Días en Tránsito',
+        'post_operaciones': 'Post-Operaciones',
+        'comentarios': 'Comentarios'
+    };
+
+    container.innerHTML = camposPersonalizadosData.map(campo => {
+        const ejecutivosNombres = campo.ejecutivos?.map(e => e.nombre).join(', ') || 'Sin asignar';
+        const tipoLabel = campo.tipo === 'fecha' ? '📅 Fecha' : '📝 Texto';
+        const estadoClass = campo.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500';
+        const estadoLabel = campo.activo ? 'Activo' : 'Inactivo';
+        const posicionLabel = campo.mostrar_despues_de ? `Después de: ${columnasNombres[campo.mostrar_despues_de] || campo.mostrar_despues_de}` : 'Al final';
+
+        return `
+            <div class="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <h4 class="font-medium text-slate-800">${campo.nombre}</h4>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${estadoClass}">${estadoLabel}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">${tipoLabel}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">${posicionLabel}</span>
+                        </div>
+                        <p class="text-sm text-slate-500">
+                            <strong>Ejecutivos:</strong> ${ejecutivosNombres}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editarCampoPersonalizado(${campo.id})" 
+                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="eliminarCampoPersonalizado(${campo.id}, '${campo.nombre}')" 
+                            class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Maneja el envío del formulario de nuevo campo
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const formNuevoCampo = document.getElementById('formNuevoCampo');
+    if (formNuevoCampo) {
+        formNuevoCampo.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('campoNombre').value.trim();
+            const tipo = document.getElementById('campoTipo').value;
+            const mostrar_despues_de = document.getElementById('campoMostrarDespuesDe').value;
+            const selectEjecutivos = document.getElementById('selectEjecutivosNuevoCampo');
+            const ejecutivos = Array.from(selectEjecutivos.selectedOptions).map(opt => parseInt(opt.value));
+
+            if (!nombre) {
+                mostrarAlerta('Por favor ingresa un nombre para el campo', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/logistica/campos-personalizados', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ nombre, tipo, mostrar_despues_de, ejecutivos })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    mostrarAlerta('Campo creado exitosamente', 'success');
+                    formNuevoCampo.reset();
+                    cargarCamposPersonalizados();
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al crear el campo', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error de conexión al crear el campo', 'error');
+            }
+        });
+    }
+});
+
+/**
+ * Abre el modal para editar un campo personalizado
+ */
+window.editarCampoPersonalizado = function(campoId) {
+    const campo = camposPersonalizadosData.find(c => c.id === campoId);
+    if (!campo) return;
+
+    document.getElementById('editarCampoId').value = campo.id;
+    document.getElementById('editarCampoNombre').value = campo.nombre;
+    document.getElementById('editarCampoTipo').value = campo.tipo;
+    document.getElementById('editarCampoActivo').value = campo.activo ? '1' : '0';
+    document.getElementById('editarCampoMostrarDespuesDe').value = campo.mostrar_despues_de || '';
+
+    // Renderizar ejecutivos en el select con los seleccionados marcados
+    const select = document.getElementById('selectEjecutivosEditarCampo');
+    const ejecutivosSeleccionados = campo.ejecutivos?.map(e => e.id) || [];
+    
+    select.innerHTML = ejecutivosData.map(ej => 
+        `<option value="${ej.id}" ${ejecutivosSeleccionados.includes(ej.id) ? 'selected' : ''}>${ej.nombre}</option>`
+    ).join('');
+
+    const modal = document.getElementById('modalEditarCampo');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+/**
+ * Cierra el modal de edición de campo
+ */
+window.cerrarModalEditarCampo = function() {
+    const modal = document.getElementById('modalEditarCampo');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+/**
+ * Maneja el envío del formulario de edición
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const formEditarCampo = document.getElementById('formEditarCampo');
+    if (formEditarCampo) {
+        formEditarCampo.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('editarCampoId').value;
+            const nombre = document.getElementById('editarCampoNombre').value.trim();
+            const tipo = document.getElementById('editarCampoTipo').value;
+            const activo = document.getElementById('editarCampoActivo').value === '1';
+            const mostrar_despues_de = document.getElementById('editarCampoMostrarDespuesDe').value;
+            const selectEjecutivos = document.getElementById('selectEjecutivosEditarCampo');
+            const ejecutivos = Array.from(selectEjecutivos.selectedOptions).map(opt => parseInt(opt.value));
+
+            try {
+                const response = await fetch(`/logistica/campos-personalizados/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ nombre, tipo, activo, mostrar_despues_de, ejecutivos })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    mostrarAlerta('Campo actualizado exitosamente', 'success');
+                    cerrarModalEditarCampo();
+                    cargarCamposPersonalizados();
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al actualizar el campo', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error de conexión al actualizar el campo', 'error');
+            }
+        });
+    }
+});
+
+/**
+ * Elimina un campo personalizado
+ */
+window.eliminarCampoPersonalizado = function(campoId, nombre) {
+    mostrarConfirmacion(
+        `¿Estás seguro de eliminar el campo "${nombre}"? Esta acción eliminará también todos los valores guardados.`,
+        async function() {
+            try {
+                const response = await fetch(`/logistica/campos-personalizados/${campoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    mostrarAlerta('Campo eliminado exitosamente', 'success');
+                    cargarCamposPersonalizados();
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al eliminar el campo', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error de conexión al eliminar el campo', 'error');
+            }
+        },
+        'Eliminar Campo',
+        'Eliminar'
+    );
+};
+
+// ============================================
+// FUNCIONES PARA CAMPOS PERSONALIZADOS EN OPERACIONES
+// ============================================
+
+// Variable para almacenar campos del ejecutivo actual
+let camposDelEjecutivo = [];
+
+/**
+ * Cargar campos personalizados para el modal de operación
+ */
+async function cargarCamposParaModal(ejecutivoNombre = null) {
+    const container = document.getElementById('camposPersonalizadosContainer');
+    const section = document.getElementById('camposPersonalizadosSection');
+    
+    if (!container || !section) return;
+    
+    try {
+        // Obtener campos del ejecutivo actual o todos si es admin
+        const response = await fetch('/logistica/campos-personalizados');
+        const campos = await response.json();
+        
+        if (!campos || campos.length === 0) {
+            section.classList.add('hidden');
+            camposDelEjecutivo = [];
+            return;
+        }
+        
+        // Filtrar campos activos
+        const camposActivos = campos.filter(c => c.activo);
+        
+        if (camposActivos.length === 0) {
+            section.classList.add('hidden');
+            camposDelEjecutivo = [];
+            return;
+        }
+        
+        camposDelEjecutivo = camposActivos;
+        section.classList.remove('hidden');
+        
+        // Renderizar campos
+        container.innerHTML = camposActivos.map(campo => {
+            const inputType = campo.tipo === 'fecha' ? 'date' : 'text';
+            const placeholder = campo.tipo === 'fecha' ? '' : `Ingrese ${campo.nombre}`;
+            
+            return `
+                <div class="campo-personalizado-input">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">
+                        <span class="text-indigo-600 mr-1">★</span>${campo.nombre}
+                    </label>
+                    <input type="${inputType}" 
+                           name="campo_personalizado_${campo.id}" 
+                           data-campo-id="${campo.id}"
+                           class="form-input bg-white w-full" 
+                           placeholder="${placeholder}">
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error al cargar campos personalizados:', error);
+        section.classList.add('hidden');
+    }
+}
+
+/**
+ * Cargar valores de campos personalizados para una operación al editar
+ */
+async function cargarValoresCamposOperacion(operacionId) {
+    try {
+        const response = await fetch(`/logistica/campos-personalizados/operacion/${operacionId}/valores`);
+        const valores = await response.json();
+        
+        // Llenar los inputs con los valores
+        Object.keys(valores).forEach(campoId => {
+            const input = document.querySelector(`input[name="campo_personalizado_${campoId}"]`);
+            if (input && valores[campoId]) {
+                input.value = valores[campoId].valor || '';
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar valores de campos:', error);
+    }
+}
+
+/**
+ * Guardar valores de campos personalizados después de guardar la operación
+ */
+async function guardarValoresCamposPersonalizados(operacionId) {
+    const inputs = document.querySelectorAll('input[name^="campo_personalizado_"]');
+    
+    for (const input of inputs) {
+        const campoId = input.dataset.campoId;
+        const valor = input.value;
+        
+        if (campoId) {
+            try {
+                await fetch('/logistica/campos-personalizados/valor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        operacion_id: operacionId,
+                        campo_id: campoId,
+                        valor: valor
+                    })
+                });
+            } catch (error) {
+                console.error('Error al guardar campo personalizado:', error);
+            }
+        }
+    }
+}
+
+/**
+ * Editar un campo personalizado directamente desde la tabla
+ */
+window.editarCampoPersonalizado = function(operacionId, campoId, tipo, nombre) {
+    // Crear modal inline para editar el valor
+    const modalHtml = `
+        <div id="modalEditarValorCampo" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">
+                        <span class="text-indigo-600 mr-2">★</span>Editar ${nombre}
+                    </h3>
+                    <button onclick="cerrarModalEditarValorCampo()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">${nombre}</label>
+                    ${tipo === 'fecha' 
+                        ? `<input type="date" id="valorCampoEditar" class="form-input w-full">`
+                        : `<input type="text" id="valorCampoEditar" class="form-input w-full" placeholder="Ingrese el valor">`
+                    }
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="cerrarModalEditarValorCampo()" 
+                            class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
+                        Cancelar
+                    </button>
+                    <button onclick="guardarValorCampoInline(${operacionId}, ${campoId})" 
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Cargar valor actual
+    fetch(`/logistica/campos-personalizados/operacion/${operacionId}/valores`)
+        .then(response => response.json())
+        .then(valores => {
+            if (valores[campoId]) {
+                document.getElementById('valorCampoEditar').value = valores[campoId].valor || '';
+            }
+        });
+};
+
+window.cerrarModalEditarValorCampo = function() {
+    const modal = document.getElementById('modalEditarValorCampo');
+    if (modal) modal.remove();
+};
+
+window.guardarValorCampoInline = async function(operacionId, campoId) {
+    const valor = document.getElementById('valorCampoEditar').value;
+    
+    try {
+        const response = await fetch('/logistica/campos-personalizados/valor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                operacion_id: operacionId,
+                campo_id: campoId,
+                valor: valor
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar el valor en la celda de la tabla
+            const celda = document.querySelector(`td[data-campo-id="${campoId}"][data-operacion-id="${operacionId}"] .valor-campo`);
+            if (celda) {
+                // Formatear fecha si es necesario
+                let valorMostrar = valor || '-';
+                if (valor && valor.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const [year, month, day] = valor.split('-');
+                    valorMostrar = `${day}/${month}/${year}`;
+                }
+                celda.textContent = valorMostrar;
+            }
+            
+            cerrarModalEditarValorCampo();
+            mostrarAlerta('Valor guardado exitosamente', 'success');
+        } else {
+            mostrarAlerta(data.mensaje || 'Error al guardar el valor', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error de conexión al guardar el valor', 'error');
+    }
+};
+
+// Exponer funciones globalmente
+window.cargarCamposParaModal = cargarCamposParaModal;
+window.cargarValoresCamposOperacion = cargarValoresCamposOperacion;
+window.guardarValoresCamposPersonalizados = guardarValoresCamposPersonalizados;
