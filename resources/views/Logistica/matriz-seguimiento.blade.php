@@ -62,13 +62,44 @@
                         </button>
                         @endif
                     </div>
-                    <div class="flex gap-2">
-                        <input type="text" placeholder="Buscar..." class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-                        <button class="px-4 py-2 bg-slate-100 border border-slate-300 rounded-xl hover:bg-slate-200 transition-colors">
+                    <!-- Filtros por Cliente y Ejecutivo -->
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <!-- Filtro por Cliente -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-slate-600">Cliente:</label>
+                            <select id="filtroCliente" class="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm min-w-[200px]" onchange="aplicarFiltros()">
+                                <option value="todos" {{ (!isset($filtroCliente) || $filtroCliente === 'todos') ? 'selected' : '' }}>Todos los clientes</option>
+                                @foreach($clientesUnicos ?? [] as $clienteUnico)
+                                    <option value="{{ $clienteUnico }}" {{ (isset($filtroCliente) && $filtroCliente === $clienteUnico) ? 'selected' : '' }}>{{ $clienteUnico }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        @if($esAdmin)
+                        <!-- Filtro por Ejecutivo (solo admin) -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-slate-600">Ejecutivo:</label>
+                            <select id="filtroEjecutivo" class="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm min-w-[200px]" onchange="aplicarFiltros()">
+                                <option value="todos" {{ (!isset($filtroEjecutivo) || $filtroEjecutivo === 'todos') ? 'selected' : '' }}>Todos los ejecutivos</option>
+                                @foreach($ejecutivosUnicos ?? [] as $ejecutivoUnico)
+                                    <option value="{{ $ejecutivoUnico }}" {{ (isset($filtroEjecutivo) && $filtroEjecutivo === $ejecutivoUnico) ? 'selected' : '' }}>{{ $ejecutivoUnico }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+                        
+                        <!-- Botón limpiar filtros -->
+                        <button type="button" onclick="limpiarFiltros()" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition-colors text-sm flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
+                            Limpiar
                         </button>
+                        
+                        <!-- Contador de registros -->
+                        <span class="text-sm text-slate-500 ml-4">
+                            <span class="font-semibold text-slate-700">{{ count($operaciones) }}</span> operaciones
+                        </span>
                     </div>
                 </div>
             </div>
@@ -86,6 +117,8 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Proveedor o Cliente</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Fecha de Embarque</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">No. De Factura</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Tipo de Carga</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Incoterm</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">T. Operación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">Clave</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Referencia Interna</th>
@@ -96,6 +129,7 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Transporte</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Aduana</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Guía //BL</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Puerto de Salida</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Status</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Modulación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Planta</th>
@@ -140,6 +174,8 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->proveedor_o_cliente ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_factura ?? '-' }}</td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_carga ?? '-' }}</td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_incoterm ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_operacion_enum ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->clave ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_interna ?? '-' }}</td>
@@ -150,6 +186,7 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->transporte ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->puerto_salida ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
@@ -541,6 +578,32 @@
                                     <input type="text" name="no_factura" required class="form-input text-base" placeholder="Ej: FAC-12345">
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Carga</label>
+                                    <select name="tipo_carga" class="form-input text-base w-full">
+                                        <option value="">Seleccione...</option>
+                                        <option value="FCL">FCL (Full Container Load)</option>
+                                        <option value="LCL">LCL (Less than Container Load)</option>
+                                    </select>
+                                    <input type="text" name="tipo_carga_detalle" class="form-input text-base mt-2" placeholder="Cantidad de pallets (opcional)">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Incoterm</label>
+                                    <select name="tipo_incoterm" class="form-input text-base w-full">
+                                        <option value="">Seleccione...</option>
+                                        <option value="EXW">EXW - Ex Works</option>
+                                        <option value="FCA">FCA - Free Carrier</option>
+                                        <option value="FAS">FAS - Free Alongside Ship</option>
+                                        <option value="FOB">FOB - Free On Board</option>
+                                        <option value="CFR">CFR - Cost and Freight</option>
+                                        <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                                        <option value="CPT">CPT - Carriage Paid To</option>
+                                        <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                                        <option value="DAP">DAP - Delivered at Place</option>
+                                        <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                                        <option value="DDP">DDP - Delivered Duty Paid</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Clave del Pedimento *</label>
                                     <select name="clave" required class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                                         <option value="">Seleccione una clave</option>
@@ -704,6 +767,10 @@
                                 <div>
                                     <label class="block text-sm font-medium text-slate-600 mb-2">Guía/BL</label>
                                     <input type="text" name="guia_bl" class="form-input bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Puerto de Salida</label>
+                                    <input type="text" name="puerto_salida" class="form-input bg-white" placeholder="Ej: Shanghai, China">
                                 </div>
                             </div>
 

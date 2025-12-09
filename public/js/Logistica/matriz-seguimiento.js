@@ -5,6 +5,49 @@ let transportes = window.transportes || {};
 let operacionActualId = null;
 
 // ========================================
+// SISTEMA DE FILTROS
+// ========================================
+
+/**
+ * Aplica los filtros seleccionados y recarga la página
+ */
+window.aplicarFiltros = function() {
+    const cliente = document.getElementById('filtroCliente')?.value || 'todos';
+    const ejecutivoSelect = document.getElementById('filtroEjecutivo');
+    const ejecutivo = ejecutivoSelect ? ejecutivoSelect.value : 'todos';
+    
+    const params = new URLSearchParams();
+    if (cliente && cliente !== 'todos') {
+        params.set('cliente', cliente);
+    }
+    if (ejecutivo && ejecutivo !== 'todos') {
+        params.set('ejecutivo', ejecutivo);
+    }
+    
+    const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.location.href = url;
+};
+
+/**
+ * Filtra por cliente específico (usado por las pestañas)
+ * @param {string} cliente - Nombre del cliente o 'todos'
+ */
+window.filtrarPorCliente = function(cliente) {
+    const select = document.getElementById('filtroCliente');
+    if (select) {
+        select.value = cliente;
+    }
+    aplicarFiltros();
+};
+
+/**
+ * Limpia todos los filtros
+ */
+window.limpiarFiltros = function() {
+    window.location.href = window.location.pathname;
+};
+
+// ========================================
 // SISTEMA DE MODALES REUTILIZABLES
 // ========================================
 

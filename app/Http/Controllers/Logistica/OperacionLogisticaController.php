@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
 
 class OperacionLogisticaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // *** VERIFICACION AUTOMATICA DE STATUS AL CONSULTAR ***
         $this->verificarYActualizarStatusoperaciones();
@@ -47,22 +47,65 @@ class OperacionLogisticaController extends Controller
             $esAdmin = $usuarioActual->hasRole('admin');
         }
 
+        // Obtener filtros del request
+        $filtroCliente = $request->get('cliente');
+        $filtroEjecutivo = $request->get('ejecutivo');
+
+        // Base query con relaciones
+        $query = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo']);
+
         // Filtrar operaciones: admin ve todas, usuarios normales solo las suyas
         if ($esAdmin) {
-            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(15);
+            // Admin ve todas las operaciones
         } elseif ($empleadoActual) {
             // Buscar por nombre completo del ejecutivo
-            $nombreCompleto = trim($empleadoActual->nombre . ' ' . ($empleadoActual->apellido_paterno ?? ''));
-            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
-                ->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%')
-                ->orderBy('created_at', 'desc')
-                ->paginate(15);
+            $query->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%');
         } else {
-            $operaciones = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo'])
-                ->where('id', 0) // No mostrar nada si no se identifica al usuario
-                ->paginate(15);
+            $query->where('id', 0); // No mostrar nada si no se identifica al usuario
+        }
+
+        // Aplicar filtros adicionales
+        if ($filtroCliente && $filtroCliente !== 'todos') {
+            $query->where('cliente', $filtroCliente);
+        }
+        if ($filtroEjecutivo && $filtroEjecutivo !== 'todos') {
+            $query->where('ejecutivo', $filtroEjecutivo);
+        }
+
+        // Obtener todas las operaciones sin paginación
+        $operaciones = $query->orderBy('created_at', 'desc')->get();
+
+        // Obtener lista de ejecutivos únicos para el filtro (solo si es admin)
+        $ejecutivosUnicos = [];
+        if ($esAdmin) {
+            $ejecutivosUnicos = OperacionLogistica::select('ejecutivo')
+                ->whereNotNull('ejecutivo')
+                ->where('ejecutivo', '!=', '')
+                ->distinct()
+                ->orderBy('ejecutivo')
+                ->pluck('ejecutivo')
+                ->toArray();
+        }
+
+        // Obtener lista de clientes únicos para el filtro
+        $clientesUnicos = [];
+        if ($esAdmin) {
+            $clientesUnicos = OperacionLogistica::select('cliente')
+                ->whereNotNull('cliente')
+                ->where('cliente', '!=', '')
+                ->distinct()
+                ->orderBy('cliente')
+                ->pluck('cliente')
+                ->toArray();
+        } elseif ($empleadoActual) {
+            $clientesUnicos = OperacionLogistica::select('cliente')
+                ->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%')
+                ->whereNotNull('cliente')
+                ->where('cliente', '!=', '')
+                ->distinct()
+                ->orderBy('cliente')
+                ->pluck('cliente')
+                ->toArray();
         }
 
         // Para ejecutivos normales (no admin), solo mostrar sus clientes asignados
@@ -99,7 +142,22 @@ class OperacionLogisticaController extends Controller
             ->orderBy('orden')
             ->get();
 
-        return view('Logistica.matriz-seguimiento', compact('operaciones', 'clientes', 'agentesAduanales', 'empleados', 'transportes', 'aduanas', 'pedimentos', 'empleadoActual', 'esAdmin', 'camposPersonalizados'));
+        return view('Logistica.matriz-seguimiento', compact(
+            'operaciones', 
+            'clientes', 
+            'agentesAduanales', 
+            'empleados', 
+            'transportes', 
+            'aduanas', 
+            'pedimentos', 
+            'empleadoActual', 
+            'esAdmin', 
+            'camposPersonalizados',
+            'ejecutivosUnicos',
+            'clientesUnicos',
+            'filtroCliente',
+            'filtroEjecutivo'
+        ));
     }
 
     public function catalogos()
@@ -529,7 +587,7 @@ class OperacionLogisticaController extends Controller
             }
 
             // Construir query con los mismos filtros que usa enviarReporte
-            $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+            $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion', 'valoresCamposPersonalizados.campo']);
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -3130,7 +3188,7 @@ class OperacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion']);
+                $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion', 'valoresCamposPersonalizados.campo']);
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3190,7 +3248,7 @@ class OperacionLogisticaController extends Controller
                 }
 
                 // Construir query con los mismos filtros que usa exportCSV
-                $query = OperacionLogistica::with('ejecutivo');
+                $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion', 'valoresCamposPersonalizados.campo']);
 
                 // Aplicar filtros de permisos
                 if (!$esAdmin && $empleadoActual) {
@@ -3304,6 +3362,31 @@ class OperacionLogisticaController extends Controller
             mkdir($tempDir, 0755, true);
         }
 
+        // Obtener campos personalizados para el usuario actual
+        $camposPersonalizados = collect();
+        $usuarioActual = auth()->user();
+        if ($usuarioActual) {
+            $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
+
+            if ($esAdmin) {
+                // Admin ve todos los campos activos
+                $camposPersonalizados = CampoPersonalizadoMatriz::where('activo', true)
+                    ->orderBy('orden')
+                    ->get();
+            } elseif ($empleadoActual) {
+                // Usuario normal ve solo campos asignados a él
+                $camposPersonalizados = CampoPersonalizadoMatriz::where('activo', true)
+                    ->whereHas('ejecutivos', function($q) use ($empleadoActual) {
+                        $q->where('empleados.id', $empleadoActual->id);
+                    })
+                    ->orderBy('orden')
+                    ->get();
+            }
+        }
+
         // Obtener cliente(s) para el nombre del archivo
         $clientes = $operaciones->pluck('cliente')->unique()->filter();
         $clienteNombre = '';
@@ -3335,7 +3418,7 @@ class OperacionLogisticaController extends Controller
 
         if ($formato === 'csv') {
             $rutaCompleta = $tempDir . '/' . $nombreArchivo;
-            $this->generarExcelTSV($operaciones, $rutaCompleta);
+            $this->generarExcelTSV($operaciones, $rutaCompleta, $camposPersonalizados);
             return [
                 'path' => $rutaCompleta,
                 'nombre' => $nombreArchivo,
@@ -3396,39 +3479,82 @@ class OperacionLogisticaController extends Controller
     /**
      * Generar archivo Excel con diseo profesional y TODAS las columnas de la matriz
      */
-    private function generarExcelTSV($operaciones, $rutaArchivo)
+    private function generarExcelTSV($operaciones, $rutaArchivo, $camposPersonalizados = null)
     {
         // Usar PhpSpreadsheet para generar Excel nativo con diseo
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('operaciones Logisticas');        // CABECERAS SIN ACENTOS PARA EVITAR PROBLEMAS DE CODIFICACION
-        $cabeceras = [
-            'No.',
-            'Ejecutivo',
-            'operacion',
-            'Cliente',
-            'Proveedor/Cliente Final',
-            'Fecha de Embarque',
-            'No. Factura',
-            'T. operacion',
-            'Clave',
-            'Referencia Interna',
-            'Aduana',
-            'A.A',
-            'Referencia A.A',
-            'No Ped',
-            'Transporte',
-            'Fecha de Arribo a Aduana',
-            'Guia //BL',
-            'Status',
-            'Fecha de Modulacion',
-            'Fecha de Arribo a Planta',
-            'Resultado',
-            'Target',
-            'Dias en Transito',
-            'Post-operaciones',
-            'Comentarios'
+        $sheet->setTitle('operaciones Logisticas');
+        
+        // Mapeo de columnas base con sus claves para posicionamiento
+        $columnasBase = [
+            'no' => 'No.',
+            'ejecutivo' => 'Ejecutivo',
+            'operacion' => 'operacion',
+            'cliente' => 'Cliente',
+            'proveedor' => 'Proveedor/Cliente Final',
+            'fecha_embarque' => 'Fecha de Embarque',
+            'no_factura' => 'No. Factura',
+            'tipo_operacion' => 'T. operacion',
+            'clave' => 'Clave',
+            'referencia_interna' => 'Referencia Interna',
+            'aduana' => 'Aduana',
+            'agente_aduanal' => 'A.A',
+            'referencia_aa' => 'Referencia A.A',
+            'no_pedimento' => 'No Ped',
+            'transporte' => 'Transporte',
+            'fecha_arribo_aduana' => 'Fecha de Arribo a Aduana',
+            'guia_bl' => 'Guia //BL',
+            'status' => 'Status',
+            'fecha_modulacion' => 'Fecha de Modulacion',
+            'fecha_arribo_planta' => 'Fecha de Arribo a Planta',
+            'resultado' => 'Resultado',
+            'target' => 'Target',
+            'dias_transito' => 'Dias en Transito',
+            'post_operaciones' => 'Post-operaciones',
+            'comentarios' => 'Comentarios'
         ];
+
+        // Construir cabeceras con campos personalizados insertados en posición correcta
+        $cabeceras = [];
+        $camposEnPosicion = []; // Para rastrear qué campos personalizados van después de qué columna
+        
+        // Agrupar campos personalizados por su posición (mostrar_despues_de)
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($camposPersonalizados as $campo) {
+                $posicion = $campo->mostrar_despues_de ?? 'comentarios'; // Por defecto al final
+                if (!isset($camposEnPosicion[$posicion])) {
+                    $camposEnPosicion[$posicion] = [];
+                }
+                $camposEnPosicion[$posicion][] = $campo;
+            }
+        }
+
+        // Construir array de cabeceras insertando campos personalizados en su posición
+        foreach ($columnasBase as $clave => $nombreColumna) {
+            $cabeceras[] = ['tipo' => 'base', 'clave' => $clave, 'nombre' => $nombreColumna];
+            
+            // Si hay campos personalizados que van después de esta columna, insertarlos
+            if (isset($camposEnPosicion[$clave])) {
+                foreach ($camposEnPosicion[$clave] as $campoPersonalizado) {
+                    $cabeceras[] = ['tipo' => 'personalizado', 'campo' => $campoPersonalizado, 'nombre' => $campoPersonalizado->nombre];
+                }
+            }
+        }
+        
+        // Agregar campos personalizados sin posición definida o con posición inválida al final
+        $clavesValidas = array_keys($columnasBase);
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($camposPersonalizados as $campo) {
+                $posicion = $campo->mostrar_despues_de;
+                if (!$posicion || !in_array($posicion, $clavesValidas)) {
+                    // Solo agregar si no fue agregado antes (posición inválida o vacía)
+                    if (!$posicion) {
+                        $cabeceras[] = ['tipo' => 'personalizado', 'campo' => $campo, 'nombre' => $campo->nombre];
+                    }
+                }
+            }
+        }
 
         // Configurar estilo profesional para cabeceras
         $estilosCabecera = [
@@ -3439,14 +3565,36 @@ class OperacionLogisticaController extends Controller
             'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
         ];
 
+        // Estilo especial para campos personalizados (fondo diferente)
+        $estilosCabeceraPersonalizado = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 
+                      'startColor' => ['rgb' => '6366F1']], // Color indigo para campos personalizados
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+        ];
+
         // Escribir cabeceras con estilo Excel
         $columna = 1;
         foreach ($cabeceras as $cabecera) {
             $coordenada = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columna) . '1';
-            $sheet->setCellValue($coordenada, $cabecera);
-            $sheet->getStyle($coordenada)->applyFromArray($estilosCabecera);
+            $sheet->setCellValue($coordenada, $cabecera['nombre']);
+            // Aplicar estilo diferente para campos personalizados
+            if ($cabecera['tipo'] === 'personalizado') {
+                $sheet->getStyle($coordenada)->applyFromArray($estilosCabeceraPersonalizado);
+            } else {
+                $sheet->getStyle($coordenada)->applyFromArray($estilosCabecera);
+            }
             $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columna))->setAutoSize(true);
             $columna++;
+        }
+
+        // Preparar mapeo de valores de campos personalizados por operación
+        $valoresPorOperacion = [];
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($operaciones as $op) {
+                $valoresPorOperacion[$op->id] = $op->valoresCamposPersonalizados->keyBy('campo_personalizado_id');
+            }
         }
 
         // DATOS COMPLETOS DE LA MATRIZ DE SEGUIMIENTO
@@ -3461,58 +3609,61 @@ class OperacionLogisticaController extends Controller
                 default => $statusFinal ?? 'En Proceso'
             };
 
-            $fila = [
-                // No.
-                $operacion->id,
-                // Ejecutivo
-                $operacion->ejecutivo ?? 'Sin asignar',
-                // operacion
-                $operacion->operacion ?? '-',
-                // Cliente
-                $operacion->cliente ?? 'Sin cliente',
-                // Proveedor/Cliente Final
-                $operacion->proveedor_o_cliente ?? '-',
-                // Fecha de Embarque
-                optional($operacion->fecha_embarque)->format('d/m/Y') ?? '-',
-                // No. Factura
-                $operacion->no_factura ?? '-',
-                // T. operacion
-                $operacion->tipo_operacion_enum ?? '-',
-                // Clave
-                $operacion->clave ?? '-',
-                // Referencia Interna
-                $operacion->referencia_interna ?? '-',
-                // Aduana
-                $operacion->aduana ?? '-',
-                // A.A (Agente Aduanal)
-                $operacion->agente_aduanal ?? '-',
-                // Referencia A.A
-                $operacion->referencia_aa ?? '-',
-                // No Ped (No. Pedimento)
-                $operacion->no_pedimento ?? '-',
-                // Transporte
-                $operacion->transporte ?? '-',
-                // Fecha de Arribo a Aduana
-                optional($operacion->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
-                // Gua //BL
-                $operacion->guia_bl ?? '-',
-                // Status
-                $statusDisplay,
-                // Fecha de Modulacin
-                optional($operacion->fecha_modulacion)->format('d/m/Y') ?? '-',
-                // Fecha de Arribo a Planta
-                optional($operacion->fecha_arribo_planta)->format('d/m/Y') ?? '-',
-                // Resultado
-                $operacion->resultado ?? '-',
-                // Target
-                $operacion->target ?? '-',
-                // Das en Trnsito (embarque a arribo planta)
-                $operacion->dias_transito ?? '-',
-                // Post-operaciones
-                $this->formatearPostOperaciones($operacion),
-                // Comentarios
-                $this->limpiarTexto($operacion->comentarios ?? '-')
+            // Mapeo de valores base
+            $valoresBase = [
+                'no' => $operacion->id,
+                'ejecutivo' => $operacion->ejecutivo ?? 'Sin asignar',
+                'operacion' => $operacion->operacion ?? '-',
+                'cliente' => $operacion->cliente ?? 'Sin cliente',
+                'proveedor' => $operacion->proveedor_o_cliente ?? '-',
+                'fecha_embarque' => optional($operacion->fecha_embarque)->format('d/m/Y') ?? '-',
+                'no_factura' => $operacion->no_factura ?? '-',
+                'tipo_operacion' => $operacion->tipo_operacion_enum ?? '-',
+                'clave' => $operacion->clave ?? '-',
+                'referencia_interna' => $operacion->referencia_interna ?? '-',
+                'aduana' => $operacion->aduana ?? '-',
+                'agente_aduanal' => $operacion->agente_aduanal ?? '-',
+                'referencia_aa' => $operacion->referencia_aa ?? '-',
+                'no_pedimento' => $operacion->no_pedimento ?? '-',
+                'transporte' => $operacion->transporte ?? '-',
+                'fecha_arribo_aduana' => optional($operacion->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
+                'guia_bl' => $operacion->guia_bl ?? '-',
+                'status' => $statusDisplay,
+                'fecha_modulacion' => optional($operacion->fecha_modulacion)->format('d/m/Y') ?? '-',
+                'fecha_arribo_planta' => optional($operacion->fecha_arribo_planta)->format('d/m/Y') ?? '-',
+                'resultado' => $operacion->resultado ?? '-',
+                'target' => $operacion->target ?? '-',
+                'dias_transito' => $operacion->dias_transito ?? '-',
+                'post_operaciones' => $this->formatearPostOperaciones($operacion),
+                'comentarios' => $this->limpiarTexto($operacion->comentarios ?? '-')
             ];
+
+            // Construir fila siguiendo el orden de cabeceras
+            $fila = [];
+            $valoresOperacion = $valoresPorOperacion[$operacion->id] ?? collect();
+            
+            foreach ($cabeceras as $cabecera) {
+                if ($cabecera['tipo'] === 'base') {
+                    $fila[] = $valoresBase[$cabecera['clave']] ?? '-';
+                } else {
+                    // Campo personalizado
+                    $campo = $cabecera['campo'];
+                    $valorCampo = $valoresOperacion->get($campo->id);
+                    $valorMostrar = '-';
+                    if ($valorCampo && $valorCampo->valor) {
+                        $valorMostrar = $valorCampo->valor;
+                        // Formatear fecha si es campo de tipo fecha
+                        if ($campo->tipo === 'fecha') {
+                            try {
+                                $valorMostrar = \Carbon\Carbon::parse($valorCampo->valor)->format('d/m/Y');
+                            } catch (\Exception $e) {
+                                $valorMostrar = $valorCampo->valor;
+                            }
+                        }
+                    }
+                    $fila[] = $valorMostrar;
+                }
+            }
 
             // Escribir fila de datos en Excel con estilo
             $columna = 1;

@@ -38,6 +38,8 @@ class OperacionLogistica extends Model
         'proveedor_o_cliente',
         'fecha_embarque',
         'no_factura',
+        'tipo_carga',
+        'tipo_incoterm',
         'tipo_operacion_enum', // Este SÍ se usa
         'clave',
         'referencia_interna',
@@ -46,6 +48,7 @@ class OperacionLogistica extends Model
         'no_pedimento',
         'fecha_arribo_aduana',
         'guia_bl',
+        'puerto_salida',
         'fecha_modulacion',
         'fecha_arribo_planta',
         'resultado',
