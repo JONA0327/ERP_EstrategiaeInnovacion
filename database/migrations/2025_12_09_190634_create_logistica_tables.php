@@ -85,7 +85,7 @@ return new class extends Migration
             $table->foreignId('campo_personalizado_id')->constrained('campos_personalizados_matriz')->onDelete('cascade');
             $table->foreignId('empleado_id')->constrained('empleados')->onDelete('cascade');
             $table->timestamps();
-            $table->unique(['campo_personalizado_id', 'empleado_id']);
+            $table->unique(['campo_personalizado_id', 'empleado_id'], 'campo_pers_ejec_unique');
         });
 
         Schema::create('columnas_visibles_ejecutivo', function (Blueprint $table) {
@@ -94,7 +94,7 @@ return new class extends Migration
             $table->string('columna', 50);
             $table->boolean('visible')->default(0);
             $table->timestamps();
-            $table->unique(['empleado_id', 'columna']);
+            $table->unique(['empleado_id', 'columna'], 'col_vis_ejec_unique');
         });
 
         // --- OPERACIONES ---
