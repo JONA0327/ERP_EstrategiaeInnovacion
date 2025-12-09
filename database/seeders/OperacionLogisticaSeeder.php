@@ -2,56 +2,58 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Logistica\OperacionLogistica;
 use App\Models\Empleado;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class OperacionLogisticaSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Buscar empleados del área de logística
-        $empleadosLogistica = Empleado::where('area', 'LIKE', '%Logistica%')
-            ->orWhere('area', 'LIKE', '%Logística%')
-            ->get();
+        // 1. Asegurar que existan empleados
+        $empleados = Empleado::all();
 
-        // Si no hay empleados de logística, usar los existentes o crear algunos básicos
-        if ($empleadosLogistica->isEmpty()) {
-            // Buscar cualquier empleado para usar como ejemplo
-            $empleadosLogistica = Empleado::take(3)->get();
+        if ($empleados->isEmpty()) {
+            // Crear usuario y empleado dummy si no hay nada
+            $user = User::firstOrCreate(
+                ['email' => 'logistica@test.com'],
+                [
+                    'name' => 'Ejecutivo Logística',
+                    'password' => Hash::make('password'),
+                    'role' => 'user',
+                    'status' => 'approved'
+                ]
+            );
+
+            $empleado = Empleado::create([
+                'user_id' => $user->id,
+                'nombre' => $user->name,
+                'correo' => $user->email,
+                'area' => 'Logística',
+                'posicion' => 'Ejecutivo',
+            ]);
             
-            // Si no hay empleados, crear algunos básicos
-            if ($empleadosLogistica->isEmpty()) {
-                $empleadosLogistica = collect([
-                    Empleado::create([
-                        'nombre' => 'Juan Carlos López',
-                        'area' => 'Logística',
-                        'puesto' => 'Ejecutivo Logístico Senior',
-                    ]),
-                    Empleado::create([
-                        'nombre' => 'María Elena García', 
-                        'area' => 'Logística',
-                        'puesto' => 'Ejecutivo de Importaciones',
-                    ]),
-                ]);
-            }
+            $empleados = collect([$empleado]);
         }
 
-        // Crear 50 operaciones logísticas de ejemplo
-        OperacionLogistica::factory(50)->create()->each(function ($operacion) use ($empleadosLogistica) {
-            // Asignar un empleado de logística al azar
-            $empleado = $empleadosLogistica->random();
-            $operacion->update(['ejecutivo_empleado_id' => $empleado->id]);
+        // 2. Crear operaciones asignando el NOMBRE del ejecutivo
+        OperacionLogistica::factory(50)->make()->each(function ($operacion) use ($empleados) {
+            // Seleccionar un empleado al azar
+            $empleadoAsignado = $empleados->random();
+
+            // Asignar el nombre a la columna 'ejecutivo' y guardar
+            $operacion->ejecutivo = $empleadoAsignado->nombre;
             
-            // Calcular días en tránsito
-            $operacion->calcularDiasTransito();
+            // Si tienes lógica de cálculo de días, ejecútala aquí antes de guardar
+            if (method_exists($operacion, 'calcularDiasTransito')) {
+                $operacion->calcularDiasTransito();
+            }
+            
             $operacion->save();
         });
 
-        $this->command->info('Se han creado 50 operaciones logísticas con empleados asignados.');
+        $this->command->info('Se han creado 50 operaciones logísticas correctamente.');
     }
 }
