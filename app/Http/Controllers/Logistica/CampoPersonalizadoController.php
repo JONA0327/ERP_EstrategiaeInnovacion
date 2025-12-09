@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Logistica;
 use App\Http\Controllers\Controller;
 use App\Models\Logistica\CampoPersonalizadoMatriz;
 use App\Models\Logistica\ValorCampoPersonalizado;
+use App\Models\Logistica\ColumnaVisibleEjecutivo;
 use App\Models\Empleado;
 use Illuminate\Http\Request;
 
@@ -179,5 +180,70 @@ class CampoPersonalizadoController extends Controller
             ->keyBy('campo_personalizado_id');
 
         return response()->json($valores);
+    }
+
+    /**
+     * Obtener configuración de columnas para todos los ejecutivos
+     */
+    public function getColumnasConfig()
+    {
+        $ejecutivos = Empleado::select('id', 'nombre')
+            ->where('area', 'LIKE', '%Logist%')
+            ->orderBy('nombre')
+            ->get();
+
+        $configuracion = [];
+        foreach ($ejecutivos as $ejecutivo) {
+            $columnasVisibles = ColumnaVisibleEjecutivo::where('empleado_id', $ejecutivo->id)
+                ->where('visible', true)
+                ->pluck('columna')
+                ->toArray();
+            
+            $configuracion[$ejecutivo->id] = [
+                'ejecutivo' => $ejecutivo,
+                'columnas_visibles' => $columnasVisibles
+            ];
+        }
+
+        return response()->json([
+            'ejecutivos' => $ejecutivos,
+            'columnas_predeterminadas' => ColumnaVisibleEjecutivo::$columnasPredeterminadas,
+            'columnas_opcionales' => ColumnaVisibleEjecutivo::$columnasOpcionales,
+            'configuracion' => $configuracion
+        ]);
+    }
+
+    /**
+     * Guardar configuración de columnas para un ejecutivo
+     */
+    public function guardarColumnasConfig(Request $request)
+    {
+        $request->validate([
+            'empleado_id' => 'required|exists:empleados,id',
+            'columnas' => 'array',
+            'columnas.*' => 'string'
+        ]);
+
+        ColumnaVisibleEjecutivo::guardarConfiguracion(
+            $request->empleado_id,
+            $request->columnas ?? []
+        );
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Configuración guardada exitosamente'
+        ]);
+    }
+
+    /**
+     * Obtener columnas visibles para un ejecutivo específico
+     */
+    public function getColumnasEjecutivo($empleadoId)
+    {
+        $columnasVisibles = ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoId);
+        
+        return response()->json([
+            'columnas_visibles' => $columnasVisibles
+        ]);
     }
 }

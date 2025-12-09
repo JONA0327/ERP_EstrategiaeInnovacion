@@ -48,6 +48,133 @@ window.limpiarFiltros = function() {
 };
 
 // ========================================
+// SISTEMA DE CONFIGURACIÓN DE COLUMNAS
+// ========================================
+
+let ejecutivoSeleccionadoColumnas = null;
+
+/**
+ * Cambiar entre pestañas de configuración
+ */
+window.cambiarTabConfig = function(tab) {
+    const tabColumnas = document.getElementById('tabColumnas');
+    const tabCampos = document.getElementById('tabCampos');
+    const panelColumnas = document.getElementById('panelColumnas');
+    const panelCampos = document.getElementById('panelCampos');
+    
+    if (tab === 'columnas') {
+        tabColumnas.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50');
+        tabColumnas.classList.remove('text-slate-500', 'border-transparent');
+        tabCampos.classList.remove('text-blue-600', 'border-blue-600', 'bg-blue-50');
+        tabCampos.classList.add('text-slate-500', 'border-transparent');
+        panelColumnas.classList.remove('hidden');
+        panelCampos.classList.add('hidden');
+        cargarEjecutivosParaColumnas();
+    } else {
+        tabCampos.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50');
+        tabCampos.classList.remove('text-slate-500', 'border-transparent');
+        tabColumnas.classList.remove('text-blue-600', 'border-blue-600', 'bg-blue-50');
+        tabColumnas.classList.add('text-slate-500', 'border-transparent');
+        panelCampos.classList.remove('hidden');
+        panelColumnas.classList.add('hidden');
+    }
+};
+
+/**
+ * Cargar lista de ejecutivos para el select de columnas
+ */
+window.cargarEjecutivosParaColumnas = function() {
+    fetch('/logistica/campos-personalizados/ejecutivos')
+        .then(response => response.json())
+        .then(ejecutivos => {
+            const select = document.getElementById('selectEjecutivoColumnas');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">-- Seleccione un ejecutivo --</option>';
+            ejecutivos.forEach(ej => {
+                select.innerHTML += `<option value="${ej.id}">${ej.nombre}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Error cargando ejecutivos:', error);
+        });
+};
+
+/**
+ * Cargar configuración de columnas para el ejecutivo seleccionado
+ */
+window.cargarColumnasEjecutivo = function() {
+    const select = document.getElementById('selectEjecutivoColumnas');
+    const container = document.getElementById('columnasOpcionalesContainer');
+    const empleadoId = select.value;
+    
+    if (!empleadoId) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    ejecutivoSeleccionadoColumnas = empleadoId;
+    container.classList.remove('hidden');
+    
+    // Limpiar checkboxes
+    document.getElementById('colTipoCarga').checked = false;
+    document.getElementById('colTipoIncoterm').checked = false;
+    document.getElementById('colPuertoSalida').checked = false;
+    
+    // Cargar configuración actual
+    fetch(`/logistica/columnas-config/ejecutivo/${empleadoId}`)
+        .then(response => response.json())
+        .then(data => {
+            const columnas = data.columnas_visibles || [];
+            document.getElementById('colTipoCarga').checked = columnas.includes('tipo_carga');
+            document.getElementById('colTipoIncoterm').checked = columnas.includes('tipo_incoterm');
+            document.getElementById('colPuertoSalida').checked = columnas.includes('puerto_salida');
+        })
+        .catch(error => {
+            console.error('Error cargando configuración:', error);
+        });
+};
+
+/**
+ * Guardar configuración de columnas para el ejecutivo
+ */
+window.guardarConfiguracionColumnas = function() {
+    if (!ejecutivoSeleccionadoColumnas) {
+        mostrarAlerta('Por favor seleccione un ejecutivo', 'warning');
+        return;
+    }
+    
+    const columnas = [];
+    if (document.getElementById('colTipoCarga').checked) columnas.push('tipo_carga');
+    if (document.getElementById('colTipoIncoterm').checked) columnas.push('tipo_incoterm');
+    if (document.getElementById('colPuertoSalida').checked) columnas.push('puerto_salida');
+    
+    fetch('/logistica/columnas-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            empleado_id: ejecutivoSeleccionadoColumnas,
+            columnas: columnas
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarAlerta('Configuración guardada exitosamente', 'success');
+        } else {
+            mostrarAlerta('Error al guardar la configuración', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error guardando configuración:', error);
+        mostrarAlerta('Error al guardar la configuración', 'error');
+    });
+};
+
+// ========================================
 // SISTEMA DE MODALES REUTILIZABLES
 // ========================================
 
@@ -1913,15 +2040,14 @@ let camposPersonalizadosData = [];
 let ejecutivosData = [];
 
 /**
- * Abre el modal de configuración de campos personalizados
+ * Abre el modal de configuración de columnas
  */
 window.abrirModalCamposPersonalizados = function() {
     const modal = document.getElementById('modalCamposPersonalizados');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        cargarCamposPersonalizados();
-        cargarEjecutivosParaCampos();
+        cargarEjecutivosParaColumnas();
     }
 };
 

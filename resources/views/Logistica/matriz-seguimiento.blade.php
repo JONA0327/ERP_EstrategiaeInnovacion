@@ -117,8 +117,12 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Proveedor o Cliente</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Fecha de Embarque</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">No. De Factura</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Tipo de Carga</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Incoterm</th>
+                                @if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">Tipo de Carga</th>
+                                @endif
+                                @if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50">Incoterm</th>
+                                @endif
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">T. Operación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">Clave</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Referencia Interna</th>
@@ -129,7 +133,9 @@
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Transporte</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Aduana</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Guía //BL</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Puerto de Salida</th>
+                                @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">Puerto de Salida</th>
+                                @endif
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Status</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Modulación</th>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Planta</th>
@@ -174,8 +180,12 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->proveedor_o_cliente ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_factura ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_carga ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_incoterm ?? '-' }}</td>
+                                @if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->tipo_carga ?? '-' }}</td>
+                                @endif
+                                @if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->tipo_incoterm ?? '-' }}</td>
+                                @endif
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_operacion_enum ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->clave ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_interna ?? '-' }}</td>
@@ -186,7 +196,9 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->transporte ?? '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->puerto_salida ?? '-' }}</td>
+                                @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->puerto_salida ?? '-' }}</td>
+                                @endif
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
@@ -1021,17 +1033,16 @@
         </div>
     </div>
 
-    <!-- Modal de Campos Personalizados (Solo Admin) -->
+    <!-- Modal de Configuración de Columnas (Solo Admin) -->
     @if(isset($esAdmin) && $esAdmin)
     <div id="modalCamposPersonalizados" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
                 <h2 class="text-lg font-semibold text-slate-800">
                     <svg class="w-5 h-5 inline-block mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
                     </svg>
-                    Configurar Campos Personalizados
+                    Configurar Visibilidad de Columnas
                 </h2>
                 <button onclick="cerrarModalCamposPersonalizados()" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1039,175 +1050,149 @@
                     </svg>
                 </button>
             </div>
+            
             <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <!-- Formulario para crear nuevo campo -->
-                <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
-                    <h3 class="font-semibold text-slate-700 mb-4">Crear Nuevo Campo</h3>
-                    <form id="formNuevoCampo" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
-                                <input type="text" id="campoNombre" required maxlength="100"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ej: Fecha de Vencimiento">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
-                                <select id="campoTipo" required
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="texto">Texto</option>
-                                    <option value="fecha">Fecha</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
-                                <select id="campoMostrarDespuesDe"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="">-- Al final --</option>
-                                    <option value="ejecutivo">Ejecutivo</option>
-                                    <option value="operacion">Operación</option>
-                                    <option value="cliente">Cliente</option>
-                                    <option value="proveedor">Proveedor o Cliente</option>
-                                    <option value="fecha_embarque">Fecha de Embarque</option>
-                                    <option value="no_factura">No. De Factura</option>
-                                    <option value="tipo_operacion">T. Operación</option>
-                                    <option value="clave">Clave</option>
-                                    <option value="referencia_interna">Referencia Interna</option>
-                                    <option value="aduana">Aduana</option>
-                                    <option value="agente_aduanal">A.A</option>
-                                    <option value="referencia_aa">Referencia A.A</option>
-                                    <option value="no_pedimento">No Ped</option>
-                                    <option value="transporte">Transporte</option>
-                                    <option value="fecha_arribo_aduana">Fecha de Arribo a Aduana</option>
-                                    <option value="guia_bl">Guía //BL</option>
-                                    <option value="status">Status</option>
-                                    <option value="fecha_modulacion">Fecha de Modulación</option>
-                                    <option value="fecha_arribo_planta">Fecha de Arribo a Planta</option>
-                                    <option value="resultado">Resultado</option>
-                                    <option value="target">Target</option>
-                                    <option value="dias_transito">Días en Tránsito</option>
-                                    <option value="post_operaciones">Post-Operaciones</option>
-                                    <option value="comentarios">Comentarios</option>
-                                </select>
-                            </div>
+                <div class="mb-6">
+                    <p class="text-sm text-slate-500">Las columnas predeterminadas siempre están visibles para todos. Las columnas adicionales (en morado) pueden habilitarse por ejecutivo.</p>
+                </div>
+                
+                <!-- Columnas Predeterminadas -->
+                <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
+                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Columnas Predeterminadas (Siempre Visibles)
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">No.</span>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
-                            <select id="selectEjecutivosNuevoCampo" multiple
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]">
-                                <!-- Se llena dinámicamente -->
-                            </select>
-                            <p class="text-xs text-slate-500 mt-1">Mantén Ctrl para seleccionar múltiples ejecutivos</p>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Ejecutivo</span>
                         </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Operación</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Cliente</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Proveedor</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Fecha Embarque</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">No. Factura</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">T. Operación</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Clave</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Ref. Interna</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Aduana</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">A.A</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Ref. A.A</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">No Ped</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Transporte</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Arribo Aduana</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Guía/BL</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
+                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
+                            <span class="text-sm text-slate-600">Status</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Columnas Opcionales por Ejecutivo -->
+                <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                    <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                        Columnas Adicionales (Configurar por Ejecutivo)
+                    </h4>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-purple-700 mb-2">Seleccionar Ejecutivo:</label>
+                        <select id="selectEjecutivoColumnas" class="w-full md:w-1/2 px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="cargarColumnasEjecutivo()">
+                            <option value="">-- Seleccione un ejecutivo --</option>
+                        </select>
+                    </div>
+                    
+                    <div id="columnasOpcionalesContainer" class="hidden">
+                        <p class="text-sm text-purple-600 mb-3">Marque las columnas que desea mostrar a este ejecutivo:</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
+                                <input type="checkbox" id="colTipoCarga" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                                <div>
+                                    <span class="font-medium text-slate-700">Tipo de Carga</span>
+                                    <p class="text-xs text-slate-500">FCL / LCL</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
+                                <input type="checkbox" id="colTipoIncoterm" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                                <div>
+                                    <span class="font-medium text-slate-700">Incoterm</span>
+                                    <p class="text-xs text-slate-500">EXW, FOB, CIF, etc.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
+                                <input type="checkbox" id="colPuertoSalida" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                                <div>
+                                    <span class="font-medium text-slate-700">Puerto de Salida</span>
+                                    <p class="text-xs text-slate-500">Puerto de origen</p>
+                                </div>
+                            </label>
+                        </div>
+                        
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                Crear Campo
+                                Guardar Configuración
                             </button>
                         </div>
-                    </form>
-                </div>
-
-                <!-- Lista de campos existentes -->
-                <div>
-                    <h3 class="font-semibold text-slate-700 mb-4">Campos Personalizados Existentes</h3>
-                    <div id="listaCamposPersonalizados" class="space-y-3">
-                        <!-- Se llena dinámicamente -->
-                        <p class="text-slate-400 text-sm text-center py-4">Cargando campos...</p>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal para editar campo personalizado -->
-    <div id="modalEditarCampo" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-[60] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <h2 class="text-lg font-semibold text-slate-800">Editar Campo Personalizado</h2>
-                <button onclick="cerrarModalEditarCampo()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <form id="formEditarCampo" class="p-6 space-y-4">
-                <input type="hidden" id="editarCampoId">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
-                        <input type="text" id="editarCampoNombre" required maxlength="100"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
-                        <select id="editarCampoTipo" required
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="texto">Texto</option>
-                            <option value="fecha">Fecha</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
-                        <select id="editarCampoMostrarDespuesDe"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">-- Al final --</option>
-                            <option value="ejecutivo">Ejecutivo</option>
-                            <option value="operacion">Operación</option>
-                            <option value="cliente">Cliente</option>
-                            <option value="proveedor">Proveedor o Cliente</option>
-                            <option value="fecha_embarque">Fecha de Embarque</option>
-                            <option value="no_factura">No. De Factura</option>
-                            <option value="tipo_operacion">T. Operación</option>
-                            <option value="clave">Clave</option>
-                            <option value="referencia_interna">Referencia Interna</option>
-                            <option value="aduana">Aduana</option>
-                            <option value="agente_aduanal">A.A</option>
-                            <option value="referencia_aa">Referencia A.A</option>
-                            <option value="no_pedimento">No Ped</option>
-                            <option value="transporte">Transporte</option>
-                            <option value="fecha_arribo_aduana">Fecha de Arribo a Aduana</option>
-                            <option value="guia_bl">Guía //BL</option>
-                            <option value="status">Status</option>
-                            <option value="fecha_modulacion">Fecha de Modulación</option>
-                            <option value="fecha_arribo_planta">Fecha de Arribo a Planta</option>
-                            <option value="resultado">Resultado</option>
-                            <option value="target">Target</option>
-                            <option value="dias_transito">Días en Tránsito</option>
-                            <option value="post_operaciones">Post-Operaciones</option>
-                            <option value="comentarios">Comentarios</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
-                        <select id="editarCampoActivo"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
-                    <select id="selectEjecutivosEditarCampo" multiple
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]">
-                        <!-- Se llena dinámicamente -->
-                    </select>
-                    <p class="text-xs text-slate-500 mt-1">Mantén Ctrl para seleccionar múltiples ejecutivos</p>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" onclick="cerrarModalEditarCampo()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Guardar Cambios
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
     @endif

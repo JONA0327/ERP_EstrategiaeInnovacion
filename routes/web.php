@@ -152,6 +152,11 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         Route::post('/logistica/campos-personalizados', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'store']);
         Route::put('/logistica/campos-personalizados/{id}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'update']);
         Route::delete('/logistica/campos-personalizados/{id}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'destroy']);
+        
+        // Rutas para Configuración de Columnas por Ejecutivo (solo admin)
+        Route::get('/logistica/columnas-config', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasConfig']);
+        Route::post('/logistica/columnas-config', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarColumnasConfig']);
+        Route::get('/logistica/columnas-config/ejecutivo/{empleadoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasEjecutivo']);
     });
 
     // Rutas para Campos Personalizados (acceso general para obtener valores)

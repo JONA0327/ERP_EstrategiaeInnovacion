@@ -142,6 +142,16 @@ class OperacionLogisticaController extends Controller
             ->orderBy('orden')
             ->get();
 
+        // Cargar columnas opcionales visibles para el ejecutivo actual
+        $columnasOpcionalesVisibles = [];
+        if ($empleadoActual) {
+            $columnasOpcionalesVisibles = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoActual->id);
+        }
+        // Admin ve todas las columnas opcionales
+        if ($esAdmin) {
+            $columnasOpcionalesVisibles = array_keys(\App\Models\Logistica\ColumnaVisibleEjecutivo::$columnasOpcionales);
+        }
+
         return view('Logistica.matriz-seguimiento', compact(
             'operaciones', 
             'clientes', 
@@ -156,7 +166,8 @@ class OperacionLogisticaController extends Controller
             'ejecutivosUnicos',
             'clientesUnicos',
             'filtroCliente',
-            'filtroEjecutivo'
+            'filtroEjecutivo',
+            'columnasOpcionalesVisibles'
         ));
     }
 
