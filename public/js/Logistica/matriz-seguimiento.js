@@ -1188,6 +1188,11 @@ window.editarOperacion = function(operacionId) {
                     setFieldValue('[name="guia_bl"]', op.guia_bl);
                     setFieldValue('[name="comentarios"]', op.comentarios);
                     
+                    // Columnas opcionales (si existen en la sección 6 o en sección 7)
+                    setFieldValue('[name="tipo_carga"]', op.tipo_carga);
+                    setFieldValue('[name="tipo_incoterm"]', op.tipo_incoterm);
+                    setFieldValue('[name="puerto_salida"]', op.puerto_salida);
+                    
                     // Status manual - asegurar que el select existe
                     const statusSelect = document.getElementById('statusManualSelect');
                     if (statusSelect) {
@@ -1203,9 +1208,12 @@ window.editarOperacion = function(operacionId) {
                     actualizarTransportes();
                 }
                 
-                // Cargar campos personalizados y sus valores
+                // Cargar campos personalizados y columnas opcionales, luego cargar valores
                 cargarCamposParaModal().then(() => {
+                    // Cargar valores de campos personalizados
                     cargarValoresCamposOperacion(op.id);
+                    // Cargar valores de columnas opcionales en la sección 7
+                    cargarValoresColumnasOpcionales(op);
                 });
                 
                 // Abrir el modal
@@ -2865,12 +2873,11 @@ async function cargarCamposParaModal(ejecutivoNombre = null) {
             columnasSubsection.classList.remove('hidden');
             columnasContainer.innerHTML = columnasOpcionalesDelEjecutivo.map(col => {
                 return `
-                    <div class="columna-opcional-info bg-white rounded-lg p-3 border border-indigo-200">
-                        <div class="flex items-center">
-                            <span class="text-indigo-500 mr-2">📊</span>
-                            <span class="text-sm font-medium text-slate-700">${col.nombre}</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-1">Campo: ${col.clave}</p>
+                    <div class="columna-opcional-input">
+                        <label class="block text-sm font-medium text-slate-600 mb-2">
+                            <span class="text-indigo-500 mr-1">📊</span>${col.nombre}
+                        </label>
+                        ${generarInputColumnaOpcional(col)}
                     </div>
                 `;
             }).join('');
@@ -2909,6 +2916,90 @@ async function cargarCamposParaModal(ejecutivoNombre = null) {
     } catch (error) {
         console.error('Error al cargar campos adicionales:', error);
         section.classList.add('hidden');
+    }
+}
+
+/**
+ * Genera el HTML del input según el tipo de columna opcional
+ */
+function generarInputColumnaOpcional(columna, valorActual = '') {
+    const baseClass = 'form-input bg-white w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500';
+    const clave = columna.clave;
+    
+    // Configuración específica para cada columna opcional
+    switch(clave) {
+        case 'tipo_carga':
+            return `<select name="${clave}" class="${baseClass}">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="FCL" ${valorActual === 'FCL' ? 'selected' : ''}>FCL (Full Container Load)</option>
+                        <option value="LCL" ${valorActual === 'LCL' ? 'selected' : ''}>LCL (Less than Container Load)</option>
+                    </select>`;
+        
+        case 'tipo_incoterm':
+            return `<select name="${clave}" class="${baseClass}">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="EXW" ${valorActual === 'EXW' ? 'selected' : ''}>EXW - Ex Works</option>
+                        <option value="FCA" ${valorActual === 'FCA' ? 'selected' : ''}>FCA - Free Carrier</option>
+                        <option value="FAS" ${valorActual === 'FAS' ? 'selected' : ''}>FAS - Free Alongside Ship</option>
+                        <option value="FOB" ${valorActual === 'FOB' ? 'selected' : ''}>FOB - Free On Board</option>
+                        <option value="CFR" ${valorActual === 'CFR' ? 'selected' : ''}>CFR - Cost and Freight</option>
+                        <option value="CIF" ${valorActual === 'CIF' ? 'selected' : ''}>CIF - Cost, Insurance and Freight</option>
+                        <option value="CPT" ${valorActual === 'CPT' ? 'selected' : ''}>CPT - Carriage Paid To</option>
+                        <option value="CIP" ${valorActual === 'CIP' ? 'selected' : ''}>CIP - Carriage and Insurance Paid To</option>
+                        <option value="DAP" ${valorActual === 'DAP' ? 'selected' : ''}>DAP - Delivered at Place</option>
+                        <option value="DPU" ${valorActual === 'DPU' ? 'selected' : ''}>DPU - Delivered at Place Unloaded</option>
+                        <option value="DDP" ${valorActual === 'DDP' ? 'selected' : ''}>DDP - Delivered Duty Paid</option>
+                    </select>`;
+        
+        case 'puerto_salida':
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Ej: Shanghai, China" value="${valorActual}">`;
+        
+        case 'in_charge':
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Nombre del responsable" value="${valorActual}">`;
+        
+        case 'proveedor':
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Nombre del proveedor" value="${valorActual}">`;
+        
+        case 'tipo_previo':
+            return `<select name="${clave}" class="${baseClass}">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="Normal" ${valorActual === 'Normal' ? 'selected' : ''}>Normal</option>
+                        <option value="Previo" ${valorActual === 'Previo' ? 'selected' : ''}>Previo</option>
+                        <option value="Reconocimiento" ${valorActual === 'Reconocimiento' ? 'selected' : ''}>Reconocimiento</option>
+                    </select>`;
+        
+        case 'fecha_etd':
+            return `<input type="date" name="${clave}" class="${baseClass}" value="${valorActual}">`;
+        
+        case 'fecha_zarpe':
+            return `<input type="date" name="${clave}" class="${baseClass}" value="${valorActual}">`;
+        
+        case 'pedimento_en_carpeta':
+            return `<div class="flex gap-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="${clave}" value="1" class="mr-2 text-green-600" ${valorActual === '1' || valorActual === true ? 'checked' : ''}>
+                            <span class="text-green-600">✓ Sí</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="${clave}" value="0" class="mr-2 text-red-600" ${valorActual === '0' || valorActual === false || !valorActual ? 'checked' : ''}>
+                            <span class="text-red-600">✗ No</span>
+                        </label>
+                    </div>`;
+        
+        case 'referencia_cliente':
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Referencia del cliente" value="${valorActual}">`;
+        
+        case 'mail_subject':
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Asunto del correo" value="${valorActual}">`;
+        
+        default:
+            return `<input type="text" name="${clave}" class="${baseClass}" 
+                    placeholder="Ingrese ${columna.nombre}" value="${valorActual}">`;
     }
 }
 
@@ -3064,6 +3155,52 @@ async function cargarValoresCamposOperacion(operacionId) {
     } catch (error) {
         console.error('Error al cargar valores de campos:', error);
     }
+}
+
+/**
+ * Cargar valores de columnas opcionales para una operación al editar (sección 7)
+ */
+function cargarValoresColumnasOpcionales(operacion) {
+    if (!operacion || !columnasOpcionalesDelEjecutivo) return;
+    
+    const container = document.getElementById('columnasOpcionalesContainer');
+    if (!container) return;
+    
+    // Lista de columnas opcionales a verificar
+    const columnasOpcionales = ['tipo_carga', 'tipo_incoterm', 'puerto_salida', 'in_charge', 
+                               'proveedor', 'tipo_previo', 'fecha_etd', 'fecha_zarpe', 
+                               'pedimento_en_carpeta', 'referencia_cliente', 'mail_subject'];
+    
+    columnasOpcionales.forEach(clave => {
+        const valor = operacion[clave];
+        if (valor === undefined) return;
+        
+        // Buscar el input en el contenedor de sección 7
+        const input = container.querySelector(`[name="${clave}"]`);
+        if (input) {
+            if (input.tagName === 'SELECT') {
+                input.value = valor || '';
+            } else if (input.type === 'radio') {
+                // Para radio buttons (pedimento_en_carpeta)
+                const radios = container.querySelectorAll(`[name="${clave}"]`);
+                radios.forEach(radio => {
+                    const valorStr = String(valor);
+                    if (radio.value === valorStr || 
+                        (valorStr === 'true' && radio.value === '1') || 
+                        (valorStr === 'false' && radio.value === '0') ||
+                        (valorStr === '1' && radio.value === '1') ||
+                        (valorStr === '0' && radio.value === '0')) {
+                        radio.checked = true;
+                    }
+                });
+            } else if (input.type === 'date' && valor) {
+                // Formatear fecha si es necesario
+                input.value = valor.split('T')[0]; // Por si viene con timestamp
+            } else {
+                input.value = valor || '';
+            }
+        }
+    });
 }
 
 /**

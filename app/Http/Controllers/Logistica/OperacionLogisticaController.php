@@ -694,6 +694,19 @@ class OperacionLogisticaController extends Controller
             'target' => 'nullable|integer|min:0',
             'resultado' => 'nullable|integer|min:0',
             'dias_transito' => 'nullable|integer|min:0',
+            
+            // === COLUMNAS OPCIONALES ADICIONALES ===
+            'tipo_carga' => 'nullable|string|max:50',
+            'tipo_incoterm' => 'nullable|string|max:50',
+            'puerto_salida' => 'nullable|string|max:255',
+            'in_charge' => 'nullable|string|max:255',
+            'proveedor' => 'nullable|string|max:255',
+            'tipo_previo' => 'nullable|string|max:100',
+            'fecha_etd' => 'nullable|date',
+            'fecha_zarpe' => 'nullable|date',
+            'pedimento_en_carpeta' => 'nullable|boolean',
+            'referencia_cliente' => 'nullable|string|max:255',
+            'mail_subject' => 'nullable|string|max:500',
         ]);
 
         // Crear la operacion - el status se calcula automticamente en el modelo
@@ -722,6 +735,19 @@ class OperacionLogisticaController extends Controller
             'target' => null, // Se calcular automticamente
             // NO incluir status_manual como null - dejamos que use el default de la base de datos
             // status_calculado y color_status se calculan automticamente en el modelo
+            
+            // Columnas opcionales adicionales
+            'tipo_carga' => $request->tipo_carga,
+            'tipo_incoterm' => $request->tipo_incoterm,
+            'puerto_salida' => $request->puerto_salida,
+            'in_charge' => $request->in_charge,
+            'proveedor' => $request->proveedor,
+            'tipo_previo' => $request->tipo_previo,
+            'fecha_etd' => $request->fecha_etd,
+            'fecha_zarpe' => $request->fecha_zarpe,
+            'pedimento_en_carpeta' => $request->boolean('pedimento_en_carpeta'),
+            'referencia_cliente' => $request->referencia_cliente,
+            'mail_subject' => $request->mail_subject,
         ];
 
         $operacion = OperacionLogistica::create($data);
@@ -794,6 +820,19 @@ class OperacionLogisticaController extends Controller
                 'resultado' => 'nullable|integer|min:0',
                 'dias_transito' => 'nullable|integer|min:0',
                 'status_manual' => 'nullable|in:In Process,Done,Out of Metric',
+                
+                // Columnas opcionales adicionales
+                'tipo_carga' => 'nullable|string|max:50',
+                'tipo_incoterm' => 'nullable|string|max:50',
+                'puerto_salida' => 'nullable|string|max:255',
+                'in_charge' => 'nullable|string|max:255',
+                'proveedor' => 'nullable|string|max:255',
+                'tipo_previo' => 'nullable|string|max:100',
+                'fecha_etd' => 'nullable|date',
+                'fecha_zarpe' => 'nullable|date',
+                'pedimento_en_carpeta' => 'nullable|boolean',
+                'referencia_cliente' => 'nullable|string|max:255',
+                'mail_subject' => 'nullable|string|max:500',
             ]);
 
             // Guardar el status anterior y fechas importantes para el historial
@@ -828,6 +867,19 @@ class OperacionLogisticaController extends Controller
                 'fecha_arribo_planta' => $request->fecha_arribo_planta,
                 'resultado' => $request->resultado,
                 'comentarios' => $request->comentarios,
+                
+                // Columnas opcionales adicionales
+                'tipo_carga' => $request->tipo_carga,
+                'tipo_incoterm' => $request->tipo_incoterm,
+                'puerto_salida' => $request->puerto_salida,
+                'in_charge' => $request->in_charge,
+                'proveedor' => $request->proveedor,
+                'tipo_previo' => $request->tipo_previo,
+                'fecha_etd' => $request->fecha_etd,
+                'fecha_zarpe' => $request->fecha_zarpe,
+                'pedimento_en_carpeta' => $request->boolean('pedimento_en_carpeta'),
+                'referencia_cliente' => $request->referencia_cliente,
+                'mail_subject' => $request->mail_subject,
             ];
 
             // Solo incluir status_manual si se enva y no es null
@@ -1603,6 +1655,19 @@ class OperacionLogisticaController extends Controller
                     'target' => $operacion->target,
                     'resultado' => $operacion->resultado,
                     'dias_transito' => $operacion->dias_transito,
+                    
+                    // Columnas opcionales adicionales
+                    'tipo_carga' => $operacion->tipo_carga,
+                    'tipo_incoterm' => $operacion->tipo_incoterm,
+                    'puerto_salida' => $operacion->puerto_salida,
+                    'in_charge' => $operacion->in_charge,
+                    'proveedor' => $operacion->proveedor,
+                    'tipo_previo' => $operacion->tipo_previo,
+                    'fecha_etd' => $operacion->fecha_etd ? $operacion->fecha_etd->format('Y-m-d') : null,
+                    'fecha_zarpe' => $operacion->fecha_zarpe ? $operacion->fecha_zarpe->format('Y-m-d') : null,
+                    'pedimento_en_carpeta' => $operacion->pedimento_en_carpeta,
+                    'referencia_cliente' => $operacion->referencia_cliente,
+                    'mail_subject' => $operacion->mail_subject,
                 ],
                 'operaciones_relacionadas' => $operacionesRelacionadas->map(function($op) {
                     return [
