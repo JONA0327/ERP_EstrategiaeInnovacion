@@ -72,9 +72,14 @@ return new class extends Migration
         // 6.1 Incoterms (Catálogo)
         Schema::create('incoterms', function (Blueprint $table) {
             $table->id();
-            $table->string('clave', 20)->unique();
-            $table->text('descripcion');
+            $table->string('codigo', 10)->unique(); // EXW, FOB, CIF, etc.
+            $table->string('nombre', 100); // Nombre completo
+            $table->text('descripcion')->nullable(); // Descripción detallada
+            $table->enum('grupo', ['E', 'F', 'C', 'D']); // Grupo de incoterm
+            $table->boolean('aplicable_importacion')->default(true);
+            $table->boolean('aplicable_exportacion')->default(true);
             $table->boolean('activo')->default(true);
+            $table->integer('orden')->default(0);
             $table->timestamps();
         });
 
@@ -97,6 +102,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('campo_personalizado_id')->constrained('campos_personalizados_matriz')->onDelete('cascade');
             $table->foreignId('empleado_id')->constrained('empleados')->onDelete('cascade');
+            $table->integer('orden')->default(0); // Orden personalizado del campo
             $table->timestamps();
             $table->unique(['campo_personalizado_id', 'empleado_id'], 'campo_pers_ejec_unique');
         });
@@ -106,6 +112,7 @@ return new class extends Migration
             $table->foreignId('empleado_id')->constrained('empleados')->onDelete('cascade');
             $table->string('columna', 50);
             $table->boolean('visible')->default(0);
+            $table->integer('orden')->default(0); // Orden personalizado de la columna
             $table->enum('idioma_nombres', ['es', 'en'])->default('es'); // Idioma de los nombres de columnas
             $table->timestamps();
             $table->unique(['empleado_id', 'columna'], 'col_vis_ejec_unique');
@@ -132,6 +139,7 @@ return new class extends Migration
         // 9. Operaciones Logísticas
         Schema::create('operaciones_logisticas', function (Blueprint $table) {
             $table->id();
+            $table->string('folio')->nullable()->unique(); // Folio único de la operación
             $table->string('ejecutivo')->nullable();
             $table->string('operacion')->nullable();
             $table->string('cliente')->nullable();

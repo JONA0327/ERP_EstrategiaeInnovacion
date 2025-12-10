@@ -13,11 +13,13 @@ class ColumnaVisibleEjecutivo extends Model
         'empleado_id',
         'columna',
         'visible',
+        'orden',
         'idioma_nombres'
     ];
 
     protected $casts = [
-        'visible' => 'boolean'
+        'visible' => 'boolean',
+        'orden' => 'integer'
     ];
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -373,6 +375,189 @@ class ColumnaVisibleEjecutivo extends Model
                     'idioma_nombres' => $idiomaActual
                 ]);
             }
+        }
+    }
+
+    /**
+     * Obtener el orden de columnas para un ejecutivo
+     * Retorna un array con las columnas en su orden personalizado
+     */
+    public static function getOrdenColumnasEjecutivo($empleadoId)
+    {
+        $configuracion = self::where('empleado_id', $empleadoId)
+            ->where('columna', '!=', '_config')
+            ->orderBy('orden', 'asc')
+            ->pluck('columna', 'orden')
+            ->toArray();
+        
+        // Si no tiene configuración, devolver orden por defecto
+        if (empty($configuracion)) {
+            return array_merge(
+                array_keys(self::$columnasPredeterminadas),
+                array_keys(self::$columnasOpcionales)
+            );
+        }
+        
+        return array_values($configuracion);
+    }
+
+    /**
+     * Obtener columnas ordenadas con visibilidad para un ejecutivo
+     * Incluye predeterminadas, opcionales y campos personalizados en el orden configurado
+     */
+    public static function getColumnasOrdenadasParaEjecutivo($empleadoId, $idioma = 'es')
+    {
+        $configuracion = self::where('empleado_id', $empleadoId)
+            ->where('columna', '!=', '_config')
+            ->orderBy('orden', 'asc')
+            ->get()
+            ->keyBy('columna');
+        
+        // Obtener campos personalizados del ejecutivo
+        $camposPersonalizados = [];
+        if ($empleadoId > 0) {
+            $camposPersonalizados = CampoPersonalizadoMatriz::whereHas('ejecutivos', function($q) use ($empleadoId) {
+                $q->where('empleado_id', $empleadoId);
+            })->where('activo', true)->get();
+        } else {
+            // Para admin (empleadoId = 0), obtener todos los campos activos
+            $camposPersonalizados = CampoPersonalizadoMatriz::where('activo', true)->get();
+        }
+        
+        $columnasOrdenadas = [];
+        
+        // Si tiene configuración de orden, usar ese orden
+        if ($configuracion->isNotEmpty()) {
+            foreach ($configuracion as $columna => $config) {
+                // Verificar si es campo personalizado
+                $esCampoPersonalizado = str_starts_with($columna, 'campo_');
+                $esPredeterminada = array_key_exists($columna, self::$columnasPredeterminadas);
+                $esOpcional = array_key_exists($columna, self::$columnasOpcionales);
+                
+                $nombre = self::getNombreColumna($columna, $idioma);
+                
+                // Si es campo personalizado, obtener el nombre del campo
+                if ($esCampoPersonalizado) {
+                    $campoId = str_replace('campo_', '', $columna);
+                    $campo = $camposPersonalizados->firstWhere('id', $campoId);
+                    if ($campo) {
+                        $nombre = $campo->nombre;
+                    }
+                }
+                
+                $columnasOrdenadas[] = [
+                    'columna' => $columna,
+                    'nombre' => $nombre,
+                    'visible' => $config->visible,
+                    'orden' => $config->orden,
+                    'predeterminada' => $esPredeterminada,
+                    'opcional' => $esOpcional,
+                    'personalizado' => $esCampoPersonalizado
+                ];
+            }
+            
+            // Agregar campos personalizados que no estén en la configuración
+            foreach ($camposPersonalizados as $campo) {
+                $columnaKey = 'campo_' . $campo->id;
+                if (!isset($configuracion[$columnaKey])) {
+                    $columnasOrdenadas[] = [
+                        'columna' => $columnaKey,
+                        'nombre' => $campo->nombre,
+                        'visible' => true,
+                        'orden' => count($columnasOrdenadas),
+                        'predeterminada' => false,
+                        'opcional' => false,
+                        'personalizado' => true
+                    ];
+                }
+            }
+        } else {
+            // Orden por defecto: primero predeterminadas, luego opcionales, luego personalizados
+            $orden = 0;
+            foreach (self::$columnasPredeterminadas as $columna => $nombres) {
+                $columnasOrdenadas[] = [
+                    'columna' => $columna,
+                    'nombre' => $nombres[$idioma] ?? $nombres['es'],
+                    'visible' => true,
+                    'orden' => $orden++,
+                    'predeterminada' => true,
+                    'opcional' => false,
+                    'personalizado' => false
+                ];
+            }
+            foreach (self::$columnasOpcionales as $columna => $nombres) {
+                $columnasOrdenadas[] = [
+                    'columna' => $columna,
+                    'nombre' => $nombres[$idioma] ?? $nombres['es'],
+                    'visible' => false,
+                    'orden' => $orden++,
+                    'predeterminada' => false,
+                    'opcional' => true,
+                    'personalizado' => false
+                ];
+            }
+            // Agregar campos personalizados al final
+            foreach ($camposPersonalizados as $campo) {
+                $columnasOrdenadas[] = [
+                    'columna' => 'campo_' . $campo->id,
+                    'nombre' => $campo->nombre,
+                    'visible' => true,
+                    'orden' => $orden++,
+                    'predeterminada' => false,
+                    'opcional' => false,
+                    'personalizado' => true
+                ];
+            }
+        }
+        
+        // Ordenar por el campo orden
+        usort($columnasOrdenadas, function($a, $b) {
+            return $a['orden'] <=> $b['orden'];
+        });
+        
+        return $columnasOrdenadas;
+    }
+
+    /**
+     * Guardar el orden de columnas para un ejecutivo
+     */
+    public static function guardarOrdenColumnas($empleadoId, $ordenColumnas)
+    {
+        $idiomaActual = self::getIdiomaEjecutivo($empleadoId);
+        
+        foreach ($ordenColumnas as $index => $columna) {
+            self::updateOrCreate(
+                [
+                    'empleado_id' => $empleadoId,
+                    'columna' => $columna
+                ],
+                [
+                    'orden' => $index,
+                    'idioma_nombres' => $idiomaActual
+                ]
+            );
+        }
+    }
+
+    /**
+     * Guardar configuración completa de columnas (visibilidad y orden)
+     */
+    public static function guardarConfiguracionCompleta($empleadoId, $columnas, $idioma = null)
+    {
+        $idiomaActual = $idioma ?? self::getIdiomaEjecutivo($empleadoId);
+        
+        foreach ($columnas as $index => $columnaData) {
+            self::updateOrCreate(
+                [
+                    'empleado_id' => $empleadoId,
+                    'columna' => $columnaData['columna']
+                ],
+                [
+                    'visible' => $columnaData['visible'] ?? false,
+                    'orden' => $columnaData['orden'] ?? $index,
+                    'idioma_nombres' => $idiomaActual
+                ]
+            );
         }
     }
 }

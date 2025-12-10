@@ -1,9 +1,9 @@
-@extends('logistica.layout')
+@extends('layouts.erp')
 
 @section('title', 'Importar Excel - Matriz de Operación')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8">
+<div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-blue-100 py-8">
     <div class="container mx-auto px-4 max-w-4xl">
         
         {{-- Header --}}
@@ -15,11 +15,11 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold text-white">Importar Excel</h1>
-                    <p class="text-slate-400">Matriz de Operación - Importación Masiva</p>
+                    <h1 class="text-3xl font-bold text-gray-800">Importar Excel</h1>
+                    <p class="text-gray-500">Matriz de Operación - Importación Masiva</p>
                 </div>
             </div>
-            <a href="{{ route('logistica.matriz-seguimiento') }}" class="inline-flex items-center text-slate-400 hover:text-white transition-colors">
+            <a href="{{ route('logistica.matriz-seguimiento') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -28,14 +28,14 @@
         </div>
 
         {{-- Alerta de advertencia --}}
-        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+        <div class="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6">
             <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
                 <div>
-                    <h4 class="text-amber-400 font-semibold">⚠️ Página de uso restringido</h4>
-                    <p class="text-slate-300 text-sm mt-1">
+                    <h4 class="text-amber-700 font-semibold">⚠️ Página de uso restringido</h4>
+                    <p class="text-amber-600 text-sm mt-1">
                         Esta herramienta está diseñada para importación masiva de datos. Úsala con precaución.
                         Los registros existentes se actualizarán basándose en el número de folio.
                     </p>
@@ -44,10 +44,10 @@
         </div>
 
         {{-- Formulario de importación --}}
-        <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
-            <div class="p-6 border-b border-slate-700/50">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
                 <h2 class="text-xl font-semibold text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     Cargar Archivo Excel
@@ -59,100 +59,100 @@
                 
                 {{-- Selector de ejecutivo --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
                             Asignar columnas opcionales a Ejecutivo
                         </span>
                     </label>
                     <select name="ejecutivo_id" id="ejecutivo_id" 
-                            class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+                            class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                         <option value="">-- Sin asignar (solo importar datos) --</option>
                         @foreach($ejecutivos as $ejecutivo)
                             <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }} ({{ $ejecutivo->correo }})</option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-slate-500 mt-1">
+                    <p class="text-xs text-gray-500 mt-1">
                         Si seleccionas un ejecutivo, las columnas opcionales encontradas en el Excel se activarán automáticamente para él.
                     </p>
                 </div>
 
                 {{-- Zona de arrastrar archivo --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">
-                        Archivo Excel <span class="text-red-400">*</span>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Archivo Excel <span class="text-red-500">*</span>
                     </label>
                     <div id="dropZone" 
-                         class="relative border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-500/5 transition-all duration-300">
+                         class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all duration-300">
                         <input type="file" name="archivo_excel" id="archivo_excel" 
                                accept=".xlsx,.xls,.csv" 
                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                         
                         <div id="dropZoneContent">
-                            <div class="mx-auto w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
-                                <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                 </svg>
                             </div>
-                            <p class="text-slate-300 mb-2">Arrastra tu archivo aquí o <span class="text-emerald-400 font-medium">haz clic para seleccionar</span></p>
-                            <p class="text-xs text-slate-500">Formatos: .xlsx, .xls, .csv (máx. 10MB)</p>
+                            <p class="text-gray-600 mb-2">Arrastra tu archivo aquí o <span class="text-blue-600 font-medium">haz clic para seleccionar</span></p>
+                            <p class="text-xs text-gray-400">Formatos: .xlsx, .xls, .csv (máx. 10MB)</p>
                         </div>
                         
                         <div id="fileSelected" class="hidden">
-                            <div class="mx-auto w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
-                                <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <p class="text-emerald-400 font-medium mb-1" id="fileName">archivo.xlsx</p>
-                            <p class="text-xs text-slate-500" id="fileSize">0 KB</p>
+                            <p class="text-green-600 font-medium mb-1" id="fileName">archivo.xlsx</p>
+                            <p class="text-xs text-gray-500" id="fileSize">0 KB</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Información del mapeo --}}
-                <div class="bg-slate-900/50 rounded-xl p-4">
-                    <h4 class="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         Mapeo de columnas
                     </h4>
-                    <div class="text-xs text-slate-400 space-y-1">
+                    <div class="text-xs text-gray-600 space-y-1">
                         <p>El sistema reconoce automáticamente las siguientes columnas del Excel:</p>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                            <span class="bg-slate-800 px-2 py-1 rounded">No. Folio</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Process/Operación</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Customer/Cliente</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Invoice Number</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Supplier Name</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Customs MX</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">In Charge</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Freight</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Tracking/BL</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Shipp Date ETD</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Arriving Date</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Status</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Pedimento</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">REF</span>
-                            <span class="bg-slate-800 px-2 py-1 rounded">Mail Subject</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">No. Folio</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Process/Operación</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Customer/Cliente</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Invoice Number</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Supplier Name</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Customs MX</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">In Charge</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Freight</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Tracking/BL</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Shipp Date ETD</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Arriving Date</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Status</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Pedimento</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">REF</span>
+                            <span class="bg-white border border-gray-200 px-2 py-1 rounded text-gray-700">Mail Subject</span>
                         </div>
-                        <p class="mt-3 text-amber-400">
+                        <p class="mt-3 text-amber-600 font-medium">
                             <strong>Nota:</strong> Las columnas no reconocidas se crearán como campos personalizados.
                         </p>
                     </div>
                 </div>
 
                 {{-- Botones --}}
-                <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-700/50">
+                <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
                     <a href="{{ route('logistica.matriz-seguimiento') }}" 
-                       class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+                       class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors">
                         Cancelar
                     </a>
                     <button type="submit" id="btnImportar"
-                            class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
@@ -165,24 +165,24 @@
 
         {{-- Resultado de la importación --}}
         <div id="resultadoImportacion" class="hidden mt-6">
-            <div id="resultadoExito" class="hidden bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-6">
+            <div id="resultadoExito" class="hidden bg-green-50 border border-green-300 rounded-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="p-2 bg-emerald-500/20 rounded-full">
-                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-green-100 rounded-full">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h4 class="text-emerald-400 font-semibold text-lg">¡Importación exitosa!</h4>
-                        <p class="text-slate-300 mt-1" id="mensajeExito"></p>
+                        <h4 class="text-green-700 font-semibold text-lg">¡Importación exitosa!</h4>
+                        <p class="text-green-600 mt-1" id="mensajeExito"></p>
                         
                         <div id="detallesExito" class="mt-4 space-y-3">
                             <div id="columnasActivadasInfo" class="hidden">
-                                <h5 class="text-sm font-medium text-slate-400 mb-2">Columnas activadas:</h5>
+                                <h5 class="text-sm font-medium text-gray-600 mb-2">Columnas activadas:</h5>
                                 <div id="listaColumnasActivadas" class="flex flex-wrap gap-2"></div>
                             </div>
                             <div id="camposCreadosInfo" class="hidden">
-                                <h5 class="text-sm font-medium text-slate-400 mb-2">Campos personalizados creados:</h5>
+                                <h5 class="text-sm font-medium text-gray-600 mb-2">Campos personalizados creados:</h5>
                                 <div id="listaCamposCreados" class="flex flex-wrap gap-2"></div>
                             </div>
                         </div>
@@ -190,17 +190,17 @@
                 </div>
             </div>
             
-            <div id="resultadoError" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+            <div id="resultadoError" class="hidden bg-red-50 border border-red-300 rounded-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="p-2 bg-red-500/20 rounded-full">
-                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-red-100 rounded-full">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h4 class="text-red-400 font-semibold text-lg">Error en la importación</h4>
-                        <p class="text-slate-300 mt-1" id="mensajeError"></p>
-                        <div id="listaErrores" class="mt-3 text-sm text-red-300"></div>
+                        <h4 class="text-red-700 font-semibold text-lg">Error en la importación</h4>
+                        <p class="text-red-600 mt-1" id="mensajeError"></p>
+                        <div id="listaErrores" class="mt-3 text-sm text-red-500"></div>
                     </div>
                 </div>
             </div>
@@ -231,13 +231,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     ['dragenter', 'dragover'].forEach(eventName => {
         dropZone.addEventListener(eventName, () => {
-            dropZone.classList.add('border-emerald-500', 'bg-emerald-500/10');
+            dropZone.classList.add('border-blue-500', 'bg-blue-50');
         });
     });
 
     ['dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, () => {
-            dropZone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
         });
     });
 
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('columnasActivadasInfo').classList.remove('hidden');
                     const listaColumnas = document.getElementById('listaColumnasActivadas');
                     listaColumnas.innerHTML = data.columnas_activadas.map(col => 
-                        `<span class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm">${col}</span>`
+                        `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">${col}</span>`
                     ).join('');
                 }
 
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('camposCreadosInfo').classList.remove('hidden');
                     const listaCampos = document.getElementById('listaCamposCreados');
                     listaCampos.innerHTML = data.campos_creados.map(campo => 
-                        `<span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm">${campo.nombre} (${campo.tipo})</span>`
+                        `<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">${campo.nombre} (${campo.tipo})</span>`
                     ).join('');
                 }
 

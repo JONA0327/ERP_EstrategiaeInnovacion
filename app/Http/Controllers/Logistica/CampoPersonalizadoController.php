@@ -409,4 +409,53 @@ class CampoPersonalizadoController extends Controller
             'nombres_columnas' => ColumnaVisibleEjecutivo::getTodasLasColumnasConNombres($request->idioma)
         ]);
     }
+
+    /**
+     * Guardar orden de columnas para un ejecutivo
+     */
+    public function guardarOrdenColumnas(Request $request)
+    {
+        $request->validate([
+            'empleado_id' => 'required|exists:empleados,id',
+            'orden_columnas' => 'required|array',
+            'orden_columnas.*.columna' => 'required|string',
+            'orden_columnas.*.orden' => 'required|integer',
+            'orden_columnas.*.visible' => 'required|boolean'
+        ]);
+
+        // Guardar orden de columnas normales
+        ColumnaVisibleEjecutivo::guardarConfiguracionCompleta(
+            $request->empleado_id,
+            $request->orden_columnas,
+            $request->idioma ?? null
+        );
+
+        // Guardar orden de campos personalizados si se enviaron
+        if ($request->has('orden_campos_personalizados') && is_array($request->orden_campos_personalizados)) {
+            foreach ($request->orden_campos_personalizados as $campoOrden) {
+                CampoPersonalizadoMatriz::where('id', $campoOrden['campo_id'])
+                    ->update(['orden' => $campoOrden['orden']]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Orden de columnas guardado exitosamente'
+        ]);
+    }
+
+    /**
+     * Obtener columnas ordenadas para un ejecutivo
+     */
+    public function getColumnasOrdenadas($empleadoId)
+    {
+        $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoId);
+        $columnasOrdenadas = ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo($empleadoId, $idioma, true);
+        
+        return response()->json([
+            'success' => true,
+            'columnas' => $columnasOrdenadas,
+            'idioma' => $idioma
+        ]);
+    }
 }

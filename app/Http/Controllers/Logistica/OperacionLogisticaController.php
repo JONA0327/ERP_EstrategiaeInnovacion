@@ -73,8 +73,8 @@ class OperacionLogisticaController extends Controller
             $query->where('ejecutivo', $filtroEjecutivo);
         }
 
-        // Obtener todas las operaciones sin paginación
-        $operaciones = $query->orderBy('created_at', 'desc')->get();
+        // Obtener operaciones con paginación (10 por página)
+        $operaciones = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         // Obtener lista de ejecutivos únicos para el filtro (solo si es admin)
         $ejecutivosUnicos = [];
@@ -147,16 +147,19 @@ class OperacionLogisticaController extends Controller
         $columnasOpcionalesVisibles = [];
         $columnasPredeterminadasOcultas = [];
         $idiomaColumnas = 'es'; // Por defecto español
+        $columnasOrdenadas = [];
         
         if ($empleadoActual) {
             $columnasOpcionalesVisibles = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoActual->id);
             $columnasPredeterminadasOcultas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoActual->id);
             $idiomaColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoActual->id);
+            $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo($empleadoActual->id, $idiomaColumnas);
         }
         // Admin ve todas las columnas opcionales y ninguna oculta
         if ($esAdmin) {
             $columnasOpcionalesVisibles = array_keys(\App\Models\Logistica\ColumnaVisibleEjecutivo::$columnasOpcionales);
             $columnasPredeterminadasOcultas = [];
+            $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo(0, $idiomaColumnas);
         }
 
         // Obtener nombres de columnas según idioma configurado
@@ -180,7 +183,8 @@ class OperacionLogisticaController extends Controller
             'columnasOpcionalesVisibles',
             'columnasPredeterminadasOcultas',
             'idiomaColumnas',
-            'nombresColumnas'
+            'nombresColumnas',
+            'columnasOrdenadas'
         ));
     }
 
@@ -1496,8 +1500,7 @@ class OperacionLogisticaController extends Controller
         }
 
         // Obtener lista de ejecutivos para el select
-        $ejecutivos = Empleado::where('activo', true)
-            ->orderBy('nombre')
+        $ejecutivos = Empleado::orderBy('nombre')
             ->get(['id', 'nombre', 'correo']);
 
         return view('logistica.importar-excel', compact('ejecutivos'));
@@ -1526,12 +1529,11 @@ class OperacionLogisticaController extends Controller
             $empleadoId = $request->ejecutivo_id;
             
             $import = new \App\Imports\MatrizLogisticaImport($empleadoId);
-            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('archivo_excel'));
+            $import->import($request->file('archivo_excel')->getPathname());
 
             // Obtener información del resultado
-            $hojaImport = $import->sheets()[0];
-            $columnasActivadas = $hojaImport->getColumnasActivadas();
-            $camposCreados = $hojaImport->getCamposPersonalizadosCreados();
+            $columnasActivadas = $import->getColumnasActivadas();
+            $camposCreados = $import->getCamposPersonalizadosCreados();
 
             $mensaje = 'Importación completada exitosamente.';
             
@@ -1549,19 +1551,6 @@ class OperacionLogisticaController extends Controller
                 'columnas_activadas' => $columnasActivadas,
                 'campos_creados' => $camposCreados
             ]);
-
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            $failures = $e->failures();
-            $errores = [];
-            foreach ($failures as $failure) {
-                $errores[] = "Fila {$failure->row()}: " . implode(', ', $failure->errors());
-            }
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de validación en el archivo',
-                'errores' => $errores
-            ], 422);
 
         } catch (\Exception $e) {
             \Log::error('Error al importar Excel:', [
@@ -3719,11 +3708,33 @@ class OperacionLogisticaController extends Controller
             // Usar el mismo nombreArchivo ya generado arriba
             $rutaCompleta = $tempDir . '/' . $nombreArchivo;
 
-            // Preparar estadsticas para el Excel
+            // Preparar estadísticas para el Excel
             $estadisticas = $this->calcularEstadisticasReporte($operaciones);
 
-            // Generar Excel profesional con grficos
+            // Obtener columnas ordenadas para el ejecutivo actual
+            $usuarioActual = auth()->user();
+            $empleadoActual = null;
+            $columnasOrdenadas = [];
+            
+            if ($usuarioActual) {
+                $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                    ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                    ->first();
+                
+                if ($empleadoActual) {
+                    $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoActual->id);
+                    $columnasOrdenadas = ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo($empleadoActual->id, $idioma);
+                }
+            }
+
+            // Generar Excel profesional con gráficos y columnas ordenadas
             $excelService = new ExcelReportService();
+            
+            // Pasar las columnas ordenadas al servicio
+            if (!empty($columnasOrdenadas)) {
+                $excelService->setColumnasOrdenadas($columnasOrdenadas);
+            }
+            
             $excelService->generateLogisticsReport($operaciones, [], $estadisticas);
             $excelService->save($rutaCompleta);
 

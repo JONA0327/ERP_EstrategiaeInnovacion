@@ -167,6 +167,8 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         Route::post('/logistica/columnas-config', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarColumnasConfig']);
         Route::get('/logistica/columnas-config/ejecutivo/{empleadoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasEjecutivo']);
         Route::post('/logistica/columnas-config/idioma', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarIdiomaEjecutivo']);
+        Route::post('/logistica/columnas-config/orden', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarOrdenColumnas']);
+        Route::get('/logistica/columnas-config/ordenadas/{empleadoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasOrdenadas']);
     });
 
     // Rutas para Campos Personalizados (acceso general para obtener valores)

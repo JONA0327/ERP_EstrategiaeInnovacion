@@ -23,11 +23,20 @@ class ExcelReportService
     private $spreadsheet;
     private $worksheet;
     private $currentRow = 1;
+    private $columnasOrdenadas = [];
 
     public function __construct()
     {
         $this->spreadsheet = new Spreadsheet();
         $this->worksheet = $this->spreadsheet->getActiveSheet();
+    }
+
+    /**
+     * Establecer el orden de columnas personalizado
+     */
+    public function setColumnasOrdenadas($columnas)
+    {
+        $this->columnasOrdenadas = $columnas;
     }
 
     /**
@@ -422,6 +431,52 @@ class ExcelReportService
     }
 
     /**
+     * Mapeo de columnas a propiedades del modelo
+     */
+    private function getColumnMapping()
+    {
+        return [
+            'id' => ['nombre' => 'ID', 'campo' => 'id'],
+            'ejecutivo' => ['nombre' => 'Ejecutivo', 'campo' => 'ejecutivo'],
+            'operacion' => ['nombre' => 'Operación', 'campo' => 'operacion'],
+            'cliente' => ['nombre' => 'Cliente', 'campo' => 'cliente'],
+            'proveedor_o_cliente' => ['nombre' => 'Proveedor/Cliente', 'campo' => 'proveedor_o_cliente'],
+            'fecha_embarque' => ['nombre' => 'Fecha Embarque', 'campo' => 'fecha_embarque', 'tipo' => 'fecha'],
+            'no_factura' => ['nombre' => 'No. Factura', 'campo' => 'no_factura'],
+            'tipo_carga' => ['nombre' => 'Tipo Carga', 'campo' => 'tipo_carga'],
+            'tipo_incoterm' => ['nombre' => 'Incoterm', 'campo' => 'tipo_incoterm'],
+            'tipo_operacion_enum' => ['nombre' => 'T. Operación', 'campo' => 'tipo_operacion_enum'],
+            'clave' => ['nombre' => 'Clave', 'campo' => 'clave'],
+            'referencia_interna' => ['nombre' => 'Ref. Interna', 'campo' => 'referencia_interna'],
+            'aduana' => ['nombre' => 'Aduana', 'campo' => 'aduana'],
+            'agente_aduanal' => ['nombre' => 'A.A', 'campo' => 'agente_aduanal'],
+            'referencia_aa' => ['nombre' => 'Ref. A.A', 'campo' => 'referencia_aa'],
+            'no_pedimento' => ['nombre' => 'No. Pedimento', 'campo' => 'no_pedimento'],
+            'transporte' => ['nombre' => 'Transporte', 'campo' => 'transporte'],
+            'fecha_arribo_aduana' => ['nombre' => 'Arribo Aduana', 'campo' => 'fecha_arribo_aduana', 'tipo' => 'fecha'],
+            'guia_bl' => ['nombre' => 'Guía/BL', 'campo' => 'guia_bl'],
+            'puerto_salida' => ['nombre' => 'Puerto Salida', 'campo' => 'puerto_salida'],
+            'in_charge' => ['nombre' => 'Responsable', 'campo' => 'in_charge'],
+            'proveedor' => ['nombre' => 'Proveedor', 'campo' => 'proveedor'],
+            'tipo_previo' => ['nombre' => 'Modalidad/Previo', 'campo' => 'tipo_previo'],
+            'fecha_etd' => ['nombre' => 'Fecha ETD', 'campo' => 'fecha_etd', 'tipo' => 'fecha'],
+            'fecha_zarpe' => ['nombre' => 'Fecha Zarpe', 'campo' => 'fecha_zarpe', 'tipo' => 'fecha'],
+            'pedimento_en_carpeta' => ['nombre' => 'Ped. en Carpeta', 'campo' => 'pedimento_en_carpeta'],
+            'referencia_cliente' => ['nombre' => 'Ref. Cliente', 'campo' => 'referencia_cliente'],
+            'mail_subject' => ['nombre' => 'Asunto Correo', 'campo' => 'mail_subject'],
+            'status' => ['nombre' => 'Status', 'campo' => 'status_manual'],
+            'fecha_modulacion' => ['nombre' => 'Salida Aduana', 'campo' => 'fecha_modulacion', 'tipo' => 'fecha'],
+            'fecha_arribo_planta' => ['nombre' => 'Arribo Planta', 'campo' => 'fecha_arribo_planta', 'tipo' => 'fecha'],
+            'resultado' => ['nombre' => 'Resultado', 'campo' => 'resultado', 'tipo' => 'calculado'],
+            'target' => ['nombre' => 'Target', 'campo' => 'target'],
+            'dias_transito' => ['nombre' => 'Días Tránsito', 'campo' => 'dias_transito', 'tipo' => 'calculado'],
+            'post_operaciones' => ['nombre' => 'Post-Operaciones', 'campo' => 'post_operaciones', 'tipo' => 'relacion'],
+            'comentarios' => ['nombre' => 'Comentarios', 'campo' => 'comentarios'],
+            'folio' => ['nombre' => 'Folio', 'campo' => 'folio'],
+        ];
+    }
+
+    /**
      * Crear hoja de datos detallados
      */
     private function createDataSheet($operaciones)
@@ -429,7 +484,131 @@ class ExcelReportService
         $dataSheet = $this->spreadsheet->createSheet();
         $dataSheet->setTitle('Datos Detallados');
 
-        // Configurar encabezados
+        // Usar columnas ordenadas si están definidas
+        if (!empty($this->columnasOrdenadas)) {
+            $this->createDataSheetConOrden($dataSheet, $operaciones);
+        } else {
+            $this->createDataSheetDefault($dataSheet, $operaciones);
+        }
+    }
+
+    /**
+     * Crear hoja de datos con columnas ordenadas personalizadas
+     */
+    private function createDataSheetConOrden($dataSheet, $operaciones)
+    {
+        $columnMapping = $this->getColumnMapping();
+        $headers = [];
+        $columnas = [];
+        
+        // Filtrar solo columnas visibles y ordenadas
+        foreach ($this->columnasOrdenadas as $col) {
+            if ($col['visible'] && isset($columnMapping[$col['columna']])) {
+                $headers[] = $col['nombre'] ?? $columnMapping[$col['columna']]['nombre'];
+                $columnas[] = $col['columna'];
+            }
+        }
+
+        // Escribir encabezados
+        foreach ($headers as $col => $header) {
+            $cellRef = $this->getColumnLetter($col) . '1';
+            $dataSheet->setCellValue($cellRef, $header);
+        }
+
+        // Estilo para encabezados
+        $lastCol = $this->getColumnLetter(count($headers) - 1);
+        $headerRange = 'A1:' . $lastCol . '1';
+        $dataSheet->getStyle($headerRange)->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E4BC6']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ]);
+
+        // Escribir datos
+        $row = 2;
+        foreach ($operaciones as $operacion) {
+            foreach ($columnas as $colIndex => $columna) {
+                $cellRef = $this->getColumnLetter($colIndex) . $row;
+                $valor = $this->getValorColumna($operacion, $columna, $columnMapping);
+                $dataSheet->setCellValue($cellRef, $valor);
+            }
+
+            // Aplicar bordes alternados
+            if ($row % 2 == 0) {
+                $rowRange = 'A' . $row . ':' . $lastCol . $row;
+                $dataSheet->getStyle($rowRange)->getFill()->setFillType(Fill::FILL_SOLID);
+                $dataSheet->getStyle($rowRange)->getFill()->getStartColor()->setRGB('F8F9FA');
+            }
+
+            $row++;
+        }
+
+        // Autoajustar columnas
+        for ($i = 0; $i < count($headers); $i++) {
+            $dataSheet->getColumnDimension($this->getColumnLetter($i))->setAutoSize(true);
+        }
+    }
+
+    /**
+     * Obtener el valor de una columna de la operación
+     */
+    private function getValorColumna($operacion, $columna, $columnMapping)
+    {
+        $mapping = $columnMapping[$columna] ?? null;
+        if (!$mapping) return '';
+
+        $campo = $mapping['campo'];
+        $tipo = $mapping['tipo'] ?? 'texto';
+
+        switch ($tipo) {
+            case 'fecha':
+                $valor = $operacion->$campo;
+                return $valor ? (is_string($valor) ? $valor : $valor->format('d/m/Y')) : '';
+            
+            case 'calculado':
+                if ($columna === 'resultado') {
+                    $resultado = $this->calculateResult($operacion);
+                    return $resultado['texto'];
+                } elseif ($columna === 'dias_transito') {
+                    return method_exists($operacion, 'calcularDiasTranscurridos') 
+                        ? $operacion->calcularDiasTranscurridos() 
+                        : '';
+                }
+                return '';
+            
+            case 'relacion':
+                if ($columna === 'post_operaciones') {
+                    $count = $operacion->postOperacionesCompletas ?? 0;
+                    $pending = $operacion->postOperacionesPendientes ?? 0;
+                    return "$count completadas / $pending pendientes";
+                }
+                return '';
+            
+            default:
+                return $operacion->$campo ?? '';
+        }
+    }
+
+    /**
+     * Convertir índice de columna a letra (0=A, 1=B, 26=AA, etc.)
+     */
+    private function getColumnLetter($index)
+    {
+        $letter = '';
+        while ($index >= 0) {
+            $letter = chr(65 + ($index % 26)) . $letter;
+            $index = floor($index / 26) - 1;
+        }
+        return $letter;
+    }
+
+    /**
+     * Crear hoja de datos con orden por defecto
+     */
+    private function createDataSheetDefault($dataSheet, $operaciones)
+    {
+        // Configurar encabezados por defecto
         $headers = [
             'ID', 'Cliente', 'Ejecutivo', 'Fecha Creación', 'ETA', 'Agente Aduanal',
             'Pedimento', 'Guía/BL', 'Transporte', 'Status Calculado', 'Status Manual',
@@ -466,7 +645,7 @@ class ExcelReportService
             $dataSheet->setCellValue('I' . $row, $operacion->transporte);
             $dataSheet->setCellValue('J' . $row, $operacion->status_calculado);
             $dataSheet->setCellValue('K' . $row, $operacion->status_manual ?? $operacion->status_calculado);
-            $dataSheet->setCellValue('L' . $row, $operacion->calcularDiasTranscurridos());
+            $dataSheet->setCellValue('L' . $row, method_exists($operacion, 'calcularDiasTranscurridos') ? $operacion->calcularDiasTranscurridos() : '');
             $dataSheet->setCellValue('M' . $row, $operacion->dias_objetivo ?? 5);
 
             // Colorear resultado basado en performance
@@ -490,6 +669,10 @@ class ExcelReportService
         }
 
         // Autoajustar columnas
+        foreach (range('A', 'Q') as $col) {
+            $dataSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+    }        // Autoajustar columnas
         foreach (range('A', 'Q') as $col) {
             $dataSheet->getColumnDimension($col)->setAutoSize(true);
         }

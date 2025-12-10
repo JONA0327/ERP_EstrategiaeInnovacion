@@ -14,6 +14,8 @@
         window.idiomaColumnas = '{{ $idiomaColumnas ?? "es" }}';
         // Nombres de las columnas según idioma
         window.nombresColumnas = @json($nombresColumnas ?? []);
+        // Columnas ordenadas para el ejecutivo actual
+        window.columnasOrdenadasConfig = @json($columnasOrdenadas ?? []);
     </script>
     <script src="{{ asset('js/Logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
 @endpush
@@ -110,8 +112,13 @@
 
             <!-- Tabla Principal -->
             <div class="table-container rounded-2xl overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                <!-- Scroll superior sincronizado -->
+                <div id="scrollSuperior" class="overflow-x-auto" style="overflow-y: hidden; height: 20px; margin-bottom: -1px;">
+                    <div id="scrollSuperiorInner" style="height: 1px;"></div>
+                </div>
+                <!-- Contenedor de la tabla con scroll -->
+                <div id="scrollInferior" class="overflow-x-auto">
+                    <table class="w-full text-sm" id="tablaMatriz">
                         <thead class="table-header">
                             <tr>
                                 @if(!in_array('id', $columnasPredeterminadasOcultas ?? []))
@@ -413,10 +420,115 @@
                 </div>
             </div>
 
+            <!-- Controles de Paginación -->
+            @if($operaciones->hasPages())
+            <div class="mt-4 bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg p-4">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-slate-600">
+                        Mostrando <span class="font-semibold text-blue-600">{{ $operaciones->firstItem() ?? 0 }}</span> 
+                        a <span class="font-semibold text-blue-600">{{ $operaciones->lastItem() ?? 0 }}</span> 
+                        de <span class="font-semibold text-blue-600">{{ $operaciones->total() }}</span> operaciones
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        {{-- Botón Primera Página --}}
+                        @if($operaciones->onFirstPage())
+                            <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                                </svg>
+                            </span>
+                        @else
+                            <a href="{{ $operaciones->url(1) }}" class="px-3 py-2 bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                                </svg>
+                            </a>
+                        @endif
+                        
+                        {{-- Botón Anterior --}}
+                        @if($operaciones->onFirstPage())
+                            <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </span>
+                        @else
+                            <a href="{{ $operaciones->previousPageUrl() }}" class="px-3 py-2 bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </a>
+                        @endif
+                        
+                        {{-- Números de Página --}}
+                        <div class="flex items-center gap-1">
+                            @php
+                                $currentPage = $operaciones->currentPage();
+                                $lastPage = $operaciones->lastPage();
+                                $start = max(1, $currentPage - 2);
+                                $end = min($lastPage, $currentPage + 2);
+                            @endphp
+                            
+                            @if($start > 1)
+                                <a href="{{ $operaciones->url(1) }}" class="px-3 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">1</a>
+                                @if($start > 2)
+                                    <span class="px-2 text-slate-400">...</span>
+                                @endif
+                            @endif
+                            
+                            @for($i = $start; $i <= $end; $i++)
+                                @if($i == $currentPage)
+                                    <span class="px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold">{{ $i }}</span>
+                                @else
+                                    <a href="{{ $operaciones->url($i) }}" class="px-3 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">{{ $i }}</a>
+                                @endif
+                            @endfor
+                            
+                            @if($end < $lastPage)
+                                @if($end < $lastPage - 1)
+                                    <span class="px-2 text-slate-400">...</span>
+                                @endif
+                                <a href="{{ $operaciones->url($lastPage) }}" class="px-3 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">{{ $lastPage }}</a>
+                            @endif
+                        </div>
+                        
+                        {{-- Botón Siguiente --}}
+                        @if($operaciones->hasMorePages())
+                            <a href="{{ $operaciones->nextPageUrl() }}" class="px-3 py-2 bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        @else
+                            <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </span>
+                        @endif
+                        
+                        {{-- Botón Última Página --}}
+                        @if($operaciones->hasMorePages())
+                            <a href="{{ $operaciones->url($operaciones->lastPage()) }}" class="px-3 py-2 bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        @else
+                            <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                                </svg>
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
 
-
-            <!-- Footer/Paginación -->
-            <div class="mt-6 bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg p-4">
+            <!-- Footer/Leyenda -->
+            <div class="mt-4 bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg p-4">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-slate-600">
                         Mostrando operaciones con días de tránsito calculados automáticamente
@@ -1236,7 +1348,7 @@
                         </div>
                     
                         <!-- Columnas Opcionales -->
-                        <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                        <div class="bg-purple-50 rounded-xl p-4 mb-6 border border-purple-200">
                             <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
                                 <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
@@ -1246,21 +1358,45 @@
                             <p class="text-xs text-purple-600 mb-3">Estas columnas están ocultas por defecto. Marque las que desee mostrar para este ejecutivo.</p>
                             <div id="columnasOpcionalesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                             </div>
-                            
-                            <div class="flex justify-between items-center">
-                                <button type="button" onclick="resetearConfiguracionColumnas()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </div>
+                        
+                        <!-- NUEVO: Ordenar Columnas con Botones -->
+                        <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                </svg>
+                                Ordenar Columnas (Use las flechas ▲▼ para reordenar)
+                            </h4>
+                            <p class="text-xs text-blue-600 mb-3">
+                                <span class="inline-flex items-center"><span class="text-green-500 mr-1">●</span> Predeterminadas</span>
+                                <span class="inline-flex items-center ml-3"><span class="text-purple-500 mr-1">◆</span> Opcionales</span>
+                                <span class="inline-flex items-center ml-3"><span class="text-indigo-500 mr-1">★</span> Personalizadas</span>
+                            </p>
+                            <div id="columnasOrdenList" class="space-y-2 max-h-96 overflow-y-auto">
+                                <div class="text-center py-4 text-gray-500">
+                                    <svg class="animate-spin h-6 w-6 mx-auto mb-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Resetear a Predeterminados
-                                </button>
-                                <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    Guardar Configuración
-                                </button>
+                                    Seleccione un ejecutivo para ver las columnas...
+                                </div>
                             </div>
+                        </div>
+                            
+                        <div class="flex justify-between items-center">
+                            <button type="button" onclick="resetearConfiguracionColumnas()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Resetear a Predeterminados
+                            </button>
+                            <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Guardar Configuración
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1365,13 +1501,10 @@
                             <div>
                                 <label class="block text-sm font-medium text-green-700 mb-1">Mostrar después de</label>
                                 <select id="posicionNuevoCampo" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                    <option value="">Al final de la tabla</option>
-                                    <option value="comentarios">Comentarios</option>
-                                    <option value="post_operaciones">Post-Operaciones</option>
-                                    <option value="dias_transito">Días en Tránsito</option>
-                                    <option value="target">Target</option>
-                                    <option value="resultado">Resultado</option>
+                                    <option value="">-- Al final de la tabla --</option>
+                                    <!-- Se cargará dinámicamente -->
                                 </select>
+                                <p class="text-xs text-green-600 mt-1">Las opciones se cargan según las columnas activas</p>
                             </div>
                             <div>
                                 <label class="flex items-center text-sm font-medium text-green-700 mt-6">

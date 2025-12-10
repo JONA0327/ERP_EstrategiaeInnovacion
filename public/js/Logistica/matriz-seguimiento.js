@@ -5,6 +5,159 @@ let transportes = window.transportes || {};
 let operacionActualId = null;
 
 // ========================================
+// SISTEMA DE REORDENAMIENTO DE COLUMNAS EN TABLA
+// ========================================
+
+/**
+ * Reordena las columnas de la tabla según la configuración guardada
+ * Esta función se ejecuta al cargar la página
+ */
+window.reordenarColumnasTabla = function() {
+    const columnasOrdenadas = window.columnasOrdenadasConfig || [];
+    if (!columnasOrdenadas.length) return;
+    
+    // Solo considerar columnas visibles en el orden configurado
+    const columnasVisibles = columnasOrdenadas.filter(col => col.visible !== false);
+    if (!columnasVisibles.length) return;
+    
+    const table = document.querySelector('.table-container table');
+    if (!table) return;
+    
+    const thead = table.querySelector('thead tr');
+    const tbody = table.querySelector('tbody');
+    if (!thead || !tbody) return;
+    
+    // Mapeo de nombres de columnas a índices actuales
+    const mapaColumnas = {
+        'id': 'No.',
+        'ejecutivo': 'Ejecutivo',
+        'operacion': 'Operación',
+        'cliente': 'Cliente',
+        'proveedor_o_cliente': 'Proveedor o Cliente',
+        'fecha_embarque': 'Fecha de Embarque',
+        'no_factura': 'No. De Factura',
+        'tipo_carga': 'Tipo de Carga',
+        'tipo_incoterm': 'Incoterm',
+        'tipo_operacion_enum': 'T. Operación',
+        'clave': 'Clave',
+        'referencia_interna': 'Referencia Interna',
+        'aduana': 'Aduana',
+        'agente_aduanal': 'A.A',
+        'referencia_aa': 'Referencia A.A',
+        'no_pedimento': 'No Ped',
+        'transporte': 'Transporte',
+        'fecha_arribo_aduana': 'Fecha de Arribo a Aduana',
+        'guia_bl': 'Guía/BL',
+        'puerto_salida': 'Puerto de Salida',
+        'in_charge': 'Responsable',
+        'proveedor': 'Proveedor',
+        'tipo_previo': 'Modalidad/Previo',
+        'fecha_etd': 'Fecha ETD',
+        'fecha_zarpe': 'Fecha Zarpe',
+        'pedimento_en_carpeta': 'Ped. en Carpeta',
+        'referencia_cliente': 'Ref. Cliente',
+        'mail_subject': 'Asunto Correo',
+        'status': 'Status',
+        'fecha_modulacion': 'Fecha de Modulación',
+        'fecha_arribo_planta': 'Fecha de Arribo a Planta',
+        'resultado': 'Resultado',
+        'target': 'Target',
+        'dias_transito': 'Días en Tránsito',
+        'post_operaciones': 'Post-Operaciones',
+        'comentarios': 'Comentarios'
+    };
+    
+    // Obtener todos los th actuales
+    const thElements = Array.from(thead.querySelectorAll('th'));
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Encontrar índice de cada columna por su data-columna o texto
+    const indicesOriginales = {};
+    thElements.forEach((th, index) => {
+        const dataColumna = th.dataset.columna;
+        const texto = th.textContent.trim();
+        
+        // Buscar en el mapa
+        for (const [key, value] of Object.entries(mapaColumnas)) {
+            if (dataColumna === key || texto.includes(value) || texto.includes(window.nombresColumnas?.[key] || '')) {
+                indicesOriginales[key] = index;
+                th.dataset.columna = key; // Marcar para futuro uso
+                break;
+            }
+        }
+        
+        // Campos personalizados
+        if (th.classList.contains('campo-personalizado') || th.dataset.campoId) {
+            indicesOriginales['campo_' + th.dataset.campoId] = index;
+        }
+    });
+    
+    console.log('Configuración de columnas ordenadas aplicada.');
+};
+
+// ========================================
+// SCROLL SINCRONIZADO SUPERIOR E INFERIOR
+// ========================================
+
+/**
+ * Inicializa el scroll sincronizado entre el scroll superior y el de la tabla
+ */
+window.inicializarScrollSincronizado = function() {
+    const scrollSuperior = document.getElementById('scrollSuperior');
+    const scrollInferior = document.getElementById('scrollInferior');
+    const scrollSuperiorInner = document.getElementById('scrollSuperiorInner');
+    const tabla = document.getElementById('tablaMatriz');
+    
+    if (!scrollSuperior || !scrollInferior || !scrollSuperiorInner || !tabla) {
+        return;
+    }
+    
+    // Establecer el ancho del div interno igual al de la tabla
+    const actualizarAnchoScroll = function() {
+        scrollSuperiorInner.style.width = tabla.scrollWidth + 'px';
+    };
+    
+    actualizarAnchoScroll();
+    
+    // Sincronizar scrolls
+    let sincronizando = false;
+    
+    scrollSuperior.addEventListener('scroll', function() {
+        if (!sincronizando) {
+            sincronizando = true;
+            scrollInferior.scrollLeft = scrollSuperior.scrollLeft;
+            sincronizando = false;
+        }
+    });
+    
+    scrollInferior.addEventListener('scroll', function() {
+        if (!sincronizando) {
+            sincronizando = true;
+            scrollSuperior.scrollLeft = scrollInferior.scrollLeft;
+            sincronizando = false;
+        }
+    });
+    
+    // Actualizar cuando cambie el tamaño de la ventana
+    window.addEventListener('resize', actualizarAnchoScroll);
+    
+    // Actualizar después de que se carguen los datos (por si hay cambios)
+    setTimeout(actualizarAnchoScroll, 500);
+    setTimeout(actualizarAnchoScroll, 1500);
+};
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarScrollSincronizado();
+});
+
+// Ejecutar reordenamiento al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    // Por ahora deshabilitado mientras se implementa completamente
+    // reordenarColumnasTabla();
+});
+
+// ========================================
 // SISTEMA DE FILTROS
 // ========================================
 
@@ -83,7 +236,67 @@ window.cambiarTabConfig = function(tab) {
         panelColumnas.classList.add('hidden');
         cargarCamposPersonalizados();
         cargarEjecutivosParaCampos();
+        cargarOpcionesPosicionCampo(); // Cargar opciones dinámicas
     }
+};
+
+/**
+ * Cargar opciones dinámicas para el select "Mostrar después de"
+ */
+window.cargarOpcionesPosicionCampo = function() {
+    const select = document.getElementById('posicionNuevoCampo');
+    if (!select) return;
+    
+    // Obtener el idioma seleccionado
+    const idioma = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
+    
+    // Obtener configuración de columnas
+    fetch('/logistica/columnas-config')
+        .then(response => response.json())
+        .then(data => {
+            const columnasPred = idioma === 'en' ? (data.columnas_predeterminadas_en || {}) : (data.columnas_predeterminadas_es || {});
+            const columnasOpc = idioma === 'en' ? (data.columnas_opcionales_en || {}) : (data.columnas_opcionales_es || {});
+            
+            let html = '<option value="">-- ' + (idioma === 'en' ? 'At the end of the table' : 'Al final de la tabla') + ' --</option>';
+            
+            // Agregar grupo de columnas predeterminadas
+            html += '<optgroup label="📋 ' + (idioma === 'en' ? 'Default Columns' : 'Columnas Predeterminadas') + '">';
+            Object.entries(columnasPred).forEach(([key, nombre]) => {
+                html += `<option value="${key}">● ${nombre}</option>`;
+            });
+            html += '</optgroup>';
+            
+            // Agregar grupo de columnas opcionales
+            html += '<optgroup label="🔧 ' + (idioma === 'en' ? 'Optional Columns' : 'Columnas Opcionales') + '">';
+            Object.entries(columnasOpc).forEach(([key, nombre]) => {
+                html += `<option value="${key}">◆ ${nombre}</option>`;
+            });
+            html += '</optgroup>';
+            
+            // Cargar campos personalizados existentes
+            return fetch('/logistica/campos-personalizados')
+                .then(res => res.json())
+                .then(campos => {
+                    if (campos && campos.length > 0) {
+                        html += '<optgroup label="★ ' + (idioma === 'en' ? 'Custom Fields' : 'Campos Personalizados') + '">';
+                        campos.forEach(campo => {
+                            html += `<option value="campo_${campo.id}">★ ${campo.nombre}</option>`;
+                        });
+                        html += '</optgroup>';
+                    }
+                    
+                    select.innerHTML = html;
+                });
+        })
+        .catch(error => {
+            console.error('Error cargando opciones de posición:', error);
+            // Fallback con opciones básicas
+            select.innerHTML = `
+                <option value="">-- ${idioma === 'en' ? 'At the end of the table' : 'Al final de la tabla'} --</option>
+                <option value="comentarios">${idioma === 'en' ? 'Comments' : 'Comentarios'}</option>
+                <option value="post_operaciones">${idioma === 'en' ? 'Post-Operations' : 'Post-Operaciones'}</option>
+            `;
+        });
 };
 
 /**
@@ -151,6 +364,42 @@ window.cambiarIdiomaColumnas = function() {
             cb.checked = opcionalesMarcadas.includes(cb.dataset.columna);
         });
     }
+    
+    // Actualizar también la lista de columnas ordenables con el nuevo idioma
+    actualizarIdiomaColumnasOrdenables(idiomaSeleccionado);
+    
+    // Actualizar el dropdown de "Mostrar después de" con el nuevo idioma
+    cargarOpcionesPosicionCampo();
+};
+
+/**
+ * Actualizar los nombres de las columnas ordenables según el idioma
+ */
+window.actualizarIdiomaColumnasOrdenables = function(idioma) {
+    const container = document.getElementById('columnasOrdenList');
+    if (!container) return;
+    
+    const items = container.querySelectorAll('.columna-ordenable');
+    if (items.length === 0) return;
+    
+    const columnasPred = columnasPredeterminadasConfig[idioma] || columnasPredeterminadasConfig['es'] || {};
+    const columnasOpc = columnasOpcionalesConfig[idioma] || columnasOpcionalesConfig['es'] || {};
+    
+    items.forEach(item => {
+        const columna = item.dataset.columna;
+        const nombreSpan = item.querySelector('.nombre-columna');
+        if (!nombreSpan) return;
+        
+        // Buscar el nombre en predeterminadas
+        if (columnasPred[columna]) {
+            nombreSpan.textContent = columnasPred[columna];
+        }
+        // Buscar en opcionales
+        else if (columnasOpc[columna]) {
+            nombreSpan.textContent = columnasOpc[columna];
+        }
+        // Los campos personalizados mantienen su nombre original
+    });
 };
 
 /**
@@ -280,10 +529,332 @@ window.cargarColumnasEjecutivo = function() {
                     if (checkbox) checkbox.checked = true;
                 });
             }
+            
+            // Cargar lista de columnas ordenables
+            cargarColumnasOrdenables(empleadoId);
         })
         .catch(error => {
             console.error('Error cargando configuración:', error);
         });
+};
+
+/**
+ * Cargar la lista de columnas ordenables para drag & drop
+ */
+window.cargarColumnasOrdenables = function(empleadoId) {
+    const container = document.getElementById('columnasOrdenList');
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <svg class="animate-spin h-6 w-6 mx-auto mb-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Cargando columnas...
+            </div>
+        `;
+    }
+    
+    fetch(`/logistica/columnas-config/ordenadas/${empleadoId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Columnas ordenadas recibidas:', data);
+            if (data.success && data.columnas && data.columnas.length > 0) {
+                renderizarColumnasOrdenables(data.columnas, data.idioma);
+            } else {
+                // Si no hay configuración, mostrar orden por defecto
+                console.log('Sin configuración guardada, usando valores por defecto');
+                renderizarColumnasOrdenablesDefault();
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando columnas ordenables:', error);
+            renderizarColumnasOrdenablesDefault();
+        });
+};
+
+/**
+ * Renderizar la lista de columnas ordenables con drag & drop
+ */
+window.renderizarColumnasOrdenables = function(columnas, idioma = 'es') {
+    const container = document.getElementById('columnasOrdenList');
+    if (!container) {
+        console.error('No se encontró el contenedor columnasOrdenList');
+        return;
+    }
+    
+    console.log('Renderizando', columnas.length, 'columnas ordenables');
+    
+    let html = '';
+    columnas.forEach((col, index) => {
+        let visibleClass = col.visible ? 'bg-white border-blue-300' : 'bg-gray-100 border-gray-300 opacity-60';
+        let tipoIcon = '';
+        let tipoBadge = '';
+        
+        if (col.personalizado) {
+            tipoIcon = '<span class="text-indigo-500 text-xs mr-2">★</span>';
+            tipoBadge = '<span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded ml-2">Personalizado</span>';
+            visibleClass = col.visible ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-100 border-gray-300 opacity-60';
+        } else if (col.predeterminada) {
+            tipoIcon = '<span class="text-green-500 text-xs mr-2">●</span>';
+            tipoBadge = '';
+        } else if (col.opcional) {
+            tipoIcon = '<span class="text-purple-500 text-xs mr-2">◆</span>';
+            tipoBadge = '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">Opcional</span>';
+        }
+        
+        html += `
+            <div class="columna-ordenable flex items-center p-3 rounded-lg border-2 ${visibleClass} transition-all hover:shadow-md"
+                 data-columna="${col.columna}"
+                 data-orden="${index}"
+                 data-visible="${col.visible ? '1' : '0'}"
+                 data-tipo="${col.personalizado ? 'personalizado' : (col.predeterminada ? 'predeterminada' : 'opcional')}">
+                
+                <!-- Botones para mover -->
+                <div class="flex flex-col mr-2">
+                    <button type="button" onclick="moverColumnaArriba(this)" class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Mover arriba">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="moverColumnaAbajo(this)" class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Mover abajo">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <span class="orden-numero bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-3">${index + 1}</span>
+                ${tipoIcon}
+                <span class="nombre-columna flex-1 font-medium text-slate-700" data-columna="${col.columna}">${col.nombre}</span>
+                ${tipoBadge}
+                <label class="flex items-center ml-3 cursor-pointer">
+                    <input type="checkbox" class="columna-visible-check w-4 h-4 text-blue-600 rounded" 
+                           data-columna="${col.columna}" 
+                           ${col.visible ? 'checked' : ''} 
+                           onchange="toggleVisibilidadColumna(this)">
+                    <span class="ml-1 text-xs text-gray-500">Visible</span>
+                </label>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    console.log('Columnas renderizadas con botones de ordenamiento');
+};
+
+/**
+ * Mover columna hacia arriba
+ */
+window.moverColumnaArriba = function(btn) {
+    const item = btn.closest('.columna-ordenable');
+    const container = document.getElementById('columnasOrdenList');
+    const prevItem = item.previousElementSibling;
+    
+    if (prevItem && prevItem.classList.contains('columna-ordenable')) {
+        container.insertBefore(item, prevItem);
+        actualizarNumerosOrden();
+    }
+};
+
+/**
+ * Mover columna hacia abajo
+ */
+window.moverColumnaAbajo = function(btn) {
+    const item = btn.closest('.columna-ordenable');
+    const container = document.getElementById('columnasOrdenList');
+    const nextItem = item.nextElementSibling;
+    
+    if (nextItem && nextItem.classList.contains('columna-ordenable')) {
+        container.insertBefore(nextItem, item);
+        actualizarNumerosOrden();
+    }
+};
+
+/**
+ * Renderizar columnas ordenables con valores por defecto
+ */
+window.renderizarColumnasOrdenablesDefault = function() {
+    const idioma = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
+    
+    // Obtener columnas predeterminadas y opcionales desde el config cargado
+    const columnasPred = columnasPredeterminadasConfig[idioma] || columnasPredeterminadasConfig['es'] || {};
+    const columnasOpc = columnasOpcionalesConfig[idioma] || columnasOpcionalesConfig['es'] || {};
+    
+    const columnas = [];
+    let orden = 0;
+    
+    // Primero predeterminadas
+    Object.entries(columnasPred).forEach(([key, nombre]) => {
+        columnas.push({
+            columna: key,
+            nombre: nombre,
+            visible: true,
+            orden: orden++,
+            predeterminada: true
+        });
+    });
+    
+    // Luego opcionales
+    Object.entries(columnasOpc).forEach(([key, nombre]) => {
+        columnas.push({
+            columna: key,
+            nombre: nombre,
+            visible: false,
+            orden: orden++,
+            predeterminada: false
+        });
+    });
+    
+    renderizarColumnasOrdenables(columnas, idioma);
+};
+
+// Variable global para el elemento arrastrado
+let elementoArrastrado = null;
+
+/**
+ * Inicializar el sistema de drag and drop
+ */
+window.inicializarDragAndDrop = function() {
+    const container = document.getElementById('columnasOrdenList');
+    if (!container) {
+        console.error('No se encontró el contenedor para drag & drop');
+        return;
+    }
+    
+    // Remover listeners anteriores clonando y reemplazando el contenedor
+    const items = container.querySelectorAll('.columna-ordenable');
+    
+    console.log('Inicializando drag & drop para', items.length, 'items');
+    
+    items.forEach(item => {
+        // Hacer el elemento arrastrable
+        item.setAttribute('draggable', 'true');
+        
+        // Drag Start
+        item.ondragstart = function(e) {
+            elementoArrastrado = this;
+            this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            console.log('Arrastrando:', this.dataset.columna);
+        };
+        
+        // Drag End
+        item.ondragend = function(e) {
+            this.style.opacity = '1';
+            elementoArrastrado = null;
+            
+            // Limpiar indicadores visuales
+            items.forEach(el => {
+                el.style.borderTop = '';
+                el.style.borderBottom = '';
+                el.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+            
+            actualizarNumerosOrden();
+            console.log('Soltar completado');
+        };
+        
+        // Drag Over
+        item.ondragover = function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            if (!elementoArrastrado || elementoArrastrado === this) return;
+            
+            const rect = this.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            // Limpiar estilos de este elemento
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+            
+            if (e.clientY < midY) {
+                this.style.borderTop = '3px solid #3b82f6';
+            } else {
+                this.style.borderBottom = '3px solid #3b82f6';
+            }
+        };
+        
+        // Drag Leave
+        item.ondragleave = function(e) {
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+        };
+        
+        // Drop
+        item.ondrop = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+            
+            if (elementoArrastrado && elementoArrastrado !== this) {
+                const rect = this.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                
+                if (e.clientY < midY) {
+                    container.insertBefore(elementoArrastrado, this);
+                } else {
+                    container.insertBefore(elementoArrastrado, this.nextSibling);
+                }
+                
+                console.log('Movido:', elementoArrastrado.dataset.columna, 'cerca de:', this.dataset.columna);
+            }
+        };
+    });
+    
+    // Permitir soltar al final del contenedor
+    container.ondragover = function(e) {
+        e.preventDefault();
+    };
+    
+    container.ondrop = function(e) {
+        e.preventDefault();
+    };
+    
+    console.log('Drag & drop listo');
+};
+
+/**
+ * Actualizar los números de orden después de reordenar
+ */
+window.actualizarNumerosOrden = function() {
+    const items = document.querySelectorAll('.columna-ordenable');
+    items.forEach((item, index) => {
+        const numeroSpan = item.querySelector('.orden-numero');
+        if (numeroSpan) {
+            numeroSpan.textContent = index + 1;
+        }
+        item.dataset.orden = index;
+    });
+};
+
+/**
+ * Toggle visibilidad de una columna en la lista ordenable
+ */
+window.toggleVisibilidadColumna = function(checkbox) {
+    const item = checkbox.closest('.columna-ordenable');
+    if (!item) return;
+    
+    const visible = checkbox.checked;
+    item.dataset.visible = visible ? '1' : '0';
+    
+    // Actualizar estilos visuales
+    if (visible) {
+        item.classList.remove('bg-gray-100', 'border-gray-300', 'opacity-60');
+        const tipo = item.dataset.tipo;
+        if (tipo === 'personalizado') {
+            item.classList.add('bg-indigo-50', 'border-indigo-300');
+        } else {
+            item.classList.add('bg-white', 'border-blue-300');
+        }
+    } else {
+        item.classList.remove('bg-white', 'border-blue-300', 'bg-indigo-50', 'border-indigo-300');
+        item.classList.add('bg-gray-100', 'border-gray-300', 'opacity-60');
+    }
 };
 
 /**
@@ -328,22 +899,41 @@ window.guardarConfiguracionColumnas = function() {
         return;
     }
     
-    // Recoger columnas opcionales marcadas
-    const columnasOpcionales = [];
-    document.querySelectorAll('.columna-opcional:checked').forEach(checkbox => {
-        columnasOpcionales.push(checkbox.dataset.columna);
-    });
-    
-    // Recoger columnas predeterminadas marcadas
-    const columnasPredeterminadas = [];
-    document.querySelectorAll('.columna-predeterminada:checked').forEach(checkbox => {
-        columnasPredeterminadas.push(checkbox.dataset.columna);
-    });
-    
     // Obtener idioma seleccionado
     const idioma = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
     
-    fetch('/logistica/columnas-config', {
+    // Construir el array de columnas con orden y visibilidad desde la lista ordenable
+    const ordenColumnas = [];
+    const ordenCamposPersonalizados = [];
+    const items = document.querySelectorAll('.columna-ordenable');
+    
+    items.forEach((item, index) => {
+        const columna = item.dataset.columna;
+        const tipo = item.dataset.tipo;
+        
+        // Obtener visibilidad desde el checkbox dentro del item
+        const checkbox = item.querySelector('.columna-visible-check');
+        const visible = checkbox ? checkbox.checked : (item.dataset.visible === '1');
+        
+        // Separar campos personalizados de columnas normales
+        if (columna.startsWith('campo_')) {
+            const campoId = columna.replace('campo_', '');
+            ordenCamposPersonalizados.push({
+                campo_id: parseInt(campoId),
+                orden: index,
+                visible: visible
+            });
+        } else {
+            ordenColumnas.push({
+                columna: columna,
+                orden: index,
+                visible: visible
+            });
+        }
+    });
+    
+    // Guardar la configuración completa con orden
+    fetch('/logistica/columnas-config/orden', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -351,17 +941,17 @@ window.guardarConfiguracionColumnas = function() {
         },
         body: JSON.stringify({
             empleado_id: ejecutivoSeleccionadoColumnas,
-            columnas_opcionales: columnasOpcionales,
-            columnas_predeterminadas: columnasPredeterminadas,
+            orden_columnas: ordenColumnas,
+            orden_campos_personalizados: ordenCamposPersonalizados,
             idioma: idioma
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            mostrarAlerta('Configuración guardada exitosamente. Recarga la página para ver los cambios.', 'success');
+            mostrarAlerta('Configuración y orden de columnas guardados exitosamente. Recarga la página para ver los cambios.', 'success');
         } else {
-            mostrarAlerta('Error al guardar la configuración', 'error');
+            mostrarAlerta('Error al guardar la configuración: ' + (data.message || ''), 'error');
         }
     })
     .catch(error => {
