@@ -74,6 +74,9 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::put('/logistica/transportes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'updateTransporte'])->name('logistica.transportes.update');
     Route::delete('/logistica/transportes/{id}', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'destroyTransporte'])->name('logistica.transportes.destroy');
 
+    // Rutas para catálogo de Incoterms
+    Route::get('/logistica/incoterms', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getIncoterms']);
+
     // Rutas para asignación de clientes a ejecutivos
     Route::post('/logistica/clientes/asignar-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'asignarClientesEjecutivo'])->name('logistica.clientes.asignar-ejecutivo');
     Route::get('/logistica/clientes/por-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getClientesPorEjecutivo'])->name('logistica.clientes.por-ejecutivo');

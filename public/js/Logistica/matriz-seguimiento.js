@@ -2919,6 +2919,45 @@ async function cargarCamposParaModal(ejecutivoNombre = null) {
     }
 }
 
+// Variable global para almacenar los incoterms cargados
+let incotermsDisponibles = [];
+
+/**
+ * Cargar catálogo de incoterms desde el servidor
+ */
+async function cargarIncoterms() {
+    try {
+        const response = await fetch('/logistica/incoterms');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.incoterms) {
+                incotermsDisponibles = data.incoterms;
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar incoterms:', error);
+        // Fallback con valores por defecto si falla la carga
+        incotermsDisponibles = [
+            { codigo: 'EXW', nombre: 'EXW - En Fábrica', grupo: 'E' },
+            { codigo: 'FCA', nombre: 'FCA - Franco Transportista', grupo: 'F' },
+            { codigo: 'FAS', nombre: 'FAS - Franco al Costado del Buque', grupo: 'F' },
+            { codigo: 'FOB', nombre: 'FOB - Franco a Bordo', grupo: 'F' },
+            { codigo: 'CFR', nombre: 'CFR - Coste y Flete', grupo: 'C' },
+            { codigo: 'CIF', nombre: 'CIF - Coste, Seguro y Flete', grupo: 'C' },
+            { codigo: 'CPT', nombre: 'CPT - Transporte Pagado Hasta', grupo: 'C' },
+            { codigo: 'CIP', nombre: 'CIP - Transporte y Seguro Pagados Hasta', grupo: 'C' },
+            { codigo: 'DAP', nombre: 'DAP - Entregada en Lugar', grupo: 'D' },
+            { codigo: 'DPU', nombre: 'DPU - Entregada y Descargada', grupo: 'D' },
+            { codigo: 'DDP', nombre: 'DDP - Entregada Derechos Pagados', grupo: 'D' }
+        ];
+    }
+}
+
+// Cargar incoterms al inicio
+document.addEventListener('DOMContentLoaded', function() {
+    cargarIncoterms();
+});
+
 /**
  * Genera el HTML del input según el tipo de columna opcional
  */
@@ -2936,20 +2975,12 @@ function generarInputColumnaOpcional(columna, valorActual = '') {
                     </select>`;
         
         case 'tipo_incoterm':
-            return `<select name="${clave}" class="${baseClass}">
-                        <option value="">-- Seleccionar --</option>
-                        <option value="EXW" ${valorActual === 'EXW' ? 'selected' : ''}>EXW - Ex Works</option>
-                        <option value="FCA" ${valorActual === 'FCA' ? 'selected' : ''}>FCA - Free Carrier</option>
-                        <option value="FAS" ${valorActual === 'FAS' ? 'selected' : ''}>FAS - Free Alongside Ship</option>
-                        <option value="FOB" ${valorActual === 'FOB' ? 'selected' : ''}>FOB - Free On Board</option>
-                        <option value="CFR" ${valorActual === 'CFR' ? 'selected' : ''}>CFR - Cost and Freight</option>
-                        <option value="CIF" ${valorActual === 'CIF' ? 'selected' : ''}>CIF - Cost, Insurance and Freight</option>
-                        <option value="CPT" ${valorActual === 'CPT' ? 'selected' : ''}>CPT - Carriage Paid To</option>
-                        <option value="CIP" ${valorActual === 'CIP' ? 'selected' : ''}>CIP - Carriage and Insurance Paid To</option>
-                        <option value="DAP" ${valorActual === 'DAP' ? 'selected' : ''}>DAP - Delivered at Place</option>
-                        <option value="DPU" ${valorActual === 'DPU' ? 'selected' : ''}>DPU - Delivered at Place Unloaded</option>
-                        <option value="DDP" ${valorActual === 'DDP' ? 'selected' : ''}>DDP - Delivered Duty Paid</option>
-                    </select>`;
+            let opcionesIncoterm = '<option value="">-- Seleccionar Incoterm --</option>';
+            incotermsDisponibles.forEach(inc => {
+                const selected = valorActual === inc.codigo ? 'selected' : '';
+                opcionesIncoterm += `<option value="${inc.codigo}" ${selected}>${inc.nombre}</option>`;
+            });
+            return `<select name="${clave}" class="${baseClass}">${opcionesIncoterm}</select>`;
         
         case 'puerto_salida':
             return `<input type="text" name="${clave}" class="${baseClass}" 

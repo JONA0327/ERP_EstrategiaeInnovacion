@@ -1460,6 +1460,30 @@ class OperacionLogisticaController extends Controller
     }
 
     /**
+     * Obtener catálogo de Incoterms activos
+     */
+    public function getIncoterms()
+    {
+        try {
+            $incoterms = \App\Models\Logistica\Incoterm::activos()
+                ->ordenados()
+                ->get(['id', 'codigo', 'nombre', 'descripcion', 'grupo']);
+
+            return response()->json([
+                'success' => true,
+                'incoterms' => $incoterms
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener incoterms:', ['message' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener los incoterms: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Asignar mltiples clientes a un ejecutivo
      */
     public function asignarClientesEjecutivo(Request $request)

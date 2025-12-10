@@ -69,6 +69,15 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // 6.1 Incoterms (Catálogo)
+        Schema::create('incoterms', function (Blueprint $table) {
+            $table->id();
+            $table->string('clave', 20)->unique();
+            $table->text('descripcion');
+            $table->boolean('activo')->default(true);
+            $table->timestamps();
+        });
+
         // 7. Campos Personalizados
         Schema::create('campos_personalizados_matriz', function (Blueprint $table) {
             $table->id();
@@ -276,6 +285,7 @@ return new class extends Migration
         Schema::dropIfExists('columnas_visibles_ejecutivo');
         Schema::dropIfExists('campo_personalizado_ejecutivo');
         Schema::dropIfExists('campos_personalizados_matriz');
+        Schema::dropIfExists('incoterms');
         Schema::dropIfExists('pedimentos');
         Schema::dropIfExists('logistica_correos_cc');
         Schema::dropIfExists('clientes');
