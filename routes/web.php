@@ -77,6 +77,11 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     // Rutas para catálogo de Incoterms
     Route::get('/logistica/incoterms', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getIncoterms']);
 
+    // Rutas para importación de Excel (oculta - solo admin)
+    Route::get('/logistica/importar-excel', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'vistaImportarExcel'])->name('logistica.importar-excel');
+    Route::post('/logistica/importar-excel', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'importarExcel'])->name('logistica.importar-excel.procesar');
+    Route::get('/logistica/mapeo-columnas', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'obtenerMapeoColumnas'])->name('logistica.mapeo-columnas');
+
     // Rutas para asignación de clientes a ejecutivos
     Route::post('/logistica/clientes/asignar-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'asignarClientesEjecutivo'])->name('logistica.clientes.asignar-ejecutivo');
     Route::get('/logistica/clientes/por-ejecutivo', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getClientesPorEjecutivo'])->name('logistica.clientes.por-ejecutivo');

@@ -1484,6 +1484,165 @@ class OperacionLogisticaController extends Controller
     }
 
     /**
+     * Vista oculta para importar Excel de Matriz de Operación
+     * Solo accesible por admins
+     */
+    public function vistaImportarExcel()
+    {
+        // Verificar que sea admin
+        $usuarioActual = auth()->user();
+        if (!$usuarioActual || !$usuarioActual->hasRole('admin')) {
+            abort(403, 'Acceso no autorizado');
+        }
+
+        // Obtener lista de ejecutivos para el select
+        $ejecutivos = Empleado::where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'correo']);
+
+        return view('logistica.importar-excel', compact('ejecutivos'));
+    }
+
+    /**
+     * Procesar importación de Excel de Matriz de Operación
+     */
+    public function importarExcel(Request $request)
+    {
+        // Verificar que sea admin
+        $usuarioActual = auth()->user();
+        if (!$usuarioActual || !$usuarioActual->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para realizar esta acción'
+            ], 403);
+        }
+
+        $request->validate([
+            'archivo_excel' => 'required|mimes:xlsx,xls,csv|max:10240', // max 10MB
+            'ejecutivo_id' => 'nullable|exists:empleados,id',
+        ]);
+
+        try {
+            $empleadoId = $request->ejecutivo_id;
+            
+            $import = new \App\Imports\MatrizLogisticaImport($empleadoId);
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('archivo_excel'));
+
+            // Obtener información del resultado
+            $hojaImport = $import->sheets()[0];
+            $columnasActivadas = $hojaImport->getColumnasActivadas();
+            $camposCreados = $hojaImport->getCamposPersonalizadosCreados();
+
+            $mensaje = 'Importación completada exitosamente.';
+            
+            if (!empty($columnasActivadas)) {
+                $mensaje .= ' Se activaron ' . count($columnasActivadas) . ' columnas opcionales para el ejecutivo.';
+            }
+            
+            if (!empty($camposCreados)) {
+                $mensaje .= ' Se crearon ' . count($camposCreados) . ' campos personalizados nuevos.';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'columnas_activadas' => $columnasActivadas,
+                'campos_creados' => $camposCreados
+            ]);
+
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errores = [];
+            foreach ($failures as $failure) {
+                $errores[] = "Fila {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación en el archivo',
+                'errores' => $errores
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al importar Excel:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener el mapeo de columnas para previsualización
+     */
+    public function obtenerMapeoColumnas()
+    {
+        // Columnas de la BD
+        $columnasBD = [
+            'folio' => 'No. Folio',
+            'operacion' => 'Operación/Process',
+            'cliente' => 'Cliente/Customer',
+            'ejecutivo' => 'Ejecutivo',
+            'agente_aduanal' => 'Agente Aduanal/Customer Broker',
+            'no_factura' => 'No. Factura/Invoice Number',
+            'proveedor' => 'Proveedor/Supplier Name',
+            'aduana' => 'Aduana/Customs MX',
+            'in_charge' => 'Responsable/In Charge',
+            'tipo_operacion_enum' => 'Tipo Operación/Freight',
+            'guia_bl' => 'Guía/BL/Tracking',
+            'fecha_etd' => 'Fecha ETD/Shipp Date ETD',
+            'fecha_zarpe' => 'Fecha Zarpe/Shipp Date Zarpe',
+            'fecha_arribo_aduana' => 'Fecha Arribo/Arriving Date',
+            'fecha_modulacion' => 'Fecha Salida Aduana',
+            'fecha_arribo_planta' => 'Fecha Arribo Planta/ETA Planta',
+            'status_manual' => 'Status/Estatus',
+            'no_pedimento' => 'Pedimento',
+            'referencia_cliente' => 'Referencia/REF',
+            'mail_subject' => 'Asunto Correo/Mail Subject',
+            'tipo_previo' => 'Modalidad/Previo',
+            'pedimento_en_carpeta' => 'Pedimento en Carpeta',
+            'tipo_carga' => 'Tipo de Carga',
+            'tipo_incoterm' => 'Incoterm',
+            'puerto_salida' => 'Puerto de Salida',
+            'transporte' => 'Transporte',
+            'referencia_aa' => 'Referencia AA',
+            'referencia_interna' => 'Referencia Interna',
+            'clave' => 'Clave',
+            'proveedor_o_cliente' => 'Proveedor o Cliente',
+            'comentarios' => 'Comentarios',
+            'target' => 'Target',
+            'dias_transito' => 'Días Tránsito',
+            'resultado' => 'Resultado',
+            'fecha_embarque' => 'Fecha Embarque',
+        ];
+
+        // Columnas opcionales que se pueden activar
+        $columnasOpcionales = [
+            'tipo_carga',
+            'tipo_incoterm',
+            'puerto_salida',
+            'in_charge',
+            'proveedor',
+            'tipo_previo',
+            'fecha_etd',
+            'fecha_zarpe',
+            'pedimento_en_carpeta',
+            'referencia_cliente',
+            'mail_subject',
+        ];
+
+        return response()->json([
+            'success' => true,
+            'columnas_bd' => $columnasBD,
+            'columnas_opcionales' => $columnasOpcionales
+        ]);
+    }
+
+    /**
      * Asignar mltiples clientes a un ejecutivo
      */
     public function asignarClientesEjecutivo(Request $request)

@@ -27,6 +27,9 @@ class OperacionLogistica extends Model
      * Atributos que se pueden asignar de forma masiva
      */
     protected $fillable = [
+        // Folio único para identificar la operación
+        'folio',
+        
         // Campos de nombres directos (no IDs) - ÚNICOS CAMPOS UTILIZADOS
         'ejecutivo',
         'cliente',
