@@ -2821,54 +2821,93 @@ window.eliminarCampoPersonalizado = function(campoId, nombre) {
 
 // Variable para almacenar campos del ejecutivo actual
 let camposDelEjecutivo = [];
+let columnasOpcionalesDelEjecutivo = [];
 
 /**
- * Cargar campos personalizados para el modal de operación
+ * Cargar campos adicionales para el modal de operación
+ * Incluye campos personalizados y columnas opcionales del ejecutivo
  */
 async function cargarCamposParaModal(ejecutivoNombre = null) {
     const container = document.getElementById('camposPersonalizadosContainer');
     const section = document.getElementById('camposPersonalizadosSection');
+    const nombreEjecutivoSpan = document.getElementById('nombreEjecutivoCampos');
+    const columnasContainer = document.getElementById('columnasOpcionalesContainer');
+    const columnasSubsection = document.getElementById('columnasOpcionalesSubsection');
+    const camposSubsection = document.getElementById('camposPersonalizadosSubsection');
+    const sinCamposDiv = document.getElementById('sinCamposAdicionales');
     
     if (!container || !section) return;
     
     try {
-        // Obtener campos del ejecutivo actual o todos si es admin
-        const response = await fetch('/logistica/campos-personalizados');
-        const campos = await response.json();
+        // Obtener campos adicionales del ejecutivo actual
+        const response = await fetch('/logistica/campos-adicionales');
+        const data = await response.json();
         
-        if (!campos || campos.length === 0) {
+        // Actualizar nombre del ejecutivo
+        if (nombreEjecutivoSpan && data.ejecutivo_nombre) {
+            nombreEjecutivoSpan.textContent = data.ejecutivo_nombre;
+        }
+        
+        // Si no tiene campos adicionales, ocultar la sección
+        if (!data.tiene_campos_adicionales) {
             section.classList.add('hidden');
             camposDelEjecutivo = [];
+            columnasOpcionalesDelEjecutivo = [];
             return;
         }
         
-        // Filtrar campos activos
-        const camposActivos = campos.filter(c => c.activo);
-        
-        if (camposActivos.length === 0) {
-            section.classList.add('hidden');
-            camposDelEjecutivo = [];
-            return;
-        }
-        
-        camposDelEjecutivo = camposActivos;
+        // Mostrar la sección principal
         section.classList.remove('hidden');
         
-        // Renderizar campos según su tipo
-        container.innerHTML = camposActivos.map(campo => {
-            return `
-                <div class="campo-personalizado-input">
-                    <label class="block text-sm font-medium text-slate-600 mb-2">
-                        <span class="text-indigo-600 mr-1">★</span>${campo.nombre}
-                        ${campo.requerido ? '<span class="text-red-500">*</span>' : ''}
-                    </label>
-                    ${generarInputCampoPersonalizado(campo)}
-                </div>
-            `;
-        }).join('');
+        // Procesar columnas opcionales
+        columnasOpcionalesDelEjecutivo = data.columnas_opcionales || [];
+        if (columnasOpcionalesDelEjecutivo.length > 0 && columnasContainer && columnasSubsection) {
+            columnasSubsection.classList.remove('hidden');
+            columnasContainer.innerHTML = columnasOpcionalesDelEjecutivo.map(col => {
+                return `
+                    <div class="columna-opcional-info bg-white rounded-lg p-3 border border-indigo-200">
+                        <div class="flex items-center">
+                            <span class="text-indigo-500 mr-2">📊</span>
+                            <span class="text-sm font-medium text-slate-700">${col.nombre}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Campo: ${col.clave}</p>
+                    </div>
+                `;
+            }).join('');
+        } else if (columnasSubsection) {
+            columnasSubsection.classList.add('hidden');
+        }
+        
+        // Procesar campos personalizados
+        const camposActivos = (data.campos_personalizados || []).filter(c => c.activo);
+        camposDelEjecutivo = camposActivos;
+        
+        if (camposActivos.length > 0 && camposSubsection) {
+            camposSubsection.classList.remove('hidden');
+            container.innerHTML = camposActivos.map(campo => {
+                return `
+                    <div class="campo-personalizado-input">
+                        <label class="block text-sm font-medium text-slate-600 mb-2">
+                            <span class="text-indigo-600 mr-1">★</span>${campo.nombre}
+                            ${campo.requerido ? '<span class="text-red-500">*</span>' : ''}
+                        </label>
+                        ${generarInputCampoPersonalizado(campo)}
+                    </div>
+                `;
+            }).join('');
+        } else if (camposSubsection) {
+            camposSubsection.classList.add('hidden');
+        }
+        
+        // Si no hay ni campos ni columnas opcionales
+        if (camposActivos.length === 0 && columnasOpcionalesDelEjecutivo.length === 0 && sinCamposDiv) {
+            sinCamposDiv.classList.remove('hidden');
+        } else if (sinCamposDiv) {
+            sinCamposDiv.classList.add('hidden');
+        }
         
     } catch (error) {
-        console.error('Error al cargar campos personalizados:', error);
+        console.error('Error al cargar campos adicionales:', error);
         section.classList.add('hidden');
     }
 }

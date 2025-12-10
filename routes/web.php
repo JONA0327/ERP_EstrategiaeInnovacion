@@ -165,6 +165,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica/campos-personalizados/ejecutivo/{ejecutivoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'camposPorEjecutivo']);
     Route::get('/logistica/campos-personalizados/operacion/{operacionId}/valores', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'valoresPorOperacion']);
     Route::post('/logistica/campos-personalizados/valor', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarValor']);
+    Route::get('/logistica/campos-adicionales', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'camposAdicionales']);
 
     // Rutas para Reportes Word
     Route::get('/logistica/operaciones/{id}/reporte-word', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'generarReporteWord'])->name('logistica.operaciones.reporte-word');

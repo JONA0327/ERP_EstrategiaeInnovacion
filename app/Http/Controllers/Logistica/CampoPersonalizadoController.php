@@ -45,6 +45,85 @@ class CampoPersonalizadoController extends Controller
     }
 
     /**
+     * Obtener campos adicionales del ejecutivo actual
+     * Incluye campos personalizados asignados y columnas opcionales activadas
+     */
+    public function camposAdicionales()
+    {
+        $usuario = auth()->user();
+        $empleado = null;
+        $esAdmin = false;
+        
+        if ($usuario) {
+            $esAdmin = $usuario->hasRole('admin');
+            $empleado = Empleado::where('correo', $usuario->email)
+                ->orWhere('nombre', 'like', '%' . $usuario->name . '%')
+                ->first();
+        }
+        
+        // Si no hay empleado y no es admin, devolver vacío
+        if (!$empleado && !$esAdmin) {
+            return response()->json([
+                'ejecutivo_nombre' => null,
+                'campos_personalizados' => [],
+                'columnas_opcionales' => [],
+                'tiene_campos_adicionales' => false
+            ]);
+        }
+        
+        $ejecutivoNombre = $empleado ? $empleado->nombre : 'Administrador';
+        
+        // Obtener campos personalizados
+        $camposPersonalizados = [];
+        if ($esAdmin) {
+            // Admin ve todos los campos activos
+            $camposPersonalizados = CampoPersonalizadoMatriz::where('activo', true)
+                ->ordenado()
+                ->get()
+                ->toArray();
+        } elseif ($empleado) {
+            // Usuario normal ve solo campos asignados a él
+            $camposPersonalizados = CampoPersonalizadoMatriz::where('activo', true)
+                ->whereHas('ejecutivos', function($q) use ($empleado) {
+                    $q->where('empleados.id', $empleado->id);
+                })
+                ->ordenado()
+                ->get()
+                ->toArray();
+        }
+        
+        // Obtener columnas opcionales visibles del ejecutivo
+        $columnasOpcionales = [];
+        if ($empleado) {
+            $columnasVisibles = ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleado->id);
+            $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleado->id);
+            
+            // Filtrar solo las columnas que son opcionales (no predeterminadas)
+            $todasOpcionales = ColumnaVisibleEjecutivo::$columnasOpcionales;
+            
+            foreach ($columnasVisibles as $columna) {
+                if (isset($todasOpcionales[$columna])) {
+                    $columnasOpcionales[] = [
+                        'clave' => $columna,
+                        'nombre' => $todasOpcionales[$columna][$idioma] ?? $todasOpcionales[$columna]['es'],
+                        'nombre_es' => $todasOpcionales[$columna]['es'],
+                        'nombre_en' => $todasOpcionales[$columna]['en']
+                    ];
+                }
+            }
+        }
+        
+        $tieneCamposAdicionales = !empty($camposPersonalizados) || !empty($columnasOpcionales);
+        
+        return response()->json([
+            'ejecutivo_nombre' => $ejecutivoNombre,
+            'campos_personalizados' => $camposPersonalizados,
+            'columnas_opcionales' => $columnasOpcionales,
+            'tiene_campos_adicionales' => $tieneCamposAdicionales
+        ]);
+    }
+
+    /**
      * Crear un nuevo campo personalizado
      */
     public function store(Request $request)
