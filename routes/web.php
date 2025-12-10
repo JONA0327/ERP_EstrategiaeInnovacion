@@ -148,6 +148,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         
         // Rutas para Campos Personalizados (solo admin)
         Route::get('/logistica/campos-personalizados', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'index']);
+        Route::get('/logistica/campos-personalizados/tipos', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'tipos']);
         Route::get('/logistica/campos-personalizados/ejecutivos', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'ejecutivos']);
         Route::post('/logistica/campos-personalizados', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'store']);
         Route::put('/logistica/campos-personalizados/{id}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'update']);
@@ -157,6 +158,7 @@ Route::middleware(['auth','area.logistica'])->group(function () {
         Route::get('/logistica/columnas-config', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasConfig']);
         Route::post('/logistica/columnas-config', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarColumnasConfig']);
         Route::get('/logistica/columnas-config/ejecutivo/{empleadoId}', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'getColumnasEjecutivo']);
+        Route::post('/logistica/columnas-config/idioma', [\App\Http\Controllers\Logistica\CampoPersonalizadoController::class, 'guardarIdiomaEjecutivo']);
     });
 
     // Rutas para Campos Personalizados (acceso general para obtener valores)

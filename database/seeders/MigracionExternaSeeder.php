@@ -108,7 +108,10 @@ class MigracionExternaSeeder extends Seeder
                 'color_status', 'dias_transcurridos_calculados', 'fecha_ultimo_calculo', 'comentarios',
                 'fecha_embarque', 'fecha_arribo_aduana', 'fecha_modulacion', 'fecha_arribo_planta',
                 'resultado', 'target', 'dias_transito', 'created_at', 'updated_at',
-                'post_operacion_id', 'post_operacion_status'
+                'post_operacion_id', 'post_operacion_status',
+                // Nuevos campos opcionales (del Excel)
+                'in_charge', 'proveedor', 'tipo_previo', 'fecha_etd', 'fecha_zarpe',
+                'pedimento_en_carpeta', 'referencia_cliente', 'mail_subject'
             ]);
 
             // 5.7 Post Operacion Operacion (Tabla pivot)

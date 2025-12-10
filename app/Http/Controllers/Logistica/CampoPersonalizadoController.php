@@ -24,6 +24,14 @@ class CampoPersonalizadoController extends Controller
     }
 
     /**
+     * Obtener tipos de campos disponibles
+     */
+    public function tipos()
+    {
+        return response()->json(CampoPersonalizadoMatriz::getTipos());
+    }
+
+    /**
      * Obtener ejecutivos de logística disponibles para asignación
      */
     public function ejecutivos()
@@ -41,19 +49,37 @@ class CampoPersonalizadoController extends Controller
      */
     public function store(Request $request)
     {
+        $tiposValidos = array_keys(CampoPersonalizadoMatriz::getTipos());
+        
         $request->validate([
             'nombre' => 'required|string|max:100',
-            'tipo' => 'required|in:texto,fecha',
+            'tipo' => 'required|in:' . implode(',', $tiposValidos),
+            'opciones' => 'nullable|array',
+            'configuracion' => 'nullable|array',
+            'requerido' => 'boolean',
             'mostrar_despues_de' => 'nullable|string|max:50',
             'ejecutivos' => 'array',
             'ejecutivos.*' => 'exists:empleados,id',
         ]);
+
+        // Validar que selector y multiple tengan opciones
+        if (in_array($request->tipo, ['selector', 'multiple'])) {
+            if (empty($request->opciones) || count($request->opciones) < 1) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Los campos de tipo selector o múltiple requieren al menos una opción.',
+                ], 422);
+            }
+        }
 
         $maxOrden = CampoPersonalizadoMatriz::max('orden') ?? 0;
 
         $campo = CampoPersonalizadoMatriz::create([
             'nombre' => $request->nombre,
             'tipo' => $request->tipo,
+            'opciones' => $request->opciones,
+            'configuracion' => $request->configuracion,
+            'requerido' => $request->boolean('requerido', false),
             'mostrar_despues_de' => $request->mostrar_despues_de,
             'activo' => true,
             'orden' => $maxOrden + 1,
@@ -76,19 +102,36 @@ class CampoPersonalizadoController extends Controller
     public function update(Request $request, $id)
     {
         $campo = CampoPersonalizadoMatriz::findOrFail($id);
+        $tiposValidos = array_keys(CampoPersonalizadoMatriz::getTipos());
 
         $request->validate([
             'nombre' => 'required|string|max:100',
-            'tipo' => 'required|in:texto,fecha',
+            'tipo' => 'required|in:' . implode(',', $tiposValidos),
+            'opciones' => 'nullable|array',
+            'configuracion' => 'nullable|array',
+            'requerido' => 'boolean',
             'mostrar_despues_de' => 'nullable|string|max:50',
             'activo' => 'boolean',
             'ejecutivos' => 'array',
             'ejecutivos.*' => 'exists:empleados,id',
         ]);
 
+        // Validar que selector y multiple tengan opciones
+        if (in_array($request->tipo, ['selector', 'multiple'])) {
+            if (empty($request->opciones) || count($request->opciones) < 1) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Los campos de tipo selector o múltiple requieren al menos una opción.',
+                ], 422);
+            }
+        }
+
         $campo->update([
             'nombre' => $request->nombre,
             'tipo' => $request->tipo,
+            'opciones' => $request->opciones,
+            'configuracion' => $request->configuracion,
+            'requerido' => $request->boolean('requerido', false),
             'mostrar_despues_de' => $request->mostrar_despues_de,
             'activo' => $request->boolean('activo', true),
         ]);
@@ -199,16 +242,25 @@ class CampoPersonalizadoController extends Controller
                 ->pluck('columna')
                 ->toArray();
             
+            // Obtener columnas predeterminadas ocultas
+            $columnasPredeterminadasOcultas = ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($ejecutivo->id);
+            
+            $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($ejecutivo->id);
+            
             $configuracion[$ejecutivo->id] = [
                 'ejecutivo' => $ejecutivo,
-                'columnas_visibles' => $columnasVisibles
+                'columnas_visibles' => $columnasVisibles,
+                'columnas_predeterminadas_ocultas' => $columnasPredeterminadasOcultas,
+                'idioma' => $idioma
             ];
         }
 
         return response()->json([
             'ejecutivos' => $ejecutivos,
-            'columnas_predeterminadas' => ColumnaVisibleEjecutivo::$columnasPredeterminadas,
-            'columnas_opcionales' => ColumnaVisibleEjecutivo::$columnasOpcionales,
+            'columnas_predeterminadas_es' => ColumnaVisibleEjecutivo::getColumnasPredeterminadasConNombres('es'),
+            'columnas_predeterminadas_en' => ColumnaVisibleEjecutivo::getColumnasPredeterminadasConNombres('en'),
+            'columnas_opcionales_es' => ColumnaVisibleEjecutivo::getColumnasOpcionalesConNombres('es'),
+            'columnas_opcionales_en' => ColumnaVisibleEjecutivo::getColumnasOpcionalesConNombres('en'),
             'configuracion' => $configuracion
         ]);
     }
@@ -220,13 +272,18 @@ class CampoPersonalizadoController extends Controller
     {
         $request->validate([
             'empleado_id' => 'required|exists:empleados,id',
-            'columnas' => 'array',
-            'columnas.*' => 'string'
+            'columnas_opcionales' => 'array',
+            'columnas_opcionales.*' => 'string',
+            'columnas_predeterminadas' => 'array',
+            'columnas_predeterminadas.*' => 'string',
+            'idioma' => 'nullable|in:es,en'
         ]);
 
         ColumnaVisibleEjecutivo::guardarConfiguracion(
             $request->empleado_id,
-            $request->columnas ?? []
+            $request->columnas_opcionales ?? [],
+            $request->idioma,
+            $request->columnas_predeterminadas
         );
 
         return response()->json([
@@ -241,9 +298,36 @@ class CampoPersonalizadoController extends Controller
     public function getColumnasEjecutivo($empleadoId)
     {
         $columnasVisibles = ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoId);
+        $columnasPredeterminadasOcultas = ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoId);
+        $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoId);
         
         return response()->json([
-            'columnas_visibles' => $columnasVisibles
+            'columnas_visibles' => $columnasVisibles,
+            'columnas_predeterminadas_ocultas' => $columnasPredeterminadasOcultas,
+            'idioma' => $idioma,
+            'nombres_columnas' => ColumnaVisibleEjecutivo::getTodasLasColumnasConNombres($idioma)
+        ]);
+    }
+
+    /**
+     * Guardar idioma de nombres de columnas para un ejecutivo
+     */
+    public function guardarIdiomaEjecutivo(Request $request)
+    {
+        $request->validate([
+            'empleado_id' => 'required|exists:empleados,id',
+            'idioma' => 'required|in:es,en'
+        ]);
+
+        ColumnaVisibleEjecutivo::guardarIdiomaEjecutivo(
+            $request->empleado_id,
+            $request->idioma
+        );
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Idioma guardado exitosamente',
+            'nombres_columnas' => ColumnaVisibleEjecutivo::getTodasLasColumnasConNombres($request->idioma)
         ]);
     }
 }

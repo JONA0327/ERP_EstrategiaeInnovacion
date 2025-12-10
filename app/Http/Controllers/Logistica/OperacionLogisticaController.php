@@ -18,6 +18,7 @@ use App\Models\Logistica\Pedimento;
 use App\Models\Logistica\PedimentoOperacion;
 use App\Models\Logistica\CampoPersonalizadoMatriz;
 use App\Models\Logistica\ValorCampoPersonalizado;
+use App\Models\Logistica\ColumnaVisibleEjecutivo;
 use App\Models\Empleado;
 use App\Services\WordDocumentService;
 use App\Services\ClienteImportService;
@@ -144,13 +145,22 @@ class OperacionLogisticaController extends Controller
 
         // Cargar columnas opcionales visibles para el ejecutivo actual
         $columnasOpcionalesVisibles = [];
+        $columnasPredeterminadasOcultas = [];
+        $idiomaColumnas = 'es'; // Por defecto español
+        
         if ($empleadoActual) {
             $columnasOpcionalesVisibles = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoActual->id);
+            $columnasPredeterminadasOcultas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoActual->id);
+            $idiomaColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoActual->id);
         }
-        // Admin ve todas las columnas opcionales
+        // Admin ve todas las columnas opcionales y ninguna oculta
         if ($esAdmin) {
             $columnasOpcionalesVisibles = array_keys(\App\Models\Logistica\ColumnaVisibleEjecutivo::$columnasOpcionales);
+            $columnasPredeterminadasOcultas = [];
         }
+
+        // Obtener nombres de columnas según idioma configurado
+        $nombresColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getTodasLasColumnasConNombres($idiomaColumnas);
 
         return view('Logistica.matriz-seguimiento', compact(
             'operaciones', 
@@ -167,7 +177,10 @@ class OperacionLogisticaController extends Controller
             'clientesUnicos',
             'filtroCliente',
             'filtroEjecutivo',
-            'columnasOpcionalesVisibles'
+            'columnasOpcionalesVisibles',
+            'columnasPredeterminadasOcultas',
+            'idiomaColumnas',
+            'nombresColumnas'
         ));
     }
 
@@ -3373,9 +3386,12 @@ class OperacionLogisticaController extends Controller
             mkdir($tempDir, 0755, true);
         }
 
-        // Obtener campos personalizados para el usuario actual
+        // Obtener campos personalizados y configuración de columnas para el usuario actual
         $camposPersonalizados = collect();
+        $configColumnas = [];
         $usuarioActual = auth()->user();
+        $empleadoActual = null;
+        
         if ($usuarioActual) {
             $empleadoActual = Empleado::where('correo', $usuarioActual->email)
                 ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
@@ -3395,6 +3411,19 @@ class OperacionLogisticaController extends Controller
                     })
                     ->orderBy('orden')
                     ->get();
+            }
+            
+            // Obtener configuración de columnas visibles del ejecutivo
+            if ($empleadoActual) {
+                $columnasVisibles = ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoActual->id);
+                $columnasOcultas = ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoActual->id);
+                $idioma = ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoActual->id);
+                
+                $configColumnas = [
+                    'columnas_visibles' => $columnasVisibles,
+                    'columnas_ocultas' => $columnasOcultas,
+                    'idioma' => $idioma
+                ];
             }
         }
 
@@ -3429,7 +3458,7 @@ class OperacionLogisticaController extends Controller
 
         if ($formato === 'csv') {
             $rutaCompleta = $tempDir . '/' . $nombreArchivo;
-            $this->generarExcelTSV($operaciones, $rutaCompleta, $camposPersonalizados);
+            $this->generarExcelTSV($operaciones, $rutaCompleta, $camposPersonalizados, $configColumnas);
             return [
                 'path' => $rutaCompleta,
                 'nombre' => $nombreArchivo,
@@ -3488,43 +3517,86 @@ class OperacionLogisticaController extends Controller
     }
 
     /**
-     * Generar archivo Excel con diseo profesional y TODAS las columnas de la matriz
+     * Generar archivo Excel con diseño profesional y columnas configuradas por ejecutivo
+     * @param Collection $operaciones - Operaciones a exportar
+     * @param string $rutaArchivo - Ruta donde guardar el archivo
+     * @param Collection|null $camposPersonalizados - Campos personalizados del ejecutivo
+     * @param array $configColumnas - Configuración de columnas visibles ['columnas_visibles' => [], 'columnas_ocultas' => [], 'idioma' => 'es']
      */
-    private function generarExcelTSV($operaciones, $rutaArchivo, $camposPersonalizados = null)
+    private function generarExcelTSV($operaciones, $rutaArchivo, $camposPersonalizados = null, $configColumnas = [])
     {
-        // Usar PhpSpreadsheet para generar Excel nativo con diseo
+        // Usar PhpSpreadsheet para generar Excel nativo con diseño
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('operaciones Logisticas');
+        $sheet->setTitle('Operaciones Logísticas');
         
-        // Mapeo de columnas base con sus claves para posicionamiento
-        $columnasBase = [
-            'no' => 'No.',
-            'ejecutivo' => 'Ejecutivo',
-            'operacion' => 'operacion',
-            'cliente' => 'Cliente',
-            'proveedor' => 'Proveedor/Cliente Final',
-            'fecha_embarque' => 'Fecha de Embarque',
-            'no_factura' => 'No. Factura',
-            'tipo_operacion' => 'T. operacion',
-            'clave' => 'Clave',
-            'referencia_interna' => 'Referencia Interna',
-            'aduana' => 'Aduana',
-            'agente_aduanal' => 'A.A',
-            'referencia_aa' => 'Referencia A.A',
-            'no_pedimento' => 'No Ped',
-            'transporte' => 'Transporte',
-            'fecha_arribo_aduana' => 'Fecha de Arribo a Aduana',
-            'guia_bl' => 'Guia //BL',
-            'status' => 'Status',
-            'fecha_modulacion' => 'Fecha de Modulacion',
-            'fecha_arribo_planta' => 'Fecha de Arribo a Planta',
-            'resultado' => 'Resultado',
-            'target' => 'Target',
-            'dias_transito' => 'Dias en Transito',
-            'post_operaciones' => 'Post-operaciones',
-            'comentarios' => 'Comentarios'
+        // Obtener configuración de columnas
+        $columnasVisibles = $configColumnas['columnas_visibles'] ?? [];
+        $columnasOcultas = $configColumnas['columnas_ocultas'] ?? [];
+        $idioma = $configColumnas['idioma'] ?? 'es';
+        
+        // Nombres de columnas según idioma
+        $nombresPredeterminados = ColumnaVisibleEjecutivo::$columnasPredeterminadas;
+        $nombresOpcionales = ColumnaVisibleEjecutivo::$columnasOpcionales;
+        
+        // Mapeo de columnas base (predeterminadas) con sus claves para posicionamiento
+        $columnasBaseFull = [
+            'id' => $nombresPredeterminados['id'][$idioma] ?? 'No.',
+            'ejecutivo' => $nombresPredeterminados['ejecutivo'][$idioma] ?? 'Ejecutivo',
+            'operacion' => $nombresPredeterminados['operacion'][$idioma] ?? 'Operación',
+            'cliente' => $nombresPredeterminados['cliente'][$idioma] ?? 'Cliente',
+            'proveedor_o_cliente' => $nombresPredeterminados['proveedor_o_cliente'][$idioma] ?? 'Proveedor/Cliente',
+            'fecha_embarque' => $nombresPredeterminados['fecha_embarque'][$idioma] ?? 'Fecha de Embarque',
+            'no_factura' => $nombresPredeterminados['no_factura'][$idioma] ?? 'No. Factura',
+            'tipo_operacion_enum' => $nombresPredeterminados['tipo_operacion_enum'][$idioma] ?? 'T. Operación',
+            'clave' => $nombresPredeterminados['clave'][$idioma] ?? 'Clave',
+            'referencia_interna' => $nombresPredeterminados['referencia_interna'][$idioma] ?? 'Referencia Interna',
+            'aduana' => $nombresPredeterminados['aduana'][$idioma] ?? 'Aduana',
+            'agente_aduanal' => $nombresPredeterminados['agente_aduanal'][$idioma] ?? 'A.A',
+            'referencia_aa' => $nombresPredeterminados['referencia_aa'][$idioma] ?? 'Referencia A.A',
+            'no_pedimento' => $nombresPredeterminados['no_pedimento'][$idioma] ?? 'No Ped',
+            'transporte' => $nombresPredeterminados['transporte'][$idioma] ?? 'Transporte',
+            'fecha_arribo_aduana' => $nombresPredeterminados['fecha_arribo_aduana'][$idioma] ?? 'Fecha Arribo Aduana',
+            'guia_bl' => $nombresPredeterminados['guia_bl'][$idioma] ?? 'Guía/BL',
+            'status' => $nombresPredeterminados['status'][$idioma] ?? 'Status',
+            'fecha_modulacion' => $nombresPredeterminados['fecha_modulacion'][$idioma] ?? 'Fecha Modulación',
+            'fecha_arribo_planta' => $nombresPredeterminados['fecha_arribo_planta'][$idioma] ?? 'Fecha Arribo Planta',
+            'resultado' => $nombresPredeterminados['resultado'][$idioma] ?? 'Resultado',
+            'target' => $nombresPredeterminados['target'][$idioma] ?? 'Target',
+            'dias_transito' => $nombresPredeterminados['dias_transito'][$idioma] ?? 'Días en Tránsito',
+            'post_operaciones' => $nombresPredeterminados['post_operaciones'][$idioma] ?? 'Post-Operaciones',
+            'comentarios' => $nombresPredeterminados['comentarios'][$idioma] ?? 'Comentarios'
         ];
+        
+        // Columnas opcionales con sus nombres
+        $columnasOpcionalesFull = [
+            'tipo_carga' => $nombresOpcionales['tipo_carga'][$idioma] ?? 'Tipo de Carga',
+            'tipo_incoterm' => $nombresOpcionales['tipo_incoterm'][$idioma] ?? 'Incoterm',
+            'puerto_salida' => $nombresOpcionales['puerto_salida'][$idioma] ?? 'Puerto de Salida',
+            'in_charge' => $nombresOpcionales['in_charge'][$idioma] ?? 'Responsable',
+            'proveedor' => $nombresOpcionales['proveedor'][$idioma] ?? 'Proveedor',
+            'tipo_previo' => $nombresOpcionales['tipo_previo'][$idioma] ?? 'Modalidad/Previo',
+            'fecha_etd' => $nombresOpcionales['fecha_etd'][$idioma] ?? 'Fecha ETD',
+            'fecha_zarpe' => $nombresOpcionales['fecha_zarpe'][$idioma] ?? 'Fecha Zarpe',
+            'pedimento_en_carpeta' => $nombresOpcionales['pedimento_en_carpeta'][$idioma] ?? 'Pedimento en Carpeta',
+            'referencia_cliente' => $nombresOpcionales['referencia_cliente'][$idioma] ?? 'Referencia Cliente',
+            'mail_subject' => $nombresOpcionales['mail_subject'][$idioma] ?? 'Asunto de Correo'
+        ];
+        
+        // Filtrar columnas base (quitar las ocultas)
+        $columnasBase = [];
+        foreach ($columnasBaseFull as $clave => $nombre) {
+            if (!in_array($clave, $columnasOcultas)) {
+                $columnasBase[$clave] = $nombre;
+            }
+        }
+        
+        // Agregar columnas opcionales visibles
+        foreach ($columnasVisibles as $colVisible) {
+            if (isset($columnasOpcionalesFull[$colVisible])) {
+                $columnasBase[$colVisible] = $columnasOpcionalesFull[$colVisible];
+            }
+        }
 
         // Construir cabeceras con campos personalizados insertados en posición correcta
         $cabeceras = [];
@@ -3620,16 +3692,17 @@ class OperacionLogisticaController extends Controller
                 default => $statusFinal ?? 'En Proceso'
             };
 
-            // Mapeo de valores base
+            // Mapeo de valores base (columnas predeterminadas y opcionales)
             $valoresBase = [
-                'no' => $operacion->id,
+                // Columnas predeterminadas
+                'id' => $operacion->id,
                 'ejecutivo' => $operacion->ejecutivo ?? 'Sin asignar',
                 'operacion' => $operacion->operacion ?? '-',
                 'cliente' => $operacion->cliente ?? 'Sin cliente',
-                'proveedor' => $operacion->proveedor_o_cliente ?? '-',
+                'proveedor_o_cliente' => $operacion->proveedor_o_cliente ?? '-',
                 'fecha_embarque' => optional($operacion->fecha_embarque)->format('d/m/Y') ?? '-',
                 'no_factura' => $operacion->no_factura ?? '-',
-                'tipo_operacion' => $operacion->tipo_operacion_enum ?? '-',
+                'tipo_operacion_enum' => $operacion->tipo_operacion_enum ?? '-',
                 'clave' => $operacion->clave ?? '-',
                 'referencia_interna' => $operacion->referencia_interna ?? '-',
                 'aduana' => $operacion->aduana ?? '-',
@@ -3646,7 +3719,20 @@ class OperacionLogisticaController extends Controller
                 'target' => $operacion->target ?? '-',
                 'dias_transito' => $operacion->dias_transito ?? '-',
                 'post_operaciones' => $this->formatearPostOperaciones($operacion),
-                'comentarios' => $this->limpiarTexto($operacion->comentarios ?? '-')
+                'comentarios' => $this->limpiarTexto($operacion->comentarios ?? '-'),
+                
+                // Columnas opcionales
+                'tipo_carga' => $operacion->tipo_carga ?? '-',
+                'tipo_incoterm' => $operacion->tipo_incoterm ?? '-',
+                'puerto_salida' => $operacion->puerto_salida ?? '-',
+                'in_charge' => $operacion->in_charge ?? '-',
+                'proveedor' => $operacion->proveedor ?? '-',
+                'tipo_previo' => $operacion->tipo_previo ?? '-',
+                'fecha_etd' => optional($operacion->fecha_etd)->format('d/m/Y') ?? '-',
+                'fecha_zarpe' => optional($operacion->fecha_zarpe)->format('d/m/Y') ?? '-',
+                'pedimento_en_carpeta' => $operacion->pedimento_en_carpeta ? 'Sí' : 'No',
+                'referencia_cliente' => $operacion->referencia_cliente ?? '-',
+                'mail_subject' => $operacion->mail_subject ?? '-'
             ];
 
             // Construir fila siguiendo el orden de cabeceras

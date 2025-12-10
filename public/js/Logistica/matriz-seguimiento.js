@@ -52,6 +52,8 @@ window.limpiarFiltros = function() {
 // ========================================
 
 let ejecutivoSeleccionadoColumnas = null;
+let columnasPredeterminadasConfig = {};
+let columnasOpcionalesConfig = {};
 
 /**
  * Cambiar entre pestañas de configuración
@@ -61,6 +63,8 @@ window.cambiarTabConfig = function(tab) {
     const tabCampos = document.getElementById('tabCampos');
     const panelColumnas = document.getElementById('panelColumnas');
     const panelCampos = document.getElementById('panelCampos');
+    
+    if (!tabColumnas || !tabCampos || !panelColumnas || !panelCampos) return;
     
     if (tab === 'columnas') {
         tabColumnas.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50');
@@ -77,6 +81,8 @@ window.cambiarTabConfig = function(tab) {
         tabColumnas.classList.add('text-slate-500', 'border-transparent');
         panelCampos.classList.remove('hidden');
         panelColumnas.classList.add('hidden');
+        cargarCamposPersonalizados();
+        cargarEjecutivosParaCampos();
     }
 };
 
@@ -84,14 +90,24 @@ window.cambiarTabConfig = function(tab) {
  * Cargar lista de ejecutivos para el select de columnas
  */
 window.cargarEjecutivosParaColumnas = function() {
-    fetch('/logistica/campos-personalizados/ejecutivos')
+    fetch('/logistica/columnas-config')
         .then(response => response.json())
-        .then(ejecutivos => {
+        .then(data => {
             const select = document.getElementById('selectEjecutivoColumnas');
             if (!select) return;
             
+            // Guardar configuraciones
+            columnasPredeterminadasConfig = {
+                es: data.columnas_predeterminadas_es || {},
+                en: data.columnas_predeterminadas_en || {}
+            };
+            columnasOpcionalesConfig = {
+                es: data.columnas_opcionales_es || {},
+                en: data.columnas_opcionales_en || {}
+            };
+            
             select.innerHTML = '<option value="">-- Seleccione un ejecutivo --</option>';
-            ejecutivos.forEach(ej => {
+            (data.ejecutivos || []).forEach(ej => {
                 select.innerHTML += `<option value="${ej.id}">${ej.nombre}</option>`;
             });
         })
@@ -101,11 +117,119 @@ window.cargarEjecutivosParaColumnas = function() {
 };
 
 /**
+ * Cambiar idioma de los nombres de columnas dinámicamente
+ */
+window.cambiarIdiomaColumnas = function() {
+    const idiomaSeleccionado = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
+    
+    // Guardar el estado actual de los checkboxes
+    const predeterminadasMarcadas = [];
+    const opcionalesMarcadas = [];
+    
+    document.querySelectorAll('.columna-predeterminada:checked').forEach(cb => {
+        predeterminadasMarcadas.push(cb.dataset.columna);
+    });
+    document.querySelectorAll('.columna-opcional:checked').forEach(cb => {
+        opcionalesMarcadas.push(cb.dataset.columna);
+    });
+    
+    // Regenerar HTML con el nuevo idioma
+    const gridPredeterminadas = document.getElementById('columnasPredeterminadasGrid');
+    if (gridPredeterminadas) {
+        gridPredeterminadas.innerHTML = generarColumnasPredeterminadasHTML(idiomaSeleccionado);
+        // Restaurar estado de checkboxes
+        document.querySelectorAll('.columna-predeterminada').forEach(cb => {
+            cb.checked = predeterminadasMarcadas.includes(cb.dataset.columna);
+        });
+    }
+    
+    const gridOpcionales = document.getElementById('columnasOpcionalesGrid');
+    if (gridOpcionales) {
+        gridOpcionales.innerHTML = generarColumnasOpcionalesHTML(idiomaSeleccionado);
+        // Restaurar estado de checkboxes
+        document.querySelectorAll('.columna-opcional').forEach(cb => {
+            cb.checked = opcionalesMarcadas.includes(cb.dataset.columna);
+        });
+    }
+};
+
+/**
+ * Generar HTML para columnas predeterminadas
+ */
+function generarColumnasPredeterminadasHTML(idioma = 'es') {
+    const columnas = columnasPredeterminadasConfig[idioma] || {};
+    let html = '';
+    
+    Object.entries(columnas).forEach(([key, nombre]) => {
+        html += `
+            <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200 hover:border-green-400 transition-colors">
+                <input type="checkbox" data-columna="${key}" class="columna-predeterminada mr-2 w-4 h-4 text-green-600 rounded focus:ring-green-500" checked>
+                <span class="text-sm text-slate-600">${nombre}</span>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+/**
+ * Generar HTML para columnas opcionales
+ */
+function generarColumnasOpcionalesHTML(idioma = 'es') {
+    const columnas = columnasOpcionalesConfig[idioma] || {};
+    let html = '';
+    
+    const descripcionesEs = {
+        'tipo_carga': 'FCL / LCL',
+        'tipo_incoterm': 'EXW, FOB, CIF, etc.',
+        'puerto_salida': 'Puerto de origen',
+        'in_charge': 'Persona responsable',
+        'proveedor': 'Nombre del proveedor',
+        'tipo_previo': 'SI/NO + Responsable',
+        'fecha_etd': 'Fecha salida estimada',
+        'fecha_zarpe': 'Fecha real de zarpe',
+        'pedimento_en_carpeta': 'Control expediente',
+        'referencia_cliente': 'Ref. secundaria',
+        'mail_subject': 'Subject del email'
+    };
+    
+    const descripcionesEn = {
+        'tipo_carga': 'FCL / LCL',
+        'tipo_incoterm': 'EXW, FOB, CIF, etc.',
+        'puerto_salida': 'Port of origin',
+        'in_charge': 'Person in charge',
+        'proveedor': 'Supplier name',
+        'tipo_previo': 'YES/NO + Responsible',
+        'fecha_etd': 'Estimated departure',
+        'fecha_zarpe': 'Actual departure date',
+        'pedimento_en_carpeta': 'Folder control',
+        'referencia_cliente': 'Secondary ref.',
+        'mail_subject': 'Email subject'
+    };
+    
+    const descripciones = idioma === 'en' ? descripcionesEn : descripcionesEs;
+    
+    Object.entries(columnas).forEach(([key, nombre]) => {
+        html += `
+            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
+                <input type="checkbox" data-columna="${key}" class="columna-opcional mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                <div>
+                    <span class="font-medium text-slate-700">${nombre}</span>
+                    <p class="text-xs text-slate-500">${descripciones[key] || ''}</p>
+                </div>
+            </label>
+        `;
+    });
+    
+    return html;
+}
+
+/**
  * Cargar configuración de columnas para el ejecutivo seleccionado
  */
 window.cargarColumnasEjecutivo = function() {
     const select = document.getElementById('selectEjecutivoColumnas');
-    const container = document.getElementById('columnasOpcionalesContainer');
+    const container = document.getElementById('configuracionColumnasContainer');
     const empleadoId = select.value;
     
     if (!empleadoId) {
@@ -116,23 +240,83 @@ window.cargarColumnasEjecutivo = function() {
     ejecutivoSeleccionadoColumnas = empleadoId;
     container.classList.remove('hidden');
     
-    // Limpiar checkboxes
-    document.getElementById('colTipoCarga').checked = false;
-    document.getElementById('colTipoIncoterm').checked = false;
-    document.getElementById('colPuertoSalida').checked = false;
-    
     // Cargar configuración actual
     fetch(`/logistica/columnas-config/ejecutivo/${empleadoId}`)
         .then(response => response.json())
         .then(data => {
-            const columnas = data.columnas_visibles || [];
-            document.getElementById('colTipoCarga').checked = columnas.includes('tipo_carga');
-            document.getElementById('colTipoIncoterm').checked = columnas.includes('tipo_incoterm');
-            document.getElementById('colPuertoSalida').checked = columnas.includes('puerto_salida');
+            const columnasVisibles = data.columnas_visibles || [];
+            const columnasPredeterminadasOcultas = data.columnas_predeterminadas_ocultas || [];
+            const idioma = data.idioma || 'es';
+            
+            // Establecer idioma
+            if (idioma === 'en') {
+                document.getElementById('idiomaEn').checked = true;
+                document.getElementById('idiomaEs').checked = false;
+            } else {
+                document.getElementById('idiomaEs').checked = true;
+                document.getElementById('idiomaEn').checked = false;
+            }
+            
+            // Generar HTML de columnas predeterminadas
+            const gridPredeterminadas = document.getElementById('columnasPredeterminadasGrid');
+            if (gridPredeterminadas) {
+                gridPredeterminadas.innerHTML = generarColumnasPredeterminadasHTML(idioma);
+                
+                // Desmarcar las que están ocultas
+                columnasPredeterminadasOcultas.forEach(col => {
+                    const checkbox = gridPredeterminadas.querySelector(`input[data-columna="${col}"]`);
+                    if (checkbox) checkbox.checked = false;
+                });
+            }
+            
+            // Generar HTML de columnas opcionales
+            const gridOpcionales = document.getElementById('columnasOpcionalesGrid');
+            if (gridOpcionales) {
+                gridOpcionales.innerHTML = generarColumnasOpcionalesHTML(idioma);
+                
+                // Marcar las que están visibles
+                columnasVisibles.forEach(col => {
+                    const checkbox = gridOpcionales.querySelector(`input[data-columna="${col}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
         })
         .catch(error => {
             console.error('Error cargando configuración:', error);
         });
+};
+
+/**
+ * Resetear configuración de columnas a predeterminados
+ */
+window.resetearConfiguracionColumnas = function() {
+    if (!ejecutivoSeleccionadoColumnas) {
+        mostrarAlerta('Por favor seleccione un ejecutivo', 'warning');
+        return;
+    }
+    
+    if (!confirm('¿Está seguro de resetear la configuración? Se mostrarán todas las columnas predeterminadas y se ocultarán las adicionales.')) {
+        return;
+    }
+    
+    // Marcar todas las predeterminadas
+    document.querySelectorAll('.columna-predeterminada').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
+    // Desmarcar todas las opcionales
+    document.querySelectorAll('.columna-opcional').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Resetear idioma a español
+    const idiomaEs = document.getElementById('idiomaEs');
+    const idiomaEn = document.getElementById('idiomaEn');
+    if (idiomaEs) idiomaEs.checked = true;
+    if (idiomaEn) idiomaEn.checked = false;
+    
+    // Guardar automáticamente
+    guardarConfiguracionColumnas();
 };
 
 /**
@@ -144,10 +328,20 @@ window.guardarConfiguracionColumnas = function() {
         return;
     }
     
-    const columnas = [];
-    if (document.getElementById('colTipoCarga').checked) columnas.push('tipo_carga');
-    if (document.getElementById('colTipoIncoterm').checked) columnas.push('tipo_incoterm');
-    if (document.getElementById('colPuertoSalida').checked) columnas.push('puerto_salida');
+    // Recoger columnas opcionales marcadas
+    const columnasOpcionales = [];
+    document.querySelectorAll('.columna-opcional:checked').forEach(checkbox => {
+        columnasOpcionales.push(checkbox.dataset.columna);
+    });
+    
+    // Recoger columnas predeterminadas marcadas
+    const columnasPredeterminadas = [];
+    document.querySelectorAll('.columna-predeterminada:checked').forEach(checkbox => {
+        columnasPredeterminadas.push(checkbox.dataset.columna);
+    });
+    
+    // Obtener idioma seleccionado
+    const idioma = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
     
     fetch('/logistica/columnas-config', {
         method: 'POST',
@@ -157,13 +351,15 @@ window.guardarConfiguracionColumnas = function() {
         },
         body: JSON.stringify({
             empleado_id: ejecutivoSeleccionadoColumnas,
-            columnas: columnas
+            columnas_opcionales: columnasOpcionales,
+            columnas_predeterminadas: columnasPredeterminadas,
+            idioma: idioma
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            mostrarAlerta('Configuración guardada exitosamente', 'success');
+            mostrarAlerta('Configuración guardada exitosamente. Recarga la página para ver los cambios.', 'success');
         } else {
             mostrarAlerta('Error al guardar la configuración', 'error');
         }
@@ -2106,6 +2302,253 @@ function renderizarEjecutivosNuevoCampo() {
     ).join('');
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Variables globales para campos personalizados
+// ═══════════════════════════════════════════════════════════════
+let opcionesActuales = [];
+
+/**
+ * Iconos para tipos de campo
+ */
+const tipoIconos = {
+    'texto': '📝',
+    'descripcion': '📄',
+    'numero': '🔢',
+    'decimal': '💲',
+    'moneda': '💰',
+    'fecha': '📅',
+    'booleano': '✅',
+    'selector': '📋',
+    'multiple': '☑️',
+    'email': '📧',
+    'telefono': '📞',
+    'url': '🔗'
+};
+
+/**
+ * Mostrar/ocultar opciones según el tipo de campo seleccionado
+ */
+window.mostrarOpcionesTipo = function() {
+    const tipo = document.getElementById('tipoNuevoCampo')?.value || 'texto';
+    
+    // Ocultar todos los contenedores de configuración
+    document.getElementById('opcionesSelectorContainer')?.classList.add('hidden');
+    document.getElementById('configDecimalContainer')?.classList.add('hidden');
+    document.getElementById('configMonedaContainer')?.classList.add('hidden');
+    document.getElementById('configNumeroContainer')?.classList.add('hidden');
+    
+    // Mostrar según el tipo
+    switch(tipo) {
+        case 'selector':
+            document.getElementById('opcionesSelectorContainer')?.classList.remove('hidden');
+            // Pre-seleccionar "Solo uno" para selector
+            document.getElementById('seleccionUnica').checked = true;
+            break;
+        case 'multiple':
+            document.getElementById('opcionesSelectorContainer')?.classList.remove('hidden');
+            // Pre-seleccionar "Varios" para multiple
+            document.getElementById('seleccionMultiple').checked = true;
+            break;
+        case 'decimal':
+            document.getElementById('configDecimalContainer')?.classList.remove('hidden');
+            break;
+        case 'moneda':
+            document.getElementById('configDecimalContainer')?.classList.remove('hidden');
+            document.getElementById('configMonedaContainer')?.classList.remove('hidden');
+            break;
+        case 'numero':
+            document.getElementById('configNumeroContainer')?.classList.remove('hidden');
+            break;
+    }
+};
+
+/**
+ * Agregar una opción al selector/múltiple
+ */
+window.agregarOpcion = function() {
+    const input = document.getElementById('nuevaOpcionInput');
+    const opcion = input?.value?.trim();
+    
+    if (!opcion) {
+        mostrarAlerta('Escribe una opción primero', 'warning');
+        return;
+    }
+    
+    if (opcionesActuales.includes(opcion)) {
+        mostrarAlerta('Esta opción ya existe', 'warning');
+        return;
+    }
+    
+    opcionesActuales.push(opcion);
+    input.value = '';
+    renderizarOpciones();
+};
+
+/**
+ * Eliminar una opción
+ */
+window.eliminarOpcion = function(index) {
+    opcionesActuales.splice(index, 1);
+    renderizarOpciones();
+};
+
+/**
+ * Renderizar las opciones actuales
+ */
+function renderizarOpciones() {
+    const container = document.getElementById('listaOpciones');
+    if (!container) return;
+    
+    if (opcionesActuales.length === 0) {
+        container.innerHTML = '<span class="text-sm text-gray-400 italic">Las opciones aparecerán aquí...</span>';
+        return;
+    }
+    
+    container.innerHTML = opcionesActuales.map((opcion, index) => `
+        <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+            ${opcion}
+            <button type="button" onclick="eliminarOpcion(${index})" class="ml-2 text-green-600 hover:text-red-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </span>
+    `).join('');
+}
+
+/**
+ * Crear un nuevo campo personalizado
+ */
+window.crearCampoPersonalizado = async function() {
+    const nombre = document.getElementById('nombreNuevoCampo')?.value?.trim();
+    let tipo = document.getElementById('tipoNuevoCampo')?.value || 'texto';
+    const mostrar_despues_de = document.getElementById('posicionNuevoCampo')?.value || null;
+    const requerido = document.getElementById('campoRequerido')?.checked || false;
+    const selectEjecutivos = document.getElementById('selectEjecutivosNuevoCampo');
+    const ejecutivos = selectEjecutivos ? Array.from(selectEjecutivos.selectedOptions).map(opt => parseInt(opt.value)) : [];
+
+    if (!nombre) {
+        mostrarAlerta('Por favor ingresa un nombre para el campo', 'warning');
+        return;
+    }
+
+    // Si es selector o multiple, verificar la opción de selección
+    if (tipo === 'selector' || tipo === 'multiple') {
+        const tipoSeleccion = document.querySelector('input[name="tipoSeleccion"]:checked')?.value;
+        // Ajustar el tipo según la selección del usuario
+        tipo = tipoSeleccion === 'multiple' ? 'multiple' : 'selector';
+    }
+
+    // Validar opciones para selector/multiple
+    if ((tipo === 'selector' || tipo === 'multiple') && opcionesActuales.length === 0) {
+        mostrarAlerta('Debes agregar al menos una opción para este tipo de campo', 'warning');
+        return;
+    }
+
+    // Construir objeto de datos
+    const datos = { 
+        nombre, 
+        tipo, 
+        mostrar_despues_de, 
+        ejecutivos,
+        requerido
+    };
+
+    // Agregar opciones si aplica
+    if (tipo === 'selector' || tipo === 'multiple') {
+        datos.opciones = opcionesActuales;
+    }
+
+    // Agregar configuración según el tipo
+    const configuracion = {};
+    
+    if (tipo === 'decimal' || tipo === 'moneda') {
+        configuracion.decimales = parseInt(document.getElementById('decimalesInput')?.value) || 2;
+    }
+    
+    if (tipo === 'moneda') {
+        configuracion.moneda = document.getElementById('monedaSelect')?.value || 'MXN';
+    }
+    
+    if (tipo === 'numero') {
+        const min = document.getElementById('minNumeroInput')?.value;
+        const max = document.getElementById('maxNumeroInput')?.value;
+        if (min !== '') configuracion.min = parseInt(min);
+        if (max !== '') configuracion.max = parseInt(max);
+    }
+    
+    if (Object.keys(configuracion).length > 0) {
+        datos.configuracion = configuracion;
+    }
+
+    try {
+        const response = await fetch('/logistica/campos-personalizados', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(datos)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            mostrarAlerta('Campo creado exitosamente', 'success');
+            // Limpiar formulario
+            document.getElementById('nombreNuevoCampo').value = '';
+            document.getElementById('tipoNuevoCampo').value = 'texto';
+            document.getElementById('posicionNuevoCampo').value = '';
+            document.getElementById('campoRequerido').checked = false;
+            document.getElementById('decimalesInput').value = '2';
+            document.getElementById('minNumeroInput').value = '';
+            document.getElementById('maxNumeroInput').value = '';
+            opcionesActuales = [];
+            renderizarOpciones();
+            mostrarOpcionesTipo();
+            if (selectEjecutivos) {
+                Array.from(selectEjecutivos.options).forEach(opt => opt.selected = false);
+            }
+            // Recargar lista
+            cargarCamposPersonalizados();
+        } else {
+            mostrarAlerta(data.mensaje || 'Error al crear el campo', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error de conexión al crear el campo', 'error');
+    }
+};
+
+/**
+ * Eliminar un campo personalizado
+ */
+window.eliminarCampoPersonalizado = async function(campoId, nombreCampo) {
+    if (!confirm(`¿Está seguro de eliminar el campo "${nombreCampo}"? Esta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/logistica/campos-personalizados/${campoId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            mostrarAlerta('Campo eliminado exitosamente', 'success');
+            cargarCamposPersonalizados();
+        } else {
+            mostrarAlerta(data.mensaje || 'Error al eliminar el campo', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error de conexión al eliminar el campo', 'error');
+    }
+};
+
 /**
  * Renderiza la lista de campos personalizados existentes
  */
@@ -2148,10 +2591,37 @@ function renderizarCamposPersonalizados() {
 
     container.innerHTML = camposPersonalizadosData.map(campo => {
         const ejecutivosNombres = campo.ejecutivos?.map(e => e.nombre).join(', ') || 'Sin asignar';
-        const tipoLabel = campo.tipo === 'fecha' ? '📅 Fecha' : '📝 Texto';
+        const tipoIcono = tipoIconos[campo.tipo] || '📝';
+        const tipoNombres = {
+            'texto': 'Texto corto',
+            'descripcion': 'Descripción',
+            'numero': 'Número',
+            'decimal': 'Decimal',
+            'moneda': 'Moneda',
+            'fecha': 'Fecha',
+            'booleano': 'Sí/No',
+            'selector': 'Selector',
+            'multiple': 'Múltiple',
+            'email': 'Email',
+            'telefono': 'Teléfono',
+            'url': 'URL'
+        };
+        const tipoLabel = `${tipoIcono} ${tipoNombres[campo.tipo] || campo.tipo}`;
         const estadoClass = campo.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500';
         const estadoLabel = campo.activo ? 'Activo' : 'Inactivo';
         const posicionLabel = campo.mostrar_despues_de ? `Después de: ${columnasNombres[campo.mostrar_despues_de] || campo.mostrar_despues_de}` : 'Al final';
+        
+        // Info adicional según tipo
+        let infoAdicional = '';
+        if ((campo.tipo === 'selector' || campo.tipo === 'multiple') && campo.opciones) {
+            const opciones = Array.isArray(campo.opciones) ? campo.opciones : JSON.parse(campo.opciones || '[]');
+            infoAdicional = `<br><span class="text-xs text-gray-500">Opciones: ${opciones.join(', ')}</span>`;
+        }
+        if (campo.tipo === 'moneda' && campo.configuracion) {
+            const config = typeof campo.configuracion === 'string' ? JSON.parse(campo.configuracion) : campo.configuracion;
+            infoAdicional = `<br><span class="text-xs text-gray-500">Moneda: ${config.moneda || 'MXN'}</span>`;
+        }
+        const requeridoBadge = campo.requerido ? '<span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Requerido</span>' : '';
 
         return `
             <div class="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -2161,10 +2631,11 @@ function renderizarCamposPersonalizados() {
                             <h4 class="font-medium text-slate-800">${campo.nombre}</h4>
                             <span class="text-xs px-2 py-0.5 rounded-full ${estadoClass}">${estadoLabel}</span>
                             <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">${tipoLabel}</span>
+                            ${requeridoBadge}
                             <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">${posicionLabel}</span>
                         </div>
                         <p class="text-sm text-slate-500">
-                            <strong>Ejecutivos:</strong> ${ejecutivosNombres}
+                            <strong>Ejecutivos:</strong> ${ejecutivosNombres}${infoAdicional}
                         </p>
                     </div>
                     <div class="flex gap-2">
@@ -2383,21 +2854,15 @@ async function cargarCamposParaModal(ejecutivoNombre = null) {
         camposDelEjecutivo = camposActivos;
         section.classList.remove('hidden');
         
-        // Renderizar campos
+        // Renderizar campos según su tipo
         container.innerHTML = camposActivos.map(campo => {
-            const inputType = campo.tipo === 'fecha' ? 'date' : 'text';
-            const placeholder = campo.tipo === 'fecha' ? '' : `Ingrese ${campo.nombre}`;
-            
             return `
                 <div class="campo-personalizado-input">
                     <label class="block text-sm font-medium text-slate-600 mb-2">
                         <span class="text-indigo-600 mr-1">★</span>${campo.nombre}
+                        ${campo.requerido ? '<span class="text-red-500">*</span>' : ''}
                     </label>
-                    <input type="${inputType}" 
-                           name="campo_personalizado_${campo.id}" 
-                           data-campo-id="${campo.id}"
-                           class="form-input bg-white w-full" 
-                           placeholder="${placeholder}">
+                    ${generarInputCampoPersonalizado(campo)}
                 </div>
             `;
         }).join('');
@@ -2409,6 +2874,102 @@ async function cargarCamposParaModal(ejecutivoNombre = null) {
 }
 
 /**
+ * Genera el HTML del input según el tipo de campo personalizado
+ */
+function generarInputCampoPersonalizado(campo, valorActual = '') {
+    const baseClass = 'form-input bg-white w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500';
+    const nombre = `campo_personalizado_${campo.id}`;
+    const opciones = campo.opciones || [];
+    const config = campo.configuracion || {};
+    
+    switch(campo.tipo) {
+        case 'texto':
+            return `<input type="text" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" placeholder="Ingrese ${campo.nombre}" value="${valorActual}">`;
+        
+        case 'descripcion':
+            return `<textarea name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass} min-h-[80px]" placeholder="Ingrese ${campo.nombre}">${valorActual}</textarea>`;
+        
+        case 'numero':
+            const minNum = config.min !== undefined ? `min="${config.min}"` : '';
+            const maxNum = config.max !== undefined ? `max="${config.max}"` : '';
+            return `<input type="number" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" ${minNum} ${maxNum} step="1" placeholder="0" value="${valorActual}">`;
+        
+        case 'decimal':
+            const decimales = config.decimales || 2;
+            return `<input type="number" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" step="${Math.pow(10, -decimales).toFixed(decimales)}" placeholder="0.00" value="${valorActual}">`;
+        
+        case 'moneda':
+            const moneda = config.moneda || 'MXN';
+            const decMoneda = config.decimales || 2;
+            return `<div class="flex">
+                        <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-slate-600 text-sm">${moneda}</span>
+                        <input type="number" name="${nombre}" data-campo-id="${campo.id}" 
+                        class="${baseClass} rounded-l-none" step="${Math.pow(10, -decMoneda).toFixed(decMoneda)}" placeholder="0.00" value="${valorActual}">
+                    </div>`;
+        
+        case 'fecha':
+            return `<input type="date" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" value="${valorActual}">`;
+        
+        case 'booleano':
+            const checkedSi = valorActual === '1' || valorActual === 'si' || valorActual === true ? 'checked' : '';
+            const checkedNo = valorActual === '0' || valorActual === 'no' || valorActual === false ? 'checked' : '';
+            return `<div class="flex gap-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="${nombre}" data-campo-id="${campo.id}" value="1" class="mr-2 text-green-600" ${checkedSi}>
+                            <span class="text-green-600">✓ Sí</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="${nombre}" data-campo-id="${campo.id}" value="0" class="mr-2 text-red-600" ${checkedNo}>
+                            <span class="text-red-600">✗ No</span>
+                        </label>
+                    </div>`;
+        
+        case 'selector':
+            let selectOptions = '<option value="">-- Seleccionar --</option>';
+            opciones.forEach(opt => {
+                const selected = valorActual === opt ? 'selected' : '';
+                selectOptions += `<option value="${opt}" ${selected}>${opt}</option>`;
+            });
+            return `<select name="${nombre}" data-campo-id="${campo.id}" class="${baseClass}">${selectOptions}</select>`;
+        
+        case 'multiple':
+            const valoresSeleccionados = valorActual ? (Array.isArray(valorActual) ? valorActual : JSON.parse(valorActual || '[]')) : [];
+            let checkboxes = '<div class="flex flex-wrap gap-3">';
+            opciones.forEach((opt, idx) => {
+                const checked = valoresSeleccionados.includes(opt) ? 'checked' : '';
+                checkboxes += `
+                    <label class="inline-flex items-center cursor-pointer bg-slate-50 px-3 py-2 rounded-lg border hover:bg-indigo-50 transition-colors">
+                        <input type="checkbox" name="${nombre}[]" data-campo-id="${campo.id}" value="${opt}" class="mr-2 text-indigo-600 rounded" ${checked}>
+                        <span class="text-sm">${opt}</span>
+                    </label>`;
+            });
+            checkboxes += '</div>';
+            return checkboxes;
+        
+        case 'email':
+            return `<input type="email" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" placeholder="correo@ejemplo.com" value="${valorActual}">`;
+        
+        case 'telefono':
+            return `<input type="tel" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" placeholder="+52 123 456 7890" value="${valorActual}">`;
+        
+        case 'url':
+            return `<input type="url" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" placeholder="https://ejemplo.com" value="${valorActual}">`;
+        
+        default:
+            return `<input type="text" name="${nombre}" data-campo-id="${campo.id}" 
+                    class="${baseClass}" placeholder="Ingrese ${campo.nombre}" value="${valorActual}">`;
+    }
+}
+
+/**
  * Cargar valores de campos personalizados para una operación al editar
  */
 async function cargarValoresCamposOperacion(operacionId) {
@@ -2416,11 +2977,49 @@ async function cargarValoresCamposOperacion(operacionId) {
         const response = await fetch(`/logistica/campos-personalizados/operacion/${operacionId}/valores`);
         const valores = await response.json();
         
-        // Llenar los inputs con los valores
+        // Llenar los inputs con los valores según el tipo
         Object.keys(valores).forEach(campoId => {
-            const input = document.querySelector(`input[name="campo_personalizado_${campoId}"]`);
-            if (input && valores[campoId]) {
-                input.value = valores[campoId].valor || '';
+            const valorData = valores[campoId];
+            if (!valorData) return;
+            
+            const valor = valorData.valor || '';
+            
+            // Input, select, textarea normales
+            const input = document.querySelector(`[name="campo_personalizado_${campoId}"]`);
+            if (input) {
+                if (input.tagName === 'SELECT') {
+                    input.value = valor;
+                } else if (input.tagName === 'TEXTAREA') {
+                    input.value = valor;
+                } else {
+                    input.value = valor;
+                }
+                return;
+            }
+            
+            // Radio buttons (booleano)
+            const radios = document.querySelectorAll(`input[name="campo_personalizado_${campoId}"]`);
+            if (radios.length > 0) {
+                radios.forEach(radio => {
+                    if (radio.value === valor || (valor === '1' && radio.value === '1') || (valor === '0' && radio.value === '0')) {
+                        radio.checked = true;
+                    }
+                });
+                return;
+            }
+            
+            // Checkboxes (múltiple)
+            const checkboxes = document.querySelectorAll(`input[name="campo_personalizado_${campoId}[]"]`);
+            if (checkboxes.length > 0) {
+                let valoresArray = [];
+                try {
+                    valoresArray = Array.isArray(valor) ? valor : JSON.parse(valor || '[]');
+                } catch(e) {
+                    valoresArray = valor ? [valor] : [];
+                }
+                checkboxes.forEach(cb => {
+                    cb.checked = valoresArray.includes(cb.value);
+                });
             }
         });
     } catch (error) {
@@ -2432,29 +3031,61 @@ async function cargarValoresCamposOperacion(operacionId) {
  * Guardar valores de campos personalizados después de guardar la operación
  */
 async function guardarValoresCamposPersonalizados(operacionId) {
-    const inputs = document.querySelectorAll('input[name^="campo_personalizado_"]');
+    // Recopilar todos los valores de campos personalizados
+    const camposGuardar = {};
     
-    for (const input of inputs) {
-        const campoId = input.dataset.campoId;
-        const valor = input.value;
+    // Inputs, selects, textareas
+    const elementos = document.querySelectorAll('[name^="campo_personalizado_"]:not([name$="[]"])');
+    elementos.forEach(el => {
+        const campoId = el.dataset.campoId;
+        if (!campoId) return;
         
-        if (campoId) {
-            try {
-                await fetch('/logistica/campos-personalizados/valor', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        operacion_id: operacionId,
-                        campo_id: campoId,
-                        valor: valor
-                    })
-                });
-            } catch (error) {
-                console.error('Error al guardar campo personalizado:', error);
+        if (el.type === 'radio') {
+            if (el.checked) {
+                camposGuardar[campoId] = el.value;
             }
+        } else {
+            camposGuardar[campoId] = el.value;
+        }
+    });
+    
+    // Checkboxes (múltiple)
+    const checkboxes = document.querySelectorAll('input[name^="campo_personalizado_"][name$="[]"]');
+    const checkboxGroups = {};
+    checkboxes.forEach(cb => {
+        const campoId = cb.dataset.campoId;
+        if (!campoId) return;
+        
+        if (!checkboxGroups[campoId]) {
+            checkboxGroups[campoId] = [];
+        }
+        if (cb.checked) {
+            checkboxGroups[campoId].push(cb.value);
+        }
+    });
+    
+    // Agregar grupos de checkboxes
+    Object.keys(checkboxGroups).forEach(campoId => {
+        camposGuardar[campoId] = JSON.stringify(checkboxGroups[campoId]);
+    });
+    
+    // Guardar cada campo
+    for (const [campoId, valor] of Object.entries(camposGuardar)) {
+        try {
+            await fetch('/logistica/campos-personalizados/valor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    operacion_id: operacionId,
+                    campo_id: campoId,
+                    valor: valor
+                })
+            });
+        } catch (error) {
+            console.error('Error al guardar campo personalizado:', error);
         }
     }
 }
@@ -2462,8 +3093,36 @@ async function guardarValoresCamposPersonalizados(operacionId) {
 /**
  * Editar un campo personalizado directamente desde la tabla
  */
-window.editarCampoPersonalizado = function(operacionId, campoId, tipo, nombre) {
-    // Crear modal inline para editar el valor
+window.editarCampoPersonalizado = async function(operacionId, campoId, tipo, nombre) {
+    // Obtener datos del campo completo
+    let campoData = null;
+    try {
+        const response = await fetch('/logistica/campos-personalizados');
+        const campos = await response.json();
+        campoData = campos.find(c => c.id == campoId);
+    } catch (e) {
+        console.error('Error cargando campo:', e);
+    }
+    
+    if (!campoData) {
+        campoData = { id: campoId, tipo: tipo, nombre: nombre, opciones: [], configuracion: {} };
+    }
+    
+    // Obtener valor actual
+    let valorActual = '';
+    try {
+        const valResponse = await fetch(`/logistica/campos-personalizados/operacion/${operacionId}/valores`);
+        const valores = await valResponse.json();
+        if (valores[campoId]) {
+            valorActual = valores[campoId].valor || '';
+        }
+    } catch (e) {
+        console.error('Error cargando valor:', e);
+    }
+    
+    // Generar el input correcto según el tipo
+    const inputHtml = generarInputCampoPersonalizadoModal(campoData, valorActual);
+    
     const modalHtml = `
         <div id="modalEditarValorCampo" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
@@ -2475,17 +3134,14 @@ window.editarCampoPersonalizado = function(operacionId, campoId, tipo, nombre) {
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-600 mb-2">${nombre}</label>
-                    ${tipo === 'fecha' 
-                        ? `<input type="date" id="valorCampoEditar" class="form-input w-full">`
-                        : `<input type="text" id="valorCampoEditar" class="form-input w-full" placeholder="Ingrese el valor">`
-                    }
+                    ${inputHtml}
                 </div>
                 <div class="flex justify-end space-x-3">
                     <button onclick="cerrarModalEditarValorCampo()" 
                             class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
                         Cancelar
                     </button>
-                    <button onclick="guardarValorCampoInline(${operacionId}, ${campoId})" 
+                    <button onclick="guardarValorCampoInline(${operacionId}, ${campoId}, '${tipo}')" 
                             class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                         Guardar
                     </button>
@@ -2495,24 +3151,118 @@ window.editarCampoPersonalizado = function(operacionId, campoId, tipo, nombre) {
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Cargar valor actual
-    fetch(`/logistica/campos-personalizados/operacion/${operacionId}/valores`)
-        .then(response => response.json())
-        .then(valores => {
-            if (valores[campoId]) {
-                document.getElementById('valorCampoEditar').value = valores[campoId].valor || '';
-            }
-        });
 };
+
+/**
+ * Genera el HTML del input para el modal de edición inline
+ */
+function generarInputCampoPersonalizadoModal(campo, valorActual = '') {
+    const baseClass = 'form-input bg-white w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500';
+    const opciones = campo.opciones || [];
+    const config = campo.configuracion || {};
+    
+    switch(campo.tipo) {
+        case 'texto':
+            return `<input type="text" id="valorCampoEditar" class="${baseClass}" placeholder="Ingrese ${campo.nombre}" value="${valorActual}">`;
+        
+        case 'descripcion':
+            return `<textarea id="valorCampoEditar" class="${baseClass} min-h-[100px]" placeholder="Ingrese ${campo.nombre}">${valorActual}</textarea>`;
+        
+        case 'numero':
+            const minNum = config.min !== undefined ? `min="${config.min}"` : '';
+            const maxNum = config.max !== undefined ? `max="${config.max}"` : '';
+            return `<input type="number" id="valorCampoEditar" class="${baseClass}" ${minNum} ${maxNum} step="1" value="${valorActual}">`;
+        
+        case 'decimal':
+            const decimales = config.decimales || 2;
+            return `<input type="number" id="valorCampoEditar" class="${baseClass}" step="${Math.pow(10, -decimales).toFixed(decimales)}" value="${valorActual}">`;
+        
+        case 'moneda':
+            const moneda = config.moneda || 'MXN';
+            const decMoneda = config.decimales || 2;
+            return `<div class="flex">
+                        <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-slate-600">${moneda}</span>
+                        <input type="number" id="valorCampoEditar" class="${baseClass} rounded-l-none" step="${Math.pow(10, -decMoneda).toFixed(decMoneda)}" value="${valorActual}">
+                    </div>`;
+        
+        case 'fecha':
+            return `<input type="date" id="valorCampoEditar" class="${baseClass}" value="${valorActual}">`;
+        
+        case 'booleano':
+            const checkedSi = valorActual === '1' || valorActual === 'si' ? 'checked' : '';
+            const checkedNo = valorActual === '0' || valorActual === 'no' ? 'checked' : '';
+            return `<div class="flex gap-6 py-2">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="valorCampoEditarRadio" value="1" class="mr-2 w-5 h-5 text-green-600" ${checkedSi}>
+                            <span class="text-lg text-green-600 font-medium">✓ Sí</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="valorCampoEditarRadio" value="0" class="mr-2 w-5 h-5 text-red-600" ${checkedNo}>
+                            <span class="text-lg text-red-600 font-medium">✗ No</span>
+                        </label>
+                    </div>`;
+        
+        case 'selector':
+            let selectOptions = '<option value="">-- Seleccionar --</option>';
+            opciones.forEach(opt => {
+                const selected = valorActual === opt ? 'selected' : '';
+                selectOptions += `<option value="${opt}" ${selected}>${opt}</option>`;
+            });
+            return `<select id="valorCampoEditar" class="${baseClass}">${selectOptions}</select>`;
+        
+        case 'multiple':
+            let valoresSeleccionados = [];
+            try {
+                valoresSeleccionados = valorActual ? (Array.isArray(valorActual) ? valorActual : JSON.parse(valorActual || '[]')) : [];
+            } catch(e) {
+                valoresSeleccionados = valorActual ? [valorActual] : [];
+            }
+            let checkboxes = '<div class="flex flex-wrap gap-3" id="valorCampoEditarMultiple">';
+            opciones.forEach((opt, idx) => {
+                const checked = valoresSeleccionados.includes(opt) ? 'checked' : '';
+                checkboxes += `
+                    <label class="inline-flex items-center cursor-pointer bg-slate-50 px-4 py-2 rounded-lg border hover:bg-indigo-50 transition-colors">
+                        <input type="checkbox" name="valorCampoEditarCb" value="${opt}" class="mr-2 w-4 h-4 text-indigo-600 rounded" ${checked}>
+                        <span>${opt}</span>
+                    </label>`;
+            });
+            checkboxes += '</div>';
+            return checkboxes;
+        
+        case 'email':
+            return `<input type="email" id="valorCampoEditar" class="${baseClass}" placeholder="correo@ejemplo.com" value="${valorActual}">`;
+        
+        case 'telefono':
+            return `<input type="tel" id="valorCampoEditar" class="${baseClass}" placeholder="+52 123 456 7890" value="${valorActual}">`;
+        
+        case 'url':
+            return `<input type="url" id="valorCampoEditar" class="${baseClass}" placeholder="https://ejemplo.com" value="${valorActual}">`;
+        
+        default:
+            return `<input type="text" id="valorCampoEditar" class="${baseClass}" value="${valorActual}">`;
+    }
+}
 
 window.cerrarModalEditarValorCampo = function() {
     const modal = document.getElementById('modalEditarValorCampo');
     if (modal) modal.remove();
 };
 
-window.guardarValorCampoInline = async function(operacionId, campoId) {
-    const valor = document.getElementById('valorCampoEditar').value;
+window.guardarValorCampoInline = async function(operacionId, campoId, tipo) {
+    let valor = '';
+    
+    // Obtener valor según el tipo
+    if (tipo === 'booleano') {
+        const radioChecked = document.querySelector('input[name="valorCampoEditarRadio"]:checked');
+        valor = radioChecked ? radioChecked.value : '';
+    } else if (tipo === 'multiple') {
+        const checkboxes = document.querySelectorAll('input[name="valorCampoEditarCb"]:checked');
+        const valores = Array.from(checkboxes).map(cb => cb.value);
+        valor = JSON.stringify(valores);
+    } else {
+        const input = document.getElementById('valorCampoEditar');
+        valor = input ? input.value : '';
+    }
     
     try {
         const response = await fetch('/logistica/campos-personalizados/valor', {
@@ -2534,12 +3284,7 @@ window.guardarValorCampoInline = async function(operacionId, campoId) {
             // Actualizar el valor en la celda de la tabla
             const celda = document.querySelector(`td[data-campo-id="${campoId}"][data-operacion-id="${operacionId}"] .valor-campo`);
             if (celda) {
-                // Formatear fecha si es necesario
-                let valorMostrar = valor || '-';
-                if (valor && valor.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    const [year, month, day] = valor.split('-');
-                    valorMostrar = `${day}/${month}/${year}`;
-                }
+                let valorMostrar = formatearValorParaMostrar(valor, tipo);
                 celda.textContent = valorMostrar;
             }
             
@@ -2553,6 +3298,39 @@ window.guardarValorCampoInline = async function(operacionId, campoId) {
         mostrarAlerta('Error de conexión al guardar el valor', 'error');
     }
 };
+
+/**
+ * Formatea un valor para mostrarlo en la tabla
+ */
+function formatearValorParaMostrar(valor, tipo) {
+    if (!valor || valor === '' || valor === '[]') return '-';
+    
+    switch(tipo) {
+        case 'fecha':
+            if (valor.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [year, month, day] = valor.split('-');
+                return `${day}/${month}/${year}`;
+            }
+            return valor;
+        
+        case 'booleano':
+            return valor === '1' ? '✓ Sí' : '✗ No';
+        
+        case 'multiple':
+            try {
+                const arr = JSON.parse(valor);
+                return arr.join(', ');
+            } catch(e) {
+                return valor;
+            }
+        
+        case 'moneda':
+            return `$ ${parseFloat(valor).toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
+        
+        default:
+            return valor;
+    }
+}
 
 // Exponer funciones globalmente
 window.cargarCamposParaModal = cargarCamposParaModal;

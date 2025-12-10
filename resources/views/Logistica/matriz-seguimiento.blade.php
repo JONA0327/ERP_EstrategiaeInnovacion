@@ -10,6 +10,10 @@
     <script>
         // Variable global para transportes
         window.transportes = @json($transportes->groupBy('tipo_operacion'));
+        // Idioma de las columnas
+        window.idiomaColumnas = '{{ $idiomaColumnas ?? "es" }}';
+        // Nombres de las columnas según idioma
+        window.nombresColumnas = @json($nombresColumnas ?? []);
     </script>
     <script src="{{ asset('js/Logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
 @endpush
@@ -110,40 +114,81 @@
                     <table class="w-full text-sm">
                         <thead class="table-header">
                             <tr>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]">No.</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Ejecutivo</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Operación</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Cliente</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Proveedor o Cliente</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Fecha de Embarque</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">No. De Factura</th>
+                                @if(!in_array('id', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]">{{ $nombresColumnas['id'] ?? 'No.' }}</th>
+                                @endif
+                                @if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['ejecutivo'] ?? 'Ejecutivo' }}</th>
+                                @endif
+                                @if(!in_array('operacion', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['operacion'] ?? 'Operación' }}</th>
+                                @endif
+                                @if(!in_array('cliente', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['cliente'] ?? 'Cliente' }}</th>
+                                @endif
+                                @if(!in_array('proveedor_o_cliente', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['proveedor_o_cliente'] ?? 'Proveedor o Cliente' }}</th>
+                                @endif
+                                @if(!in_array('fecha_embarque', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['fecha_embarque'] ?? 'Fecha de Embarque' }}</th>
+                                @endif
+                                @if(!in_array('no_factura', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['no_factura'] ?? 'No. De Factura' }}</th>
+                                @endif
                                 @if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">Tipo de Carga</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['tipo_carga'] ?? 'Tipo de Carga' }}</th>
                                 @endif
                                 @if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50">Incoterm</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50">{{ $nombresColumnas['tipo_incoterm'] ?? 'Incoterm' }}</th>
                                 @endif
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">T. Operación</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">Clave</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Referencia Interna</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Aduana</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">A.A</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Referencia A.A</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">No Ped</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Transporte</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Aduana</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Guía //BL</th>
+                                @if(!in_array('tipo_operacion_enum', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['tipo_operacion_enum'] ?? 'T. Operación' }}</th>
+                                @endif
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['clave'] ?? 'Clave' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['referencia_interna'] ?? 'Referencia Interna' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['aduana'] ?? 'Aduana' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['agente_aduanal'] ?? 'A.A' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['referencia_aa'] ?? 'Referencia A.A' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['no_pedimento'] ?? 'No Ped' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['transporte'] ?? 'Transporte' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_arribo_aduana'] ?? 'Fecha de Arribo a Aduana' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['guia_bl'] ?? 'Guía/BL' }}</th>
                                 @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">Puerto de Salida</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['puerto_salida'] ?? 'Puerto de Salida' }}</th>
                                 @endif
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Status</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Modulación</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">Fecha de Arribo a Planta</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Resultado</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">Target</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">Días en Tránsito</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Post-Operaciones</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Comentarios</th>
+                                {{-- NUEVOS CAMPOS OPCIONALES --}}
+                                @if(in_array('in_charge', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['in_charge'] ?? 'Responsable' }}</th>
+                                @endif
+                                @if(in_array('proveedor', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['proveedor'] ?? 'Proveedor' }}</th>
+                                @endif
+                                @if(in_array('tipo_previo', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['tipo_previo'] ?? 'Modalidad/Previo' }}</th>
+                                @endif
+                                @if(in_array('fecha_etd', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['fecha_etd'] ?? 'Fecha ETD' }}</th>
+                                @endif
+                                @if(in_array('fecha_zarpe', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['fecha_zarpe'] ?? 'Fecha Zarpe' }}</th>
+                                @endif
+                                @if(in_array('pedimento_en_carpeta', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['pedimento_en_carpeta'] ?? 'Ped. en Carpeta' }}</th>
+                                @endif
+                                @if(in_array('referencia_cliente', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['referencia_cliente'] ?? 'Ref. Cliente' }}</th>
+                                @endif
+                                @if(in_array('mail_subject', $columnasOpcionalesVisibles ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px] bg-purple-50">{{ $nombresColumnas['mail_subject'] ?? 'Asunto Correo' }}</th>
+                                @endif
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['status'] ?? 'Status' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_modulacion'] ?? 'Fecha de Modulación' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_arribo_planta'] ?? 'Fecha de Arribo a Planta' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['resultado'] ?? 'Resultado' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['target'] ?? 'Target' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['dias_transito'] ?? 'Días en Tránsito' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['post_operaciones'] ?? 'Post-Operaciones' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['comentarios'] ?? 'Comentarios' }}</th>
                                 @php
                                     // Determinar qué campos personalizados mostrar según el usuario
                                     $camposVisibles = collect();
@@ -198,6 +243,39 @@
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
                                 @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->puerto_salida ?? '-' }}</td>
+                                @endif
+                                {{-- NUEVOS CAMPOS OPCIONALES (Body) --}}
+                                @if(in_array('in_charge', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->in_charge ?? '-' }}</td>
+                                @endif
+                                @if(in_array('proveedor', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->proveedor ?? '-' }}</td>
+                                @endif
+                                @if(in_array('tipo_previo', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->tipo_previo ?? '-' }}</td>
+                                @endif
+                                @if(in_array('fecha_etd', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->fecha_etd ? $operacion->fecha_etd->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @if(in_array('fecha_zarpe', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->fecha_zarpe ? $operacion->fecha_zarpe->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @if(in_array('pedimento_en_carpeta', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">
+                                    @if($operacion->pedimento_en_carpeta === true)
+                                        <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Sí</span>
+                                    @elseif($operacion->pedimento_en_carpeta === false)
+                                        <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">No</span>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                @endif
+                                @if(in_array('referencia_cliente', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->referencia_cliente ?? '-' }}</td>
+                                @endif
+                                @if(in_array('mail_subject', $columnasOpcionalesVisibles ?? []))
+                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30 max-w-[200px] truncate" title="{{ $operacion->mail_subject ?? '' }}">{{ $operacion->mail_subject ?? '-' }}</td>
                                 @endif
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
@@ -1033,16 +1111,17 @@
         </div>
     </div>
 
-    <!-- Modal de Configuración de Columnas (Solo Admin) -->
+    <!-- Modal de Configuración de Columnas y Campos (Solo Admin) -->
     @if(isset($esAdmin) && $esAdmin)
     <div id="modalCamposPersonalizados" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
                 <h2 class="text-lg font-semibold text-slate-800">
                     <svg class="w-5 h-5 inline-block mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
-                    Configurar Visibilidad de Columnas
+                    Configuración de Campos
                 </h2>
                 <button onclick="cerrarModalCamposPersonalizados()" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1051,144 +1130,250 @@
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <div class="mb-6">
-                    <p class="text-sm text-slate-500">Las columnas predeterminadas siempre están visibles para todos. Las columnas adicionales (en morado) pueden habilitarse por ejecutivo.</p>
-                </div>
-                
-                <!-- Columnas Predeterminadas -->
-                <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
-                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <!-- Pestañas -->
+            <div class="border-b border-slate-200 bg-slate-50">
+                <nav class="flex px-6">
+                    <button id="tabColumnas" onclick="cambiarTabConfig('columnas')" class="px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 bg-blue-50 rounded-t-lg">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"></path>
                         </svg>
-                        Columnas Predeterminadas (Siempre Visibles)
-                    </h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">No.</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Ejecutivo</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Operación</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Cliente</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Proveedor</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Fecha Embarque</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">No. Factura</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">T. Operación</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Clave</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Ref. Interna</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Aduana</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">A.A</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Ref. A.A</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">No Ped</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Transporte</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Arribo Aduana</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Guía/BL</span>
-                        </div>
-                        <div class="flex items-center px-3 py-2 bg-white rounded border border-slate-200">
-                            <input type="checkbox" checked disabled class="mr-2 text-green-500">
-                            <span class="text-sm text-slate-600">Status</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Columnas Opcionales por Ejecutivo -->
-                <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        Visibilidad de Columnas
+                    </button>
+                    <button id="tabCampos" onclick="cambiarTabConfig('campos')" class="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
-                        Columnas Adicionales (Configurar por Ejecutivo)
-                    </h4>
-                    
+                        Campos Personalizados
+                    </button>
+                </nav>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                <!-- Panel de Visibilidad de Columnas -->
+                <div id="panelColumnas">
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-purple-700 mb-2">Seleccionar Ejecutivo:</label>
-                        <select id="selectEjecutivoColumnas" class="w-full md:w-1/2 px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="cargarColumnasEjecutivo()">
+                        <p class="text-sm text-slate-500">Configure qué columnas ver para cada ejecutivo. Las columnas predeterminadas pueden ocultarse y las adicionales (en morado) pueden habilitarse.</p>
+                    </div>
+                    
+                    <!-- Seleccionar Ejecutivo -->
+                    <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            Seleccionar Ejecutivo
+                        </h4>
+                        <select id="selectEjecutivoColumnas" class="w-full md:w-1/2 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="cargarColumnasEjecutivo()">
                             <option value="">-- Seleccione un ejecutivo --</option>
                         </select>
                     </div>
                     
-                    <div id="columnasOpcionalesContainer" class="hidden">
-                        <p class="text-sm text-purple-600 mb-3">Marque las columnas que desea mostrar a este ejecutivo:</p>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
-                                <input type="checkbox" id="colTipoCarga" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                                <div>
-                                    <span class="font-medium text-slate-700">Tipo de Carga</span>
-                                    <p class="text-xs text-slate-500">FCL / LCL</p>
-                                </div>
+                    <div id="configuracionColumnasContainer" class="hidden">
+                        <!-- Selector de Idioma -->
+                        <div class="mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <label class="block text-sm font-medium text-indigo-700 mb-2">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                                </svg>
+                                Idioma de nombres de columnas:
                             </label>
-                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
-                                <input type="checkbox" id="colTipoIncoterm" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                                <div>
-                                    <span class="font-medium text-slate-700">Incoterm</span>
-                                    <p class="text-xs text-slate-500">EXW, FOB, CIF, etc.</p>
-                                </div>
-                            </label>
-                            <label class="flex items-center px-4 py-3 bg-white rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors">
-                                <input type="checkbox" id="colPuertoSalida" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                                <div>
-                                    <span class="font-medium text-slate-700">Puerto de Salida</span>
-                                    <p class="text-xs text-slate-500">Puerto de origen</p>
-                                </div>
-                            </label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="idiomaColumnas" value="es" id="idiomaEs" class="mr-2 text-indigo-600" onchange="cambiarIdiomaColumnas()" checked>
+                                    <span class="text-sm">🇲🇽 Español</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="idiomaColumnas" value="en" id="idiomaEn" class="mr-2 text-indigo-600" onchange="cambiarIdiomaColumnas()">
+                                    <span class="text-sm">🇺🇸 English</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-indigo-500 mt-2">Los nombres de las columnas se mostrarán en el idioma seleccionado.</p>
                         </div>
                         
-                        <div class="flex justify-end">
-                            <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <!-- Columnas Predeterminadas -->
+                        <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
+                            <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                Guardar Configuración
+                                Columnas Predeterminadas (Desmarque para ocultar)
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-3">Estas columnas están visibles por defecto. Desmarque las que desee ocultar para este ejecutivo.</p>
+                            <div id="columnasPredeterminadasGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                            </div>
+                        </div>
+                    
+                        <!-- Columnas Opcionales -->
+                        <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                            <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                                Columnas Adicionales (Marque para mostrar)
+                            </h4>
+                            <p class="text-xs text-purple-600 mb-3">Estas columnas están ocultas por defecto. Marque las que desee mostrar para este ejecutivo.</p>
+                            <div id="columnasOpcionalesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <button type="button" onclick="resetearConfiguracionColumnas()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    Resetear a Predeterminados
+                                </button>
+                                <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Guardar Configuración
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel de Campos Personalizados -->
+                <div id="panelCampos" class="hidden">
+                    <div class="mb-4">
+                        <p class="text-sm text-slate-500">Cree campos personalizados que aparecerán al final de la tabla para los ejecutivos asignados.</p>
+                    </div>
+                    
+                    <!-- Formulario Nuevo Campo -->
+                    <div class="bg-green-50 rounded-xl p-4 mb-6 border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Crear Nuevo Campo
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-green-700 mb-1">Nombre del Campo <span class="text-red-500">*</span></label>
+                                <input type="text" id="nombreNuevoCampo" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Ej: Fecha de Entrega">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-green-700 mb-1">Tipo de Campo <span class="text-red-500">*</span></label>
+                                <select id="tipoNuevoCampo" onchange="mostrarOpcionesTipo()" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <option value="texto">📝 Texto corto</option>
+                                    <option value="descripcion">📄 Descripción (multilínea)</option>
+                                    <option value="numero">🔢 Número entero</option>
+                                    <option value="decimal">💲 Número decimal</option>
+                                    <option value="moneda">💰 Moneda</option>
+                                    <option value="fecha">📅 Fecha</option>
+                                    <option value="booleano">✅ Sí/No</option>
+                                    <option value="selector">📋 Lista de opciones</option>
+                                    <option value="email">📧 Correo electrónico</option>
+                                    <option value="telefono">📞 Teléfono</option>
+                                    <option value="url">🔗 URL/Enlace</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Opciones para Selector y Múltiple -->
+                            <div id="opcionesSelectorContainer" class="md:col-span-2 hidden">
+                                <label class="block text-sm font-medium text-green-700 mb-1">Opciones disponibles <span class="text-red-500">*</span></label>
+                                <div class="flex gap-2 mb-2">
+                                    <input type="text" id="nuevaOpcionInput" class="flex-1 px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Escribir opción y presionar Agregar">
+                                    <button type="button" onclick="agregarOpcion()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="listaOpciones" class="flex flex-wrap gap-2 min-h-[40px] p-2 bg-white rounded-lg border border-green-200">
+                                    <span class="text-sm text-gray-400 italic">Las opciones aparecerán aquí...</span>
+                                </div>
+                                <!-- Opción para selección múltiple o única -->
+                                <div class="mt-3 flex items-center gap-4">
+                                    <span class="text-sm font-medium text-green-700">Permitir seleccionar:</span>
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="radio" name="tipoSeleccion" value="unico" id="seleccionUnica" class="mr-1 text-green-600" checked>
+                                        <span class="text-sm">Solo uno</span>
+                                    </label>
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="radio" name="tipoSeleccion" value="multiple" id="seleccionMultiple" class="mr-1 text-green-600">
+                                        <span class="text-sm">Varios</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Configuración para Decimal/Moneda -->
+                            <div id="configDecimalContainer" class="hidden">
+                                <label class="block text-sm font-medium text-green-700 mb-1">Decimales</label>
+                                <input type="number" id="decimalesInput" min="0" max="6" value="2" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                            </div>
+                            
+                            <!-- Configuración para Moneda -->
+                            <div id="configMonedaContainer" class="hidden">
+                                <label class="block text-sm font-medium text-green-700 mb-1">Moneda</label>
+                                <select id="monedaSelect" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <option value="MXN">🇲🇽 MXN - Peso Mexicano</option>
+                                    <option value="USD">🇺🇸 USD - Dólar Americano</option>
+                                    <option value="EUR">🇪🇺 EUR - Euro</option>
+                                    <option value="GBP">🇬🇧 GBP - Libra Esterlina</option>
+                                    <option value="CNY">🇨🇳 CNY - Yuan Chino</option>
+                                    <option value="JPY">🇯🇵 JPY - Yen Japonés</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Configuración para Número -->
+                            <div id="configNumeroContainer" class="hidden md:col-span-2">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-green-700 mb-1">Valor mínimo (opcional)</label>
+                                        <input type="number" id="minNumeroInput" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Sin límite">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-green-700 mb-1">Valor máximo (opcional)</label>
+                                        <input type="number" id="maxNumeroInput" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Sin límite">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-green-700 mb-1">Mostrar después de</label>
+                                <select id="posicionNuevoCampo" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <option value="">Al final de la tabla</option>
+                                    <option value="comentarios">Comentarios</option>
+                                    <option value="post_operaciones">Post-Operaciones</option>
+                                    <option value="dias_transito">Días en Tránsito</option>
+                                    <option value="target">Target</option>
+                                    <option value="resultado">Resultado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="flex items-center text-sm font-medium text-green-700 mt-6">
+                                    <input type="checkbox" id="campoRequerido" class="mr-2 w-4 h-4 text-green-600 rounded focus:ring-green-500">
+                                    Campo requerido
+                                </label>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-green-700 mb-1">Asignar a Ejecutivos</label>
+                                <select id="selectEjecutivosNuevoCampo" multiple class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 min-h-[80px]">
+                                </select>
+                                <p class="text-xs text-green-600 mt-1">Ctrl+Click para seleccionar varios</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="button" onclick="crearCampoPersonalizado()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Crear Campo
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de Campos Existentes -->
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                            </svg>
+                            Campos Personalizados Existentes
+                        </h4>
+                        <div id="listaCamposPersonalizados" class="space-y-3">
+                            <p class="text-slate-400 text-sm text-center py-4">Cargando campos...</p>
                         </div>
                     </div>
                 </div>

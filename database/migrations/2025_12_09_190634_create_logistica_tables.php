@@ -73,7 +73,11 @@ return new class extends Migration
         Schema::create('campos_personalizados_matriz', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100);
-            $table->enum('tipo', ['texto', 'fecha']);
+            // Tipos: texto, fecha, numero, decimal, descripcion, booleano, selector, multiple, email, telefono, url, moneda
+            $table->string('tipo', 30)->default('texto');
+            $table->json('opciones')->nullable(); // Para selector y multiple: ["Opción 1", "Opción 2"]
+            $table->json('configuracion')->nullable(); // Config adicional: {"min": 0, "max": 100, "decimales": 2, "moneda": "MXN"}
+            $table->boolean('requerido')->default(false);
             $table->boolean('activo')->default(1);
             $table->integer('orden')->default(0);
             $table->string('mostrar_despues_de', 50)->nullable();
@@ -93,6 +97,7 @@ return new class extends Migration
             $table->foreignId('empleado_id')->constrained('empleados')->onDelete('cascade');
             $table->string('columna', 50);
             $table->boolean('visible')->default(0);
+            $table->enum('idioma_nombres', ['es', 'en'])->default('es'); // Idioma de los nombres de columnas
             $table->timestamps();
             $table->unique(['empleado_id', 'columna'], 'col_vis_ejec_unique');
         });
@@ -135,6 +140,19 @@ return new class extends Migration
             $table->string('transporte')->nullable();
             $table->string('guia_bl')->nullable();
             $table->string('puerto_salida', 150)->nullable();
+            
+            // ═══════════════════════════════════════════════════════════════
+            // NUEVOS CAMPOS (Opcionales) - Mapeo Excel
+            // ═══════════════════════════════════════════════════════════════
+            $table->string('in_charge')->nullable();              // In charge - Responsable
+            $table->string('proveedor')->nullable();              // Supplier Name - Proveedor
+            $table->string('tipo_previo')->nullable();            // MODALIDAD/PREVIO
+            $table->date('fecha_etd')->nullable();                // Shipp date (ETD) - Fecha de salida estimada
+            $table->date('fecha_zarpe')->nullable();              // Shipp date Zarpe - Fecha real de zarpe
+            $table->boolean('pedimento_en_carpeta')->nullable();  // PEDIMENTO EN CARPETA (SI/NO)
+            $table->string('referencia_cliente')->nullable();     // REF - Referencia del cliente
+            $table->text('mail_subject')->nullable();             // MAIL SUBJECT - Asunto del correo
+            // ═══════════════════════════════════════════════════════════════
             
             // Statuses
             $table->enum('status_calculado', ['In Process', 'Done', 'Out of Metric'])->default('In Process');
