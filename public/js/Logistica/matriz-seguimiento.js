@@ -9,91 +9,126 @@ let operacionActualId = null;
 // ========================================
 
 /**
- * Reordena las columnas de la tabla según la configuración guardada
- * Esta función se ejecuta al cargar la página
+ * Aplica el orden de columnas guardado al cargar la página
+ * Lee el orden desde window.columnasOrdenadasConfig (desde el servidor/BD)
  */
-window.reordenarColumnasTabla = function() {
-    const columnasOrdenadas = window.columnasOrdenadasConfig || [];
-    if (!columnasOrdenadas.length) return;
+window.aplicarOrdenColumnasGuardado = function() {
+    // Obtener orden guardado desde el servidor (pasado por PHP)
+    let ordenGuardado = window.columnasOrdenadasConfig || [];
     
-    // Solo considerar columnas visibles en el orden configurado
-    const columnasVisibles = columnasOrdenadas.filter(col => col.visible !== false);
-    if (!columnasVisibles.length) return;
+    console.log('Orden de columnas desde BD:', ordenGuardado);
     
-    const table = document.querySelector('.table-container table');
-    if (!table) return;
+    if (!ordenGuardado.length) {
+        console.log('No hay orden de columnas guardado en BD para aplicar');
+        return;
+    }
     
-    const thead = table.querySelector('thead tr');
-    const tbody = table.querySelector('tbody');
-    if (!thead || !tbody) return;
+    // Verificar si hay un orden personalizado (orden diferente al por defecto)
+    const tieneOrdenPersonalizado = ordenGuardado.some((col, idx) => col.orden !== idx);
+    if (!tieneOrdenPersonalizado) {
+        console.log('Las columnas están en orden por defecto, no se necesita reordenar');
+        return;
+    }
     
-    // Mapeo de nombres de columnas a índices actuales
-    const mapaColumnas = {
-        'id': 'No.',
-        'ejecutivo': 'Ejecutivo',
-        'operacion': 'Operación',
-        'cliente': 'Cliente',
-        'proveedor_o_cliente': 'Proveedor o Cliente',
-        'fecha_embarque': 'Fecha de Embarque',
-        'no_factura': 'No. De Factura',
-        'tipo_carga': 'Tipo de Carga',
-        'tipo_incoterm': 'Incoterm',
-        'tipo_operacion_enum': 'T. Operación',
-        'clave': 'Clave',
-        'referencia_interna': 'Referencia Interna',
-        'aduana': 'Aduana',
-        'agente_aduanal': 'A.A',
-        'referencia_aa': 'Referencia A.A',
-        'no_pedimento': 'No Ped',
-        'transporte': 'Transporte',
-        'fecha_arribo_aduana': 'Fecha de Arribo a Aduana',
-        'guia_bl': 'Guía/BL',
-        'puerto_salida': 'Puerto de Salida',
-        'in_charge': 'Responsable',
-        'proveedor': 'Proveedor',
-        'tipo_previo': 'Modalidad/Previo',
-        'fecha_etd': 'Fecha ETD',
-        'fecha_zarpe': 'Fecha Zarpe',
-        'pedimento_en_carpeta': 'Ped. en Carpeta',
-        'referencia_cliente': 'Ref. Cliente',
-        'mail_subject': 'Asunto Correo',
-        'status': 'Status',
-        'fecha_modulacion': 'Fecha de Modulación',
-        'fecha_arribo_planta': 'Fecha de Arribo a Planta',
-        'resultado': 'Resultado',
-        'target': 'Target',
-        'dias_transito': 'Días en Tránsito',
-        'post_operaciones': 'Post-Operaciones',
-        'comentarios': 'Comentarios'
-    };
+    // Filtrar solo las columnas que tienen un orden definido
+    const columnasConOrden = ordenGuardado.filter(col => typeof col.orden === 'number');
+    if (!columnasConOrden.length) {
+        console.log('No hay columnas con orden definido');
+        return;
+    }
     
-    // Obtener todos los th actuales
-    const thElements = Array.from(thead.querySelectorAll('th'));
-    const rows = Array.from(tbody.querySelectorAll('tr'));
+    // Ordenar por el campo 'orden'
+    columnasConOrden.sort((a, b) => a.orden - b.orden);
+    console.log('Columnas ordenadas:', columnasConOrden.map(c => c.columna));
     
-    // Encontrar índice de cada columna por su data-columna o texto
-    const indicesOriginales = {};
-    thElements.forEach((th, index) => {
-        const dataColumna = th.dataset.columna;
-        const texto = th.textContent.trim();
-        
-        // Buscar en el mapa
-        for (const [key, value] of Object.entries(mapaColumnas)) {
-            if (dataColumna === key || texto.includes(value) || texto.includes(window.nombresColumnas?.[key] || '')) {
-                indicesOriginales[key] = index;
-                th.dataset.columna = key; // Marcar para futuro uso
-                break;
-            }
+    const tabla = document.getElementById('tablaMatriz');
+    if (!tabla) {
+        console.log('Tabla no encontrada');
+        return;
+    }
+    
+    const thead = tabla.querySelector('thead tr');
+    const tbody = tabla.querySelector('tbody');
+    if (!thead) return;
+    
+    const headers = Array.from(thead.querySelectorAll('th'));
+    const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+    
+    console.log('Headers encontrados:', headers.length);
+    console.log('Headers con data-columna:', headers.map(h => h.dataset.columna || h.dataset.campoId || h.textContent.substring(0, 20)));
+    
+    // Crear mapa de columna -> índice actual
+    const mapaIndices = {};
+    headers.forEach((th, index) => {
+        let columna = th.dataset.columna;
+        if (!columna && th.dataset.campoId) {
+            columna = `campo_${th.dataset.campoId}`;
         }
-        
-        // Campos personalizados
-        if (th.classList.contains('campo-personalizado') || th.dataset.campoId) {
-            indicesOriginales['campo_' + th.dataset.campoId] = index;
+        if (columna) {
+            mapaIndices[columna] = index;
         }
     });
     
-    console.log('Configuración de columnas ordenadas aplicada.');
+    console.log('Mapa de índices:', mapaIndices);
+    
+    // Crear el nuevo orden de índices
+    const nuevoOrden = [];
+    columnasConOrden.forEach(col => {
+        const columnaKey = col.columna;
+        if (mapaIndices.hasOwnProperty(columnaKey)) {
+            nuevoOrden.push(mapaIndices[columnaKey]);
+        }
+    });
+    
+    // Agregar columnas que no están en el orden guardado (al final)
+    headers.forEach((th, index) => {
+        if (!nuevoOrden.includes(index)) {
+            nuevoOrden.push(index);
+        }
+    });
+    
+    console.log('Nuevo orden de índices:', nuevoOrden);
+    
+    // Si el orden es igual al actual, no hacer nada
+    const ordenActual = headers.map((_, i) => i);
+    if (JSON.stringify(nuevoOrden) === JSON.stringify(ordenActual)) {
+        console.log('El orden de columnas ya está aplicado');
+        return;
+    }
+    
+    // Reordenar headers
+    const fragment = document.createDocumentFragment();
+    nuevoOrden.forEach(idx => {
+        if (headers[idx]) {
+            fragment.appendChild(headers[idx].cloneNode(true));
+        }
+    });
+    thead.innerHTML = '';
+    thead.appendChild(fragment);
+    
+    // Reordenar celdas en cada fila
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        const rowFragment = document.createDocumentFragment();
+        nuevoOrden.forEach(idx => {
+            if (cells[idx]) {
+                rowFragment.appendChild(cells[idx].cloneNode(true));
+            }
+        });
+        row.innerHTML = '';
+        row.appendChild(rowFragment);
+    });
+    
+    console.log('Orden de columnas aplicado exitosamente desde BD');
+    
+    // Reinicializar drag & drop después de reordenar
+    setTimeout(() => {
+        inicializarDragDropColumnas();
+    }, 100);
 };
+
+// Mantener la función anterior por compatibilidad
+window.reordenarColumnasTabla = window.aplicarOrdenColumnasGuardado;
 
 // ========================================
 // SCROLL SINCRONIZADO SUPERIOR E INFERIOR
@@ -151,10 +186,392 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarScrollSincronizado();
 });
 
-// Ejecutar reordenamiento al cargar
+// Ejecutar reordenamiento al cargar - HABILITADO
 document.addEventListener('DOMContentLoaded', function() {
-    // Por ahora deshabilitado mientras se implementa completamente
-    // reordenarColumnasTabla();
+    // Esperar un momento para que la tabla esté completamente renderizada
+    setTimeout(function() {
+        aplicarOrdenColumnasGuardado();
+    }, 200);
+});
+
+// ========================================
+// SISTEMA DE DRAG & DROP PARA COLUMNAS DE LA TABLA
+// ========================================
+
+/**
+ * Variables globales para el sistema de drag & drop de columnas
+ */
+let columnaDragIndex = null;
+let columnaDragElement = null;
+let guardarOrdenTimeout = null;
+
+/**
+ * Obtiene el empleado_id del usuario actual para guardar configuración
+ */
+function obtenerEmpleadoIdActual() {
+    // Primero intentar la variable global definida en el blade
+    if (window.empleadoIdActual) {
+        return window.empleadoIdActual;
+    }
+    
+    // Intentar obtener del dataset del body
+    const bodyDataset = document.body.dataset;
+    if (bodyDataset.empleadoId) {
+        return bodyDataset.empleadoId;
+    }
+    
+    // Intentar obtener de un elemento oculto
+    const hiddenInput = document.getElementById('empleadoIdActual');
+    if (hiddenInput && hiddenInput.value) {
+        return hiddenInput.value;
+    }
+    
+    // Intentar obtener del select de filtro ejecutivo si hay uno seleccionado
+    const selectEjecutivo = document.getElementById('filtroEjecutivo');
+    if (selectEjecutivo && selectEjecutivo.value && selectEjecutivo.value !== 'todos') {
+        return selectEjecutivo.value;
+    }
+    
+    return null;
+}
+
+/**
+ * Inicializa el sistema de drag & drop para las columnas de la tabla
+ */
+window.inicializarDragDropColumnas = function() {
+    const tabla = document.getElementById('tablaMatriz');
+    if (!tabla) return;
+    
+    const thead = tabla.querySelector('thead tr');
+    if (!thead) return;
+    
+    const headers = thead.querySelectorAll('th');
+    
+    headers.forEach((th, index) => {
+        // Asignar índice de columna como atributo
+        th.dataset.columnIndex = index;
+        
+        // Obtener identificador de columna para guardar
+        if (!th.dataset.columna) {
+            // Intentar inferir de clases o contenido
+            const texto = th.textContent.trim().replace(/[★\s]+/g, ' ').trim();
+            th.dataset.columnaOriginal = texto;
+        }
+        
+        // Hacer el header draggable
+        th.draggable = true;
+        th.style.cursor = 'grab';
+        
+        // Agregar estilos para indicar que es arrastrable
+        th.classList.add('draggable-column');
+        
+        // Eventos de drag
+        th.addEventListener('dragstart', handleColumnDragStart);
+        th.addEventListener('dragover', handleColumnDragOver);
+        th.addEventListener('dragenter', handleColumnDragEnter);
+        th.addEventListener('dragleave', handleColumnDragLeave);
+        th.addEventListener('drop', handleColumnDrop);
+        th.addEventListener('dragend', handleColumnDragEnd);
+    });
+    
+    console.log('Sistema de drag & drop de columnas inicializado');
+};
+
+/**
+ * Manejador del inicio del arrastre de una columna
+ */
+function handleColumnDragStart(e) {
+    columnaDragIndex = parseInt(this.dataset.columnIndex);
+    columnaDragElement = this;
+    
+    // Efecto visual
+    this.style.opacity = '0.5';
+    this.style.cursor = 'grabbing';
+    
+    // Información para el drop
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', columnaDragIndex);
+    
+    // Agregar clase para estilo visual
+    this.classList.add('dragging');
+}
+
+/**
+ * Manejador cuando se arrastra sobre una columna
+ */
+function handleColumnDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+/**
+ * Manejador cuando se entra a una columna durante el arrastre
+ */
+function handleColumnDragEnter(e) {
+    this.classList.add('drag-over');
+}
+
+/**
+ * Manejador cuando se sale de una columna durante el arrastre
+ */
+function handleColumnDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+/**
+ * Manejador cuando se suelta una columna
+ */
+function handleColumnDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const targetIndex = parseInt(this.dataset.columnIndex);
+    
+    if (columnaDragIndex !== null && columnaDragIndex !== targetIndex) {
+        // Reordenar columnas en la tabla
+        reordenarColumnasEnTabla(columnaDragIndex, targetIndex);
+        
+        // Programar guardado automático (con debounce de 1 segundo)
+        clearTimeout(guardarOrdenTimeout);
+        guardarOrdenTimeout = setTimeout(() => {
+            guardarOrdenColumnasAutomatico();
+        }, 1000);
+    }
+    
+    this.classList.remove('drag-over');
+    return false;
+}
+
+/**
+ * Manejador cuando termina el arrastre
+ */
+function handleColumnDragEnd(e) {
+    // Restaurar estilos
+    this.style.opacity = '';
+    this.style.cursor = 'grab';
+    this.classList.remove('dragging');
+    
+    // Limpiar clases de drag-over en todos los headers
+    const headers = document.querySelectorAll('#tablaMatriz thead th');
+    headers.forEach(th => {
+        th.classList.remove('drag-over');
+    });
+    
+    columnaDragIndex = null;
+    columnaDragElement = null;
+}
+
+/**
+ * Reordena las columnas en la tabla (headers y celdas)
+ */
+function reordenarColumnasEnTabla(fromIndex, toIndex) {
+    const tabla = document.getElementById('tablaMatriz');
+    if (!tabla) return;
+    
+    // Reordenar headers
+    const thead = tabla.querySelector('thead tr');
+    if (thead) {
+        const headers = Array.from(thead.querySelectorAll('th'));
+        const movedHeader = headers[fromIndex];
+        
+        if (fromIndex < toIndex) {
+            // Mover hacia la derecha
+            thead.insertBefore(movedHeader, headers[toIndex].nextSibling);
+        } else {
+            // Mover hacia la izquierda
+            thead.insertBefore(movedHeader, headers[toIndex]);
+        }
+    }
+    
+    // Reordenar celdas en todas las filas del tbody
+    const tbody = tabla.querySelector('tbody');
+    if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length > Math.max(fromIndex, toIndex)) {
+                const movedCell = cells[fromIndex];
+                
+                if (fromIndex < toIndex) {
+                    row.insertBefore(movedCell, cells[toIndex].nextSibling);
+                } else {
+                    row.insertBefore(movedCell, cells[toIndex]);
+                }
+            }
+        });
+    }
+    
+    // Actualizar índices de columnas
+    actualizarIndicesColumnas();
+    
+    // Mostrar notificación de cambio
+    mostrarNotificacionOrden();
+}
+
+/**
+ * Actualiza los atributos data-column-index después de reordenar
+ */
+function actualizarIndicesColumnas() {
+    const tabla = document.getElementById('tablaMatriz');
+    if (!tabla) return;
+    
+    const headers = tabla.querySelectorAll('thead th');
+    headers.forEach((th, index) => {
+        th.dataset.columnIndex = index;
+    });
+}
+
+/**
+ * Muestra una notificación temporal de que se guardará el orden
+ */
+function mostrarNotificacionOrden() {
+    // Remover notificación existente si hay
+    const existente = document.getElementById('notificacionOrden');
+    if (existente) {
+        existente.remove();
+    }
+    
+    const notificacion = document.createElement('div');
+    notificacion.id = 'notificacionOrden';
+    notificacion.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 transition-opacity duration-300';
+    notificacion.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Guardando orden de columnas...</span>
+    `;
+    document.body.appendChild(notificacion);
+}
+
+/**
+ * Guarda automáticamente el orden de las columnas en la base de datos
+ */
+function guardarOrdenColumnasAutomatico() {
+    const empleadoId = obtenerEmpleadoIdActual();
+    
+    // Recopilar orden actual de columnas
+    const tabla = document.getElementById('tablaMatriz');
+    if (!tabla) return;
+    
+    const headers = tabla.querySelectorAll('thead th');
+    const ordenColumnas = [];
+    
+    headers.forEach((th, index) => {
+        let columna = th.dataset.columna;
+        const campoId = th.dataset.campoId;
+        
+        if (campoId) {
+            columna = `campo_${campoId}`;
+        } else if (!columna) {
+            // Usar el texto del header como identificador de respaldo
+            columna = th.textContent.trim().replace(/[★\s]+/g, '_').substring(0, 30) || `columna_${index}`;
+        }
+        
+        ordenColumnas.push({
+            columna: columna,
+            orden: index,
+            visible: true
+        });
+    });
+    
+    console.log('Guardando orden de columnas en BD:', ordenColumnas);
+    console.log('Empleado ID:', empleadoId);
+    
+    // Si no hay empleado específico, mostrar error
+    if (!empleadoId) {
+        console.error('No hay empleado_id, no se puede guardar en BD');
+        mostrarNotificacionError('No se puede guardar: usuario no identificado');
+        return;
+    }
+    
+    // Guardar en el servidor (base de datos)
+    fetch('/logistica/columnas-config/orden', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({
+            empleado_id: parseInt(empleadoId),
+            orden_columnas: ordenColumnas
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Respuesta del servidor:', data);
+        if (data.success) {
+            mostrarNotificacionExito();
+        } else {
+            console.error('Error del servidor:', data);
+            mostrarNotificacionError(data.mensaje || 'Error al guardar');
+        }
+    })
+    .catch(error => {
+        console.error('Error guardando orden:', error);
+        mostrarNotificacionError('Error de conexión: ' + error.message);
+    });
+}
+
+/**
+ * Muestra notificación de error
+ */
+function mostrarNotificacionError(mensaje) {
+    const notificacion = document.getElementById('notificacionOrden');
+    if (notificacion) {
+        notificacion.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 transition-opacity duration-300';
+        notificacion.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span>${mensaje}</span>
+        `;
+        
+        // Desvanecer y remover después de 4 segundos
+        setTimeout(() => {
+            notificacion.style.opacity = '0';
+            setTimeout(() => {
+                notificacion.remove();
+            }, 300);
+        }, 4000);
+    }
+}
+
+/**
+ * Muestra notificación de éxito al guardar
+ */
+function mostrarNotificacionExito() {
+    const notificacion = document.getElementById('notificacionOrden');
+    if (notificacion) {
+        notificacion.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 transition-opacity duration-300';
+        notificacion.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Orden guardado correctamente</span>
+        `;
+        
+        // Desvanecer y remover después de 2 segundos
+        setTimeout(() => {
+            notificacion.style.opacity = '0';
+            setTimeout(() => {
+                notificacion.remove();
+            }, 300);
+        }, 2000);
+    }
+}
+
+// Inicializar drag & drop al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarDragDropColumnas();
 });
 
 // ========================================
@@ -902,38 +1319,31 @@ window.guardarConfiguracionColumnas = function() {
     // Obtener idioma seleccionado
     const idioma = document.querySelector('input[name="idiomaColumnas"]:checked')?.value || 'es';
     
-    // Construir el array de columnas con orden y visibilidad desde la lista ordenable
-    const ordenColumnas = [];
-    const ordenCamposPersonalizados = [];
-    const items = document.querySelectorAll('.columna-ordenable');
-    
-    items.forEach((item, index) => {
-        const columna = item.dataset.columna;
-        const tipo = item.dataset.tipo;
-        
-        // Obtener visibilidad desde el checkbox dentro del item
-        const checkbox = item.querySelector('.columna-visible-check');
-        const visible = checkbox ? checkbox.checked : (item.dataset.visible === '1');
-        
-        // Separar campos personalizados de columnas normales
-        if (columna.startsWith('campo_')) {
-            const campoId = columna.replace('campo_', '');
-            ordenCamposPersonalizados.push({
-                campo_id: parseInt(campoId),
-                orden: index,
-                visible: visible
-            });
-        } else {
-            ordenColumnas.push({
-                columna: columna,
-                orden: index,
-                visible: visible
-            });
+    // Obtener columnas predeterminadas VISIBLES (las que SÍ están marcadas)
+    const columnasPredeterminadasVisibles = [];
+    document.querySelectorAll('#columnasPredeterminadasGrid .columna-predeterminada').forEach(checkbox => {
+        if (checkbox.checked) {
+            columnasPredeterminadasVisibles.push(checkbox.dataset.columna);
         }
     });
     
-    // Guardar la configuración completa con orden
-    fetch('/logistica/columnas-config/orden', {
+    // Obtener columnas opcionales VISIBLES (las que SÍ están marcadas)
+    const columnasOpcionalesVisibles = [];
+    document.querySelectorAll('#columnasOpcionalesGrid .columna-opcional').forEach(checkbox => {
+        if (checkbox.checked) {
+            columnasOpcionalesVisibles.push(checkbox.dataset.columna);
+        }
+    });
+    
+    console.log('Guardando configuración:', {
+        empleado_id: ejecutivoSeleccionadoColumnas,
+        columnas_predeterminadas: columnasPredeterminadasVisibles,
+        columnas_opcionales: columnasOpcionalesVisibles,
+        idioma: idioma
+    });
+    
+    // Usar la ruta existente POST /logistica/columnas-config
+    fetch('/logistica/columnas-config', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -941,23 +1351,42 @@ window.guardarConfiguracionColumnas = function() {
         },
         body: JSON.stringify({
             empleado_id: ejecutivoSeleccionadoColumnas,
-            orden_columnas: ordenColumnas,
-            orden_campos_personalizados: ordenCamposPersonalizados,
+            columnas_predeterminadas: columnasPredeterminadasVisibles,
+            columnas_opcionales: columnasOpcionalesVisibles,
             idioma: idioma
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            mostrarAlerta('Configuración y orden de columnas guardados exitosamente. Recarga la página para ver los cambios.', 'success');
+            mostrarAlerta('Configuración de columnas guardada exitosamente. Recarga la página para ver los cambios.', 'success');
         } else {
-            mostrarAlerta('Error al guardar la configuración: ' + (data.message || ''), 'error');
+            mostrarAlerta('Error al guardar la configuración: ' + (data.message || data.mensaje || ''), 'error');
         }
     })
     .catch(error => {
         console.error('Error guardando configuración:', error);
         mostrarAlerta('Error al guardar la configuración', 'error');
     });
+};
+
+/**
+ * Previsualizar la configuración de columnas para el ejecutivo seleccionado
+ * Abre una nueva pestaña mostrando la vista como la vería ese ejecutivo
+ */
+window.previsualizarConfiguracion = function() {
+    if (!ejecutivoSeleccionadoColumnas) {
+        mostrarAlerta('Por favor seleccione un ejecutivo para previsualizar su configuración', 'warning');
+        return;
+    }
+    
+    // Obtener el nombre del ejecutivo seleccionado
+    const selectEjecutivo = document.getElementById('selectEjecutivoColumnas');
+    const nombreEjecutivo = selectEjecutivo.options[selectEjecutivo.selectedIndex]?.text || 'Ejecutivo';
+    
+    // Abrir nueva pestaña con parámetro de previsualización
+    const url = `/logistica/matriz-seguimiento?preview_as=${ejecutivoSeleccionadoColumnas}`;
+    window.open(url, '_blank');
 };
 
 // ========================================

@@ -39,6 +39,8 @@ class OperacionLogisticaController extends Controller
         $usuarioActual = auth()->user();
         $empleadoActual = null;
         $esAdmin = false;
+        $modoPreview = false;
+        $empleadoPreview = null;
 
         // Buscar el empleado actual en la tabla empleados
         if ($usuarioActual) {
@@ -46,6 +48,15 @@ class OperacionLogisticaController extends Controller
                 ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
                 ->first();
             $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        // *** MODO PREVIEW: Admin puede ver como si fuera otro ejecutivo ***
+        $previewAs = $request->get('preview_as');
+        if ($esAdmin && $previewAs) {
+            $empleadoPreview = Empleado::find($previewAs);
+            if ($empleadoPreview) {
+                $modoPreview = true;
+            }
         }
 
         // Obtener filtros del request
@@ -149,14 +160,18 @@ class OperacionLogisticaController extends Controller
         $idiomaColumnas = 'es'; // Por defecto español
         $columnasOrdenadas = [];
         
-        if ($empleadoActual) {
-            $columnasOpcionalesVisibles = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoActual->id);
-            $columnasPredeterminadasOcultas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoActual->id);
-            $idiomaColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoActual->id);
-            $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo($empleadoActual->id, $idiomaColumnas);
+        // Determinar qué empleado usar para la configuración de columnas
+        $empleadoParaColumnas = $modoPreview ? $empleadoPreview : $empleadoActual;
+        
+        if ($empleadoParaColumnas) {
+            $columnasOpcionalesVisibles = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasVisiblesParaEjecutivo($empleadoParaColumnas->id);
+            $columnasPredeterminadasOcultas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasPredeterminadasOcultas($empleadoParaColumnas->id);
+            $idiomaColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getIdiomaEjecutivo($empleadoParaColumnas->id);
+            $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo($empleadoParaColumnas->id, $idiomaColumnas);
         }
-        // Admin ve todas las columnas opcionales y ninguna oculta
-        if ($esAdmin) {
+        
+        // Admin ve todas las columnas opcionales y ninguna oculta (solo si NO está en modo preview)
+        if ($esAdmin && !$modoPreview) {
             $columnasOpcionalesVisibles = array_keys(\App\Models\Logistica\ColumnaVisibleEjecutivo::$columnasOpcionales);
             $columnasPredeterminadasOcultas = [];
             $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo(0, $idiomaColumnas);
@@ -184,7 +199,9 @@ class OperacionLogisticaController extends Controller
             'columnasPredeterminadasOcultas',
             'idiomaColumnas',
             'nombresColumnas',
-            'columnasOrdenadas'
+            'columnasOrdenadas',
+            'modoPreview',
+            'empleadoPreview'
         ));
     }
 

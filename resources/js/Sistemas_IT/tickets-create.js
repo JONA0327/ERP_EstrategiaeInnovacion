@@ -599,11 +599,24 @@ function addCalendarDebugButton() {
 function initializeImageUpload() {
     const imageInput = document.getElementById('imageInput');
     const imagePreview = document.getElementById('imagePreview');
-    const uploadButton = document.querySelector('button[onclick="document.getElementById(\'imageInput\').click()"]');
+    const uploadButton = document.getElementById('uploadButton');
+    const imageCountSpan = document.getElementById('imageCount');
     
-    if (!imageInput || !imagePreview) return;
+    if (!imageInput || !imagePreview) {
+        console.log('No se encontraron elementos de imagen, posiblemente no es un ticket de software/hardware');
+        return;
+    }
     
     let selectedFiles = [];
+    const maxImages = 5;
+    
+    // Conectar el botón con el input de archivo
+    if (uploadButton) {
+        uploadButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            imageInput.click();
+        });
+    }
     
     // Manejar selección de archivos
     imageInput.addEventListener('change', function(e) {
@@ -627,18 +640,25 @@ function initializeImageUpload() {
         // Agregar archivos válidos
         selectedFiles = [...selectedFiles, ...validFiles];
         
-        if (selectedFiles.length > 10) {
-            selectedFiles = selectedFiles.slice(0, 10);
-            showNotification('Máximo 10 imágenes permitidas', 'warning');
+        if (selectedFiles.length > maxImages) {
+            selectedFiles = selectedFiles.slice(0, maxImages);
+            showNotification(`Máximo ${maxImages} imágenes permitidas`, 'warning');
         }
         
         updateImagePreview();
         updateFileInput();
+        updateImageCount();
     });
+    
+    function updateImageCount() {
+        if (imageCountSpan) {
+            imageCountSpan.textContent = `${selectedFiles.length}/${maxImages} imágenes`;
+        }
+    }
     
     function updateImagePreview() {
         if (selectedFiles.length === 0) {
-            imagePreview.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Las imágenes seleccionadas aparecerán aquí</p>';
+            imagePreview.innerHTML = '<p class="text-sm text-slate-400 text-center py-8 col-span-full">Las imágenes seleccionadas aparecerán aquí</p>';
             return;
         }
         
@@ -688,6 +708,7 @@ function initializeImageUpload() {
         selectedFiles.splice(index, 1);
         updateImagePreview();
         updateFileInput();
+        updateImageCount();
         
         if (selectedFiles.length === 0) {
             showNotification('Imagen eliminada', 'info');

@@ -3,7 +3,7 @@
 @section('title', 'Matriz de Seguimiento - Logística')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}?v={{ md5(time()) }}">
 @endpush
 
 @push('scripts')
@@ -16,11 +16,16 @@
         window.nombresColumnas = @json($nombresColumnas ?? []);
         // Columnas ordenadas para el ejecutivo actual
         window.columnasOrdenadasConfig = @json($columnasOrdenadas ?? []);
+        // ID del empleado actual para guardar configuración de columnas
+        window.empleadoIdActual = {{ $empleadoActual ? $empleadoActual->id : 'null' }};
     </script>
     <script src="{{ asset('js/Logistica/matriz-seguimiento.js') }}?v={{ md5(time()) }}"></script>
 @endpush
 
 @section('content')
+    {{-- Campo oculto con el ID del empleado actual --}}
+    <input type="hidden" id="empleadoIdActual" value="{{ $empleadoActual ? $empleadoActual->id : '' }}">
+    
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
@@ -28,6 +33,30 @@
         </div>
 
         <div class="relative max-w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            {{-- Banner de modo Preview --}}
+            @if(isset($modoPreview) && $modoPreview && isset($empleadoPreview))
+            <div class="mb-4 bg-amber-100 border-2 border-amber-400 rounded-xl p-4 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-bold text-amber-800">Modo Previsualización</h3>
+                            <p class="text-amber-700 text-sm">Estás viendo la matriz como la vería: <strong>{{ $empleadoPreview->nombre }}</strong></p>
+                        </div>
+                    </div>
+                    <a href="{{ route('logistica.matriz-seguimiento') }}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Salir de Previsualización
+                    </a>
+                </div>
+            </div>
+            @endif
+
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
@@ -110,6 +139,27 @@
                 </div>
             </div>
 
+            @php
+                // Determinar qué campos personalizados mostrar según el usuario
+                $camposVisibles = collect();
+                if (isset($camposPersonalizados)) {
+                    if (isset($esAdmin) && $esAdmin) {
+                        // Admin ve todos los campos activos
+                        $camposVisibles = $camposPersonalizados;
+                    } elseif (isset($empleadoActual) && $empleadoActual) {
+                        // Usuario normal ve solo campos asignados a él
+                        $camposVisibles = $camposPersonalizados->filter(function($campo) use ($empleadoActual) {
+                            return $campo->ejecutivos->contains('id', $empleadoActual->id);
+                        });
+                    }
+                }
+                
+                // Agrupar campos personalizados por su posición (mostrar_despues_de)
+                $camposPorPosicion = $camposVisibles->groupBy(function($campo) {
+                    return $campo->mostrar_despues_de ?? '__al_final__';
+                });
+            @endphp
+
             <!-- Tabla Principal -->
             <div class="table-container rounded-2xl overflow-hidden">
                 <!-- Scroll superior sincronizado -->
@@ -122,132 +172,405 @@
                         <thead class="table-header">
                             <tr>
                                 @if(!in_array('id', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]">{{ $nombresColumnas['id'] ?? 'No.' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]" data-columna="id">{{ $nombresColumnas['id'] ?? 'No.' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('id', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['ejecutivo'] ?? 'Ejecutivo' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="ejecutivo">{{ $nombresColumnas['ejecutivo'] ?? 'Ejecutivo' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('ejecutivo', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('operacion', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['operacion'] ?? 'Operación' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="operacion">{{ $nombresColumnas['operacion'] ?? 'Operación' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('operacion', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('cliente', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['cliente'] ?? 'Cliente' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="cliente">{{ $nombresColumnas['cliente'] ?? 'Cliente' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('cliente', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('proveedor_o_cliente', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['proveedor_o_cliente'] ?? 'Proveedor o Cliente' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="proveedor_o_cliente">{{ $nombresColumnas['proveedor_o_cliente'] ?? 'Proveedor o Cliente' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('proveedor', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('fecha_embarque', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['fecha_embarque'] ?? 'Fecha de Embarque' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="fecha_embarque">{{ $nombresColumnas['fecha_embarque'] ?? 'Fecha de Embarque' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('fecha_embarque', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(!in_array('no_factura', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['no_factura'] ?? 'No. De Factura' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="no_factura">{{ $nombresColumnas['no_factura'] ?? 'No. De Factura' }}</th>
                                 @endif
+                                @foreach($camposPorPosicion->get('no_factura', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['tipo_carga'] ?? 'Tipo de Carga' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="tipo_carga">{{ $nombresColumnas['tipo_carga'] ?? 'Tipo de Carga' }}</th>
                                 @endif
                                 @if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50">{{ $nombresColumnas['tipo_incoterm'] ?? 'Incoterm' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50" data-columna="tipo_incoterm">{{ $nombresColumnas['tipo_incoterm'] ?? 'Incoterm' }}</th>
                                 @endif
+                                
                                 @if(!in_array('tipo_operacion_enum', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['tipo_operacion_enum'] ?? 'T. Operación' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="tipo_operacion_enum">{{ $nombresColumnas['tipo_operacion_enum'] ?? 'T. Operación' }}</th>
                                 @endif
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['clave'] ?? 'Clave' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['referencia_interna'] ?? 'Referencia Interna' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['aduana'] ?? 'Aduana' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['agente_aduanal'] ?? 'A.A' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['referencia_aa'] ?? 'Referencia A.A' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['no_pedimento'] ?? 'No Ped' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['transporte'] ?? 'Transporte' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_arribo_aduana'] ?? 'Fecha de Arribo a Aduana' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['guia_bl'] ?? 'Guía/BL' }}</th>
+                                @foreach($camposPorPosicion->get('tipo_operacion', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('clave', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="clave">{{ $nombresColumnas['clave'] ?? 'Clave' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('clave', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('referencia_interna', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="referencia_interna">{{ $nombresColumnas['referencia_interna'] ?? 'Referencia Interna' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('referencia_interna', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('aduana', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="aduana">{{ $nombresColumnas['aduana'] ?? 'Aduana' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('aduana', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('agente_aduanal', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="agente_aduanal">{{ $nombresColumnas['agente_aduanal'] ?? 'A.A' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('agente_aduanal', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('referencia_aa', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="referencia_aa">{{ $nombresColumnas['referencia_aa'] ?? 'Referencia A.A' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('referencia_aa', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('no_pedimento', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="no_pedimento">{{ $nombresColumnas['no_pedimento'] ?? 'No Ped' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('no_pedimento', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('transporte', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="transporte">{{ $nombresColumnas['transporte'] ?? 'Transporte' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('transporte', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('fecha_arribo_aduana', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_arribo_aduana">{{ $nombresColumnas['fecha_arribo_aduana'] ?? 'Fecha de Arribo a Aduana' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_arribo_aduana', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('guia_bl', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="guia_bl">{{ $nombresColumnas['guia_bl'] ?? 'Guía/BL' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('guia_bl', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
                                 @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['puerto_salida'] ?? 'Puerto de Salida' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="puerto_salida">{{ $nombresColumnas['puerto_salida'] ?? 'Puerto de Salida' }}</th>
                                 @endif
                                 {{-- NUEVOS CAMPOS OPCIONALES --}}
                                 @if(in_array('in_charge', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['in_charge'] ?? 'Responsable' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="in_charge">{{ $nombresColumnas['in_charge'] ?? 'Responsable' }}</th>
                                 @endif
                                 @if(in_array('proveedor', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['proveedor'] ?? 'Proveedor' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="proveedor">{{ $nombresColumnas['proveedor'] ?? 'Proveedor' }}</th>
                                 @endif
                                 @if(in_array('tipo_previo', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['tipo_previo'] ?? 'Modalidad/Previo' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="tipo_previo">{{ $nombresColumnas['tipo_previo'] ?? 'Modalidad/Previo' }}</th>
                                 @endif
                                 @if(in_array('fecha_etd', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['fecha_etd'] ?? 'Fecha ETD' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="fecha_etd">{{ $nombresColumnas['fecha_etd'] ?? 'Fecha ETD' }}</th>
                                 @endif
                                 @if(in_array('fecha_zarpe', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['fecha_zarpe'] ?? 'Fecha Zarpe' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="fecha_zarpe">{{ $nombresColumnas['fecha_zarpe'] ?? 'Fecha Zarpe' }}</th>
                                 @endif
                                 @if(in_array('pedimento_en_carpeta', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['pedimento_en_carpeta'] ?? 'Ped. en Carpeta' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="pedimento_en_carpeta">{{ $nombresColumnas['pedimento_en_carpeta'] ?? 'Ped. en Carpeta' }}</th>
                                 @endif
                                 @if(in_array('referencia_cliente', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50">{{ $nombresColumnas['referencia_cliente'] ?? 'Ref. Cliente' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="referencia_cliente">{{ $nombresColumnas['referencia_cliente'] ?? 'Ref. Cliente' }}</th>
                                 @endif
                                 @if(in_array('mail_subject', $columnasOpcionalesVisibles ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px] bg-purple-50">{{ $nombresColumnas['mail_subject'] ?? 'Asunto Correo' }}</th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px] bg-purple-50" data-columna="mail_subject">{{ $nombresColumnas['mail_subject'] ?? 'Asunto Correo' }}</th>
                                 @endif
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['status'] ?? 'Status' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_modulacion'] ?? 'Fecha de Modulación' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]">{{ $nombresColumnas['fecha_arribo_planta'] ?? 'Fecha de Arribo a Planta' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['resultado'] ?? 'Resultado' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]">{{ $nombresColumnas['target'] ?? 'Target' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]">{{ $nombresColumnas['dias_transito'] ?? 'Días en Tránsito' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['post_operaciones'] ?? 'Post-Operaciones' }}</th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">{{ $nombresColumnas['comentarios'] ?? 'Comentarios' }}</th>
-                                @php
-                                    // Determinar qué campos personalizados mostrar según el usuario
-                                    $camposVisibles = collect();
-                                    if (isset($camposPersonalizados)) {
-                                        if (isset($esAdmin) && $esAdmin) {
-                                            // Admin ve todos los campos activos
-                                            $camposVisibles = $camposPersonalizados;
-                                        } elseif (isset($empleadoActual) && $empleadoActual) {
-                                            // Usuario normal ve solo campos asignados a él
-                                            $camposVisibles = $camposPersonalizados->filter(function($campo) use ($empleadoActual) {
-                                                return $campo->ejecutivos->contains('id', $empleadoActual->id);
-                                            });
-                                        }
-                                    }
-                                @endphp
-                                @foreach($camposVisibles as $campo)
+                                
+                                @if(!in_array('status', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="status">{{ $nombresColumnas['status'] ?? 'Status' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('status', collect()) as $campo)
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
-                                    <div class="flex items-center">
-                                        <span class="text-indigo-600 mr-1">★</span>
-                                        {{ $campo->nombre }}
-                                    </div>
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
                                 </th>
                                 @endforeach
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Acciones</th>
+                                
+                                @if(!in_array('fecha_modulacion', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_modulacion">{{ $nombresColumnas['fecha_modulacion'] ?? 'Fecha de Modulación' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_modulacion', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('fecha_arribo_planta', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_arribo_planta">{{ $nombresColumnas['fecha_arribo_planta'] ?? 'Fecha de Arribo a Planta' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_arribo_planta', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('resultado', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="resultado">{{ $nombresColumnas['resultado'] ?? 'Resultado' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('resultado', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('target', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="target">{{ $nombresColumnas['target'] ?? 'Target' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('target', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('dias_transito', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="dias_transito">{{ $nombresColumnas['dias_transito'] ?? 'Días en Tránsito' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('dias_transito', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('post_operaciones', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="post_operaciones">{{ $nombresColumnas['post_operaciones'] ?? 'Post-Operaciones' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('post_operaciones', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                @if(!in_array('comentarios', $columnasPredeterminadasOcultas ?? []))
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="comentarios">{{ $nombresColumnas['comentarios'] ?? 'Comentarios' }}</th>
+                                @endif
+                                @foreach($camposPorPosicion->get('comentarios', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                {{-- Campos personalizados sin posición definida (al final) --}}
+                                @foreach($camposPorPosicion->get('__al_final__', collect()) as $campo)
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
+                                </th>
+                                @endforeach
+                                
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="acciones">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200" id="operacionesTable">
                             @forelse($operaciones as $operacion)
                             <tr class="table-row" data-operacion-id="{{ $operacion->id }}">
+                                @if(!in_array('id', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->id }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('id', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-900 font-medium">{{ $operacion->ejecutivo ?? 'Sin asignar' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('ejecutivo', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('operacion', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->operacion ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('operacion', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('cliente', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->cliente ?? 'Sin cliente' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('cliente', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('proveedor_o_cliente', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->proveedor_o_cliente ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('proveedor', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('fecha_embarque', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_embarque', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('no_factura', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_factura ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('no_factura', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
                                 @if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->tipo_carga ?? '-' }}</td>
                                 @endif
                                 @if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->tipo_incoterm ?? '-' }}</td>
                                 @endif
+                                
+                                @if(!in_array('tipo_operacion_enum', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->tipo_operacion_enum ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('tipo_operacion', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('clave', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->clave ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('clave', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('referencia_interna', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_interna ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('referencia_interna', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('aduana', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->aduana ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('aduana', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('agente_aduanal', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->agente_aduanal ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('agente_aduanal', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('referencia_aa', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->referencia_aa ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('referencia_aa', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('no_pedimento', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->no_pedimento ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('no_pedimento', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('transporte', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->transporte ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('transporte', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('fecha_arribo_aduana', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_arribo_aduana', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('guia_bl', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->guia_bl ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('guia_bl', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
                                 @if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30">{{ $operacion->puerto_salida ?? '-' }}</td>
                                 @endif
@@ -284,6 +607,8 @@
                                 @if(in_array('mail_subject', $columnasOpcionalesVisibles ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30 max-w-[200px] truncate" title="{{ $operacion->mail_subject ?? '' }}">{{ $operacion->mail_subject ?? '-' }}</td>
                                 @endif
+                                
+                                @if(!in_array('status', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
@@ -307,10 +632,40 @@
                                         </span>
                                     </div>
                                 </td>
+                                @endif
+                                @foreach($camposPorPosicion->get('status', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('fecha_modulacion', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_modulacion', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('fecha_arribo_planta', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('fecha_arribo_planta', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('resultado', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->resultado ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('resultado', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('target', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600">{{ $operacion->target ?? '-' }}</td>
+                                @endif
+                                @foreach($camposPorPosicion->get('target', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('dias_transito', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     @if($operacion->dias_transito !== null)
                                         <span class="dias-indicator {{
@@ -323,6 +678,12 @@
                                         <span class="text-slate-400">-</span>
                                     @endif
                                 </td>
+                                @endif
+                                @foreach($camposPorPosicion->get('dias_transito', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('post_operaciones', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     <button onclick="verPostOperaciones({{ $operacion->id }})"
                                             class="action-button btn-view"
@@ -332,6 +693,12 @@
                                         </svg>
                                     </button>
                                 </td>
+                                @endif
+                                @foreach($camposPorPosicion->get('post_operaciones', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
+                                @if(!in_array('comentarios', $columnasPredeterminadasOcultas ?? []))
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     <button onclick="verComentarios({{ $operacion->id }})"
                                             class="action-button btn-view"
@@ -341,32 +708,16 @@
                                         </svg>
                                     </button>
                                 </td>
-                                @foreach($camposVisibles as $campo)
-                                @php
-                                    $valorCampo = $operacion->valoresCamposPersonalizados->where('campo_personalizado_id', $campo->id)->first();
-                                    $valorMostrar = $valorCampo ? $valorCampo->valor : '-';
-                                    if ($campo->tipo === 'fecha' && $valorCampo && $valorCampo->valor) {
-                                        try {
-                                            $valorMostrar = \Carbon\Carbon::parse($valorCampo->valor)->format('d/m/Y');
-                                        } catch (\Exception $e) {
-                                            $valorMostrar = $valorCampo->valor;
-                                        }
-                                    }
-                                @endphp
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-indigo-50/30 campo-personalizado-cell" 
-                                    data-campo-id="{{ $campo->id }}" 
-                                    data-operacion-id="{{ $operacion->id }}">
-                                    <div class="flex items-center justify-between">
-                                        <span class="valor-campo">{{ $valorMostrar }}</span>
-                                        <button onclick="editarCampoPersonalizado({{ $operacion->id }}, {{ $campo->id }}, '{{ $campo->tipo }}', '{{ addslashes($campo->nombre) }}')" 
-                                                class="text-indigo-400 hover:text-indigo-600 ml-2" title="Editar">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
+                                @endif
+                                @foreach($camposPorPosicion->get('comentarios', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
                                 @endforeach
+                                
+                                {{-- Campos personalizados sin posición definida (al final) --}}
+                                @foreach($camposPorPosicion->get('__al_final__', collect()) as $campo)
+                                    @include('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo])
+                                @endforeach
+                                
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
                                         <button onclick="verHistorial({{ $operacion->id }})"
@@ -1359,44 +1710,29 @@
                             <div id="columnasOpcionalesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                             </div>
                         </div>
-                        
-                        <!-- NUEVO: Ordenar Columnas con Botones -->
-                        <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
-                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                                </svg>
-                                Ordenar Columnas (Use las flechas ▲▼ para reordenar)
-                            </h4>
-                            <p class="text-xs text-blue-600 mb-3">
-                                <span class="inline-flex items-center"><span class="text-green-500 mr-1">●</span> Predeterminadas</span>
-                                <span class="inline-flex items-center ml-3"><span class="text-purple-500 mr-1">◆</span> Opcionales</span>
-                                <span class="inline-flex items-center ml-3"><span class="text-indigo-500 mr-1">★</span> Personalizadas</span>
-                            </p>
-                            <div id="columnasOrdenList" class="space-y-2 max-h-96 overflow-y-auto">
-                                <div class="text-center py-4 text-gray-500">
-                                    <svg class="animate-spin h-6 w-6 mx-auto mb-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Seleccione un ejecutivo para ver las columnas...
-                                </div>
-                            </div>
-                        </div>
                             
-                        <div class="flex justify-between items-center">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
                             <button type="button" onclick="resetearConfiguracionColumnas()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
                                 Resetear a Predeterminados
                             </button>
-                            <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Guardar Configuración
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="previsualizarConfiguracion()" class="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    Previsualizar
+                                </button>
+                                <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Guardar Configuración
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

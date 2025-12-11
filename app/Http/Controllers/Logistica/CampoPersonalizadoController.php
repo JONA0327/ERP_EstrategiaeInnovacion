@@ -415,6 +415,8 @@ class CampoPersonalizadoController extends Controller
      */
     public function guardarOrdenColumnas(Request $request)
     {
+        \Log::info('guardarOrdenColumnas - Request recibido:', $request->all());
+        
         $request->validate([
             'empleado_id' => 'required|exists:empleados,id',
             'orden_columnas' => 'required|array',
@@ -423,12 +425,16 @@ class CampoPersonalizadoController extends Controller
             'orden_columnas.*.visible' => 'required|boolean'
         ]);
 
+        \Log::info('guardarOrdenColumnas - Validación pasada, guardando...');
+
         // Guardar orden de columnas normales
         ColumnaVisibleEjecutivo::guardarConfiguracionCompleta(
             $request->empleado_id,
             $request->orden_columnas,
             $request->idioma ?? null
         );
+
+        \Log::info('guardarOrdenColumnas - Orden guardado exitosamente');
 
         // Guardar orden de campos personalizados si se enviaron
         if ($request->has('orden_campos_personalizados') && is_array($request->orden_campos_personalizados)) {

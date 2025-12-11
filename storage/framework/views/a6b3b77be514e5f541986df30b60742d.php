@@ -1,7 +1,7 @@
 <?php $__env->startSection('title', 'Matriz de Seguimiento - Logística'); ?>
 
 <?php $__env->startPush('styles'); ?>
-    <link rel="stylesheet" href="<?php echo e(asset('css/Logistica/matriz-seguimiento.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/Logistica/matriz-seguimiento.css')); ?>?v=<?php echo e(md5(time())); ?>">
 <?php $__env->stopPush(); ?>
 
 <?php $__env->startPush('scripts'); ?>
@@ -14,11 +14,16 @@
         window.nombresColumnas = <?php echo json_encode($nombresColumnas ?? [], 15, 512) ?>;
         // Columnas ordenadas para el ejecutivo actual
         window.columnasOrdenadasConfig = <?php echo json_encode($columnasOrdenadas ?? [], 15, 512) ?>;
+        // ID del empleado actual para guardar configuración de columnas
+        window.empleadoIdActual = <?php echo e($empleadoActual ? $empleadoActual->id : 'null'); ?>;
     </script>
     <script src="<?php echo e(asset('js/Logistica/matriz-seguimiento.js')); ?>?v=<?php echo e(md5(time())); ?>"></script>
 <?php $__env->stopPush(); ?>
 
 <?php $__env->startSection('content'); ?>
+    
+    <input type="hidden" id="empleadoIdActual" value="<?php echo e($empleadoActual ? $empleadoActual->id : ''); ?>">
+    
     <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
@@ -26,6 +31,30 @@
         </div>
 
         <div class="relative max-w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            
+            <?php if(isset($modoPreview) && $modoPreview && isset($empleadoPreview)): ?>
+            <div class="mb-4 bg-amber-100 border-2 border-amber-400 rounded-xl p-4 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-bold text-amber-800">Modo Previsualización</h3>
+                            <p class="text-amber-700 text-sm">Estás viendo la matriz como la vería: <strong><?php echo e($empleadoPreview->nombre); ?></strong></p>
+                        </div>
+                    </div>
+                    <a href="<?php echo e(route('logistica.matriz-seguimiento')); ?>" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Salir de Previsualización
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
@@ -108,6 +137,27 @@
                 </div>
             </div>
 
+            <?php
+                // Determinar qué campos personalizados mostrar según el usuario
+                $camposVisibles = collect();
+                if (isset($camposPersonalizados)) {
+                    if (isset($esAdmin) && $esAdmin) {
+                        // Admin ve todos los campos activos
+                        $camposVisibles = $camposPersonalizados;
+                    } elseif (isset($empleadoActual) && $empleadoActual) {
+                        // Usuario normal ve solo campos asignados a él
+                        $camposVisibles = $camposPersonalizados->filter(function($campo) use ($empleadoActual) {
+                            return $campo->ejecutivos->contains('id', $empleadoActual->id);
+                        });
+                    }
+                }
+                
+                // Agrupar campos personalizados por su posición (mostrar_despues_de)
+                $camposPorPosicion = $camposVisibles->groupBy(function($campo) {
+                    return $campo->mostrar_despues_de ?? '__al_final__';
+                });
+            ?>
+
             <!-- Tabla Principal -->
             <div class="table-container rounded-2xl overflow-hidden">
                 <!-- Scroll superior sincronizado -->
@@ -120,133 +170,405 @@
                         <thead class="table-header">
                             <tr>
                                 <?php if(!in_array('id', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]"><?php echo e($nombresColumnas['id'] ?? 'No.'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]" data-columna="id"><?php echo e($nombresColumnas['id'] ?? 'No.'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('id', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['ejecutivo'] ?? 'Ejecutivo'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="ejecutivo"><?php echo e($nombresColumnas['ejecutivo'] ?? 'Ejecutivo'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('ejecutivo', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('operacion', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['operacion'] ?? 'Operación'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="operacion"><?php echo e($nombresColumnas['operacion'] ?? 'Operación'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('operacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('cliente', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['cliente'] ?? 'Cliente'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="cliente"><?php echo e($nombresColumnas['cliente'] ?? 'Cliente'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('cliente', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('proveedor_o_cliente', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['proveedor_o_cliente'] ?? 'Proveedor o Cliente'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="proveedor_o_cliente"><?php echo e($nombresColumnas['proveedor_o_cliente'] ?? 'Proveedor o Cliente'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('proveedor', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('fecha_embarque', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['fecha_embarque'] ?? 'Fecha de Embarque'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="fecha_embarque"><?php echo e($nombresColumnas['fecha_embarque'] ?? 'Fecha de Embarque'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_embarque', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(!in_array('no_factura', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['no_factura'] ?? 'No. De Factura'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="no_factura"><?php echo e($nombresColumnas['no_factura'] ?? 'No. De Factura'); ?></th>
                                 <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('no_factura', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['tipo_carga'] ?? 'Tipo de Carga'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="tipo_carga"><?php echo e($nombresColumnas['tipo_carga'] ?? 'Tipo de Carga'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50"><?php echo e($nombresColumnas['tipo_incoterm'] ?? 'Incoterm'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px] bg-purple-50" data-columna="tipo_incoterm"><?php echo e($nombresColumnas['tipo_incoterm'] ?? 'Incoterm'); ?></th>
                                 <?php endif; ?>
+                                
                                 <?php if(!in_array('tipo_operacion_enum', $columnasPredeterminadasOcultas ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['tipo_operacion_enum'] ?? 'T. Operación'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="tipo_operacion_enum"><?php echo e($nombresColumnas['tipo_operacion_enum'] ?? 'T. Operación'); ?></th>
                                 <?php endif; ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]"><?php echo e($nombresColumnas['clave'] ?? 'Clave'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['referencia_interna'] ?? 'Referencia Interna'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['aduana'] ?? 'Aduana'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]"><?php echo e($nombresColumnas['agente_aduanal'] ?? 'A.A'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['referencia_aa'] ?? 'Referencia A.A'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]"><?php echo e($nombresColumnas['no_pedimento'] ?? 'No Ped'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['transporte'] ?? 'Transporte'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['fecha_arribo_aduana'] ?? 'Fecha de Arribo a Aduana'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['guia_bl'] ?? 'Guía/BL'); ?></th>
+                                <?php $__currentLoopData = $camposPorPosicion->get('tipo_operacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('clave', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="clave"><?php echo e($nombresColumnas['clave'] ?? 'Clave'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('clave', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('referencia_interna', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="referencia_interna"><?php echo e($nombresColumnas['referencia_interna'] ?? 'Referencia Interna'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('referencia_interna', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('aduana', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="aduana"><?php echo e($nombresColumnas['aduana'] ?? 'Aduana'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('aduana', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('agente_aduanal', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="agente_aduanal"><?php echo e($nombresColumnas['agente_aduanal'] ?? 'A.A'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('agente_aduanal', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('referencia_aa', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="referencia_aa"><?php echo e($nombresColumnas['referencia_aa'] ?? 'Referencia A.A'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('referencia_aa', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('no_pedimento', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="no_pedimento"><?php echo e($nombresColumnas['no_pedimento'] ?? 'No Ped'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('no_pedimento', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('transporte', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="transporte"><?php echo e($nombresColumnas['transporte'] ?? 'Transporte'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('transporte', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_arribo_aduana', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_arribo_aduana"><?php echo e($nombresColumnas['fecha_arribo_aduana'] ?? 'Fecha de Arribo a Aduana'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_arribo_aduana', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('guia_bl', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="guia_bl"><?php echo e($nombresColumnas['guia_bl'] ?? 'Guía/BL'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('guia_bl', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['puerto_salida'] ?? 'Puerto de Salida'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="puerto_salida"><?php echo e($nombresColumnas['puerto_salida'] ?? 'Puerto de Salida'); ?></th>
                                 <?php endif; ?>
                                 
                                 <?php if(in_array('in_charge', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['in_charge'] ?? 'Responsable'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="in_charge"><?php echo e($nombresColumnas['in_charge'] ?? 'Responsable'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('proveedor', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['proveedor'] ?? 'Proveedor'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="proveedor"><?php echo e($nombresColumnas['proveedor'] ?? 'Proveedor'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('tipo_previo', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['tipo_previo'] ?? 'Modalidad/Previo'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="tipo_previo"><?php echo e($nombresColumnas['tipo_previo'] ?? 'Modalidad/Previo'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('fecha_etd', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['fecha_etd'] ?? 'Fecha ETD'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="fecha_etd"><?php echo e($nombresColumnas['fecha_etd'] ?? 'Fecha ETD'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('fecha_zarpe', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['fecha_zarpe'] ?? 'Fecha Zarpe'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="fecha_zarpe"><?php echo e($nombresColumnas['fecha_zarpe'] ?? 'Fecha Zarpe'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('pedimento_en_carpeta', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['pedimento_en_carpeta'] ?? 'Ped. en Carpeta'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="pedimento_en_carpeta"><?php echo e($nombresColumnas['pedimento_en_carpeta'] ?? 'Ped. en Carpeta'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('referencia_cliente', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50"><?php echo e($nombresColumnas['referencia_cliente'] ?? 'Ref. Cliente'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-purple-50" data-columna="referencia_cliente"><?php echo e($nombresColumnas['referencia_cliente'] ?? 'Ref. Cliente'); ?></th>
                                 <?php endif; ?>
                                 <?php if(in_array('mail_subject', $columnasOpcionalesVisibles ?? [])): ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px] bg-purple-50"><?php echo e($nombresColumnas['mail_subject'] ?? 'Asunto Correo'); ?></th>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px] bg-purple-50" data-columna="mail_subject"><?php echo e($nombresColumnas['mail_subject'] ?? 'Asunto Correo'); ?></th>
                                 <?php endif; ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['status'] ?? 'Status'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['fecha_modulacion'] ?? 'Fecha de Modulación'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]"><?php echo e($nombresColumnas['fecha_arribo_planta'] ?? 'Fecha de Arribo a Planta'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['resultado'] ?? 'Resultado'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]"><?php echo e($nombresColumnas['target'] ?? 'Target'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]"><?php echo e($nombresColumnas['dias_transito'] ?? 'Días en Tránsito'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['post_operaciones'] ?? 'Post-Operaciones'); ?></th>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]"><?php echo e($nombresColumnas['comentarios'] ?? 'Comentarios'); ?></th>
-                                <?php
-                                    // Determinar qué campos personalizados mostrar según el usuario
-                                    $camposVisibles = collect();
-                                    if (isset($camposPersonalizados)) {
-                                        if (isset($esAdmin) && $esAdmin) {
-                                            // Admin ve todos los campos activos
-                                            $camposVisibles = $camposPersonalizados;
-                                        } elseif (isset($empleadoActual) && $empleadoActual) {
-                                            // Usuario normal ve solo campos asignados a él
-                                            $camposVisibles = $camposPersonalizados->filter(function($campo) use ($empleadoActual) {
-                                                return $campo->ejecutivos->contains('id', $empleadoActual->id);
-                                            });
-                                        }
-                                    }
-                                ?>
-                                <?php $__currentLoopData = $camposVisibles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('status', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="status"><?php echo e($nombresColumnas['status'] ?? 'Status'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('status', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
-                                    <div class="flex items-center">
-                                        <span class="text-indigo-600 mr-1">★</span>
-                                        <?php echo e($campo->nombre); ?>
-
-                                    </div>
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
                                 </th>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]">Acciones</th>
+                                
+                                <?php if(!in_array('fecha_modulacion', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_modulacion"><?php echo e($nombresColumnas['fecha_modulacion'] ?? 'Fecha de Modulación'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_modulacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_arribo_planta', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[150px]" data-columna="fecha_arribo_planta"><?php echo e($nombresColumnas['fecha_arribo_planta'] ?? 'Fecha de Arribo a Planta'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_arribo_planta', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('resultado', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="resultado"><?php echo e($nombresColumnas['resultado'] ?? 'Resultado'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('resultado', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('target', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[80px]" data-columna="target"><?php echo e($nombresColumnas['target'] ?? 'Target'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('target', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('dias_transito', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="dias_transito"><?php echo e($nombresColumnas['dias_transito'] ?? 'Días en Tránsito'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('dias_transito', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('post_operaciones', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="post_operaciones"><?php echo e($nombresColumnas['post_operaciones'] ?? 'Post-Operaciones'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('post_operaciones', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('comentarios', $columnasPredeterminadasOcultas ?? [])): ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="comentarios"><?php echo e($nombresColumnas['comentarios'] ?? 'Comentarios'); ?></th>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('comentarios', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                
+                                <?php $__currentLoopData = $camposPorPosicion->get('__al_final__', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="<?php echo e($campo->id); ?>">
+                                    <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span><?php echo e($campo->nombre); ?></div>
+                                </th>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="acciones">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200" id="operacionesTable">
                             <?php $__empty_1 = true; $__currentLoopData = $operaciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $operacion): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr class="table-row" data-operacion-id="<?php echo e($operacion->id); ?>">
+                                <?php if(!in_array('id', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->id); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('id', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-900 font-medium"><?php echo e($operacion->ejecutivo ?? 'Sin asignar'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('ejecutivo', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('operacion', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->operacion ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('operacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('cliente', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->cliente ?? 'Sin cliente'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('cliente', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('proveedor_o_cliente', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->proveedor_o_cliente ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('proveedor', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_embarque', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_embarque ? $operacion->fecha_embarque->format('d/m/Y') : '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_embarque', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('no_factura', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->no_factura ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('no_factura', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(in_array('tipo_carga', $columnasOpcionalesVisibles ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30"><?php echo e($operacion->tipo_carga ?? '-'); ?></td>
                                 <?php endif; ?>
                                 <?php if(in_array('tipo_incoterm', $columnasOpcionalesVisibles ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30"><?php echo e($operacion->tipo_incoterm ?? '-'); ?></td>
                                 <?php endif; ?>
+                                
+                                <?php if(!in_array('tipo_operacion_enum', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->tipo_operacion_enum ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('tipo_operacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('clave', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->clave ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('clave', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('referencia_interna', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->referencia_interna ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('referencia_interna', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('aduana', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->aduana ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('aduana', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('agente_aduanal', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->agente_aduanal ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('agente_aduanal', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('referencia_aa', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->referencia_aa ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('referencia_aa', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('no_pedimento', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->no_pedimento ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('no_pedimento', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('transporte', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->transporte ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('transporte', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_arribo_aduana', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_arribo_aduana ? $operacion->fecha_arribo_aduana->format('d/m/Y') : '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_arribo_aduana', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('guia_bl', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->guia_bl ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('guia_bl', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <?php if(in_array('puerto_salida', $columnasOpcionalesVisibles ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30"><?php echo e($operacion->puerto_salida ?? '-'); ?></td>
                                 <?php endif; ?>
@@ -283,6 +605,8 @@
                                 <?php if(in_array('mail_subject', $columnasOpcionalesVisibles ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-purple-50/30 max-w-[200px] truncate" title="<?php echo e($operacion->mail_subject ?? ''); ?>"><?php echo e($operacion->mail_subject ?? '-'); ?></td>
                                 <?php endif; ?>
+                                
+                                <?php if(!in_array('status', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex flex-col space-y-1">
                                         <!-- Status Manual (prevalece si está en Done) -->
@@ -304,10 +628,40 @@
                                         </span>
                                     </div>
                                 </td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('status', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_modulacion', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_modulacion ? $operacion->fecha_modulacion->format('d/m/Y') : '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_modulacion', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('fecha_arribo_planta', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->fecha_arribo_planta ? $operacion->fecha_arribo_planta->format('d/m/Y') : '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('fecha_arribo_planta', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('resultado', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->resultado ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('resultado', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('target', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-slate-600"><?php echo e($operacion->target ?? '-'); ?></td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('target', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('dias_transito', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     <?php if($operacion->dias_transito !== null): ?>
                                         <span class="dias-indicator <?php echo e($operacion->color_status === 'verde' ? 'dias-verde' :
@@ -318,6 +672,12 @@
                                         <span class="text-slate-400">-</span>
                                     <?php endif; ?>
                                 </td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('dias_transito', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('post_operaciones', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     <button onclick="verPostOperaciones(<?php echo e($operacion->id); ?>)"
                                             class="action-button btn-view"
@@ -327,6 +687,12 @@
                                         </svg>
                                     </button>
                                 </td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('post_operaciones', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <?php if(!in_array('comentarios', $columnasPredeterminadasOcultas ?? [])): ?>
                                 <td class="px-3 py-4 border-r border-slate-200 text-center">
                                     <button onclick="verComentarios(<?php echo e($operacion->id); ?>)"
                                             class="action-button btn-view"
@@ -336,32 +702,16 @@
                                         </svg>
                                     </button>
                                 </td>
-                                <?php $__currentLoopData = $camposVisibles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php
-                                    $valorCampo = $operacion->valoresCamposPersonalizados->where('campo_personalizado_id', $campo->id)->first();
-                                    $valorMostrar = $valorCampo ? $valorCampo->valor : '-';
-                                    if ($campo->tipo === 'fecha' && $valorCampo && $valorCampo->valor) {
-                                        try {
-                                            $valorMostrar = \Carbon\Carbon::parse($valorCampo->valor)->format('d/m/Y');
-                                        } catch (\Exception $e) {
-                                            $valorMostrar = $valorCampo->valor;
-                                        }
-                                    }
-                                ?>
-                                <td class="px-3 py-4 border-r border-slate-200 text-slate-600 bg-indigo-50/30 campo-personalizado-cell" 
-                                    data-campo-id="<?php echo e($campo->id); ?>" 
-                                    data-operacion-id="<?php echo e($operacion->id); ?>">
-                                    <div class="flex items-center justify-between">
-                                        <span class="valor-campo"><?php echo e($valorMostrar); ?></span>
-                                        <button onclick="editarCampoPersonalizado(<?php echo e($operacion->id); ?>, <?php echo e($campo->id); ?>, '<?php echo e($campo->tipo); ?>', '<?php echo e(addslashes($campo->nombre)); ?>')" 
-                                                class="text-indigo-400 hover:text-indigo-600 ml-2" title="Editar">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
+                                <?php endif; ?>
+                                <?php $__currentLoopData = $camposPorPosicion->get('comentarios', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                
+                                <?php $__currentLoopData = $camposPorPosicion->get('__al_final__', collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php echo $__env->make('Logistica.partials.campo-personalizado-celda', ['operacion' => $operacion, 'campo' => $campo], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
                                 <td class="px-3 py-4 border-r border-slate-200">
                                     <div class="flex space-x-1">
                                         <button onclick="verHistorial(<?php echo e($operacion->id); ?>)"
@@ -1355,44 +1705,29 @@
                             <div id="columnasOpcionalesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                             </div>
                         </div>
-                        
-                        <!-- NUEVO: Ordenar Columnas con Botones -->
-                        <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
-                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                                </svg>
-                                Ordenar Columnas (Use las flechas ▲▼ para reordenar)
-                            </h4>
-                            <p class="text-xs text-blue-600 mb-3">
-                                <span class="inline-flex items-center"><span class="text-green-500 mr-1">●</span> Predeterminadas</span>
-                                <span class="inline-flex items-center ml-3"><span class="text-purple-500 mr-1">◆</span> Opcionales</span>
-                                <span class="inline-flex items-center ml-3"><span class="text-indigo-500 mr-1">★</span> Personalizadas</span>
-                            </p>
-                            <div id="columnasOrdenList" class="space-y-2 max-h-96 overflow-y-auto">
-                                <div class="text-center py-4 text-gray-500">
-                                    <svg class="animate-spin h-6 w-6 mx-auto mb-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Seleccione un ejecutivo para ver las columnas...
-                                </div>
-                            </div>
-                        </div>
                             
-                        <div class="flex justify-between items-center">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
                             <button type="button" onclick="resetearConfiguracionColumnas()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
                                 Resetear a Predeterminados
                             </button>
-                            <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Guardar Configuración
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="previsualizarConfiguracion()" class="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    Previsualizar
+                                </button>
+                                <button type="button" onclick="guardarConfiguracionColumnas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Guardar Configuración
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
