@@ -22,7 +22,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-gj61AfXH.css",
+    "file": "assets/app-ml4C2BWE.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -46,7 +46,7 @@
     "isEntry": true
   },
   "resources/js/Sistemas_IT/tickets-create.js": {
-    "file": "assets/tickets-create-DKdxVZ4p.js",
+    "file": "assets/tickets-create-CVU9LnHZ.js",
     "name": "tickets-create",
     "src": "resources/js/Sistemas_IT/tickets-create.js",
     "isEntry": true

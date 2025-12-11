@@ -17,7 +17,7 @@ class EmpleadoSeeder extends Seeder
                     'user_id' => $user->id,
                     'nombre' => $user->name,
                     'correo' => $user->email,
-                    'area' => null,
+                    'area' => 'Sistemas',
                     'posicion' => null,
                     'telefono' => null,
                     'direccion' => null,

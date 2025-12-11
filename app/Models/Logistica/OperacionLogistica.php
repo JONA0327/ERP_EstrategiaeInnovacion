@@ -27,6 +27,9 @@ class OperacionLogistica extends Model
      * Atributos que se pueden asignar de forma masiva
      */
     protected $fillable = [
+        // Folio único para identificar la operación
+        'folio',
+        
         // Campos de nombres directos (no IDs) - ÚNICOS CAMPOS UTILIZADOS
         'ejecutivo',
         'cliente',
@@ -62,6 +65,18 @@ class OperacionLogistica extends Model
         'dias_transcurridos_calculados',
         'fecha_ultimo_calculo',
         'comentarios',
+        
+        // ═══════════════════════════════════════════════════════════════
+        // NUEVOS CAMPOS (Opcionales) - Mapeo Excel
+        // ═══════════════════════════════════════════════════════════════
+        'in_charge',              // In charge - Responsable
+        'proveedor',              // Supplier Name - Proveedor
+        'tipo_previo',            // MODALIDAD/PREVIO
+        'fecha_etd',              // Shipp date (ETD)
+        'fecha_zarpe',            // Shipp date Zarpe
+        'pedimento_en_carpeta',   // PEDIMENTO EN CARPETA (SI/NO)
+        'referencia_cliente',     // REF - Referencia del cliente
+        'mail_subject',           // MAIL SUBJECT
     ];
 
     /**
@@ -72,6 +87,9 @@ class OperacionLogistica extends Model
         'fecha_arribo_aduana' => 'date',
         'fecha_modulacion' => 'date',
         'fecha_arribo_planta' => 'date',
+        'fecha_etd' => 'date',
+        'fecha_zarpe' => 'date',
+        'pedimento_en_carpeta' => 'boolean',
         'fecha_status_manual' => 'datetime',
         'resultado' => 'integer',
         'target' => 'integer',
