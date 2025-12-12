@@ -6,533 +6,333 @@ use App\Models\Empleado;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-/**
- * Servicio para procesar archivos Excel de asistencia provenientes de relojes SecureCore/ZKTeco.
- *
- * El servicio recorre todas las hojas del archivo, identifica los bloques de cada empleado y
- * genera un registro normalizado en la tabla `asistencias` por cada par entrada/salida, sin
- * descartar checadas incompletas.
- */
 class ProcesarAsistenciaService
 {
-    /** @var int Máximo de filas a escanear para encontrar el periodo. */
-    protected int $maxPeriodoScanRows = 40;
-
-    /** @var int Máximo de columnas a escanear para encontrar el periodo. */
-    protected int $maxPeriodoScanCols = 20;
-
-    /** @var string Expresión regular para validar horas en formato HH:MM. */
     protected string $horaRegex = '/\\b(2[0-3]|[01]?\\d):([0-5]\\d)\\b/u';
-
-    /** @var string|null Área objetivo para resolver empleados (se prioriza Recursos Humanos). */
-    protected ?string $areaObjetivo = 'Recursos Humanos';
-
-    /** @var bool Determina si los registros se persisten o solo se devuelven. */
+    protected string $horaEntradaLimite = '08:45:00'; 
     protected bool $persistRegistros = true;
-
-    /**
-     * @var array<array<string,mixed>> Colección temporal de registros procesados
-     *                                  (solo cuando no se persisten).
-     */
     protected array $collectedRegistros = [];
 
-    /**
-    * Procesa un archivo Excel de asistencias.
-    *
-    * @param string $path Ruta absoluta al archivo.
-    * @param bool $persist Si es true persiste en BD, de lo contrario solo colecta los registros.
-    * @return array{total_registros:int, empleados_procesados:int, hojas_procesadas:int, periodo:array|null, registros:array}
-    */
     public function process(string $path, bool $persist = true, callable $onSheetProgress = null): array
     {
         $this->persistRegistros = $persist;
         $this->collectedRegistros = [];
 
-        $spreadsheet = IOFactory::load($path);
-        $sheets = $spreadsheet->getAllSheets();
+        Log::info("Iniciando procesamiento de archivo: $path");
 
-        // Evento temprano para establecer total de hojas antes de procesar la primera.
-        if ($onSheetProgress) {
-            $onSheetProgress([
-                'evento' => 'preparando',
-                'total' => count($sheets),
-                'titulo' => $sheets ? ($sheets[0]->getTitle()) : null,
-            ]);
+        try {
+            // Detección inteligente del tipo de archivo
+            $inputFileType = IOFactory::identify($path);
+            $reader = IOFactory::createReader($inputFileType);
+            
+            // Si es CSV, configurar delimitadores comunes si falla el default
+            if ($inputFileType === 'Csv') {
+                /** @var Csv $reader */
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            }
+
+            // Cargar archivo (sin solo-lectura para mejor compatibilidad de fechas)
+            $spreadsheet = $reader->load($path);
+        } catch (\Exception $e) {
+            Log::error("Error crítico cargando archivo: " . $e->getMessage());
+            throw new \Exception("Error leyendo el archivo. Asegúrate de que no esté corrupto. Detalles: " . $e->getMessage());
         }
 
+        $sheets = $spreadsheet->getAllSheets();
         $totalRegistros = 0;
         $empleadosProcesados = 0;
-        $hojasProcesadas = 0;
         $periodoGlobal = null;
 
         foreach ($sheets as $index => $sheet) {
-            /** @var Worksheet $sheet */
-            $hojasProcesadas++;
-            if ($onSheetProgress) {
-                $onSheetProgress([
-                    'evento' => 'inicio_hoja',
-                    'indice' => $index + 1,
-                    'total' => count($sheets),
-                    'titulo' => $sheet->getTitle(),
-                ]);
+            $sheetTitle = $sheet->getTitle();
+            Log::info("Analizando hoja: {$sheetTitle}");
+
+            // 1. Detectar Periodo (Buscamos en las primeras 50 filas)
+            $periodo = $this->parsePeriodo($sheet) ?? $periodoGlobal;
+            if ($periodo && !$periodoGlobal) {
+                $periodoGlobal = $periodo;
+                Log::info("Periodo global detectado: " . $periodo['inicio']->toDateString() . " - " . $periodo['fin']->toDateString());
             }
 
-            // 1. Detectar periodo por hoja (se usa como global si es el primero encontrado).
-            $periodoHoja = $this->parsePeriodo($sheet);
-            if ($periodoHoja && !$periodoGlobal) {
-                $periodoGlobal = $periodoHoja;
-            }
-            $periodo = $periodoHoja ?? $periodoGlobal;
-            if (!$periodo) {
-                Log::warning('No se detectó periodo en la hoja: ' . $sheet->getTitle());
-                continue;
-            }
-
-            // 2. Mapear columnas que representan días 1..31.
+            // 2. Mapear días (1.0, 2.0...)
             $dayColumns = $this->mapDayColumns($sheet);
-            if (empty($dayColumns)) {
-                Log::warning('No se detectaron columnas de días en la hoja: ' . $sheet->getTitle());
+            
+            if (!$periodo || empty($dayColumns)) {
+                Log::warning("Saltando hoja '{$sheetTitle}': No se encontró periodo o columnas de días válidas.");
                 continue;
             }
 
             $highestRow = $sheet->getHighestDataRow();
-            $empleadoActual = null; // ['no' => string, 'nombre' => string|null]
+            $empleadoActual = null;
 
             for ($row = 1; $row <= $highestRow; $row++) {
                 $rowValues = $this->getRowValues($sheet, $row);
-                // 1. Cabecera de empleado (puede contener también el nombre en la misma fila)
+
+                // A. Buscar cabecera de empleado
                 if ($this->isEmpleadoHeader($rowValues)) {
-                    if ($empleadoActual) {
-                        $empleadosProcesados++;
+                    $nuevoId = $this->extraerValorPosterior($rowValues, ['No', 'Num', 'ID', 'Empleado']);
+                    $nuevoNombre = $this->extraerValorPosterior($rowValues, ['Nombre', 'Name']);
+
+                    // Solo cambiamos si encontramos un ID válido
+                    if (!empty($nuevoId)) {
+                        if ($empleadoActual) $empleadosProcesados++;
+                        $empleadoActual = ['no' => $nuevoId, 'nombre' => $nuevoNombre];
                     }
-                    $empleadoActual = [
-                        'no' => $this->extraerValorPosterior($rowValues, 'No') ?? '',
-                        'nombre' => $this->extraerValorPosterior($rowValues, 'Nombre') ?? null,
-                    ];
-                    continue; // Pasamos a siguientes filas (checadas o nombre complementario)
-                }
-                // 2. Nombre en fila separada (cuando no vino junto con 'No :')
-                if ($empleadoActual && !$empleadoActual['nombre'] && $this->isNombreHeader($rowValues)) {
-                    $empleadoActual['nombre'] = $this->extraerValorPosterior($rowValues, 'Nombre') ?? 'DESCONOCIDO';
                     continue;
                 }
-                // 3. Fila de checadas
+
+                // B. Buscar nombre si viene separado (y ya tenemos ID pero no nombre)
+                if ($empleadoActual && empty($empleadoActual['nombre']) && $this->isNombreHeader($rowValues)) {
+                    $empleadoActual['nombre'] = $this->extraerValorPosterior($rowValues, ['Nombre', 'Name']);
+                    continue;
+                }
+
+                // C. Procesar Checadas
                 if ($empleadoActual && $this->filaTieneChecadas($rowValues)) {
                     $totalRegistros += $this->procesarFilaDeChecadas($rowValues, $dayColumns, $periodo, $empleadoActual);
                 }
             }
-
-            if ($empleadoActual) {
-                $empleadosProcesados++;
-            }
+            if ($empleadoActual) $empleadosProcesados++; // Contar el último
 
             if ($onSheetProgress) {
-                $onSheetProgress([
-                    'evento' => 'fin_hoja',
-                    'indice' => $index + 1,
-                    'total' => count($sheets),
-                    'titulo' => $sheet->getTitle(),
-                    'registros_acumulados' => $totalRegistros,
-                ]);
+                $onSheetProgress(['total' => count($sheets), 'indice' => $index + 1]);
             }
         }
 
         return [
             'total_registros' => $totalRegistros,
             'empleados_procesados' => $empleadosProcesados,
-            'hojas_procesadas' => $hojasProcesadas,
             'periodo' => $periodoGlobal,
-            'registros' => $persist ? [] : $this->collectedRegistros,
+            'registros' => $this->collectedRegistros
         ];
     }
 
-    /**
-     * Detecta el periodo buscando celdas que contengan "Periodo" y un rango tipo YYYY/MM/DD ~ MM/DD.
-     */
-    public function parsePeriodo(Worksheet $sheet): ?array
+    // --- Lógica Principal de Procesamiento ---
+
+    protected function procesarFilaDeChecadas(array $rowValues, array $dayColumns, array $periodo, array $empleado): int
     {
-        $maxRow = min($sheet->getHighestDataRow(), $this->maxPeriodoScanRows);
-        for ($row = 1; $row <= $maxRow; $row++) {
-            $rowValues = $this->getRowValues($sheet, $row);
-            $joinedLower = Str::lower(implode(' ', $rowValues));
-            if (!Str::contains($joinedLower, 'periodo')) {
-                continue;
+        $count = 0;
+        foreach ($dayColumns as $day => $colIdx) {
+            $raw = $rowValues[$colIdx] ?? '';
+            // Limpieza básica: si está vacío o no parece hora, saltar
+            if (empty($raw) || !preg_match($this->horaRegex, $raw)) continue;
+
+            $horas = $this->extraerHoras($raw);
+            if (count($horas) < 1) continue;
+
+            $fecha = $this->construirFecha($periodo, $day);
+            
+            // Buscar ID de empleado en DB (solo si persiste)
+            $empleadoId = $this->persistRegistros ? $this->buscarEmpleadoId($empleado['no'], $empleado['nombre']) : null;
+            
+            // Pares Entrada/Salida
+            // Asumimos paridad: Entrada -> Salida -> Entrada -> Salida
+            for ($i = 0; $i < count($horas); $i += 2) {
+                $entrada = $horas[$i];
+                $salida = $horas[$i+1] ?? null;
+
+                // Regla de Retardo 8:45
+                $esRetardo = false;
+                if ($entrada) {
+                    try {
+                        $esRetardo = Carbon::parse($entrada)->format('H:i:s') > $this->horaEntradaLimite;
+                    } catch (\Exception $e) {}
+                }
+
+                if ($this->persistRegistros) {
+                    // PROTECCIÓN DE DATOS: Verificar si ya existe el registro y si fue modificado manualmente
+                    $existing = DB::table('asistencias')
+                        ->where('empleado_no', $empleado['no'])
+                        ->where('fecha', $fecha->toDateString())
+                        // Usamos entrada como parte de la llave única lógica del turno
+                        ->where('entrada', $entrada) 
+                        ->first();
+
+                    // Si ya existe y fue modificado manualmente (ej: tipo vacaciones), NO LO TOCAMOS.
+                    if ($existing && $existing->tipo_registro !== 'asistencia') {
+                        continue; 
+                    }
+
+                    // Guardar o Actualizar
+                    DB::table('asistencias')->updateOrInsert(
+                        [
+                            'empleado_no' => $empleado['no'],
+                            'fecha' => $fecha->toDateString(),
+                            'entrada' => $entrada, 
+                        ],
+                        [
+                            'nombre' => $empleado['nombre'] ?? 'Desconocido',
+                            'salida' => $salida,
+                            'checadas' => json_encode($horas),
+                            'empleado_id' => $empleadoId,
+                            'tipo_registro' => 'asistencia', // Default
+                            'es_retardo' => $esRetardo,
+                            'updated_at' => now(),
+                        ]
+                    );
+                } else {
+                    $this->collectedRegistros[] = compact('empleado', 'fecha', 'entrada', 'salida');
+                }
+                $count++;
             }
-            // Tomar varias celdas por si el rango está separado en columnas distintas.
-            $extended = implode(' ', array_slice($rowValues, 0, 15));
-            if (preg_match('/(\d{4})\/(\d{2})\/(\d{2}).*?~.*?(\d{2})\/(\d{2})/u', $extended, $m)) {
-                $year = (int) $m[1];
-                $monthStart = (int) $m[2];
-                $dayStart = (int) $m[3];
-                $monthEnd = (int) $m[4];
-                $dayEnd = (int) $m[5];
-                $start = Carbon::create($year, $monthStart, $dayStart);
-                $end = Carbon::create($year, $monthEnd ?: $monthStart, $dayEnd);
-                return ['inicio' => $start, 'fin' => $end];
+        }
+        return $count;
+    }
+
+    // --- Helpers de Extracción ---
+
+    protected function parsePeriodo(Worksheet $sheet): ?array
+    {
+        for ($row = 1; $row <= 50; $row++) { // Escaneo ampliado
+            $rowVals = $this->getRowValues($sheet, $row);
+            $joined = implode(' ', $rowVals);
+            
+            // Regex ajustado para aceptar espacios extras y formatos YYYY/MM/DD o YYYY-MM-DD
+            if (preg_match('/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*[~-]\s*(?:(\d{4})[\/\-])?(\d{1,2})[\/\-](\d{1,2})/', $joined, $m)) {
+                try {
+                    $year = (int)$m[1];
+                    $start = Carbon::create($year, (int)$m[2], (int)$m[3]);
+                    
+                    // A veces el fin solo trae MM/DD, a veces YYYY/MM/DD.
+                    // Si el regex captura año en grupo 4, usarlo, si no, usar el del inicio.
+                    $endYear = !empty($m[4]) ? (int)$m[4] : $year;
+                    $endMonth = (int)$m[5];
+                    $endDay = (int)$m[6];
+
+                    // Manejo de fecha fin inválida (ej: 31 nov -> 1 dic o fin de mes real)
+                    try {
+                        $end = Carbon::create($endYear, $endMonth, $endDay);
+                    } catch (\Exception $ex) {
+                        $end = $start->copy()->endOfMonth();
+                    }
+                    return ['inicio' => $start, 'fin' => $end];
+                } catch (\Throwable $e) { continue; }
             }
         }
         return null;
     }
 
-    /**
-     * Identifica la fila que contiene la secuencia de días (1..31) y devuelve el mapa [día => índice_de_columna_base_0].
-     */
-    public function mapDayColumns(Worksheet $sheet): array
+    protected function mapDayColumns(Worksheet $sheet): array
     {
-        $highestRow = $sheet->getHighestDataRow();
         $highestCol = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
-
-        for ($row = 1; $row <= $highestRow; $row++) {
+        for ($row = 1; $row <= 30; $row++) { 
             $map = [];
             for ($col = 1; $col <= $highestCol; $col++) {
-                $value = trim((string) $this->getCellValue($sheet, $col, $row));
-                if ($value === '' || !ctype_digit($value)) {
-                    continue;
+                // Obtenemos valor calculado. En CSV numéricos pueden venir como strings "1.0"
+                $cell = $sheet->getCell(Coordinate::stringFromColumnIndex($col) . $row);
+                $val = $cell->getValue(); 
+                
+                if (is_numeric($val)) {
+                    $num = (int)$val;
+                    // Filtro estricto: solo días válidos (1-31)
+                    if ($num >= 1 && $num <= 31) {
+                        $map[$num] = $col - 1; // Base 0
+                    }
                 }
-                $num = (int) $value;
-                if ($num < 1 || $num > 31) {
-                    continue;
-                }
-                $map[$num] = $col - 1; // Se usa base 0 para alinearse con getRowValues().
             }
-
-            if (count($map) >= 5) { // heurística mínima para considerar que es la fila de días.
-                ksort($map);
-                return $map;
-            }
+            // Si encontramos secuencia lógica (al menos 5 días seguidos o salteados)
+            if (count($map) >= 5) return $map;
         }
-
         return [];
     }
 
-    /** Determina si una fila contiene la cabecera de empleado (token "No :"). */
-    public function isEmpleadoHeader(array $rowValues): bool
+    protected function extraerHoras(string $cellValue): array
     {
-        $joined = implode(' ', $rowValues);
-        return (bool) preg_match('/\bNo\s*:/iu', $joined);
+        // Limpiar saltos de línea y espacios raros
+        $normalized = preg_replace('/\r\n?|\n/u', ' ', $cellValue);
+        preg_match_all($this->horaRegex, $normalized, $matches);
+        
+        $horas = [];
+        foreach ($matches[0] ?? [] as $h) {
+            try {
+                $horas[] = Carbon::createFromFormat('H:i', $h)->format('H:i:s');
+            } catch (\Exception $e) {}
+        }
+        return $horas;
     }
 
-    /** Determina si una fila contiene la cabecera de nombre (token "Nombre :"). */
-    public function isNombreHeader(array $rowValues): bool
+    protected function construirFecha(array $periodo, int $day): Carbon
     {
-        $joined = implode(' ', $rowValues);
-        return (bool) preg_match('/\bNombre\s*:/iu', $joined);
-    }
-
-    /** Indica si la fila parece contener checadas (horas y saltos de línea). */
-    public function filaTieneChecadas(array $rowValues): bool
-    {
-        foreach ($rowValues as $value) {
-            if (!is_string($value) || $value === '') {
-                continue;
-            }
-            if (str_contains($value, "\n") || str_contains($value, "\r")) {
-                return true;
-            }
-            if (preg_match($this->horaRegex, $value)) {
-                return true;
-            }
+        // Clonar fecha inicio
+        $date = $periodo['inicio']->copy()->day($day);
+        
+        // Si el día es menor al día de inicio (ej: inicio 25 Oct, estamos procesando día 2), 
+        // asumimos que es del mes siguiente.
+        if ($day < $periodo['inicio']->day) {
+            $date->addMonth();
+        }
+        
+        // Corrección de año si cruzamos diciembre
+        if ($periodo['inicio']->month == 12 && $date->month == 1) {
+            $date->addYear();
         }
 
-        return false;
+        return $date;
     }
 
-    /**
-     * Parsea una celda de checadas devolviendo todas las ocurrencias y los pares entrada/salida.
-     *
-     * @return array{all: string[], pairs: array<int,array{entrada:?string,salida:?string}>}
-     */
-    public function parseChecadasCelda(string $raw): array
+    protected function buscarEmpleadoId(string $no, ?string $nombre): ?int
     {
-        $normalized = preg_replace('/\r\n?|\n/u', "\n", $raw);
-        $lines = array_values(array_filter(array_map('trim', explode("\n", (string) $normalized)), static fn ($line) => $line !== ''));
-        $times = array_values(array_filter($lines, fn ($line) => preg_match($this->horaRegex, $line)));
-
-        $pairs = [];
-        $total = count($times);
-        for ($i = 0; $i < $total; $i += 2) {
-            $entrada = $times[$i] ?? null;
-            $salida = $times[$i + 1] ?? null;
-            $pairs[] = [
-                'entrada' => $entrada,
-                'salida' => $salida,
-            ];
+        // Prioridad ID
+        $emp = Empleado::where('id_empleado', $no)->orWhere('id_empleado', (int)$no)->first();
+        if ($emp) return $emp->id;
+        
+        // Fallback Nombre (búsqueda insensible a mayúsculas/espacios)
+        if ($nombre) {
+            $cleanName = str_replace(' ', '', Str::lower($nombre));
+            $emp = Empleado::whereRaw("LOWER(REPLACE(nombre, ' ', '')) LIKE ?", ["%{$cleanName}%"])->first();
+            if ($emp) return $emp->id;
         }
-
-        return [
-            'all' => $times,
-            'pairs' => $pairs,
-        ];
+        return null;
     }
 
-    /** Procesa una fila que contiene checadas y retorna cuántos registros se generaron. */
-    protected function procesarFilaDeChecadas(array $rowValues, array $dayColumns, array $periodo, array $empleado): int
-    {
-        $total = 0;
-        foreach ($dayColumns as $dayNumber => $colIndex) {
-            $raw = $rowValues[$colIndex] ?? null;
-            if (!$raw || !preg_match($this->horaRegex, (string) $raw)) {
-                continue;
-            }
-
-            $parsed = $this->parseChecadasCelda((string) $raw);
-            if (empty($parsed['pairs'])) {
-                continue;
-            }
-
-            $fecha = $this->construirFecha($periodo, $dayNumber);
-            $empleadoId = $this->resolverEmpleadoId($empleado['no'], $empleado['nombre']);
-
-            foreach ($parsed['pairs'] as $pair) {
-                $this->guardarRegistro([
-                    'empleado_no' => $empleado['no'],
-                    'nombre' => $empleado['nombre'] ?? 'DESCONOCIDO',
-                    'fecha' => $fecha->toDateString(),
-                    'entrada' => $this->formatearHora($pair['entrada']),
-                    'salida' => $this->formatearHora($pair['salida']),
-                    'checadas' => $parsed['all'],
-                    'empleado_id' => $empleadoId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $total++;
-            }
-        }
-
-        return $total;
-    }
-
-    /**
-     * Guarda o colecta un registro dependiendo del modo de operación actual.
-     */
-    protected function guardarRegistro(array $registro): void
-    {
-        if ($this->persistRegistros) {
-            $payload = $registro;
-            $payload['checadas'] = json_encode($registro['checadas']);
-            DB::table('asistencias')->insert($payload);
-
-            return;
-        }
-
-        $registro['checadas'] = array_values($registro['checadas'] ?? []);
-        $this->collectedRegistros[] = $registro;
-    }
-
-    /** Construye la fecha combinando el periodo detectado con el número de día. */
-    protected function construirFecha(array $periodo, int $dayNum): Carbon
-    {
-        $start = $periodo['inicio'];
-        $end = $periodo['fin'];
-
-        $month = $start->month;
-        if ($end->month !== $start->month && $dayNum > $end->day) {
-            $month = $start->month;
-        } elseif ($end->month !== $start->month && $dayNum <= $end->day) {
-            $month = $end->month;
-        }
-
-        return Carbon::create($start->year, $month, $dayNum, 0, 0, 0);
-    }
-
-    /** Devuelve los valores crudos de una fila como arreglo base 0. */
     protected function getRowValues(Worksheet $sheet, int $row): array
     {
         $highestCol = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
         $values = [];
         for ($col = 1; $col <= $highestCol; $col++) {
-            $values[] = (string) $this->getCellValue($sheet, $col, $row);
+            $val = $sheet->getCell(Coordinate::stringFromColumnIndex($col) . $row)->getValue(); // getValue es más seguro para CSV que getCalculatedValue
+            $values[] = trim((string)$val);
         }
-
         return $values;
     }
 
-    /** Extrae el valor ubicado después de un token tipo "No :" o "Nombre :". */
-    protected function extraerValorPosterior(array $rowValues, string $token): ?string
-    {
-        $total = count($rowValues);
-        for ($i = 0; $i < $total; $i++) {
-            if (preg_match('/^' . preg_quote($token, '/') . '\s*:/iu', $rowValues[$i])) {
-                for ($j = $i + 1; $j < $total; $j++) {
-                    $candidate = trim((string) $rowValues[$j]);
-                    if ($candidate !== '') {
-                        return $candidate;
+    protected function isEmpleadoHeader(array $vals): bool {
+        $s = implode(' ', $vals);
+        // Busca patrones como "No :", "Num", "ID :"
+        return (bool)preg_match('/\b(No|Num|ID)\s*[:\.]/i', $s);
+    }
+
+    protected function isNombreHeader(array $vals): bool {
+        $s = implode(' ', $vals);
+        return (bool)preg_match('/\b(Nombre|Name)\s*[:\.]/i', $s);
+    }
+
+    protected function filaTieneChecadas(array $vals): bool {
+        foreach ($vals as $v) { if (preg_match($this->horaRegex, $v)) return true; }
+        return false;
+    }
+
+    protected function extraerValorPosterior(array $vals, array $keys): ?string {
+        foreach ($vals as $i => $val) {
+            foreach ($keys as $key) {
+                // Coincidencia laxa (contiene el texto)
+                if (stripos($val, $key) !== false) {
+                    // Buscar en las siguientes 3 celdas algo que no esté vacío ni sea solo signos
+                    for ($j = $i + 1; $j < min(count($vals), $i + 4); $j++) {
+                        $c = trim($vals[$j]);
+                        if (!empty($c) && $c !== ':' && $c !== '.') return $c;
                     }
                 }
             }
         }
-
         return null;
-    }
-
-    /** Resuelve el id del empleado por número o nombre (incluye coincidencias por iniciales y variantes). */
-    protected function resolverEmpleadoId(?string $empleadoNo, ?string $nombre): ?int
-    {
-        $empleadoNo = $empleadoNo ? trim($empleadoNo) : '';
-        if ($empleadoNo !== '') {
-            $byNo = $this->buscarEmpleadoPorNumero($empleadoNo);
-            if ($byNo) {
-                return $byNo->id;
-            }
-        }
-
-        if ($nombre) {
-            $byName = $this->buscarEmpleadoPorNombre($nombre);
-            if ($byName) {
-                return $byName->id;
-            }
-        }
-
-        return null;
-    }
-
-    /** Busca un empleado por número oficial o código alterno. */
-    protected function buscarEmpleadoPorNumero(string $empleadoNo): ?Empleado
-    {
-        $columns = Schema::getColumnListing('empleados');
-        return Empleado::query()
-            ->when($this->areaObjetivo, fn ($q) => $q->where('area', $this->areaObjetivo))
-            ->where(function ($q) use ($empleadoNo, $columns) {
-                if (in_array('id_empleado', $columns, true)) {
-                    $q->orWhere('id_empleado', $empleadoNo);
-                }
-                // Algunas instalaciones podrían tener un campo alterno, lo revisamos solo si existe.
-                if (in_array('numero', $columns, true)) {
-                    $q->orWhere('numero', $empleadoNo);
-                }
-                if (in_array('user_id', $columns, true) && ctype_digit($empleadoNo)) {
-                    $q->orWhere('user_id', (int) $empleadoNo);
-                }
-            })
-            ->first();
-    }
-
-    /**
-     * Busca un empleado por nombre aplicando heurísticas flexibles:
-     *  - Coincidencia exacta sin espacios
-     *  - Coincidencia por mayúsculas/minúsculas
-     *  - Coincidencia por iniciales concatenadas
-     */
-    protected function buscarEmpleadoPorNombre(string $nombre): ?Empleado
-    {
-        $variants = $this->generarVariantesNombre($nombre);
-        $normalizedTargets = array_map(fn ($variant) => Str::lower(str_replace(' ', '', $variant)), $variants);
-
-        $query = Empleado::query()
-            ->when($this->areaObjetivo, fn ($q) => $q->where('area', $this->areaObjetivo))
-            ->where(function ($q) use ($normalizedTargets) {
-                foreach ($normalizedTargets as $variant) {
-                    $like = '%' . $variant . '%';
-                    $q->orWhereRaw('LOWER(REPLACE(nombre, " ", "")) LIKE ?', [$like]);
-                    $q->orWhereRaw('LOWER(nombre) LIKE ?', [$like]);
-                }
-            });
-
-        $matches = $query->get();
-        if ($matches->isEmpty()) {
-            return null;
-        }
-
-        $target = $normalizedTargets[0];
-        $scored = $matches->mapWithKeys(function (Empleado $empleado) use ($target) {
-            $nombreNormalizado = Str::lower(str_replace(' ', '', $empleado->nombre));
-            $score = 0;
-            similar_text($target, $nombreNormalizado, $score);
-
-            return [$empleado->id => ['empleado' => $empleado, 'score' => $score]];
-        });
-
-        return collect($scored)
-            ->sortByDesc(fn ($item) => $item['score'])
-            ->map(fn ($item) => $item['empleado'])
-            ->first();
-    }
-
-    /** Normaliza un nombre eliminando caracteres no alfanuméricos y dobles espacios. */
-    protected function normalizarNombre(string $nombre): string
-    {
-        $nombre = trim($nombre);
-        $nombre = preg_replace('/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]/u', ' ', $nombre);
-        $nombre = preg_replace('/\s+/', ' ', $nombre);
-
-        return $nombre;
-    }
-
-    /** Devuelve las iniciales concatenadas de un nombre (ej. "Mariana Lopez Perez" => "MLP"). */
-    protected function extraerIniciales(string $nombre): string
-    {
-        $parts = preg_split('/\s+/u', trim($nombre));
-        $initials = array_map(static fn ($part) => Str::substr($part, 0, 1), array_filter($parts));
-
-        return implode('', $initials);
-    }
-
-    /** Genera variantes de nombre para búsquedas tolerantes a mayúsculas, minúsculas e iniciales. */
-    protected function generarVariantesNombre(string $nombre): array
-    {
-        $normalized = $this->normalizarNombre($nombre);
-        $initials = $this->extraerIniciales($normalized);
-        $variants = [
-            $normalized,
-            str_replace(' ', '', $normalized),
-            Str::upper($normalized),
-            Str::lower($normalized),
-            Str::ucfirst(Str::lower($normalized)),
-            Str::upper($initials),
-            Str::lower($initials),
-        ];
-
-        // Adicional: combinar primeras palabras para cubrir abreviaturas tipo "MLOP".
-        $parts = array_values(array_filter(preg_split('/\s+/u', $normalized)));
-        if (count($parts) >= 2) {
-            $variants[] = Str::upper(Str::substr($parts[0], 0, 1) . Str::substr($parts[1], 0, 1));
-        }
-        if (count($parts) >= 3) {
-            $variants[] = Str::upper(Str::substr($parts[0], 0, 1) . Str::substr($parts[1], 0, 1) . Str::substr($parts[2], 0, 1));
-        }
-
-        return array_values(array_unique(array_filter($variants)));
-    }
-
-    /** Convierte HH:MM a HH:MM:SS y admite valores nulos. */
-    protected function formatearHora(?string $hora): ?string
-    {
-        if (!$hora) {
-            return null;
-        }
-
-        try {
-            return Carbon::createFromFormat('H:i', $hora)->format('H:i:s');
-        } catch (\Throwable $e) {
-            Log::warning('Hora con formato inválido: ' . $hora);
-            return null;
-        }
-    }
-
-    /** Convierte el índice de columna numérico a su letra (A, B, ...). */
-    protected function columnIndexToLetter(int $index): string
-    {
-        $dividend = $index;
-        $columnName = '';
-        while ($dividend > 0) {
-            $modulo = ($dividend - 1) % 26;
-            $columnName = chr(65 + $modulo) . $columnName;
-            $dividend = (int) (($dividend - $modulo) / 26);
-        }
-
-        return $columnName;
-    }
-
-    /** Obtiene valor de celda por índice de columna y fila. */
-    protected function getCellValue(Worksheet $sheet, int $col, int $row): mixed
-    {
-        $coord = Coordinate::stringFromColumnIndex($col) . $row; // Ej: A1
-        return $sheet->getCell($coord)->getValue();
     }
 }

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
 
             // 2. Recursos Humanos (Dependen de Users)
             EmpleadoSeeder::class,
+            RhUserSeeder::class,
 
             // 3. Catálogos y Configuración
             HelpSectionSeeder::class,

@@ -297,6 +297,29 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group(function () {
+    
+    // Vista principal y tabla
+    Route::get('/recursos-humanos/reloj', [RelojChecadorImportController::class, 'index'])
+        ->name('reloj.index');
+
+    // Proceso de carga (POST)
+    Route::post('/recursos-humanos/reloj/start', [RelojChecadorImportController::class, 'start'])
+        ->name('reloj.start');
+
+    // Barra de progreso (Polling)
+    Route::get('/recursos-humanos/reloj/progress/{key}', [RelojChecadorImportController::class, 'progress'])
+        ->name('reloj.progress');
+
+    Route::delete('/recursos-humanos/reloj/clear', [RelojChecadorImportController::class, 'clear'])
+        ->name('reloj.clear');
+
+    Route::put('/recursos-humanos/reloj/update/{id}', [RelojChecadorImportController::class, 'update'])
+        ->name('reloj.update');
+    Route::post('/recursos-humanos/reloj/store', [RelojChecadorImportController::class, 'store'])
+        ->name('reloj.store');
+});
+
 // Ayuda pública removida
 
 require __DIR__.'/auth.php';

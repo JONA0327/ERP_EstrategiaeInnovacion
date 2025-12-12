@@ -1,8 +1,18 @@
-<x-app-layout>
-    <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+     <?php $__env->slot('header', null, []); ?> 
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Control de Asistencia') }}
+                <?php echo e(__('Control de Asistencia')); ?>
+
             </h2>
             <div class="flex gap-3">
                 <button onclick="abrirModalIncidencia()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded transition shadow-md flex items-center gap-2">
@@ -11,7 +21,7 @@
                 </button>
             </div>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
 
     <div class="py-8 bg-gray-50 min-h-screen" x-data="{ openImport: false }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -35,7 +45,7 @@
                     <div class="flex flex-col md:flex-row justify-between items-start gap-6">
                         <div class="flex-1 w-full">
                             <form id="importForm" class="flex flex-col sm:flex-row gap-4">
-                                @csrf
+                                <?php echo csrf_field(); ?>
                                 <div class="flex-1">
                                     <input type="file" name="archivo" id="archivo" accept=".xls,.xlsx,.csv" 
                                         class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
@@ -57,8 +67,8 @@
                             </div>
                         </div>
                         <div class="border-l border-gray-200 pl-6 md:ml-6">
-                            <form action="{{ route('reloj.clear') }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar TODOS los registros?');">
-                                @csrf @method('DELETE')
+                            <form action="<?php echo e(route('reloj.clear')); ?>" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar TODOS los registros?');">
+                                <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                                 <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-2 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     Vaciar Registros
@@ -72,11 +82,11 @@
             <!-- VISTA DE REPORTE -->
             <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                 <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row gap-4 justify-between items-end lg:items-center">
-                    <form method="GET" action="{{ route('reloj.index') }}" class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1">
+                    <form method="GET" action="<?php echo e(route('reloj.index')); ?>" class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1">
                         <div class="w-full sm:w-64">
                             <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Buscar Empleado</label>
                             <div class="relative">
-                                <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre o ID..." 
+                                <input type="text" name="search" value="<?php echo e(request('search')); ?>" placeholder="Nombre o ID..." 
                                     class="pl-3 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             </div>
                         </div>
@@ -84,9 +94,9 @@
                             <div>
                                 <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Periodo</label>
                                 <div class="flex gap-2 items-center">
-                                    <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio', now()->startOfMonth()->toDateString()) }}" class="w-full sm:w-36 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="date" name="fecha_inicio" value="<?php echo e(request('fecha_inicio', now()->startOfMonth()->toDateString())); ?>" class="w-full sm:w-36 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <span class="text-gray-400">-</span>
-                                    <input type="date" name="fecha_fin" value="{{ request('fecha_fin', now()->endOfMonth()->toDateString()) }}" class="w-full sm:w-36 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="date" name="fecha_fin" value="<?php echo e(request('fecha_fin', now()->endOfMonth()->toDateString())); ?>" class="w-full sm:w-36 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>
                             </div>
                             <div class="flex items-end">
@@ -110,111 +120,119 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @php $currentMonth = null; @endphp
-                            @forelse($asistencias as $asistencia)
-                                {{-- Separador de Mes --}}
-                                @if($currentMonth !== $asistencia->fecha->format('Y-m'))
-                                    @php $currentMonth = $asistencia->fecha->format('Y-m'); @endphp
+                            <?php $currentMonth = null; ?>
+                            <?php $__empty_1 = true; $__currentLoopData = $asistencias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $asistencia): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                
+                                <?php if($currentMonth !== $asistencia->fecha->format('Y-m')): ?>
+                                    <?php $currentMonth = $asistencia->fecha->format('Y-m'); ?>
                                     <tr class="bg-gray-100 border-t border-b border-gray-200">
                                         <td colspan="7" class="px-6 py-2 text-xs font-bold text-gray-600 uppercase tracking-widest">
-                                            {{ $asistencia->fecha->isoFormat('MMMM YYYY') }}
+                                            <?php echo e($asistencia->fecha->isoFormat('MMMM YYYY')); ?>
+
                                         </td>
                                     </tr>
-                                @endif
+                                <?php endif; ?>
 
-                                {{-- Lógica de Fines de Semana: Resaltado sutil --}}
-                                @php 
+                                
+                                <?php 
                                     $isWeekend = $asistencia->fecha->isWeekend(); 
                                     $rowClass = $isWeekend ? 'bg-gray-50/50' : 'hover:bg-gray-50 transition-colors';
-                                @endphp
+                                ?>
 
-                                <tr class="{{ $rowClass }}">
+                                <tr class="<?php echo e($rowClass); ?>">
                                     <td class="px-6 py-3 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold border border-gray-300">
-                                                {{ substr($asistencia->nombre, 0, 2) }}
+                                                <?php echo e(substr($asistencia->nombre, 0, 2)); ?>
+
                                             </div>
                                             <div class="ml-3">
-                                                <div class="text-sm font-medium text-gray-900">{{ $asistencia->nombre }}</div>
-                                                <div class="text-xs text-gray-500">ID: {{ $asistencia->empleado_no }}</div>
+                                                <div class="text-sm font-medium text-gray-900"><?php echo e($asistencia->nombre); ?></div>
+                                                <div class="text-xs text-gray-500">ID: <?php echo e($asistencia->empleado_no); ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-3 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">{{ $asistencia->fecha->format('d/m') }}</div>
-                                        <div class="text-xs {{ $isWeekend ? 'text-indigo-500 font-semibold' : 'text-gray-500' }}">
-                                            {{ $asistencia->fecha->isoFormat('ddd') }}
+                                        <div class="text-sm text-gray-900"><?php echo e($asistencia->fecha->format('d/m')); ?></div>
+                                        <div class="text-xs <?php echo e($isWeekend ? 'text-indigo-500 font-semibold' : 'text-gray-500'); ?>">
+                                            <?php echo e($asistencia->fecha->isoFormat('ddd')); ?>
+
                                         </div>
                                     </td>
-                                    @if($asistencia->tipo_registro == 'asistencia')
+                                    <?php if($asistencia->tipo_registro == 'asistencia'): ?>
                                         <td class="px-6 py-3 whitespace-nowrap text-center">
-                                            <span class="text-sm font-mono {{ ($asistencia->es_retardo && !$asistencia->es_justificado) ? 'text-red-600 font-bold' : 'text-gray-700' }}">
-                                                {{ $asistencia->entrada ? substr($asistencia->entrada, 0, 5) : '--:--' }}
+                                            <span class="text-sm font-mono <?php echo e(($asistencia->es_retardo && !$asistencia->es_justificado) ? 'text-red-600 font-bold' : 'text-gray-700'); ?>">
+                                                <?php echo e($asistencia->entrada ? substr($asistencia->entrada, 0, 5) : '--:--'); ?>
+
                                             </span>
-                                            @if($asistencia->es_retardo)
-                                                @if($asistencia->es_justificado)
+                                            <?php if($asistencia->es_retardo): ?>
+                                                <?php if($asistencia->es_justificado): ?>
                                                     <span class="block text-[10px] text-green-600 font-medium">Justificado</span>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="block text-[10px] text-red-500 font-medium">Retardo > 8:45</span>
-                                                @endif
-                                            @endif
+                                                <?php endif; ?>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="px-6 py-3 whitespace-nowrap text-center text-sm font-mono text-gray-700">
-                                            {{ $asistencia->salida ? substr($asistencia->salida, 0, 5) : '--:--' }}
+                                            <?php echo e($asistencia->salida ? substr($asistencia->salida, 0, 5) : '--:--'); ?>
+
                                         </td>
                                         <td class="px-6 py-3 whitespace-nowrap text-center text-sm text-gray-500">
-                                            {{ $asistencia->horas_trabajadas }}
+                                            <?php echo e($asistencia->horas_trabajadas); ?>
+
                                         </td>
-                                    @else
-                                        {{-- Celdas especiales para incidencias --}}
+                                    <?php else: ?>
+                                        
                                         <td colspan="3" class="px-6 py-3 text-center">
                                             <div class="text-sm text-gray-500 italic bg-gray-50 rounded py-1 border border-gray-100">
-                                                {{ ucfirst($asistencia->tipo_registro) }}
-                                                @if($asistencia->comentarios)
-                                                    <span class="text-xs text-gray-400 block max-w-[200px] truncate mx-auto" title="{{ $asistencia->comentarios }}">
-                                                        {{ $asistencia->comentarios }}
+                                                <?php echo e(ucfirst($asistencia->tipo_registro)); ?>
+
+                                                <?php if($asistencia->comentarios): ?>
+                                                    <span class="text-xs text-gray-400 block max-w-[200px] truncate mx-auto" title="<?php echo e($asistencia->comentarios); ?>">
+                                                        <?php echo e($asistencia->comentarios); ?>
+
                                                     </span>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </td>
-                                    @endif
+                                    <?php endif; ?>
                                     <td class="px-6 py-3 whitespace-nowrap text-center">
-                                        @switch($asistencia->tipo_registro)
-                                            @case('vacaciones')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Vacaciones</span> @break
-                                            @case('incapacidad')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Incapacidad</span> @break
-                                            @case('falta')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Falta</span> @break
-                                            @case('permiso')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-teal-100 text-teal-800">Permiso</span> @break
-                                            @case('descanso')
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-600">Descanso</span> @break
-                                            @default
-                                                @if(!$asistencia->entrada && !$asistencia->salida)
+                                        <?php switch($asistencia->tipo_registro):
+                                            case ('vacaciones'): ?>
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Vacaciones</span> <?php break; ?>
+                                            <?php case ('incapacidad'): ?>
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Incapacidad</span> <?php break; ?>
+                                            <?php case ('falta'): ?>
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Falta</span> <?php break; ?>
+                                            <?php case ('permiso'): ?>
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-teal-100 text-teal-800">Permiso</span> <?php break; ?>
+                                            <?php case ('descanso'): ?>
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-600">Descanso</span> <?php break; ?>
+                                            <?php default: ?>
+                                                <?php if(!$asistencia->entrada && !$asistencia->salida): ?>
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Falta / Sin Reg</span>
-                                                @elseif(!$asistencia->entrada || !$asistencia->salida)
+                                                <?php elseif(!$asistencia->entrada || !$asistencia->salida): ?>
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Incompleto</span>
-                                                @elseif($asistencia->es_retardo && !$asistencia->es_justificado)
+                                                <?php elseif($asistencia->es_retardo && !$asistencia->es_justificado): ?>
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Retardo</span>
-                                                @elseif($asistencia->es_justificado)
+                                                <?php elseif($asistencia->es_justificado): ?>
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Justificado</span>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-50 text-green-700">A Tiempo</span>
-                                                @endif
-                                        @endswitch
+                                                <?php endif; ?>
+                                        <?php endswitch; ?>
                                     </td>
                                     <td class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onclick="abrirModalEdicion({{ $asistencia }})" class="text-indigo-600 hover:text-indigo-900 transition">Editar</button>
+                                        <button onclick="abrirModalEdicion(<?php echo e($asistencia); ?>)" class="text-indigo-600 hover:text-indigo-900 transition">Editar</button>
                                     </td>
                                 </tr>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <tr><td colspan="7" class="px-6 py-12 text-center text-gray-500">No hay registros para mostrar.</td></tr>
-                            @endforelse
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">{{ $asistencias->links() }}</div>
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200"><?php echo e($asistencias->links()); ?></div>
             </div>
         </div>
     </div>
@@ -225,7 +243,7 @@
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarModalEdicion()"></div>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                 <form id="formEdicion" method="POST">
-                    @csrf @method('PUT')
+                    <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Editar Registro Individual</h3>
                         <div class="space-y-4">
@@ -264,8 +282,8 @@
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarModalIncidencia()"></div>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-                <form action="{{ route('reloj.store') }}" method="POST">
-                    @csrf
+                <form action="<?php echo e(route('reloj.store')); ?>" method="POST">
+                    <?php echo csrf_field(); ?>
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6" x-data="{ tipo: 'vacaciones' }">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-bold text-gray-900">Registrar Incidencia / Periodo</h3>
@@ -280,9 +298,9 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Empleado</label>
                                 <select name="empleado_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                    @foreach(\App\Models\Empleado::orderBy('nombre')->get() as $emp)
-                                        <option value="{{ $emp->id }}">{{ $emp->nombre }} ({{ $emp->id_empleado }})</option>
-                                    @endforeach
+                                    <?php $__currentLoopData = \App\Models\Empleado::orderBy('nombre')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($emp->id); ?>"><?php echo e($emp->nombre); ?> (<?php echo e($emp->id_empleado); ?>)</option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
 
@@ -379,8 +397,8 @@
                     }).catch(err => console.log(err));
             }, 1000);
 
-            fetch("{{ route('reloj.start') }}", {
-                method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" }
+            fetch("<?php echo e(route('reloj.start')); ?>", {
+                method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>" }
             })
             .then(r => r.json())
             .then(data => {
@@ -419,4 +437,13 @@
             document.getElementById('modalIncidencia').classList.add('hidden');
         }
     </script>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/Recursos_Humanos/reloj_checador.blade.php ENDPATH**/ ?>
