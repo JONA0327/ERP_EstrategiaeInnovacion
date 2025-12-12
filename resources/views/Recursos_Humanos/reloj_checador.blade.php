@@ -16,7 +16,58 @@
     <div class="py-8 bg-gray-50 min-h-screen" x-data="{ openImport: false }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            <!-- PANEL IMPORTAR (Mismo diseño limpio) -->
+            <!-- DASHBOARD DE KPIs (NUEVO) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Card: Asistencia General -->
+                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase">Eficiencia Asistencia</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ $porcentajeAsistencia }}%</p>
+                    </div>
+                    <div class="p-2 bg-blue-50 rounded-full text-blue-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Card: Retardos -->
+                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase">Retardos (Injust.)</p>
+                        <p class="text-2xl font-bold text-yellow-600">{{ $retardos }}</p>
+                    </div>
+                    <div class="p-2 bg-yellow-50 rounded-full text-yellow-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Card: Faltas -->
+                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase">Faltas / Ausencias</p>
+                        <p class="text-2xl font-bold text-red-600">{{ $faltas }}</p>
+                    </div>
+                    <div class="p-2 bg-red-50 rounded-full text-red-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Card: Top Retardos (Lista mini) -->
+                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <p class="text-xs font-medium text-gray-500 uppercase mb-2">Más Retardos</p>
+                    <div class="space-y-2">
+                        @forelse($topRetardos as $top)
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-700 truncate w-24" title="{{ $top->nombre }}">{{ $top->nombre }}</span>
+                                <span class="font-bold text-red-500">{{ $top->total }}</span>
+                            </div>
+                        @empty
+                            <span class="text-xs text-gray-400">Sin datos</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL IMPORTAR (Se mantiene igual) -->
             <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
                 <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition" @click="openImport = !openImport">
                     <div class="flex items-center gap-3">

@@ -10,14 +10,15 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB; // Necesario para DB::raw
 
 class RelojChecadorImportController extends Controller
 {
-    // ... (index, start, progress y update se mantienen igual) ...
     public function index(Request $request)
     {
         $query = Asistencia::with('empleado'); 
 
+        // Filtros (igual que antes)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -26,23 +27,78 @@ class RelojChecadorImportController extends Controller
             });
         }
 
-        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
-            $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
-        } else {
-            $query->whereMonth('fecha', now()->month)
-                  ->whereYear('fecha', now()->year);
-        }
+        // Rango de Fechas (Default: Mes actual)
+        $inicio = $request->filled('fecha_inicio') ? $request->fecha_inicio : now()->startOfMonth()->toDateString();
+        $fin = $request->filled('fecha_fin') ? $request->fecha_fin : now()->endOfMonth()->toDateString();
 
+        // Aplicar filtro de fechas a la consulta principal
+        $query->whereBetween('fecha', [$inicio, $fin]);
+
+        // --- CÁLCULO DE DASHBOARD (KPIs) ---
+        // Usamos una consulta separada pero optimizada para los stats sobre el mismo rango
+        $statsQuery = Asistencia::whereBetween('fecha', [$inicio, $fin]);
+        
+        $totalRegistros = $statsQuery->count();
+        
+        // 1. Asistencia Correcta (Entrada y Salida OK, sin retardos injustificados)
+        $asistenciasOk = $statsQuery->clone()
+            ->whereNotNull('entrada')
+            ->whereNotNull('salida')
+            ->where(function($q) {
+                $q->where('es_retardo', false)
+                  ->orWhere('es_justificado', true);
+            })->count();
+
+        // 2. Retardos (Tarde y NO justificado)
+        $retardos = $statsQuery->clone()
+            ->where('es_retardo', true)
+            ->where('es_justificado', false)
+            ->count();
+
+        // 3. Faltas (Tipo 'falta' O sin registros)
+        $faltas = $statsQuery->clone()
+            ->where(function($q) {
+                $q->where('tipo_registro', 'falta')
+                  ->orWhere(function($sub) {
+                      $sub->whereNull('entrada')->whereNull('salida');
+                  });
+            })->count();
+
+        // 4. Top 3 Empleados con más Retardos
+        $topRetardos = Asistencia::whereBetween('fecha', [$inicio, $fin])
+            ->where('es_retardo', true)
+            ->where('es_justificado', false)
+            ->select('nombre', DB::raw('count(*) as total'))
+            ->groupBy('nombre')
+            ->orderByDesc('total')
+            ->limit(3)
+            ->get();
+
+        // Calcular porcentaje de asistencia (Evitar división por cero)
+        $porcentajeAsistencia = $totalRegistros > 0 
+            ? round(($asistenciasOk / $totalRegistros) * 100, 1) 
+            : 0;
+
+        // Paginación para la tabla
         $asistencias = $query->orderBy('fecha', 'desc')
                              ->orderBy('nombre', 'asc')
                              ->paginate(20)
                              ->withQueryString();
 
-        return view('Recursos_Humanos.reloj_checador', compact('asistencias'));
+        return view('Recursos_Humanos.reloj_checador', compact(
+            'asistencias', 
+            'totalRegistros', 
+            'asistenciasOk', 
+            'retardos', 
+            'faltas', 
+            'porcentajeAsistencia',
+            'topRetardos'
+        ));
     }
 
     public function start(Request $request)
     {
+        // ... (código existente del método start) ...
         set_time_limit(300); 
 
         $request->validate([
@@ -106,6 +162,7 @@ class RelojChecadorImportController extends Controller
         }
     }
 
+    // ... (Mantener resto de métodos: progress, update, store, clear) ...
     public function progress(string $key)
     {
         $data = Cache::get($key);
@@ -123,53 +180,38 @@ class RelojChecadorImportController extends Controller
         return back()->with('success', 'Actualizado.');
     }
 
-    // --- AQUÍ ESTÁ LA LÓGICA DE VACACIONES MASIVAS (CORREGIDA) ---
     public function store(Request $request)
     {
         $request->validate([
             'empleado_id' => 'required|exists:empleados,id',
             'fecha_inicio' => 'required|date',
-            // Validar que fin sea igual o mayor a inicio
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio', 
             'tipo_registro' => 'required'
         ]);
 
         $empleado = \App\Models\Empleado::find($request->empleado_id);
-        
         $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio);
-        // Si no hay fecha fin, usar inicio (es solo un día)
         $fechaFin = $request->fecha_fin ? \Carbon\Carbon::parse($request->fecha_fin) : $fechaInicio->copy();
 
         $contador = 0;
-
-        // Bucle día por día
         while ($fechaInicio->lte($fechaFin)) {
-            
-            // Opcional: Saltar fines de semana si lo deseas (descomentar si la empresa no trabaja S/D)
-            // if ($fechaInicio->isWeekend()) { $fechaInicio->addDay(); continue; }
-
             Asistencia::updateOrInsert(
-                [
-                    'empleado_id' => $empleado->id,
-                    'fecha' => $fechaInicio->toDateString(),
-                ],
+                ['empleado_id' => $empleado->id, 'fecha' => $fechaInicio->toDateString()],
                 [
                     'empleado_no' => $empleado->id_empleado ?? 'S/N',
                     'nombre' => $empleado->nombre,
                     'tipo_registro' => $request->tipo_registro,
                     'comentarios' => $request->comentarios,
-                    'entrada' => null, // Limpiamos entrada/salida porque es incidencia
+                    'entrada' => null,
                     'salida' => null,
-                    'checadas' => [], // <--- CORRECCIÓN: Array vacío para incidencias (evita error SQL)
-                    'es_justificado' => true, // Incidencias creadas manualmente siempre son "justificadas"
+                    'checadas' => [],
+                    'es_justificado' => true,
                     'updated_at' => now(),
                 ]
             );
-            
             $fechaInicio->addDay();
             $contador++;
         }
-
         return back()->with('success', "Se registraron $contador días de {$request->tipo_registro}.");
     }
 
