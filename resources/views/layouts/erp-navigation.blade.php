@@ -1,91 +1,114 @@
-@php
-    $user = Auth::user();
-    
-    // Determinar el contexto del área basado en la ruta actual y el referer
-    $currentPath = request()->path();
-    $referer = request()->headers->get('referer');
-    $fromTickets = $referer && (str_contains($referer, 'mis-tickets') || str_contains($referer, 'ticket/create') || str_contains($referer, 'tickets'));
-    
-    $areaContext = 'ERP'; // default
-    
-    if (request()->is('recursos-humanos*')) {
-        $areaContext = 'RH';
-    } elseif (request()->is('logistica*')) {
-        $areaContext = 'Logística';
-    } elseif ($fromTickets || request()->is('ticket*') || request()->is('mis-tickets*')) {
-        $areaContext = 'Tickets';
-    }
-    
-    $initials = $user ? strtoupper(mb_substr($user->name, 0, 1, 'UTF-8')) : 'U';
-@endphp
-<nav x-data="{ open:false }" class="relative z-50 border-b border-slate-200 bg-white text-slate-700 shadow-md shadow-slate-200/70">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-        <a href="{{ $areaContext==='RH' ? route('recursos-humanos.index') : ($areaContext==='Logística' ? route('logistica.index') : ($areaContext==='Tickets' ? route('tickets.mis-tickets') : route('welcome'))) }}" class="flex items-center gap-3 py-3">
-            <img src="{{ asset('images/logo-ei.png') }}" alt="E&I" class="h-10 w-auto">
-            <div class="leading-tight">
-                @if($areaContext==='RH')
-                    <p class="text-sm font-semibold text-slate-800">Administración de RH</p>
-                    <p class="text-xs text-slate-500">E&I - Recursos Humanos</p>
-                @elseif($areaContext==='Logística')
-                    <p class="text-sm font-semibold text-slate-800">Administración Logística</p>
-                    <p class="text-xs text-slate-500">E&I - Logística</p>
-                @elseif($areaContext==='Tickets')
-                    <p class="text-sm font-semibold text-slate-800">Sistema de Tickets</p>
-                    <p class="text-xs text-slate-500">E&I - Tecnología</p>
-                @else
-                    <p class="text-sm font-semibold text-slate-800">SISTEMA ERP ESTRATEGIA E INNOVACIÓN</p>
-                    <p class="text-xs text-slate-500">Portal Corporativo Integrado</p>
-                @endif
-            </div>
-        </a>
-        <div class="flex items-center gap-4">
-            <a href="{{ route('tickets.mis-tickets') }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-medium shadow hover:bg-blue-700">
-                <x-ui.icon name="lifebuoy" class="h-4 w-4" />
-                Centro de Soporte
-            </a>
-            @auth
-            <div class="relative" x-data="{ profile:false }">
-                <button
-                    @click="profile=!profile"
-                    @click.outside="profile=false"
-                    class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm text-slate-700 shadow-sm shadow-blue-100/50 transition-all duration-200 hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                >
-                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold shadow-md shadow-blue-500/30">{{ $initials }}</span>
-                    <svg class="h-4 w-4 text-slate-500 transition-transform duration-200" :class="{ 'rotate-180': profile }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                <div
-                    x-cloak
-                    x-show="profile"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="transform opacity-0 scale-95"
-                    x-transition:enter-end="transform opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-100"
-                    x-transition:leave-start="transform opacity-100 scale-100"
-                    x-transition:leave-end="transform opacity-0 scale-95"
-                    class="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-blue-100/80 bg-white/95 shadow-2xl shadow-blue-500/10 backdrop-blur-xl z-50"
-                >
-                    <div class="border-b border-blue-100/70 bg-gradient-to-r from-blue-50/70 to-white px-4 py-2.5">
-                        <p class="text-xs font-semibold text-slate-900">{{ $user->name }}</p>
-                        <p class="text-[11px] text-slate-500">{{ $user->email }}</p>
-                        <span class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
-                            <x-ui.icon name="check-badge" class="h-3.5 w-3.5" />
-                            {{ $areaContext === 'Tickets' ? 'Tecnología' : $areaContext }}
-                        </span>
-                    </div>
-                    <div class="py-2">
-                        <a href="{{ route('profile.edit') }}" class="flex items-center px-4 py-2 text-xs text-slate-600 transition-colors duration-150 hover:bg-blue-50/60">
-                            <x-ui.icon name="pencil-square" class="mr-3 h-4 w-4 text-slate-400" />Mi perfil
-                        </a>
-                        <form method="POST" action="{{ route('logout') }}" class="mt-1">
-                            @csrf
-                            <button type="submit" class="flex w-full items-center px-4 py-2 text-xs font-medium text-red-600 transition-colors duration-150 hover:bg-red-50">
-                                <x-ui.icon name="arrow-right-on-rectangle" class="mr-3 h-4 w-4 text-red-400" />Cerrar sesión
-                            </button>
-                        </form>
-                    </div>
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="{{ route('dashboard') }}">
+                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-nav-link>
+                    
+                    <!-- Enlace visible solo para RH -->
+                    @if(Auth::user()->empleado && (Str::contains(Str::lower(Auth::user()->empleado->area), 'rh') || Str::contains(Str::lower(Auth::user()->empleado->area), 'recursos humanos')))
+                        <x-nav-link :href="route('reloj.index')" :active="request()->routeIs('reloj.*')">
+                            {{ __('Reloj Checador') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
-            @endauth
+
+            <!-- Settings Dropdown -->
+            <div class="hidden sm:flex sm:items-center sm:ml-6">
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            <!-- Mostrar Nombre del Usuario o 'Usuario' si no está disponible -->
+                            <div>{{ Auth::user()->name ?? 'Usuario' }}</div>
+
+                            <div class="ml-1">
+                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Profile') }}
+                        </x-dropdown-link>
+
+                        <!-- Authentication -->
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+
+                            <x-dropdown-link :href="route('logout')"
+                                    onclick="event.preventDefault();
+                                                this.closest('form').submit();">
+                                {{ __('Log Out') }}
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
+            </div>
+
+            <!-- Hamburger -->
+            <div class="-mr-2 flex items-center sm:hidden">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Responsive Navigation Menu -->
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            
+            @if(Auth::user()->empleado && (Str::contains(Str::lower(Auth::user()->empleado->area), 'rh') || Str::contains(Str::lower(Auth::user()->empleado->area), 'recursos humanos')))
+                <x-responsive-nav-link :href="route('reloj.index')" :active="request()->routeIs('reloj.*')">
+                    {{ __('Reloj Checador') }}
+                </x-responsive-nav-link>
+            @endif
+        </div>
+
+        <!-- Responsive Settings Options -->
+        <div class="pt-4 pb-1 border-t border-gray-200">
+            <div class="px-4">
+                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name ?? 'Usuario' }}</div>
+                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email ?? '' }}</div>
+            </div>
+
+            <div class="mt-3 space-y-1">
+                <x-responsive-nav-link :href="route('profile.edit')">
+                    {{ __('Profile') }}
+                </x-responsive-nav-link>
+
+                <!-- Authentication -->
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+
+                    <x-responsive-nav-link :href="route('logout')"
+                            onclick="event.preventDefault();
+                                        this.closest('form').submit();">
+                        {{ __('Log Out') }}
+                    </x-responsive-nav-link>
+                </form>
+            </div>
         </div>
     </div>
 </nav>
