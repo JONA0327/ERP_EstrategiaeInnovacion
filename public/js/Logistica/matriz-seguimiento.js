@@ -3743,6 +3743,7 @@ window.editarCampoPersonalizado = function(campoId) {
     document.getElementById('editarCampoTipo').value = campo.tipo;
     document.getElementById('editarCampoActivo').value = campo.activo ? '1' : '0';
     document.getElementById('editarCampoMostrarDespuesDe').value = campo.mostrar_despues_de || '';
+    document.getElementById('editarCampoRequerido').checked = campo.requerido || false;
 
     // Renderizar ejecutivos en el select con los seleccionados marcados
     const select = document.getElementById('selectEjecutivosEditarCampo');
@@ -3779,6 +3780,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const nombre = document.getElementById('editarCampoNombre').value.trim();
             const tipo = document.getElementById('editarCampoTipo').value;
             const activo = document.getElementById('editarCampoActivo').value === '1';
+            const requerido = document.getElementById('editarCampoRequerido').checked;
             const mostrar_despues_de = document.getElementById('editarCampoMostrarDespuesDe').value;
             const selectEjecutivos = document.getElementById('selectEjecutivosEditarCampo');
             const ejecutivos = Array.from(selectEjecutivos.selectedOptions).map(opt => parseInt(opt.value));
@@ -3790,7 +3792,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({ nombre, tipo, activo, mostrar_despues_de, ejecutivos })
+                    body: JSON.stringify({ nombre, tipo, activo, requerido, mostrar_despues_de, ejecutivos })
                 });
 
                 const data = await response.json();
@@ -3840,6 +3842,359 @@ window.eliminarCampoPersonalizado = function(campoId, nombre) {
         'Eliminar Campo',
         'Eliminar'
     );
+};
+
+/**
+ * Resetear campos personalizados a predeterminados
+ */
+window.resetearCamposPersonalizados = function() {
+    mostrarConfirmacion(
+        '¿Deseas resetear todos los campos personalizados? Esta acción eliminará todos los campos creados.',
+        async function() {
+            try {
+                const response = await fetch('/logistica/campos-personalizados/resetear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    mostrarAlerta('Campos personalizados reseteados exitosamente', 'success');
+                    cargarCamposPersonalizados();
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al resetear campos', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error de conexión al resetear campos', 'error');
+            }
+        },
+        'Resetear Campos',
+        'Resetear'
+    );
+};
+
+/**
+ * Previsualizar cómo se verán los campos en el modal con opciones de configuración
+ */
+window.previsualizarCamposModal = async function() {
+    try {
+        // Crear modal de previsualización interactivo
+        const modalHtml = `
+            <div id="modalPrevisualizacionCampos" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+                        <h2 class="text-lg font-semibold text-slate-800">
+                            <svg class="w-5 h-5 inline-block mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Configuración y Previsualización de Campos
+                        </h2>
+                        <button onclick="cerrarPrevisualizacionCampos()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6">
+                            <!-- Panel de Configuración -->
+                            <div class="space-y-4">
+                                <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                                    <h3 class="font-semibold text-blue-800 mb-2 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                        </svg>
+                                        Configuración de Campos
+                                    </h3>
+                                    <p class="text-sm text-blue-700 mb-3">Configure la visibilidad y requisitos de cada campo. Los cambios se reflejarán en la vista previa.</p>
+                                </div>
+                                <div id="listaCamposConfig" class="space-y-2 max-h-[calc(90vh-250px)] overflow-y-auto">
+                                    <p class="text-center text-slate-400 py-4">Cargando campos...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Panel de Vista Previa -->
+                            <div class="space-y-4">
+                                <div class="bg-green-50 rounded-lg border border-green-200 p-4">
+                                    <h3 class="font-semibold text-green-800 mb-2 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        Vista Previa del Modal
+                                    </h3>
+                                    <p class="text-sm text-green-700">Solo se muestran los campos activos y visibles.</p>
+                                </div>
+                                <div id="contenidoPrevisualizacion" class="space-y-3 bg-slate-50 rounded-lg border border-slate-200 p-4 max-h-[calc(90vh-250px)] overflow-y-auto">
+                                    <p class="text-center text-slate-400 py-4">Los campos configurados aparecerán aquí</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                        <button onclick="aplicarCambiosPrevisializacion()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Aplicar Cambios
+                        </button>
+                        <button onclick="cerrarPrevisualizacionCampos()" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                            Cerrar sin Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Renderizar lista de campos para configuración
+        renderizarListaCamposPreview();
+
+    } catch (error) {
+        console.error('Error al previsualizar:', error);
+        mostrarAlerta('Error al cargar la previsualización', 'error');
+        const modal = document.getElementById('modalPrevisualizacionCampos');
+        if (modal) modal.remove();
+    }
+};
+
+/**
+ * Renderizar lista de campos para configuración en previsualización
+ */
+function renderizarListaCamposPreview() {
+    const container = document.getElementById('listaCamposConfig');
+    if (!container) return;
+
+    if (camposPersonalizadosData.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-slate-500">
+                <p class="font-medium">No hay campos personalizados</p>
+                <p class="text-sm mt-1">Crea campos desde la pestaña principal</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = camposPersonalizadosData.map(campo => {
+        const ejecutivosNombres = campo.ejecutivos?.map(e => e.nombre).join(', ') || 'Sin asignar';
+        return `
+            <div class="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-slate-800 text-sm">${campo.nombre}</h4>
+                        <p class="text-xs text-slate-500 mt-1">
+                            <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            ${ejecutivosNombres}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
+                    <label class="flex items-center text-sm text-slate-700 cursor-pointer hover:text-indigo-600">
+                        <input type="checkbox" 
+                               id="preview_activo_${campo.id}" 
+                               ${campo.activo ? 'checked' : ''} 
+                               onchange="toggleCampoPreview(${campo.id}, 'activo')"
+                               class="mr-2 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Visible
+                    </label>
+                    <label class="flex items-center text-sm text-slate-700 cursor-pointer hover:text-red-600">
+                        <input type="checkbox" 
+                               id="preview_requerido_${campo.id}" 
+                               ${campo.requerido ? 'checked' : ''} 
+                               onchange="toggleCampoPreview(${campo.id}, 'requerido')"
+                               class="mr-2 w-4 h-4 text-red-600 rounded focus:ring-red-500">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        Obligatorio
+                    </label>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Actualizar vista previa inicial
+    actualizarVistaPreview();
+}
+
+/**
+ * Toggle de estado de campo en previsualización
+ */
+window.toggleCampoPreview = function(campoId, propiedad) {
+    const campo = camposPersonalizadosData.find(c => c.id === campoId);
+    if (!campo) return;
+
+    if (propiedad === 'activo') {
+        campo.activo = !campo.activo;
+    } else if (propiedad === 'requerido') {
+        campo.requerido = !campo.requerido;
+    }
+
+    // Actualizar vista previa
+    actualizarVistaPreview();
+};
+
+/**
+ * Actualizar vista previa del modal
+ */
+function actualizarVistaPreview() {
+    const contenedor = document.getElementById('contenidoPrevisualizacion');
+    if (!contenedor) return;
+
+    const camposActivos = camposPersonalizadosData.filter(c => c.activo);
+
+    if (camposActivos.length === 0) {
+        contenedor.innerHTML = `
+            <div class="text-center py-8 text-slate-400">
+                <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                </svg>
+                <p class="font-medium text-sm">No hay campos visibles</p>
+                <p class="text-xs mt-1">Active campos en el panel de configuración</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Agrupar por ejecutivo
+    const camposPorEjecutivo = {};
+    camposActivos.forEach(campo => {
+        const ejecutivos = campo.ejecutivos?.map(e => e.nombre).join(', ') || 'Sin asignar';
+        if (!camposPorEjecutivo[ejecutivos]) {
+            camposPorEjecutivo[ejecutivos] = [];
+        }
+        camposPorEjecutivo[ejecutivos].push(campo);
+    });
+
+    let html = '<div class="space-y-4">';
+    
+    Object.keys(camposPorEjecutivo).forEach(ejecutivos => {
+        html += `
+            <div class="border-l-4 border-indigo-500 bg-white rounded-r-lg p-3 shadow-sm">
+                <div class="mb-3">
+                    <h4 class="font-semibold text-slate-700 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        ${ejecutivos}
+                    </h4>
+                </div>
+                <div class="space-y-2">
+        `;
+        
+        camposPorEjecutivo[ejecutivos].forEach(campo => {
+            const requeridoMark = campo.requerido ? '<span class="text-red-500 font-bold ml-1">*</span>' : '';
+            const requeridoBadge = campo.requerido ? '<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Obligatorio</span>' : '<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Opcional</span>';
+            
+            html += `
+                <div class="bg-gradient-to-r from-indigo-50 to-white border border-indigo-200 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-2 flex items-center">
+                        <span class="text-indigo-600 mr-1">★</span>
+                        ${campo.nombre}${requeridoMark}${requeridoBadge}
+                    </label>
+                    <div class="opacity-75 pointer-events-none">
+                        ${generarInputCampoPersonalizado(campo, '')}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    contenedor.innerHTML = html;
+}
+
+/**
+ * Aplicar cambios de la previsualización
+ */
+window.aplicarCambiosPrevisializacion = async function() {
+    const cambios = [];
+    
+    // Recopilar todos los cambios
+    for (const campo of camposPersonalizadosData) {
+        const checkboxActivo = document.getElementById(`preview_activo_${campo.id}`);
+        const checkboxRequerido = document.getElementById(`preview_requerido_${campo.id}`);
+        
+        if (checkboxActivo && checkboxRequerido) {
+            cambios.push({
+                id: campo.id,
+                activo: checkboxActivo.checked,
+                requerido: checkboxRequerido.checked
+            });
+        }
+    }
+
+    if (cambios.length === 0) {
+        cerrarPrevisualizacionCampos();
+        return;
+    }
+
+    try {
+        // Aplicar cambios uno por uno
+        for (const cambio of cambios) {
+            const campo = camposPersonalizadosData.find(c => c.id === cambio.id);
+            if (!campo) continue;
+
+            const response = await fetch(`/logistica/campos-personalizados/${cambio.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    nombre: campo.nombre,
+                    tipo: campo.tipo,
+                    activo: cambio.activo,
+                    requerido: cambio.requerido,
+                    mostrar_despues_de: campo.mostrar_despues_de || '',
+                    ejecutivos: campo.ejecutivos?.map(e => e.id) || []
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error al actualizar campo ${campo.nombre}`);
+            }
+        }
+
+        mostrarAlerta('Configuración aplicada exitosamente', 'success');
+        cerrarPrevisualizacionCampos();
+        cargarCamposPersonalizados();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error al aplicar algunos cambios', 'error');
+    }
+};
+
+/**
+ * Cerrar modal de previsualización
+ */
+window.cerrarPrevisualizacionCampos = function() {
+    const modal = document.getElementById('modalPrevisualizacionCampos');
+    if (modal) {
+        modal.remove();
+    }
+    // Recargar los datos originales
+    cargarCamposPersonalizados();
 };
 
 // ============================================

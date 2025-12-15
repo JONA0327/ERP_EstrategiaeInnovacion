@@ -1866,7 +1866,7 @@
                     </div>
                     
                     <!-- Lista de Campos Existentes -->
-                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-6">
                         <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
@@ -1877,8 +1877,115 @@
                             <p class="text-slate-400 text-sm text-center py-4">Cargando campos...</p>
                         </div>
                     </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <button type="button" onclick="resetearCamposPersonalizados()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Resetear a Predeterminados
+                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="previsualizarCamposModal()" class="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Previsualizar
+                            </button>
+                            <button type="button" onclick="cerrarModalCamposPersonalizados()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Guardar Configuración
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Campo Personalizado -->
+    <div id="modalEditarCampo" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <svg class="w-5 h-5 inline-block mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Editar Campo Personalizado
+                </h2>
+                <button onclick="cerrarModalEditarCampo()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="formEditarCampo" class="p-6">
+                <input type="hidden" id="editarCampoId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
+                        <input type="text" id="editarCampoNombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
+                        <select id="editarCampoTipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
+                            <option value="texto">Texto corto</option>
+                            <option value="descripcion">Descripción</option>
+                            <option value="numero">Número</option>
+                            <option value="decimal">Decimal</option>
+                            <option value="moneda">Moneda</option>
+                            <option value="fecha">Fecha</option>
+                            <option value="booleano">Sí/No</option>
+                            <option value="selector">Selector</option>
+                            <option value="multiple">Múltiple</option>
+                            <option value="email">Email</option>
+                            <option value="telefono">Teléfono</option>
+                            <option value="url">URL</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">El tipo no se puede cambiar después de crear</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                        <select id="editarCampoActivo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="1">Activo (visible en modal)</option>
+                            <option value="0">Inactivo (oculto en modal)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
+                        <select id="editarCampoMostrarDespuesDe" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Al final de la tabla --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="flex items-center text-sm font-medium text-slate-700 mt-6">
+                            <input type="checkbox" id="editarCampoRequerido" class="mr-2 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                            Campo requerido
+                        </label>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
+                        <select id="selectEjecutivosEditarCampo" multiple class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[80px]">
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">Ctrl+Click para seleccionar varios</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="cerrarModalEditarCampo()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     @endif
