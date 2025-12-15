@@ -14,6 +14,7 @@ use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con ba
 use App\Http\Controllers\Logistica\OperacionLogisticaController;
 use App\Http\Controllers\Logistica\PedimentoController;
 use App\Http\Controllers\Logistica\LogisticaCorreoCCController;
+use App\Http\Controllers\EvaluacionController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,7 @@ Route::middleware(['auth','area.rh'])->group(function () {
         Route::put('/{empleado}', [ExpedienteController::class, 'update'])->name('update');
         Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
     });
+    Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
 });
 
 Route::middleware(['auth','area.logistica'])->group(function () {

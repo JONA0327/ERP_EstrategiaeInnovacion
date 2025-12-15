@@ -1,73 +1,72 @@
-@extends('layouts.erp')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Panel de Recursos Humanos') }}
+        </h2>
+    </x-slot>
 
-@section('title', 'Recursos Humanos - Portal Interno')
+    @section('title', 'Recursos Humanos')
 
-@section('content')
-    @vite(['resources/css/Recursos_Humanos/index.css','resources/js/Recursos_Humanos/index.js'])
-    <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100">
-        <div class="absolute inset-0 pointer-events-none">
-            <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
-            <div class="absolute top-40 -right-24 w-96 h-96 bg-blue-300/30 blur-3xl rounded-full"></div>
-            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-t from-white"></div>
-        </div>
-
-        <div class="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-10">
-            <div class="mb-8 text-center">
-                <h1 class="text-2xl font-bold text-slate-900">Administración de Recursos Humanos</h1>
-                <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Accede a los módulos del área.</p>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            
+            {{-- Mensaje de bienvenida --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-bold mb-2">Bienvenido al Módulo de RH</h3>
+                    <p class="text-gray-600">Gestione expedientes, control de asistencia y evaluaciones desde este panel.</p>
+                </div>
             </div>
 
-            @php
-                $cards = [
-                    [
-                        'title' => 'Expedientes',
-                        'description' => 'Administra expedientes y documentación del personal.',
-                        'href' => route('rh.expedientes.index'),
-                        'cta' => 'Abrir módulo',
-                        'status' => 'Disponible',
-                        'icon' => 'M3 7.5A2.25 2.25 0 015.25 5.25h4.379c.597 0 1.17.237 1.59.659l1.872 1.872A2.25 2.25 0 0114.34 9.372L9.75 9.375H5.25A2.25 2.25 0 003 11.625v6.375A2.25 2.25 0 005.25 20.25h13.5A2.25 2.25 0 0021 18V9a.75.75 0 00-1.5 0v9a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75V11.625A.75.75 0 015.25 10.875H9.75',
-                    ],
-                    [
-                        'title' => 'Reloj Checador',
-                        'description' => 'Control de asistencia y registro de entradas/salidas.',
-                        'href' => route('rh.reloj.index'),
-                        'cta' => 'Abrir módulo',
-                        'status' => 'Disponible',
-                        'icon' => 'M12 6v6h4.5m3 0a9 9 0 11-18 0 9 9 0 0118 0z',
-                    ],
-                    [
-                        'title' => 'Evaluación de Desempeño',
-                        'description' => 'Gestiona evaluaciones y seguimiento de objetivos.',
-                        'href' => route('recursos-humanos.index') . '#evaluaciones',
-                        'cta' => 'En construcción',
-                        'icon' => 'M3 13.125C3 12.504 3.504 12 4.125 12h15.75c.621 0 1.125.504 1.125 1.125v4.5A2.25 2.25 0 0118.75 19.875H5.25A2.25 2.25 0 013 17.625v-4.5z M6 11.25V8.25A6 6 0 1118 8.25v3',
-                    ],
-                ];
-            @endphp
-
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                @foreach($cards as $card)
-                    <div class="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-white/90 backdrop-blur shadow-lg shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-                        <div class="absolute -top-20 -right-16 w-40 h-40 bg-gradient-to-br from-blue-200/50 to-transparent blur-3xl"></div>
-                        <div class="relative p-8">
-                            <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600 shadow-inner shadow-white/40 mx-auto mb-6">
-                                <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $card['icon'] }}"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-xl font-bold text-center text-slate-900 mb-3">{{ $card['title'] }}</h3>
-                            <p class="text-center text-slate-600 leading-relaxed mb-8">{{ $card['description'] }}</p>
-                            <a href="{{ $card['href'] }}" class="group inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:from-blue-700 hover:to-blue-800">
-                                <svg class="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                {{ $card['cta'] }}
-                            </a>
-                            <p class="mt-3 text-center text-[11px] text-slate-400">{{ $card['status'] ?? 'En construcción' }}</p>
+            {{-- Grid de accesos rápidos --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Card: Expedientes -->
+                <a href="{{ route('rh.expedientes.index') }}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-blue-500">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883.393 1.627 1 2.188m-4.546.364l-3.364-1.591m12.728 0l-3.364 1.591" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Expedientes</h4>
+                            <p class="text-sm text-gray-500">Gestión de personal</p>
                         </div>
                     </div>
-                @endforeach
+                </a>
+
+                <!-- Card: Reloj Checador -->
+                <a href="{{ route('rh.reloj.index') }}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-green-500">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Reloj Checador</h4>
+                            <p class="text-sm text-gray-500">Control de asistencia</p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Card: Evaluación de Desempeño (NUEVA) -->
+                <a href="{{ route('rh.evaluacion.index') }}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-indigo-500">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Evaluación</h4>
+                            <p class="text-sm text-gray-500">Desempeño y objetivos</p>
+                        </div>
+                    </div>
+                </a>
+
             </div>
         </div>
-    </main>
-@endsection
+    </div>
+</x-app-layout>
