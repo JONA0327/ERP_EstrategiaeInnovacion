@@ -17,6 +17,7 @@ class Empleado extends Model
         'correo',
         'area',
         'id_empleado',
+        'es_activo',
         'subdepartamento_id',
         'posicion',
         'telefono',

@@ -11,6 +11,7 @@ class EmpleadoSeeder extends Seeder
 {
     public function run(): void
     {
+        // 1. CARGA DE EMPLEADOS REALES (MANUAL)
         $empleados = [
             // ===== DIRECCIÓN =====
             [
@@ -36,7 +37,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Silvestre Reyes Castillo',
                 'correo' => 'silvestre.castillo@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos', // Ajustado de 'Comercio Exterior' para coincidir con tus categorías
                 'supervisor' => 'Guillermo Aguilera',
             ],
             [
@@ -62,7 +63,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Mario Mojica Morales',
                 'correo' => 'mario.mojica@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos', // Ajustado
                 'supervisor' => 'Silvestre Reyes Castillo',
             ],
             [
@@ -70,7 +71,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Aneth Alejandra Herrera Hernandez',
                 'correo' => 'aneth.herrera@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos', // Ajustado
                 'supervisor' => 'Silvestre Reyes Castillo',
             ],
             [
@@ -178,7 +179,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Mariana Calderón Ojeda',
                 'correo' => 'mariana.calderon@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Administracion',
+                'posicion' => 'Recursos Humanos', // Ajustado de 'RR.HH.'
                 'supervisor' => 'Liliana Hernandez Castilla',
             ],
             [
@@ -186,7 +187,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Jonathan Loredo Palacios',
                 'correo' => 'jonathan.loredo@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Auxiliar IT',
+                'posicion' => 'TI', // Ajustado de 'IT'
                 'supervisor' => 'Liliana Hernandez Castilla',
             ],
             [
@@ -194,7 +195,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Isaac Covarrubias Quintero',
                 'correo' => 'isaac.covarrubias@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Practicante IT',
+                'posicion' => 'TI', // Ajustado de 'IT'
                 'supervisor' => 'Liliana Hernandez Castilla',
             ],
 
@@ -204,7 +205,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Jessica Anahi Esparza Gonzalez',
                 'correo' => 'jessica.esparza@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -212,7 +213,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Maria Fernanda Sanchez Miranda',
                 'correo' => 'maria.sanchez@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -220,7 +221,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Felipe de Jesus Rodriguez Ledesma',
                 'correo' => 'felipe.rodriguez@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -228,7 +229,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Mayra Susana Coreño Arriaga',
                 'correo' => 'mayra.coreno@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -236,7 +237,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Erika Liliana Mireles Sanchez',
                 'correo' => 'erika.mireles@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Comercio Exterior',
+                'posicion' => 'Pedimentos',
                 'supervisor' => 'Mario Mojica Morales',
             ],
 
@@ -269,8 +270,8 @@ class EmpleadoSeeder extends Seeder
 
         $mapaEmpleados = [];
 
+        // Crear/Actualizar Empleados Reales
         foreach ($empleados as $emp) {
-
             $user = User::firstOrCreate(
                 ['email' => $emp['correo']],
                 [
@@ -298,11 +299,12 @@ class EmpleadoSeeder extends Seeder
             $mapaEmpleados[$emp['nombre']] = $empleado->id;
         }
 
+        // Asignar Supervisores
         foreach ($empleados as $emp) {
             if ($emp['supervisor']) {
                 Empleado::where('id_empleado', $emp['id_empleado'])
                     ->update([
-                        'supervisor_id' => $mapaEmpleados[$emp['supervisor']]
+                        'supervisor_id' => $mapaEmpleados[$emp['supervisor']] ?? null
                     ]);
             }
         }

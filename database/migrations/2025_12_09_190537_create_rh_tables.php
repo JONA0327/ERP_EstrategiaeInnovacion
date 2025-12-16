@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('correo')->index();
             $table->string('area')->nullable();
+            $table->boolean('es_activo')->default(true);
             $table->string('id_empleado', 30)->nullable();
             $table->foreignId('subdepartamento_id')->nullable()->constrained('subdepartamentos')->onDelete('set null');
             $table->string('posicion')->nullable();

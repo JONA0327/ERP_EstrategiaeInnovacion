@@ -24,7 +24,7 @@
                             <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                             </svg>
-                            <a href="{{ route('rh.evaluacion.index', ['area' => $area]) }}" class="ml-1 hover:text-black transition-colors">{{ $area }}</a>
+                            <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? 'General']) }}" class="ml-1 hover:text-black transition-colors">{{ $area ?? 'General' }}</a>
                         </div>
                     </li>
                     <li aria-current="page">
@@ -39,7 +39,7 @@
             </nav>
         </div>
         <div class="flex-shrink-0">
-            <a href="{{ route('rh.evaluacion.index', ['area' => $area]) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all duration-200">
+            <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? '']) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -56,36 +56,40 @@
                 <div class="p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="font-bold text-gray-700 flex items-center text-sm uppercase tracking-wider">
                         <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Equipo: {{ $area }}
+                        Equipo: {{ $area ?? 'General' }}
                     </h3>
                 </div>
                 <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
                     <ul class="divide-y divide-gray-100">
-                        @foreach($empleados as $emp)
-                            <li>
-                                <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="block p-3 hover:bg-gray-50 transition duration-200 group {{ $empleado->id === $emp->id ? 'bg-gray-50 border-l-4 border-gray-400' : 'border-l-4 border-transparent' }}">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="flex-shrink-0 relative">
-                                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm overflow-hidden border border-gray-200">
-                                                @if(isset($emp->foto_path) && $emp->foto_path)
-                                                    <img src="{{ asset('storage/' . $emp->foto_path) }}" alt="{{ $emp->nombre }}" class="w-full h-full object-cover">
-                                                @else
-                                                    <span class="text-gray-400">👤</span>
-                                                @endif
+                        @if(isset($empleados) && count($empleados) > 0)
+                            @foreach($empleados as $emp)
+                                <li>
+                                    <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="block p-3 hover:bg-gray-50 transition duration-200 group {{ $empleado->id === $emp->id ? 'bg-gray-50 border-l-4 border-indigo-500 pl-2' : 'border-l-4 border-transparent' }}">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0 relative">
+                                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 overflow-hidden border border-gray-200 uppercase">
+                                                    @if(isset($emp->foto_path) && $emp->foto_path)
+                                                        <img src="{{ asset('storage/' . $emp->foto_path) }}" alt="{{ $emp->nombre }}" class="w-full h-full object-cover">
+                                                    @else
+                                                        {{ substr($emp->nombre, 0, 1) }}{{ substr($emp->apellido_paterno ?? '', 0, 1) }}
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-700 truncate group-hover:text-black transition-colors">
+                                                    {{ $emp->nombre }} {{ $emp->apellido_paterno ?? '' }}
+                                                </p>
+                                                <p class="text-xs text-gray-500 truncate">
+                                                    {{ $emp->posicion ?? 'Sin puesto' }}
+                                                </p>
                                             </div>
                                         </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-gray-700 truncate group-hover:text-black transition-colors">
-                                                {{ $emp->nombre }}
-                                            </p>
-                                            <p class="text-xs text-gray-500 truncate">
-                                                {{ $emp->posicion ?? 'Sin puesto' }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </a>
-                            </li>
-                        @endforeach
+                                    </a>
+                                </li>
+                            @endforeach
+                        @else
+                            <li class="p-4 text-sm text-gray-500 text-center">No hay otros empleados en esta área.</li>
+                        @endif
                     </ul>
                 </div>
             </div>
@@ -105,7 +109,9 @@
                                 @if(isset($empleado->foto_path) && $empleado->foto_path)
                                     <img src="{{ asset('storage/' . $empleado->foto_path) }}" alt="{{ $empleado->nombre }}" class="w-full h-full object-cover">
                                 @else
-                                    <span class="text-4xl text-gray-300">👤</span>
+                                    <span class="text-4xl text-gray-300">
+                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                                    </span>
                                 @endif
                             </div>
                         </div>
@@ -116,30 +122,32 @@
                         <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ $empleado->nombre }} {{ $empleado->apellido_paterno ?? '' }}</h2>
                         
                         <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
                                 {{ $empleado->posicion ?? 'Puesto no asignado' }}
                             </span>
+                            @if($empleado->numero_empleado)
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {{ $empleado->id_empleado }}
+                                ID: {{ $empleado->numero_empleado }}
                             </span>
+                            @endif
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
                                 {{ $empleado->area }}
                             </span>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mt-2 font-medium">
-                            <div class="flex items-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mt-4 font-medium border-t border-gray-100 pt-4">
+                            <div class="flex items-center justify-center md:justify-start">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 <span class="truncate">{{ $empleado->correo ?? 'No registrado' }}</span>
                             </div>
-                            <div class="flex items-center">
+                            <div class="flex items-center justify-center md:justify-start">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                                 <span>{{ $empleado->telefono ?? 'No registrado' }}</span>
                             </div>
                             @if(isset($empleado->fecha_ingreso))
-                            <div class="flex items-center">
+                            <div class="flex items-center justify-center md:justify-start">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span>{{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}</span>
+                                <span>Ingreso: {{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}</span>
                             </div>
                             @endif
                         </div>
@@ -155,11 +163,11 @@
                         <p class="text-xs text-gray-500 mt-0.5 font-medium">Complete los siguientes campos para evaluar el desempeño.</p>
                     </div>
                     <div class="bg-white border border-gray-300 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded uppercase tracking-wide">
-                        Periodo 2025-Q1
+                        Periodo Actual
                     </div>
                 </div>
                 
-                <!-- Aquí iría tu formulario real -->
+                <!-- Placeholder para el formulario real -->
                 <div class="p-8">
                     <div class="py-10 text-center text-gray-600 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-100">
                         <div class="mb-3">
@@ -170,8 +178,8 @@
                         <h4 class="text-base font-bold text-gray-900 mb-1">Formulario de Evaluación</h4>
                         <p class="text-sm text-gray-500 font-medium max-w-sm mx-auto mb-5">El formulario interactivo se cargará en esta sección.</p>
                         
-                        <button class="inline-flex items-center px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-md shadow-sm transition-all duration-200">
-                            <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <button class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-all duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Iniciar Evaluación
                         </button>
                     </div>
