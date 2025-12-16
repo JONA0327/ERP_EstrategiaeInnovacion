@@ -43,8 +43,7 @@ class EmpleadoSeeder extends Seeder
             ['id' => '100', 'nombre' => 'MayraC', 'area' => 'Comercio Exterior'],
             ['id' => '101', 'nombre' => 'ErikaM', 'area' => 'Comercio Exterior'],
             ['id' => '102', 'nombre' => 'CarlosM', 'area' => 'Legal'],
-            ['id' => '103', 'nombre' => 'IsaacQ', 'area' => 'TI'],
-            ['id' => '104', 'nombre' => 'JaimeM', 'area' => '']
+            ['id' => '103', 'nombre' => 'IsaacQ', 'area' => 'TI']
         ];
 
         foreach ($personalReloj as $persona) {
