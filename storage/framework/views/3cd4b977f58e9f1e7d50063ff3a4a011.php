@@ -1,8 +1,8 @@
-@extends('layouts.erp')
 
-@section('title', 'Evaluación de ' . $empleado->nombre)
 
-@section('content')
+<?php $__env->startSection('title', 'Evaluación de ' . $empleado->nombre); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="container mx-auto px-4 py-8">
     
     <!-- Encabezado y Breadcrumbs -->
@@ -12,7 +12,7 @@
             <nav class="flex text-sm font-medium text-gray-500 mt-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2">
                     <li class="inline-flex items-center">
-                        <a href="{{ route('rh.evaluacion.index') }}" class="inline-flex items-center hover:text-black transition-colors">
+                        <a href="<?php echo e(route('rh.evaluacion.index')); ?>" class="inline-flex items-center hover:text-black transition-colors">
                             <svg class="w-3.5 h-3.5 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
                             </svg>
@@ -24,7 +24,7 @@
                             <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                             </svg>
-                            <a href="{{ route('rh.evaluacion.index', ['area' => $area]) }}" class="ml-1 hover:text-black transition-colors">{{ $area }}</a>
+                            <a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area])); ?>" class="ml-1 hover:text-black transition-colors"><?php echo e($area); ?></a>
                         </div>
                     </li>
                     <li aria-current="page">
@@ -32,14 +32,14 @@
                             <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                             </svg>
-                            <span class="ml-1 text-gray-900 font-semibold">{{ $empleado->nombre }}</span>
+                            <span class="ml-1 text-gray-900 font-semibold"><?php echo e($empleado->nombre); ?></span>
                         </div>
                     </li>
                 </ol>
             </nav>
         </div>
         <div class="flex-shrink-0">
-            <a href="{{ route('rh.evaluacion.index', ['area' => $area]) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all duration-200">
+            <a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area])); ?>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -56,36 +56,39 @@
                 <div class="p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="font-bold text-gray-700 flex items-center text-sm uppercase tracking-wider">
                         <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Equipo: {{ $area }}
+                        Equipo: <?php echo e($area); ?>
+
                     </h3>
                 </div>
                 <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
                     <ul class="divide-y divide-gray-100">
-                        @foreach($empleados as $emp)
+                        <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <li>
-                                <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="block p-3 hover:bg-gray-50 transition duration-200 group {{ $empleado->id === $emp->id ? 'bg-gray-50 border-l-4 border-gray-400' : 'border-l-4 border-transparent' }}">
+                                <a href="<?php echo e(route('rh.evaluacion.show', $emp->id)); ?>" class="block p-3 hover:bg-gray-50 transition duration-200 group <?php echo e($empleado->id === $emp->id ? 'bg-gray-50 border-l-4 border-gray-400' : 'border-l-4 border-transparent'); ?>">
                                     <div class="flex items-center space-x-3">
                                         <div class="flex-shrink-0 relative">
                                             <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm overflow-hidden border border-gray-200">
-                                                @if(isset($emp->foto_path) && $emp->foto_path)
-                                                    <img src="{{ asset('storage/' . $emp->foto_path) }}" alt="{{ $emp->nombre }}" class="w-full h-full object-cover">
-                                                @else
+                                                <?php if(isset($emp->foto_path) && $emp->foto_path): ?>
+                                                    <img src="<?php echo e(asset('storage/' . $emp->foto_path)); ?>" alt="<?php echo e($emp->nombre); ?>" class="w-full h-full object-cover">
+                                                <?php else: ?>
                                                     <span class="text-gray-400">👤</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-gray-700 truncate group-hover:text-black transition-colors">
-                                                {{ $emp->nombre }}
+                                                <?php echo e($emp->nombre); ?>
+
                                             </p>
                                             <p class="text-xs text-gray-500 truncate">
-                                                {{ $emp->posicion ?? 'Sin puesto' }}
+                                                <?php echo e($emp->posicion ?? 'Sin puesto'); ?>
+
                                             </p>
                                         </div>
                                     </div>
                                 </a>
                             </li>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </ul>
                 </div>
             </div>
@@ -102,46 +105,49 @@
                     <div class="flex-shrink-0">
                         <div class="w-28 h-28 rounded-full bg-gray-50 p-1 shadow-sm border border-gray-200 overflow-hidden">
                             <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white">
-                                @if(isset($empleado->foto_path) && $empleado->foto_path)
-                                    <img src="{{ asset('storage/' . $empleado->foto_path) }}" alt="{{ $empleado->nombre }}" class="w-full h-full object-cover">
-                                @else
+                                <?php if(isset($empleado->foto_path) && $empleado->foto_path): ?>
+                                    <img src="<?php echo e(asset('storage/' . $empleado->foto_path)); ?>" alt="<?php echo e($empleado->nombre); ?>" class="w-full h-full object-cover">
+                                <?php else: ?>
                                     <span class="text-4xl text-gray-300">👤</span>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Datos -->
                     <div class="flex-1 text-center md:text-left">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ $empleado->nombre }} {{ $empleado->apellido_paterno ?? '' }}</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2"><?php echo e($empleado->nombre); ?> <?php echo e($empleado->apellido_paterno ?? ''); ?></h2>
                         
                         <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {{ $empleado->posicion ?? 'Puesto no asignado' }}
+                                <?php echo e($empleado->posicion ?? 'Puesto no asignado'); ?>
+
                             </span>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {{ $empleado->id_empleado }}
+                                <?php echo e($empleado->id_empleado); ?>
+
                             </span>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {{ $empleado->area }}
+                                <?php echo e($empleado->area); ?>
+
                             </span>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mt-2 font-medium">
                             <div class="flex items-center">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                <span class="truncate">{{ $empleado->correo ?? 'No registrado' }}</span>
+                                <span class="truncate"><?php echo e($empleado->correo ?? 'No registrado'); ?></span>
                             </div>
                             <div class="flex items-center">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                <span>{{ $empleado->telefono ?? 'No registrado' }}</span>
+                                <span><?php echo e($empleado->telefono ?? 'No registrado'); ?></span>
                             </div>
-                            @if(isset($empleado->fecha_ingreso))
+                            <?php if(isset($empleado->fecha_ingreso)): ?>
                             <div class="flex items-center">
                                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span>{{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}</span>
+                                <span><?php echo e(\Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y')); ?></span>
                             </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -181,4 +187,5 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/Recursos_Humanos/evaluacion/show.blade.php ENDPATH**/ ?>

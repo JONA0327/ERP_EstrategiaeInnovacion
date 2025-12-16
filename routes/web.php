@@ -8,6 +8,7 @@ use App\Http\Controllers\Sistemas_IT\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Sistemas_IT\TicketController;
 use App\Http\Controllers\Sistemas_IT\MaintenanceController;
+use App\Http\Controllers\JerarquiaController;
 use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
 use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con barra de progreso
@@ -43,7 +44,11 @@ Route::middleware(['auth','area.rh'])->group(function () {
         Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
     });
     Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
-});
+    Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+
+    Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
+    Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
+    });
 
 Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
@@ -262,6 +267,7 @@ Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name
     Route::delete('/maintenance/slots/destroy-past', [MaintenanceController::class, 'destroyPastSlots'])->name('maintenance.slots.destroy-past');
     // Inventory removed from admin panel
 
+    
     // Se mantienen solo tickets y usuarios en el panel admin
 
     // Gestión de usuarios (separado del dominio Sistemas)
