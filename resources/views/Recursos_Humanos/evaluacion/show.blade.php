@@ -1,191 +1,238 @@
 @extends('layouts.erp')
 
-@section('title', 'Evaluación de ' . $empleado->nombre)
+@section('title', 'Evaluación - ' . $empleado->nombre)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    
-    <!-- Encabezado y Breadcrumbs -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Evaluación de Desempeño</h1>
-            <nav class="flex text-sm font-medium text-gray-500 mt-2" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2">
-                    <li class="inline-flex items-center">
-                        <a href="{{ route('rh.evaluacion.index') }}" class="inline-flex items-center hover:text-black transition-colors">
-                            <svg class="w-3.5 h-3.5 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
-                            </svg>
-                            Evaluaciones
-                        </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? 'General']) }}" class="ml-1 hover:text-black transition-colors">{{ $area ?? 'General' }}</a>
-                        </div>
-                    </li>
-                    <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <span class="ml-1 text-gray-900 font-semibold">{{ $empleado->nombre }}</span>
-                        </div>
-                    </li>
+<div class="min-h-screen bg-slate-50 py-8">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+        
+        <div class="mb-8">
+            <nav class="flex text-sm font-medium text-slate-500 mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-2">
+                    <li><a href="{{ route('rh.evaluacion.index') }}" class="hover:text-indigo-600 transition">Evaluaciones</a></li>
+                    <li><span class="text-slate-300">/</span></li>
+                    <li><a href="{{ route('rh.evaluacion.index', ['area' => $area ?? 'General']) }}" class="hover:text-indigo-600 transition">{{ $area ?? 'General' }}</a></li>
+                    <li><span class="text-slate-300">/</span></li>
+                    <li class="text-slate-900 font-semibold">{{ $empleado->nombre }}</li>
                 </ol>
             </nav>
-        </div>
-        <div class="flex-shrink-0">
-            <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? '']) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver
-            </a>
-        </div>
-    </div>
-
-    <div class="flex flex-col lg:flex-row gap-8">
-        
-        <!-- Sidebar: Lista de Empleados del Área -->
-        <div class="w-full lg:w-1/4">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden sticky top-6">
-                <div class="p-4 border-b border-gray-200 bg-gray-50">
-                    <h3 class="font-bold text-gray-700 flex items-center text-sm uppercase tracking-wider">
-                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Equipo: {{ $area ?? 'General' }}
-                    </h3>
-                </div>
-                <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
-                    <ul class="divide-y divide-gray-100">
-                        @if(isset($empleados) && count($empleados) > 0)
-                            @foreach($empleados as $emp)
-                                <li>
-                                    <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="block p-3 hover:bg-gray-50 transition duration-200 group {{ $empleado->id === $emp->id ? 'bg-gray-50 border-l-4 border-indigo-500 pl-2' : 'border-l-4 border-transparent' }}">
-                                        <div class="flex items-center space-x-3">
-                                            <div class="flex-shrink-0 relative">
-                                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 overflow-hidden border border-gray-200 uppercase">
-                                                    @if(isset($emp->foto_path) && $emp->foto_path)
-                                                        <img src="{{ asset('storage/' . $emp->foto_path) }}" alt="{{ $emp->nombre }}" class="w-full h-full object-cover">
-                                                    @else
-                                                        {{ substr($emp->nombre, 0, 1) }}{{ substr($emp->apellido_paterno ?? '', 0, 1) }}
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-700 truncate group-hover:text-black transition-colors">
-                                                    {{ $emp->nombre }} {{ $emp->apellido_paterno ?? '' }}
-                                                </p>
-                                                <p class="text-xs text-gray-500 truncate">
-                                                    {{ $emp->posicion ?? 'Sin puesto' }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </li>
-                            @endforeach
-                        @else
-                            <li class="p-4 text-sm text-gray-500 text-center">No hay otros empleados en esta área.</li>
-                        @endif
-                    </ul>
-                </div>
+            <div class="flex justify-between items-end">
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Evaluación de Competencias</h1>
+                <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? '']) }}" class="hidden md:inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Regresar
+                </a>
             </div>
         </div>
 
-        <!-- Contenido Principal -->
-        <div class="w-full lg:w-3/4 space-y-6">
+        <div class="flex flex-col lg:flex-row gap-8">
             
-            <!-- Tarjeta de Perfil -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="w-full lg:w-1/4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden sticky top-6">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo: {{ $area ?? 'General' }}</span>
+                    </div>
+                    <div class="max-h-[70vh] overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        @if(isset($empleados) && count($empleados) > 0)
+                            @foreach($empleados as $emp)
+                                <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="flex items-center p-3 rounded-xl transition-all duration-200 {{ $empleado->id === $emp->id ? 'bg-indigo-50 border border-indigo-100 shadow-sm' : 'hover:bg-slate-50 border border-transparent' }}">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden {{ $empleado->id === $emp->id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600' }}">
+                                            @if(isset($emp->foto_path) && $emp->foto_path)
+                                                <img src="{{ asset('storage/' . $emp->foto_path) }}" class="w-full h-full object-cover">
+                                            @else
+                                                {{ substr($emp->nombre, 0, 1) }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="ml-3 overflow-hidden">
+                                        <p class="text-sm font-semibold truncate {{ $empleado->id === $emp->id ? 'text-indigo-900' : 'text-slate-700' }}">
+                                            {{ $emp->nombre }}
+                                        </p>
+                                        <p class="text-[10px] truncate {{ $empleado->id === $emp->id ? 'text-indigo-600' : 'text-slate-500' }}">
+                                            {{ $emp->posicion ?? 'N/A' }}
+                                        </p>
+                                    </div>
+                                </a>
+                            @endforeach
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-3/4 space-y-6">
                 
-                <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-                    <!-- Foto Grande -->
-                    <div class="flex-shrink-0">
-                        <div class="w-28 h-28 rounded-full bg-gray-50 p-1 shadow-sm border border-gray-200 overflow-hidden">
-                            <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-indigo-100/50 to-transparent rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+                    
+                    <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
+                        <div class="w-24 h-24 rounded-full bg-white p-1 shadow-lg ring-4 ring-indigo-50">
+                            <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
                                 @if(isset($empleado->foto_path) && $empleado->foto_path)
-                                    <img src="{{ asset('storage/' . $empleado->foto_path) }}" alt="{{ $empleado->nombre }}" class="w-full h-full object-cover">
+                                    <img src="{{ asset('storage/' . $empleado->foto_path) }}" class="w-full h-full object-cover">
                                 @else
-                                    <span class="text-4xl text-gray-300">
-                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
-                                    </span>
+                                    <span class="text-3xl font-bold text-slate-400">{{ substr($empleado->nombre, 0, 1) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold text-slate-900">{{ $empleado->nombre }} {{ $empleado->apellido_paterno }}</h2>
+                            <div class="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
+                                <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200">
+                                    {{ $empleado->posicion ?? 'Puesto no asignado' }}
+                                </span>
+                                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                                    ID: {{ $empleado->id_empleado ?? 'N/D' }}
+                                </span>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-600">
+                                <div class="flex items-center justify-center md:justify-start gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 00-2-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    {{ $empleado->correo ?? 'Sin correo' }}
+                                </div>
+                                @if(isset($empleado->fecha_ingreso))
+                                <div class="flex items-center justify-center md:justify-start gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Ingreso: {{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}
+                                </div>
                                 @endif
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Datos -->
-                    <div class="flex-1 text-center md:text-left">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ $empleado->nombre }} {{ $empleado->apellido_paterno ?? '' }}</h2>
-                        
-                        <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                {{ $empleado->posicion ?? 'Puesto no asignado' }}
-                            </span>
-                            @if($empleado->numero_empleado)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                ID: {{ $empleado->numero_empleado }}
-                            </span>
-                            @endif
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {{ $empleado->area }}
-                            </span>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mt-4 font-medium border-t border-gray-100 pt-4">
-                            <div class="flex items-center justify-center md:justify-start">
-                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                <span class="truncate">{{ $empleado->correo ?? 'No registrado' }}</span>
-                            </div>
-                            <div class="flex items-center justify-center md:justify-start">
-                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                <span>{{ $empleado->telefono ?? 'No registrado' }}</span>
-                            </div>
-                            @if(isset($empleado->fecha_ingreso))
-                            <div class="flex items-center justify-center md:justify-start">
-                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span>Ingreso: {{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}</span>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Sección del Formulario de Evaluación -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">Formulario de Evaluación</h3>
-                        <p class="text-xs text-gray-500 mt-0.5 font-medium">Complete los siguientes campos para evaluar el desempeño.</p>
-                    </div>
-                    <div class="bg-white border border-gray-300 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded uppercase tracking-wide">
-                        Periodo Actual
-                    </div>
-                </div>
-                
-                <!-- Placeholder para el formulario real -->
-                <div class="p-8">
-                    <div class="py-10 text-center text-gray-600 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-100">
-                        <div class="mb-3">
-                            <span class="inline-block p-3 bg-white rounded-full shadow-sm border border-gray-200">
-                                <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            </span>
+                <div class="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-900 px-8 py-5 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Formulario de Evaluación</h3>
+                            <p class="text-indigo-200 text-xs mt-0.5">Criterios para: {{ $area ?? 'General' }}</p>
                         </div>
-                        <h4 class="text-base font-bold text-gray-900 mb-1">Formulario de Evaluación</h4>
-                        <p class="text-sm text-gray-500 font-medium max-w-sm mx-auto mb-5">El formulario interactivo se cargará en esta sección.</p>
-                        
-                        <button class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-all duration-200">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            Iniciar Evaluación
-                        </button>
+                    </div>
+
+                    <div class="p-8">
+                        <form action="#" method="POST"> 
+                            @csrf
+                            <input type="hidden" name="empleado_id" value="{{ $empleado->id }}">
+
+                            @if(isset($criterios) && $criterios->isNotEmpty())
+                                <div class="space-y-12">
+                                    @foreach($criterios as $criterio)
+                                        <div class="relative" x-data="{ selected: null }">
+                                            
+                                            <div class="flex items-start justify-between mb-4">
+                                                <div class="flex gap-4">
+                                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm border border-slate-200">
+                                                        {{ $loop->iteration }}
+                                                    </span>
+                                                    <div>
+                                                        <h4 class="text-base font-bold text-slate-800 leading-tight">{{ $criterio->criterio }}</h4>
+                                                        <p class="text-sm text-slate-500 mt-1 leading-relaxed">{{ $criterio->descripcion }}</p>
+                                                    </div>
+                                                </div>
+                                                <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                                    Peso: {{ $criterio->peso }}%
+                                                </span>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
+                                                @php
+                                                    $opciones = [
+                                                        [
+                                                            'val' => 100, 
+                                                            'label' => 'Muy de acuerdo', 
+                                                            'icon' => 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                                                            'container_classes' => 'hover:border-emerald-200 hover:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50',
+                                                            'icon_classes' => 'group-hover:text-emerald-400 peer-checked:text-emerald-600',
+                                                            'label_classes' => 'group-hover:text-emerald-700 peer-checked:text-emerald-800',
+                                                            'check_color' => 'text-emerald-600'
+                                                        ],
+                                                        [
+                                                            'val' => 75, 
+                                                            'label' => 'De acuerdo', 
+                                                            'icon' => 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                                                            'container_classes' => 'hover:border-green-200 hover:bg-green-50 peer-checked:border-green-500 peer-checked:bg-green-50',
+                                                            'icon_classes' => 'group-hover:text-green-400 peer-checked:text-green-600',
+                                                            'label_classes' => 'group-hover:text-green-700 peer-checked:text-green-800',
+                                                            'check_color' => 'text-green-600'
+                                                        ],
+                                                        [
+                                                            'val' => 50, 
+                                                            'label' => 'Neutral', 
+                                                            'icon' => 'M10 14H14M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10h.01M15 10h.01',
+                                                            'container_classes' => 'hover:border-yellow-200 hover:bg-yellow-50 peer-checked:border-yellow-500 peer-checked:bg-yellow-50',
+                                                            'icon_classes' => 'group-hover:text-yellow-400 peer-checked:text-yellow-600',
+                                                            'label_classes' => 'group-hover:text-yellow-700 peer-checked:text-yellow-800',
+                                                            'check_color' => 'text-yellow-600'
+                                                        ],
+                                                        [
+                                                            'val' => 25, 
+                                                            'label' => 'En desacuerdo', 
+                                                            'icon' => 'M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                                                            'container_classes' => 'hover:border-orange-200 hover:bg-orange-50 peer-checked:border-orange-500 peer-checked:bg-orange-50',
+                                                            'icon_classes' => 'group-hover:text-orange-400 peer-checked:text-orange-600',
+                                                            'label_classes' => 'group-hover:text-orange-700 peer-checked:text-orange-800',
+                                                            'check_color' => 'text-orange-600'
+                                                        ],
+                                                        [
+                                                            'val' => 0, 
+                                                            'label' => 'Muy en desacuerdo', 
+                                                            'icon' => 'M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+                                                            'container_classes' => 'hover:border-red-200 hover:bg-red-50 peer-checked:border-red-500 peer-checked:bg-red-50',
+                                                            'icon_classes' => 'group-hover:text-red-400 peer-checked:text-red-600',
+                                                            'label_classes' => 'group-hover:text-red-700 peer-checked:text-red-800',
+                                                            'check_color' => 'text-red-600'
+                                                        ]
+                                                    ];
+                                                @endphp
+
+                                                @foreach($opciones as $op)
+                                                    <label class="cursor-pointer group relative">
+                                                        <input type="radio" name="calificacion[{{ $criterio->id }}]" value="{{ $op['val'] }}" class="peer sr-only" x-model="selected">
+                                                        <div class="h-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white transition-all duration-200 peer-checked:shadow-md {{ $op['container_classes'] }}">
+                                                            <div class="mb-1 text-slate-300 transition-colors {{ $op['icon_classes'] }}">
+                                                                <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $op['icon'] }}"></path></svg>
+                                                            </div>
+                                                            <span class="text-[10px] font-bold text-center text-slate-500 leading-tight block {{ $op['label_classes'] }}">
+                                                                {{ $op['label'] }}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity {{ $op['check_color'] }}">
+                                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                        </div>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+
+                                            <div class="mt-3 pl-12">
+                                                <input type="text" name="observaciones[{{ $criterio->id }}]" class="w-full text-sm border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 bg-transparent placeholder-slate-400 transition-colors" placeholder="Añadir comentario (opcional)...">
+                                            </div>
+                                        </div>
+                                        @if(!$loop->last) <hr class="border-slate-100"> @endif
+                                    @endforeach
+                                </div>
+
+                                <div class="mt-12 flex justify-end items-center gap-4 pt-6 border-t border-slate-200">
+                                    <a href="{{ route('rh.evaluacion.index') }}" class="px-6 py-3 text-sm font-bold text-slate-600 hover:text-slate-800 transition">Cancelar</a>
+                                    <button type="submit" class="inline-flex items-center px-8 py-3 bg-indigo-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5">
+                                        Guardar Resultados
+                                    </button>
+                                </div>
+                            @else
+                                <div class="text-center py-16">
+                                    <div class="inline-block p-4 rounded-full bg-slate-50 mb-4">
+                                        <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-slate-900">Sin Criterios</h3>
+                                    <p class="text-slate-500 mt-2">No se han definido preguntas para el área de <span class="font-bold">{{ $area }}</span>.</p>
+                                </div>
+                            @endif
+                        </form>
                     </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
 </div>

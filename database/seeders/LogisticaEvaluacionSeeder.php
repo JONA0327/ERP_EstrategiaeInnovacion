@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LogisticaEvaluacionSeeder extends Seeder
 {
@@ -15,55 +16,88 @@ class LogisticaEvaluacionSeeder extends Seeder
     public function run()
     {
         $area = 'Logistica';
+        $now = Carbon::now();
 
-        // 1. Limpiamos los criterios existentes de Logística para evitar duplicados si corres el seeder varias veces
+        // 1. Limpiamos criterios anteriores
         DB::table('criterios_evaluacion')->where('area', $area)->delete();
 
-        // 2. Definimos los criterios basados en tus imágenes.
-        // NOTA: Por favor, actualiza los textos y los pesos ('peso') con la información exacta de tus imágenes.
+        // 2. Definición de Criterios
+        // Estrategia: 3 Objetivos Técnicos (60%) + 8 Competencias (40%) = 100%
+        
         $criterios = [
+            // --- OBJETIVOS TÉCNICOS (Hard Skills) - 60% del Total ---
             [
-                'criterio' => 'Exactitud de Inventarios (IRA)',
-                'descripcion' => 'Mantiene la confiabilidad del inventario físico contra el sistema.',
-                'peso' => 20, // Ajustar según imagen
+                'criterio' => 'Operatividad Import/Export',
+                'descripcion' => 'Cumplimiento, seguimiento en tiempo y forma de las actividades por cada una de las operaciones de importación y exportación.',
+                'peso' => 20,
             ],
             [
-                'criterio' => 'Cumplimiento de Entregas (On-Time Delivery)',
-                'descripcion' => 'Asegura que los pedidos lleguen al cliente en el tiempo prometido.',
-                'peso' => 20, // Ajustar según imagen
+                'criterio' => 'Cumplimiento Legal y Normativo',
+                'descripcion' => 'Cumplimiento de la legislación aplicable y vigente por cada una de las operaciones aduaneras y logísticas.',
+                'peso' => 20,
             ],
             [
-                'criterio' => 'Costo Logístico',
-                'descripcion' => 'Gestión eficiente de los costos de transporte y almacenamiento.',
-                'peso' => 15, // Ajustar según imagen
+                'criterio' => 'Resultados y Mejora Continua',
+                'descripcion' => 'Presentación mensual de resultados e implementación de metodología de mejora continua en los procesos.',
+                'peso' => 20,
+            ],
+
+            // --- COMPETENCIAS BLANDAS (Soft Skills) - 40% del Total ---
+            [
+                'criterio' => 'Puntualidad y Asistencia',
+                'descripcion' => 'Cumple consistentemente con los horarios establecidos y mantiene un registro de asistencia impecable.',
+                'peso' => 5,
             ],
             [
-                'criterio' => 'Gestión de Devoluciones',
-                'descripcion' => 'Eficiencia en el manejo de logística inversa y RMA.',
-                'peso' => 15, // Ajustar según imagen
+                'criterio' => 'Iniciativa y Proactividad',
+                'descripcion' => 'Anticipa necesidades y actúa sin necesidad de supervisión constante para resolver problemas.',
+                'peso' => 5,
             ],
             [
-                'criterio' => 'Seguridad y Mantenimiento',
-                'descripcion' => 'Cumplimiento de normas de seguridad e higiene en almacén y transporte.',
-                'peso' => 15, // Ajustar según imagen
+                'criterio' => 'Cumplimiento de Normas y Procedimientos',
+                'descripcion' => 'Se apega estrictamente a las políticas internas y códigos de conducta de la organización.',
+                'peso' => 5,
             ],
             [
-                'criterio' => 'Trabajo en Equipo y Comunicación',
-                'descripcion' => 'Colaboración efectiva con ventas, compras y almacén.',
-                'peso' => 15, // Ajustar según imagen
+                'criterio' => 'Trabajo en Equipo',
+                'descripcion' => 'Colabora activamente con compañeros y otros departamentos para alcanzar objetivos comunes.',
+                'peso' => 5,
+            ],
+            [
+                'criterio' => 'Comunicación',
+                'descripcion' => 'Transmite ideas e información de manera clara, oportuna y respetuosa, tanto oral como escrita.',
+                'peso' => 5,
+            ],
+            [
+                'criterio' => 'Actitud Profesional',
+                'descripcion' => 'Mantiene un comportamiento ético, respetuoso y formal en el entorno laboral.',
+                'peso' => 5,
+            ],
+            [
+                'criterio' => 'Adaptabilidad',
+                'descripcion' => 'Capacidad para ajustarse eficazmente a cambios en el entorno, tareas o responsabilidades.',
+                'peso' => 5,
+            ],
+            [
+                'criterio' => 'Manejo de Estrés',
+                'descripcion' => 'Mantiene la calma y la eficiencia en situaciones de alta presión o carga de trabajo.',
+                'peso' => 5,
             ],
         ];
 
-        // 3. Insertamos los datos
+        // 3. Insertar en BD
+        $data = [];
         foreach ($criterios as $item) {
-            DB::table('criterios_evaluacion')->insert([
+            $data[] = [
                 'area' => $area,
                 'criterio' => $item['criterio'],
                 'descripcion' => $item['descripcion'],
                 'peso' => $item['peso'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+
+        DB::table('criterios_evaluacion')->insert($data);
     }
 }

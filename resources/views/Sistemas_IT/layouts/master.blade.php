@@ -5,25 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Sistema de Tickets - E&I Tecnología')</title>
+    <title>@yield('title', 'Sistemas IT') | Estrategia e Innovación</title>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
-    <!-- Styles / Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/Sistemas_IT/inventario-index.css'])
-    @stack('styles')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-    @include('Sistemas_IT.layouts.navigation')
+<body class="font-sans antialiased bg-slate-50 text-slate-600">
+    
+    <div class="min-h-screen flex flex-col">
+        @include('Sistemas_IT.layouts.navigation')
 
-    @yield('header')
+        <main class="flex-grow">
+            <div class="py-8">
+                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    @yield('content')
+                </div>
+            </div>
+        </main>
 
-    <!-- Page Content -->
-    <main>
-        @yield('content')
-    </main>
+        <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-xs text-slate-400">
+                    &copy; {{ date('Y') }} Estrategia e Innovación. Departamento de Sistemas.
+                </p>
+            </div>
+        </footer>
+    </div>
 
     @stack('scripts')
 </body>

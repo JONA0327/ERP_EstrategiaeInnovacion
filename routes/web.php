@@ -305,27 +305,35 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// En routes/web.php
+
 Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group(function () {
     
-    // Vista principal y tabla
-    Route::get('/recursos-humanos/reloj', [RelojChecadorImportController::class, 'index'])
-        ->name('reloj.index');
+    // Rutas del Reloj Checador (Unificadas con prefijo 'rh.')
+    Route::prefix('recursos-humanos/reloj')->name('rh.reloj.')->group(function () {
+        
+        // Vista principal
+        Route::get('/', [RelojChecadorImportController::class, 'index'])
+            ->name('index'); // Genera: rh.reloj.index
 
-    // Proceso de carga (POST)
-    Route::post('/recursos-humanos/reloj/start', [RelojChecadorImportController::class, 'start'])
-        ->name('reloj.start');
+        // Procesos de Carga e Importación
+        Route::post('/start', [RelojChecadorImportController::class, 'start'])
+            ->name('start'); // Genera: rh.reloj.start
+            
+        Route::get('/progress/{key}', [RelojChecadorImportController::class, 'progress'])
+            ->name('progress'); // Genera: rh.reloj.progress
 
-    // Barra de progreso (Polling)
-    Route::get('/recursos-humanos/reloj/progress/{key}', [RelojChecadorImportController::class, 'progress'])
-        ->name('reloj.progress');
+        // Gestión de Datos
+        Route::delete('/clear', [RelojChecadorImportController::class, 'clear'])
+            ->name('clear'); // Genera: rh.reloj.clear  <-- ESTA ES LA QUE FALTABA
 
-    Route::delete('/recursos-humanos/reloj/clear', [RelojChecadorImportController::class, 'clear'])
-        ->name('reloj.clear');
+        Route::put('/update/{id}', [RelojChecadorImportController::class, 'update'])
+            ->name('update'); // Genera: rh.reloj.update
 
-    Route::put('/recursos-humanos/reloj/update/{id}', [RelojChecadorImportController::class, 'update'])
-        ->name('reloj.update');
-    Route::post('/recursos-humanos/reloj/store', [RelojChecadorImportController::class, 'store'])
-        ->name('reloj.store');
+        Route::post('/store', [RelojChecadorImportController::class, 'store'])
+            ->name('store'); // Genera: rh.reloj.store
+    });
+
 });
 
 // Ayuda pública removida
