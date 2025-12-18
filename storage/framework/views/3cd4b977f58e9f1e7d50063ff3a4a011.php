@@ -5,26 +5,6 @@
 <?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-slate-50 py-8">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        
-        <div class="mb-8">
-            <nav class="flex text-sm font-medium text-slate-500 mb-2" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-2">
-                    <li><a href="<?php echo e(route('rh.evaluacion.index')); ?>" class="hover:text-indigo-600 transition">Evaluaciones</a></li>
-                    <li><span class="text-slate-300">/</span></li>
-                    <li><a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area ?? 'General'])); ?>" class="hover:text-indigo-600 transition"><?php echo e($area ?? 'General'); ?></a></li>
-                    <li><span class="text-slate-300">/</span></li>
-                    <li class="text-slate-900 font-semibold"><?php echo e($empleado->nombre); ?></li>
-                </ol>
-            </nav>
-            <div class="flex justify-between items-end">
-                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Evaluación de Competencias</h1>
-                <a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area ?? ''])); ?>" class="hidden md:inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Regresar
-                </a>
-            </div>
-        </div>
-
         <div class="flex flex-col lg:flex-row gap-8">
             
             <div class="w-full lg:w-1/4">

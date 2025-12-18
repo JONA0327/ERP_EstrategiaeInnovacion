@@ -1,416 +1,398 @@
-<?php $__env->startSection('title', 'Crear Ticket - ' . ucfirst($tipo) . ' - Sistema IT'); ?>
+<?php $__env->startSection('title', 'Nuevo Ticket'); ?>
+
+
+<?php $__env->startPush('styles'); ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    /* CORRECCIÓN DE ALINEACIÓN:
+       Quitamos los 'display: grid' y 'justify-content' que rompían los días.
+       Solo forzamos el ancho al 100%.
+    */
+    .flatpickr-calendar.inline { 
+        width: 100% !important;
+        max-width: 100% !important; 
+        box-shadow: none !important; 
+        border: none !important;
+        background: transparent !important;
+        margin: 0 !important;
+        top: 0 !important;
+    }
+    
+    .flatpickr-innerContainer { 
+        width: 100% !important; 
+    }
+    
+    .flatpickr-rContainer { 
+        width: 100% !important; 
+    }
+    
+    .flatpickr-days { 
+        width: 100% !important;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .dayContainer {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        /* IMPORTANTE: No tocar el display flex/block aquí para no romper la semana */
+        padding: 5px 0;
+    }
+
+    /* DÍAS HÁBILES */
+    .flatpickr-day {
+        border-radius: 0.5rem !important;
+        height: 38px !important;
+        line-height: 38px !important;
+        margin: 0 !important; /* Quitamos márgenes extraños */
+        width: 14.28% !important; /* 100% / 7 días = 14.28% para alineación perfecta */
+        max-width: 14.28% !important;
+        color: #334155 !important;
+        font-weight: 500 !important;
+    }
+
+    /* DÍAS INHÁBILES */
+    .flatpickr-day.flatpickr-disabled, 
+    .flatpickr-day.flatpickr-disabled:hover {
+        color: #cbd5e1 !important; 
+        background: transparent !important;
+        border-color: transparent !important;
+        cursor: not-allowed !important;
+    }
+
+    /* DÍA SELECCIONADO */
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { 
+        background: #10b981 !important; 
+        border-color: #10b981 !important; 
+        color: white !important;
+        font-weight: bold !important;
+    }
+
+    /* CABECERAS (Meses y Días) */
+    .flatpickr-months { 
+        background: #f8fafc; 
+        border-radius: 1rem 1rem 0 0; 
+        border: 1px solid #e2e8f0; 
+        border-bottom: none;
+        padding: 15px 10px;
+    }
+    
+    .flatpickr-weekdays { 
+        background: white; 
+        border-left: 1px solid #e2e8f0; 
+        border-right: 1px solid #e2e8f0;
+        height: 36px !important;
+    }
+    
+    span.flatpickr-weekday {
+        color: #64748b !important; 
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Ocultar flechas de mes anterior/siguiente si no las quieres, o estilizarlas */
+    .flatpickr-prev-month, .flatpickr-next-month {
+        fill: #64748b !important;
+    }
+</style>
+<?php $__env->stopPush(); ?>
 
 <?php $__env->startSection('content'); ?>
-    <main class="relative min-h-screen overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100" data-ticket-create data-ticket-type="<?php echo e($tipo); ?>">
-        <div class="absolute inset-0 pointer-events-none">
-            <div class="absolute -top-40 -left-32 h-[28rem] w-[28rem] rounded-full bg-blue-200/40 blur-3xl"></div>
-            <div class="absolute top-1/4 -right-24 h-80 w-80 rounded-full bg-blue-300/30 blur-3xl"></div>
-            <div class="absolute bottom-0 left-1/2 h-40 w-full -translate-x-1/2 bg-gradient-to-t from-white"></div>
+<?php
+    $tipo = request('tipo', 'general');
+    
+    // Configuración visual según el tipo de ticket
+    $config = match($tipo) {
+        'software' => [
+            'color' => 'indigo',
+            'titulo' => 'Soporte de Software',
+            'desc' => 'Problemas con programas, licencias, correo o acceso al ERP.',
+            'icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+            'gradient' => 'from-indigo-500 to-purple-600'
+        ],
+        'hardware' => [
+            'color' => 'slate',
+            'titulo' => 'Falla de Hardware',
+            'desc' => 'Problemas físicos: monitor, teclado, impresora o red.',
+            'icon' => 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z',
+            'gradient' => 'from-slate-600 to-slate-800'
+        ],
+        'mantenimiento' => [
+            'color' => 'emerald',
+            'titulo' => 'Mantenimiento Preventivo',
+            'desc' => 'Solicitud de limpieza de equipos o revisión programada.',
+            'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+            'gradient' => 'from-emerald-500 to-teal-600'
+        ],
+        default => [
+            'color' => 'blue',
+            'titulo' => 'Crear Nuevo Ticket',
+            'desc' => 'Describe tu solicitud para el departamento de sistemas.',
+            'icon' => 'M12 4v16m8-8H4',
+            'gradient' => 'from-blue-500 to-blue-600'
+        ]
+    };
+    
+    $c = $config['color'];
+?>
+
+<div class="min-h-screen bg-slate-50 pb-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+        
+        <div class="py-6">
+            <a href="<?php echo e(route('welcome', ['from' => 'tickets'])); ?>" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-<?php echo e($c); ?>-600 transition-colors">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Volver al Menú
+            </a>
         </div>
 
-        <div class="relative max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            <?php
-                $tipoConfig = [
-                    'software' => [
-                        'title' => 'Reportar Problema de Software',
-                        'subtitle' => 'Reporta errores, fallos o comportamientos inesperados en programas o aplicaciones',
-                        'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-                    ],
-                    'hardware' => [
-                        'title' => 'Reportar Problema de Hardware',
-                        'subtitle' => 'Reporta fallas en computadoras, impresoras u otros equipos físicos',
-                        'icon' => 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-                    ],
-                    'mantenimiento' => [
-                        'title' => 'Programar Mantenimiento',
-                        'subtitle' => 'Solicita mantenimiento preventivo o correctivo para tus equipos',
-                        'icon' => 'M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1V8a1 1 0 011-1h3z M12 12h.01M8 16h8',
-                    ],
-                ];
-
-                $config = $tipoConfig[$tipo];
-            ?>
-
-            <!-- Banner removed: focusing page on the form -->
-
-            <!-- Formulario -->
-            <div class="relative mt-10 overflow-hidden rounded-3xl border border-blue-100/60 bg-white/90 shadow-2xl shadow-blue-500/10 backdrop-blur">
-                <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-blue-50/70 to-transparent"></div>
-                <div class="relative px-6 py-10 sm:px-10">
-                    <form method="POST" action="<?php echo e(route('tickets.store')); ?>" enctype="multipart/form-data" class="space-y-10">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="tipo_problema" value="<?php echo e($tipo); ?>">
-
-                        <!-- Información del Usuario -->
-                        <section class="rounded-3xl border border-blue-100/60 bg-gradient-to-br from-blue-50/70 via-white to-blue-50/40 px-6 py-6 shadow-inner">
-                            <h2 class="flex items-center text-lg font-semibold text-slate-900">
-                                <span class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-600/90 text-white shadow-lg">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                    </svg>
-                                </span>
-                                Información del solicitante
-                            </h2>
-                            <div class="mt-4 rounded-2xl border border-white/70 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
-                                <div class="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</p>
-                                        <p class="text-base font-medium text-slate-900"><?php echo e(auth()->user()->name); ?></p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Correo</p>
-                                        <p class="text-base font-medium text-slate-900"><?php echo e(auth()->user()->email); ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- Detalles del Problema -->
-                        <section class="space-y-6 rounded-3xl border border-blue-100/60 bg-white/90 px-6 py-6 shadow-lg shadow-blue-500/10 backdrop-blur">
-                            <h2 class="flex items-center text-lg font-semibold text-slate-900">
-                                <span class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 shadow-inner">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                </span>
-                                Detalles del <?php echo e($tipo === 'mantenimiento' ? 'mantenimiento solicitado' : 'incidente'); ?>
-
-                            </h2>
-
-                            <?php if($tipo === 'software'): ?>
-                                <div>
-                                    <label for="nombre_programa" class="mb-2 block text-sm font-medium text-slate-700">Programa / Software</label>
-                                    <select name="nombre_programa"
-                                            id="nombre_programa"
-                                            class="block w-full rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200">
-                                        <option value="">Selecciona un programa</option>
-                                        <option value="Microsoft Outlook" <?php echo e(old('nombre_programa') === 'Microsoft Outlook' ? 'selected' : ''); ?>>Microsoft Outlook</option>
-                                        <option value="Microsoft OneDrive" <?php echo e(old('nombre_programa') === 'Microsoft OneDrive' ? 'selected' : ''); ?>>Microsoft OneDrive</option>
-                                        <option value="Microsoft Word" <?php echo e(old('nombre_programa') === 'Microsoft Word' ? 'selected' : ''); ?>>Microsoft Word</option>
-                                        <option value="Microsoft Excel" <?php echo e(old('nombre_programa') === 'Microsoft Excel' ? 'selected' : ''); ?>>Microsoft Excel</option>
-                                        <option value="Microsoft PowerPoint" <?php echo e(old('nombre_programa') === 'Microsoft PowerPoint' ? 'selected' : ''); ?>>Microsoft PowerPoint</option>
-                                        <option value="Microsoft Teams" <?php echo e(old('nombre_programa') === 'Microsoft Teams' ? 'selected' : ''); ?>>Microsoft Teams</option>
-                                        <option value="Google Chrome" <?php echo e(old('nombre_programa') === 'Google Chrome' ? 'selected' : ''); ?>>Google Chrome</option>
-                                        <option value="Mozilla Firefox" <?php echo e(old('nombre_programa') === 'Mozilla Firefox' ? 'selected' : ''); ?>>Mozilla Firefox</option>
-                                        <option value="Microsoft Edge" <?php echo e(old('nombre_programa') === 'Microsoft Edge' ? 'selected' : ''); ?>>Microsoft Edge</option>
-                                        <option value="Adobe Acrobat Reader" <?php echo e(old('nombre_programa') === 'Adobe Acrobat Reader' ? 'selected' : ''); ?>>Adobe Acrobat Reader</option>
-                                        <option value="Zoom" <?php echo e(old('nombre_programa') === 'Zoom' ? 'selected' : ''); ?>>Zoom</option>
-                                        <option value="Skype" <?php echo e(old('nombre_programa') === 'Skype' ? 'selected' : ''); ?>>Skype</option>
-                                        <option value="WhatsApp Desktop" <?php echo e(old('nombre_programa') === 'WhatsApp Desktop' ? 'selected' : ''); ?>>WhatsApp Desktop</option>
-                                        <option value="Sistema ERP" <?php echo e(old('nombre_programa') === 'Sistema ERP' ? 'selected' : ''); ?>>Sistema ERP</option>
-                                        <option value="Sistema CRM" <?php echo e(old('nombre_programa') === 'Sistema CRM' ? 'selected' : ''); ?>>Sistema CRM</option>
-                                        <option value="Sistema de Nómina" <?php echo e(old('nombre_programa') === 'Sistema de Nómina' ? 'selected' : ''); ?>>Sistema de Nómina</option>
-                                        <option value="Sistema Contable" <?php echo e(old('nombre_programa') === 'Sistema Contable' ? 'selected' : ''); ?>>Sistema Contable</option>
-                                        <option value="Antivirus" <?php echo e(old('nombre_programa') === 'Antivirus' ? 'selected' : ''); ?>>Antivirus</option>
-                                        <option value="Otro" <?php echo e(old('nombre_programa') === 'Otro' ? 'selected' : ''); ?>>Otro</option>
-                                    </select>
-                                    <?php $__errorArgs = ['nombre_programa'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                        <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                    <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-
-                                    <div id="otroPrograma" class="mt-3 <?php echo e(old('nombre_programa') === 'Otro' ? '' : 'hidden'); ?>">
-                                        <label for="otro_programa_nombre" class="mb-2 block text-sm font-medium text-slate-700">Especifica el nombre del programa/sistema</label>
-                                        <input type="text"
-                                               name="otro_programa_nombre"
-                                               id="otro_programa_nombre"
-                                               value="<?php echo e(old('otro_programa_nombre')); ?>"
-                                               class="block w-full rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200"
-                                               placeholder="Ej: Sistema interno de la empresa, aplicación específica...">
-                                        <?php $__errorArgs = ['otro_programa_nombre'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                            <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                        <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                                    </div>
-                                </div>
-                            <?php elseif($tipo === 'hardware'): ?>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="tipo_equipo" class="mb-2 block text-sm font-medium text-slate-700">Tipo de equipo</label>
-                                        <select name="nombre_programa"
-                                                id="tipo_equipo"
-                                                required
-                                                class="block w-full rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200">
-                                            <option value="">Selecciona el tipo de equipo</option>
-                                            <option value="Computadora" <?php echo e(old('nombre_programa') === 'Computadora' ? 'selected' : ''); ?>>Computadora</option>
-                                            <option value="Impresora" <?php echo e(old('nombre_programa') === 'Impresora' ? 'selected' : ''); ?>>Impresora</option>
-                                        </select>
-                                        <?php $__errorArgs = ['nombre_programa'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                            <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                        <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                                    </div>
-
-                                    <div id="hardwareComputerInfo" class="hidden">
-                                        <div class="rounded-2xl border border-blue-200/60 bg-blue-50/80 px-4 py-4 shadow-inner">
-                                            <div class="flex items-start gap-3">
-                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                    </svg>
-                                                </div>
-                                                <div class="space-y-1 text-sm">
-                                                    <h3 class="font-semibold text-blue-900">Computadora detectada</h3>
-                                                    <?php if($assignedComputerLoan && $assignedComputerLoan->inventario): ?>
-                                                        <p class="text-blue-800">
-                                                            <?php echo e($assignedComputerLoan->inventario->codigo_inventario ?? 'Sin código'); ?> ·
-                                                            <?php echo e($assignedComputerLoan->inventario->articulo); ?>
-
-                                                            <?php if($assignedComputerLoan->inventario->modelo): ?>
-                                                                – <?php echo e($assignedComputerLoan->inventario->modelo); ?>
-
-                                                            <?php endif; ?>
-                                                        </p>
-                                                        <p class="text-xs text-blue-600">
-                                                            Prestada desde <?php echo e(optional($assignedComputerLoan->fecha_prestamo)->format('d/m/Y') ?? 'fecha no disponible'); ?>.
-                                                        </p>
-                                                    <?php elseif($assignedComputerProfile): ?>
-                                                        <p class="text-blue-800">
-                                                            <?php echo e($assignedComputerProfile->identifier ?? 'Equipo sin identificador'); ?>
-
-                                                            <?php if($assignedComputerProfile->brand || $assignedComputerProfile->model): ?>
-                                                                – <?php echo e(trim(($assignedComputerProfile->brand ? $assignedComputerProfile->brand : '') . ' ' . ($assignedComputerProfile->model ? $assignedComputerProfile->model : ''))); ?>
-
-                                                            <?php endif; ?>
-                                                        </p>
-                                                        <p class="text-xs text-blue-600">
-                                                            Información tomada del historial de mantenimiento.
-                                                        </p>
-                                                    <?php else: ?>
-                                                        <p class="text-blue-800">No se detectó una computadora asociada a tu usuario en el sistema.</p>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div id="hardwarePrinterInfo" class="hidden">
-                                        <div class="rounded-2xl border border-purple-200/60 bg-purple-50/80 px-4 py-4 shadow-inner">
-                                            <div class="flex items-start gap-3">
-                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8V4a1 1 0 011-1h8a1 1 0 011 1v4m3 4h1a1 1 0 011 1v6a1 1 0 01-1 1h-1M4 12H3a1 1 0 00-1 1v6a1 1 0 001 1h1m3-3h10m-6 3h2" />
-                                                    </svg>
-                                                </div>
-                                                <div class="space-y-1 text-sm">
-                                                    <h3 class="font-semibold text-purple-900">Impresora detectada</h3>
-                                                    <?php if($assignedPrinterLoan && $assignedPrinterLoan->inventario): ?>
-                                                        <p class="text-purple-800">
-                                                            <?php echo e($assignedPrinterLoan->inventario->codigo_inventario ?? 'Sin código'); ?> ·
-                                                            <?php echo e($assignedPrinterLoan->inventario->articulo); ?>
-
-                                                            <?php if($assignedPrinterLoan->inventario->modelo): ?>
-                                                                – <?php echo e($assignedPrinterLoan->inventario->modelo); ?>
-
-                                                            <?php endif; ?>
-                                                        </p>
-                                                        <p class="text-xs text-purple-600">
-                                                            Prestada desde <?php echo e(optional($assignedPrinterLoan->fecha_prestamo)->format('d/m/Y') ?? 'fecha no disponible'); ?>.
-                                                        </p>
-                                                    <?php else: ?>
-                                                        <p class="text-purple-800">No se detectó una impresora asociada a tu usuario en el sistema.</p>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-
-                            <div>
-                                <label for="descripcion_problema" class="mb-2 block text-sm font-semibold text-slate-700">
-                                    <?php if($tipo === 'mantenimiento'): ?>
-                                        Añadir detalles de problemas presentados en el equipo <span class="text-slate-400">(opcional)</span>
-                                    <?php elseif($tipo === 'hardware'): ?>
-                                        Descripción de la falla del equipo <span class="text-red-500">*</span>
-                                    <?php else: ?>
-                                        Descripción de la falla del programa <span class="text-red-500">*</span>
-                                    <?php endif; ?>
-                                </label>
-                                <textarea name="descripcion_problema"
-                                          id="descripcion_problema"
-                                          rows="5"
-                                          <?php if($tipo !== 'mantenimiento'): ?> required <?php endif; ?>
-                                          class="block w-full rounded-3xl border border-blue-100 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-sm transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200"
-                                          placeholder="<?php echo e($tipo === 'mantenimiento' ? 'Describe qué tipo de mantenimiento necesitas, cuándo y cualquier detalle importante...' : ($tipo === 'hardware' ? 'Describe la falla del equipo con el mayor detalle posible. ¿Qué estaba ocurriendo cuando falló? ¿Se muestran luces o mensajes en el dispositivo?' : 'Describe la falla del programa con el mayor detalle posible. ¿Qué estabas haciendo cuando ocurrió? ¿Qué mensajes de error aparecen?')); ?>"><?php echo e(old('descripcion_problema')); ?></textarea>
-                                <?php $__errorArgs = ['descripcion_problema'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                    <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                            </div>
-                        </section>
-
-                        <?php if(in_array($tipo, ['software', 'hardware'])): ?>
-                            <section class="rounded-3xl border border-blue-100/60 bg-white/90 px-6 py-6 shadow-lg shadow-blue-500/10 backdrop-blur">
-                                <h2 class="mb-3 text-lg font-semibold text-slate-900">Imágenes del problema <span class="text-slate-400 text-sm font-normal">(opcional)</span></h2>
-                                <p class="text-sm text-slate-500 mb-4">Sube capturas o fotos que ayuden a entender el problema. Máximo 5 imágenes.</p>
-
-                                <input type="file" id="imageInput" name="imagenes[]" multiple accept="image/*" class="hidden">
-
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <button type="button"
-                                            id="uploadButton"
-                                            class="inline-flex items-center rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50">
-                                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                        </svg>
-                                        Seleccionar imágenes
-                                    </button>
-                                    <span id="imageCount" class="text-sm font-medium text-slate-500">0/5 imágenes</span>
-                                </div>
-
-                                <div id="imagePreview" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"></div>
-
-                                <?php $__errorArgs = ['imagenes'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                    <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                                <?php $__errorArgs = ['imagenes.*'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                    <p class="mt-2 text-sm text-red-600"><?php echo e($message); ?></p>
-                                <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                            </section>
-                        <?php endif; ?>
-
-                        <?php if($tipo === 'mantenimiento'): ?>
-                            <section class="space-y-6 rounded-3xl border border-green-200/60 bg-white/90 px-6 py-6 shadow-lg shadow-green-500/10 backdrop-blur">
-                                <div>
-                                    <h2 class="text-lg font-semibold text-slate-900">Agenda tu mantenimiento</h2>
-                                    <p class="mt-1 text-sm text-slate-500">Selecciona el día y horario disponible. Verde: disponible, amarillo: horarios reservados, rojo: sin disponibilidad.</p>
-                                </div>
-
-                                <input type="hidden" name="maintenance_slot_id" id="maintenance_slot_id" value="<?php echo e(old('maintenance_slot_id')); ?>">
-                                <input type="hidden" name="maintenance_selected_date" id="maintenance_selected_date" value="<?php echo e(old('maintenance_selected_date')); ?>">
-
-                                <div id="maintenanceScheduling"
-                                     data-availability-url="<?php echo e(route('maintenance.availability')); ?>"
-                                     data-slots-url="<?php echo e(route('maintenance.slots')); ?>"
-                                     class="rounded-3xl border border-green-100 bg-gradient-to-br from-green-50/60 via-white to-green-50/40 px-4 py-4 shadow-inner">
-                                    <div class="mb-4 flex items-center justify-between">
-                                        <button type="button" id="calendarPrev" class="flex items-center text-sm font-semibold text-blue-600 transition hover:text-blue-800">
-                                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                            </svg>
-                                            Mes anterior
-                                        </button>
-                                        <div id="calendarMonthLabel" class="text-lg font-semibold text-slate-900"></div>
-                                        <button type="button" id="calendarNext" class="flex items-center text-sm font-semibold text-blue-600 transition hover:text-blue-800">
-                                            Mes siguiente
-                                            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <div class="mb-2 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                        <span>Dom</span>
-                                        <span>Lun</span>
-                                        <span>Mar</span>
-                                        <span>Mié</span>
-                                        <span>Jue</span>
-                                        <span>Vie</span>
-                                        <span>Sáb</span>
-                                    </div>
-
-                                    <div id="calendarGrid" class="grid grid-cols-7 gap-2"></div>
-
-                                    <div class="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
-                                        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-green-500"></span>Disponible</span>
-                                        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-yellow-400"></span>Reservado</span>
-                                        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-red-500"></span>Sin disponibilidad</span>
-                                    </div>
-                                </div>
-
-                                <?php $__errorArgs = ['maintenance_slot_id'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                    <p class="text-sm text-red-600"><?php echo e($message); ?></p>
-                                <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-
-                                <div id="timeSlotsWrapper" class="hidden rounded-3xl border border-blue-100/60 bg-white/90 px-5 py-5 shadow-inner">
-                                    <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <h3 class="text-sm font-semibold text-slate-800">Horarios disponibles para <span id="selectedDateLabel" class="text-blue-600"></span></h3>
-                                        <span id="selectedSlotLabel" class="text-xs text-slate-500"></span>
-                                    </div>
-                                    <div id="timeSlotsList" class="grid gap-3 sm:grid-cols-2"></div>
-                                    <p id="noSlotsMessage" class="hidden text-sm text-red-600">No hay horarios disponibles para la fecha seleccionada.</p>
-                                </div>
-                            </section>
-                        <?php endif; ?>
-
-                        <!-- Botones -->
-                        <div class="flex flex-col gap-4 border-t border-blue-100/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                            <a href="<?php echo e(route('welcome')); ?>"
-                               class="inline-flex items-center justify-center rounded-2xl border border-blue-200 bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50">
-                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                                </svg>
-                                Cancelar
-                            </a>
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-700 hover:to-blue-800">
-                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Crear ticket
-                            </button>
+        <div class="bg-white rounded-[2rem] shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden relative">
+            
+            <div class="relative bg-gradient-to-r <?php echo e($config['gradient']); ?> p-8 sm:p-10 text-white overflow-hidden">
+                <div class="absolute right-0 top-0 -mt-4 -mr-4 text-white opacity-10 transform rotate-12">
+                    <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 24 24"><path d="<?php echo e($config['icon']); ?>"></path></svg>
+                </div>
+                <div class="relative z-10 flex items-center gap-6">
+                    <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white shadow-lg">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo e($config['icon']); ?>"></path></svg>
+                    </div>
+                    <div>
+                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-2 border border-white/20 backdrop-blur-md">
+                            Nueva Solicitud
                         </div>
-                    </form>
+                        <h1 class="text-3xl font-bold tracking-tight text-white"><?php echo e($config['titulo']); ?></h1>
+                        <p class="text-indigo-100 mt-1 text-lg font-medium opacity-90"><?php echo e($config['desc']); ?></p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
 
-    <footer class="bg-white border-t border-blue-100">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <p class="text-center text-sm text-slate-500">&copy; <?php echo e(date('Y')); ?> Sistema de Tickets TI. Todos los derechos reservados.</p>
-        </div>
-    </footer>
+            <div class="p-8 sm:p-10">
+                <form action="<?php echo e(route('tickets.store')); ?>" method="POST" enctype="multipart/form-data" class="space-y-8" id="ticketForm">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="categoria" value="<?php echo e($tipo); ?>">
 
-    <?php $__env->startPush('scripts'); ?>
-        <?php echo app('Illuminate\Foundation\Vite')('resources/js/Sistemas_IT/tickets-create.js'); ?>
-    <?php $__env->stopPush(); ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        
+                        <div class="col-span-2">
+                            <label for="titulo" class="block text-sm font-bold text-slate-700 mb-2">Asunto Breve</label>
+                            <input type="text" name="titulo" id="titulo" required 
+                                class="w-full rounded-2xl border-slate-200 bg-slate-50 focus:border-<?php echo e($c); ?>-500 focus:ring-<?php echo e($c); ?>-500 focus:bg-white transition-all py-3 px-4 shadow-sm placeholder:text-slate-400 font-medium"
+                                placeholder="Ej: <?php echo e($tipo == 'hardware' ? 'El monitor parpadea' : ($tipo == 'software' ? 'Outlook no conecta' : 'Limpieza preventiva')); ?>">
+                            <?php $__errorArgs = ['titulo'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span class="text-red-500 text-xs mt-1 font-bold"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="prioridad" class="block text-sm font-bold text-slate-700 mb-2">Nivel de Impacto</label>
+                            <div class="relative">
+                                <select name="prioridad" id="prioridad" class="w-full rounded-2xl border-slate-200 bg-slate-50 focus:border-<?php echo e($c); ?>-500 focus:ring-<?php echo e($c); ?>-500 focus:bg-white transition-all py-3 px-4 shadow-sm appearance-none font-medium text-slate-600 cursor-pointer">
+                                    <option value="Baja">🟢 Baja (No urge)</option>
+                                    <option value="Media" selected>🔵 Media (Afecta rendimiento)</option>
+                                    <option value="Alta">🟠 Alta (No puedo trabajar)</option>
+                                    <option value="Critica">🔴 Crítica (Sistema caído)</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php if($tipo == 'mantenimiento'): ?>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Agendar Cita de Mantenimiento</label>
+                                <div class="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">1. Elige Fecha</p>
+                                            <div id="calendar-inline"></div>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">2. Elige Hora</p>
+                                            
+                                            <input type="hidden" name="fecha_requerida" id="fecha_requerida_input" required>
+                                            <input type="hidden" name="hora_requerida" id="hora_requerida_input" required>
+
+                                            <div id="time-slots-container" class="grid grid-cols-2 gap-3">
+                                                <div class="col-span-2 text-center py-10">
+                                                    <div class="inline-flex p-3 bg-white rounded-full text-slate-300 mb-2">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                    </div>
+                                                    <p class="text-sm text-slate-400 italic">Selecciona un día en el calendario</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100 hidden" id="selection-summary">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-xs text-emerald-800 font-bold">Reserva Confirmada:</p>
+                                                        <p class="text-sm font-bold text-slate-800" id="selected-datetime-text">--</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="col-span-2 md:col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Área Responsable</label>
+                                <div class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-2 text-slate-500 font-medium cursor-not-allowed">
+                                    <span class="w-3 h-3 rounded-full bg-<?php echo e($c); ?>-500"></span>
+                                    <?php echo e(ucfirst($tipo)); ?>
+
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="col-span-2">
+                            <label for="descripcion" class="block text-sm font-bold text-slate-700 mb-2">Detalles</label>
+                            <textarea name="descripcion" id="descripcion" rows="4" required
+                                class="w-full rounded-2xl border-slate-200 bg-slate-50 focus:border-<?php echo e($c); ?>-500 focus:ring-<?php echo e($c); ?>-500 focus:bg-white transition-all py-3 px-4 shadow-sm placeholder:text-slate-400 resize-none font-medium leading-relaxed"
+                                placeholder="Describe el problema o requerimiento..."></textarea>
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Adjuntar (Opcional)</label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:bg-<?php echo e($c); ?>-50/50 hover:border-<?php echo e($c); ?>-300 transition-all group">
+                                <div class="p-2 bg-slate-100 text-slate-400 rounded-full mb-2 group-hover:bg-white group-hover:text-<?php echo e($c); ?>-500 group-hover:shadow-sm transition-all">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <label for="adjunto" class="cursor-pointer text-sm font-bold text-<?php echo e($c); ?>-600 hover:underline">
+                                    <span>Seleccionar archivo</span>
+                                    <input id="adjunto" name="adjunto" type="file" class="sr-only">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-100">
+                        <a href="<?php echo e(route('welcome', ['from' => 'tickets'])); ?>" class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancelar</a>
+                        <button type="submit" class="inline-flex items-center px-8 py-3.5 bg-<?php echo e($c); ?>-600 border border-transparent rounded-2xl font-bold text-sm text-white uppercase tracking-wider hover:bg-<?php echo e($c); ?>-700 focus:outline-none focus:ring-4 focus:ring-<?php echo e($c); ?>-100 transition-all shadow-lg shadow-<?php echo e($c); ?>-200 hover:-translate-y-0.5">
+                            Enviar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 <?php $__env->stopSection(); ?>
 
-<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/tickets/create.blade.php ENDPATH**/ ?>
+
+<?php if($tipo == 'mantenimiento'): ?>
+    <?php $__env->startPush('scripts'); ?>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Slots de 1 hora 15 minutos
+            const timeSlots = [
+                { start: '09:00', end: '10:15', label: '09:00 AM' },
+                { start: '10:30', end: '11:45', label: '10:30 AM' },
+                { start: '12:00', end: '13:15', label: '12:00 PM' },
+                { start: '14:00', end: '15:15', label: '02:00 PM' },
+                { start: '15:30', end: '16:45', label: '03:30 PM' },
+                { start: '17:00', end: '18:15', label: '05:00 PM' }
+            ];
+
+            const bookedSlots = {}; // Inyectar datos ocupados aquí
+
+            const dateInput = document.getElementById('fecha_requerida_input');
+            const timeInput = document.getElementById('hora_requerida_input');
+            const slotsContainer = document.getElementById('time-slots-container');
+            const summaryBox = document.getElementById('selection-summary');
+            const summaryText = document.getElementById('selected-datetime-text');
+
+            flatpickr("#calendar-inline", {
+                inline: true,
+                locale: "es",
+                minDate: "today", 
+                dateFormat: "Y-m-d",
+                disable: [
+                    // Solo Sábados (6) y Domingos (0)
+                    function(date) {
+                        return (date.getDay() === 0 || date.getDay() === 6);
+                    }
+                ],
+                onChange: function(selectedDates, dateStr) {
+                    dateInput.value = dateStr;
+                    generateTimeSlots(dateStr);
+                    timeInput.value = '';
+                    summaryBox.classList.add('hidden');
+                }
+            });
+
+            function generateTimeSlots(dateStr) {
+                slotsContainer.innerHTML = '';
+                const occupiedToday = bookedSlots[dateStr] || [];
+
+                timeSlots.forEach(slot => {
+                    const isBooked = occupiedToday.includes(slot.start);
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `
+                        relative w-full py-3 px-2 rounded-xl border text-sm font-bold transition-all
+                        flex flex-col items-center justify-center gap-1
+                        ${isBooked 
+                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed decoration-slate-300' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-md'
+                        }
+                    `;
+                    
+                    if (isBooked) {
+                        btn.disabled = true;
+                        btn.innerHTML = `
+                            <span class="line-through">${slot.label}</span>
+                            <span class="text-[9px] uppercase font-bold text-red-300">Ocupado</span>
+                        `;
+                    } else {
+                        btn.innerHTML = `
+                            <span>${slot.label}</span>
+                            <span class="text-[9px] text-slate-400 font-normal">Fin: ${slot.end}</span>
+                        `;
+                        
+                        btn.onclick = function() {
+                            // Resetear estilos de otros botones
+                            document.querySelectorAll('#time-slots-container button').forEach(b => {
+                                if(!b.disabled) {
+                                    b.className = b.className.replace('ring-2 ring-emerald-500 bg-emerald-50 border-emerald-500 text-emerald-700', 'bg-white border-slate-200 text-slate-600');
+                                }
+                            });
+                            
+                            // Activar este botón
+                            btn.className = btn.className.replace('bg-white border-slate-200 text-slate-600', 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-500 text-emerald-700');
+                            
+                            // Guardar valores
+                            timeInput.value = slot.start;
+                            summaryText.textContent = `${formatDate(dateStr)} • ${slot.label}`;
+                            summaryBox.classList.remove('hidden');
+                        };
+                    }
+                    slotsContainer.appendChild(btn);
+                });
+            }
+
+            function formatDate(dateString) {
+                const options = { weekday: 'long', day: 'numeric', month: 'short' };
+                // Parche simple para timezone (T00:00:00 evita desfases)
+                const date = new Date(dateString + 'T00:00:00');
+                return date.toLocaleDateString('es-ES', options);
+            }
+        });
+    </script>
+    <?php $__env->stopPush(); ?>
+<?php endif; ?>
+<?php echo $__env->make('Sistemas_IT.layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/tickets/create.blade.php ENDPATH**/ ?>

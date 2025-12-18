@@ -1,13 +1,22 @@
 @php
     $user = Auth::user();
     
-    // Detección de Contexto (RH vs Logística vs General)
+    // 1. Detección de Contexto (¿En qué módulo estoy navegando?)
     $isRH = request()->routeIs('rh.*') || request()->routeIs('recursos-humanos.*');
     $isLogistica = request()->routeIs('logistica.*');
     
-    // Iniciales para el avatar
+    // 2. Definir ruta del Logo (Inicio Inteligente)
+    $homeRoute = route('welcome'); // Por defecto
+    
+    if ($isRH) {
+        $homeRoute = route('recursos-humanos.index');
+    } elseif ($isLogistica) {
+        $homeRoute = route('logistica.index');
+    }
+
+    // 3. Datos de usuario
     $initials = $user ? strtoupper(mb_substr($user->name, 0, 1, 'UTF-8')) : 'U';
-    $roleLabel = $user && method_exists($user, 'isAdmin') && $user->isAdmin() ? 'Administrador' : 'Colaborador';
+    $roleLabel = ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) ? 'Administrador' : 'Colaborador';
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm/60 backdrop-blur-md bg-white/90">
@@ -16,7 +25,7 @@
             
             <div class="flex">
                 <div class="shrink-0 flex items-center gap-4">
-                    <a href="{{ route('welcome') }}" class="group flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <a href="{{ $homeRoute }}" class="group flex items-center gap-3 transition-opacity hover:opacity-80">
                         <img src="{{ asset('images/logo-ei.png') }}?v={{ filemtime(public_path('images/logo-ei.png')) }}" alt="E&I Logo" class="h-9 w-auto group-hover:scale-105 transition-transform duration-300">
                         
                         <div class="hidden md:block leading-tight border-l-2 border-slate-200 pl-3">
@@ -36,11 +45,8 @@
 
                 <div class="hidden space-x-2 sm:-my-px sm:ml-10 sm:flex items-center">
                     
-                    {{-- MENÚ DE RECURSOS HUMANOS --}}
+                    {{-- MENÚ RH --}}
                     @if($isRH)
-                        <x-nav-link :href="route('recursos-humanos.index')" :active="request()->routeIs('recursos-humanos.index')">
-                            Dashboard
-                        </x-nav-link>
                         <x-nav-link :href="route('rh.expedientes.index')" :active="request()->routeIs('rh.expedientes.*')">
                             Expedientes
                         </x-nav-link>
@@ -51,7 +57,7 @@
                             Evaluaciones
                         </x-nav-link>
                     
-                    {{-- MENÚ DE LOGÍSTICA --}}
+                    {{-- MENÚ LOGÍSTICA --}}
                     @elseif($isLogistica)
                         <x-nav-link :href="route('logistica.index')" :active="request()->routeIs('logistica.index')">
                             Dashboard
@@ -66,69 +72,74 @@
                             Reportes
                         </x-nav-link>
                     
-                    {{-- MENÚ GENERAL (SI NO ESTÁS EN NINGÚN MÓDULO) --}}
+                    {{-- MENÚ GENERAL --}}
                     @else
-                        @if(auth()->user()->can('ver_rh'))
+                        @can('ver_rh')
                             <x-nav-link :href="route('recursos-humanos.index')">Ir a RH</x-nav-link>
-                        @endif
-                        @if(auth()->user()->can('ver_logistica'))
+                        @endcan
+                        @can('ver_logistica')
                             <x-nav-link :href="route('logistica.index')">Ir a Logística</x-nav-link>
-                        @endif
+                        @endcan
                     @endif
 
                 </div>
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ml-6">
-                <a href="{{ route('tickets.create', ['tipo' => 'incidente']) }}" class="mr-4 text-slate-400 hover:text-indigo-600 transition-colors" title="Reportar Problema IT">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </a>
+                @auth
+                    <a href="{{ route('welcome', ['from' => 'tickets']) }}" class="mr-4 text-slate-400 hover:text-indigo-600 transition-colors" title="Reportar Problema IT">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </a>
 
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="flex items-center gap-3 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-slate-600 bg-slate-50 hover:bg-white hover:shadow-md hover:text-indigo-600 transition-all duration-200 focus:outline-none ring-1 ring-slate-100">
-                            <div class="text-right hidden md:block">
-                                <div class="font-bold text-slate-800">{{ Auth::user()->name }}</div>
-                                <div class="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">{{ $roleLabel }}</div>
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button class="flex items-center gap-3 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-slate-600 bg-slate-50 hover:bg-white hover:shadow-md hover:text-indigo-600 transition-all duration-200 focus:outline-none ring-1 ring-slate-100">
+                                <div class="text-right hidden md:block">
+                                    <div class="font-bold text-slate-800">{{ Auth::user()->name }}</div>
+                                    <div class="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">{{ $roleLabel }}</div>
+                                </div>
+                                <div class="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shadow-indigo-200">
+                                    {{ $initials }}
+                                </div>
+                                <svg class="fill-current h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <p class="text-sm text-slate-500">Conectado como</p>
+                                <p class="text-sm font-bold text-slate-900 truncate">{{ Auth::user()->email }}</p>
                             </div>
-                            <div class="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shadow-indigo-200">
-                                {{ $initials }}
-                            </div>
-                            <svg class="fill-current h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </x-slot>
 
-                    <x-slot name="content">
-                        <div class="px-4 py-3 border-b border-slate-100">
-                            <p class="text-sm text-slate-500">Conectado como</p>
-                            <p class="text-sm font-bold text-slate-900 truncate">{{ Auth::user()->email }}</p>
-                        </div>
-
-                        <x-dropdown-link :href="route('profile.edit')" class="group flex items-center">
-                            <svg class="mr-2 h-4 w-4 text-slate-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            {{ __('Mi Perfil') }}
-                        </x-dropdown-link>
-
-                        <x-dropdown-link :href="route('welcome')" class="group flex items-center">
-                            <svg class="mr-2 h-4 w-4 text-slate-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                            {{ __('Inicio') }}
-                        </x-dropdown-link>
-
-                        <div class="border-t border-slate-100 my-1"></div>
-
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault(); this.closest('form').submit();"
-                                    class="text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center">
-                                <svg class="mr-2 h-4 w-4 text-red-400 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                                {{ __('Cerrar Sesión') }}
+                            <x-dropdown-link :href="route('profile.edit')" class="group flex items-center">
+                                <svg class="mr-2 h-4 w-4 text-slate-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                {{ __('Mi Perfil') }}
                             </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+
+                            {{-- Enlace dinámico "Inicio" dentro del dropdown también --}}
+                            <x-dropdown-link :href="$homeRoute" class="group flex items-center">
+                                <svg class="mr-2 h-4 w-4 text-slate-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                {{ __('Inicio') }}
+                            </x-dropdown-link>
+
+                            <div class="border-t border-slate-100 my-1"></div>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <x-dropdown-link :href="route('logout')"
+                                        onclick="event.preventDefault(); this.closest('form').submit();"
+                                        class="text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center">
+                                    <svg class="mr-2 h-4 w-4 text-red-400 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                    {{ __('Cerrar Sesión') }}
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                @else
+                    <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600">Iniciar Sesión</a>
+                @endauth
             </div>
 
             <div class="-mr-2 flex items-center sm:hidden">
@@ -166,6 +177,7 @@
             @endif
         </div>
 
+        @auth
         <div class="pt-4 pb-4 border-t border-slate-200 bg-white">
             <div class="px-4 flex items-center">
                 <div class="shrink-0">
@@ -194,5 +206,6 @@
                 </form>
             </div>
         </div>
+        @endauth
     </div>
 </nav>
