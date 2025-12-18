@@ -11,6 +11,9 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+
+    
+    <?php echo $__env->yieldPushContent('styles'); ?> 
 </head>
 <body class="font-sans antialiased bg-slate-50 text-slate-600">
     

@@ -9,6 +9,24 @@
                 </h2>
                 <p class="text-xs text-slate-500 mt-1">Gestión del talento y medición de competencias por área.</p>
             </div>
+            
+            {{-- SELECTOR DE PERIODO --}}
+            <div class="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 uppercase px-2">Periodo:</span>
+                <form method="GET" action="{{ route('rh.evaluacion.index') }}">
+                    @if(request('area'))
+                        <input type="hidden" name="area" value="{{ request('area') }}">
+                    @endif
+                    
+                    <select name="periodo" onchange="this.form.submit()" class="text-sm border-none bg-slate-50 rounded-md focus:ring-indigo-500 text-slate-700 font-semibold cursor-pointer py-1 pl-3 pr-8">
+                        @foreach($periodos as $periodoOption)
+                            <option value="{{ $periodoOption }}" {{ $selectedPeriod == $periodoOption ? 'selected' : '' }}>
+                                {{ $periodoOption }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
         </div>
     </x-slot>
 
@@ -21,6 +39,14 @@
     <div class="py-12 bg-slate-50 min-h-screen" x-data="{ activeTab: 'Logistica' }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
             
+            {{-- Indicador visual del periodo seleccionado --}}
+            <div class="flex items-center justify-end px-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    Evaluando: {{ $selectedPeriod }}
+                </span>
+            </div>
+
+            {{-- Navegación por pestañas --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2">
                 <nav class="flex space-x-1 overflow-x-auto custom-scrollbar pb-2 md:pb-0" aria-label="Tabs">
                     @foreach($todasLasCategorias as $categoria)
@@ -39,6 +65,7 @@
                 </nav>
             </div>
 
+            {{-- Contenido de las pestañas --}}
             <div class="space-y-6">
                 @foreach($todasLasCategorias as $categoria)
                     @if(!empty($categoria))
@@ -83,16 +110,30 @@
 
                                             <div class="relative z-10 flex flex-col h-full">
                                                 <div class="flex items-start justify-between mb-4">
-                                                    <div class="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow-sm">
+                                                    <div class="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow-sm overflow-hidden">
                                                         @if(isset($empleado->foto_path) && $empleado->foto_path)
-                                                            <img src="{{ asset('storage/' . $empleado->foto_path) }}" class="w-full h-full object-cover rounded-2xl">
+                                                            <img src="{{ asset('storage/' . $empleado->foto_path) }}" class="w-full h-full object-cover">
                                                         @else
                                                             {{ substr($empleado->nombre, 0, 1) }}
                                                         @endif
                                                     </div>
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
-                                                        ACTIVO
-                                                    </span>
+                                                    
+                                                    {{-- Badge de Estado de Evaluación --}}
+                                                    @if(isset($empleado->evaluacion_actual))
+                                                        @if($empleado->evaluacion_actual->edit_count >= 1)
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                FINALIZADA
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                                                                EN REVISIÓN
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100">
+                                                            PENDIENTE
+                                                        </span>
+                                                    @endif
                                                 </div>
 
                                                 <div class="flex-1">
@@ -108,11 +149,29 @@
                                                     </div>
                                                 </div>
 
+                                                {{-- BOTONES DE ACCIÓN SEGÚN ESTADO --}}
                                                 <div class="mt-5 pt-4 border-t border-slate-100">
-                                                    <a href="{{ route('rh.evaluacion.show', $empleado->id) }}" class="flex items-center justify-center w-full px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
-                                                        Iniciar Evaluación
-                                                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                                    </a>
+                                                    @if(isset($empleado->evaluacion_actual))
+                                                        @if($empleado->evaluacion_actual->edit_count >= 1)
+                                                            {{-- CASO: Finalizada (Bloqueada) --}}
+                                                            <a href="{{ route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod]) }}" class="flex items-center justify-center w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                                Ver Resultados
+                                                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                            </a>
+                                                        @else
+                                                            {{-- CASO: Editable (1 vez más) --}}
+                                                            <a href="{{ route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod]) }}" class="flex items-center justify-center w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                                Editar Evaluación
+                                                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                            </a>
+                                                        @endif
+                                                    @else
+                                                        {{-- CASO: Nueva --}}
+                                                        <a href="{{ route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod]) }}" class="flex items-center justify-center w-full px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                            Iniciar Evaluación
+                                                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                                        </a>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

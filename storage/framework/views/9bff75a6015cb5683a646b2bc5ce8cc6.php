@@ -1,373 +1,172 @@
-<?php $__env->startSection('title', 'Mis Tickets - Sistema IT'); ?>
+<?php $__env->startSection('title', 'Mis Tickets'); ?>
 
 <?php $__env->startSection('content'); ?>
-    <main class="relative min-h-screen overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100" data-my-tickets>
-        <div class="absolute inset-0 pointer-events-none">
-            <div class="absolute -top-40 -left-28 h-[26rem] w-[26rem] rounded-full bg-blue-200/50 blur-3xl"></div>
-            <div class="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-blue-300/30 blur-3xl"></div>
-            <div class="absolute bottom-0 left-1/2 h-40 w-full -translate-x-1/2 bg-gradient-to-t from-white"></div>
+<div class="min-h-screen bg-slate-50 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Mis Solicitudes</h1>
+                <p class="text-slate-500 mt-1 text-lg">Historial y estado de tus reportes de IT.</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <a href="<?php echo e(route('tickets.create', ['tipo' => 'software'])); ?>" class="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-indigo-600 font-bold text-sm rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Software
+                </a>
+                <a href="<?php echo e(route('tickets.create', ['tipo' => 'hardware'])); ?>" class="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 hover:border-slate-300 transition shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-slate-500 mr-2"></span> Hardware
+                </a>
+            </div>
         </div>
 
-        <div class="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-10">
-            <?php if(session('success')): ?>
-                <div class="mb-6 rounded-2xl border-l-4 border-green-500 bg-white/70 p-4 shadow-md backdrop-blur">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-500">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </span>
-                        <p class="text-sm font-medium text-green-800"><?php echo e(session('success')); ?></p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between h-32 group hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-100 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
+                    <span class="text-3xl font-bold text-slate-800"><?php echo e($tickets->count()); ?></span>
                 </div>
-            <?php endif; ?>
-
-            <?php if(session('info')): ?>
-                <div class="mb-6 rounded-2xl border-l-4 border-blue-500 bg-white/70 p-4 shadow-md backdrop-blur">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-500">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </span>
-                        <p class="text-sm font-medium text-blue-900"><?php echo e(session('info')); ?></p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Tickets</p>
+            </div>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between h-32 group hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
+                    <span class="text-3xl font-bold text-slate-800"><?php echo e($tickets->where('estado', 'Abierto')->count()); ?></span>
                 </div>
-            <?php endif; ?>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Abiertos</p>
+            </div>
 
-            <?php if(session('error')): ?>
-                <div class="mb-6 rounded-2xl border-l-4 border-red-500 bg-white/70 p-4 shadow-md backdrop-blur">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-500">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </span>
-                        <p class="text-sm font-medium text-red-800"><?php echo e(session('error')); ?></p>
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between h-32 group hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-100 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
+                    <span class="text-3xl font-bold text-slate-800"><?php echo e($tickets->where('estado', 'En Proceso')->count()); ?></span>
                 </div>
-            <?php endif; ?>
-
-            <!-- Hero -->
-            <section class="relative overflow-hidden rounded-3xl border border-blue-100/70 bg-white/85 px-8 py-10 shadow-xl shadow-blue-500/10 backdrop-blur">
-                <div class="absolute -right-24 -top-20 h-48 w-48 rounded-full bg-blue-200/50 blur-3xl"></div>
-                <div class="absolute -left-20 bottom-0 h-36 w-36 rounded-full bg-blue-100/70 blur-3xl"></div>
-
-                <div class="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="space-y-4">
-                        <div class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">
-                            Mis tickets de soporte
-                        </div>
-                        <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Centro personal de seguimiento</h1>
-                        <p class="max-w-2xl text-base text-slate-600">
-                            Revisa el estado de tus solicitudes, responde al equipo de TI y mantén una vista clara de las acciones recientes.
-                        </p>
-                        <div class="flex flex-wrap gap-3 text-sm text-slate-500">
-                            <div class="flex items-center gap-2 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2 shadow-sm">
-                                <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                                <?php echo e(auth()->user()->name); ?> · <?php echo e(auth()->user()->email); ?>
-
-                            </div>
-                            <div class="flex items-center gap-2 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2 shadow-sm">
-                                <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v13H4V8a1 1 0 011-1h3z"></path>
-                                </svg>
-                                <?php echo e(count($tickets)); ?> ticket(s) registrados
-                            </div>
-                        </div>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">En Proceso</p>
+            </div>
+            
+             <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between h-32 group hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="p-2 bg-slate-100 text-slate-600 rounded-xl group-hover:bg-slate-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     </div>
-                    <div class="flex flex-col gap-3 rounded-3xl border border-blue-100/80 bg-gradient-to-br from-blue-50/80 via-white to-blue-50/60 px-6 py-5 shadow-inner backdrop-blur lg:max-w-sm">
-                        <h2 class="text-lg font-semibold text-slate-900">Resumen rápido</h2>
-                        <div class="flex items-center justify-between text-sm text-slate-600">
-                            <span>Actualizaciones pendientes</span>
-                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700"><?php echo e($notificationsCount ?? 0); ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm text-slate-600">
-                            <span>Tickets abiertos</span>
-                            <span class="font-semibold text-blue-600"><?php echo e($openTickets ?? $tickets->where('estado', '!=', 'cerrado')->count()); ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm text-slate-600">
-                            <span>Última actualización</span>
-                            <span class="font-semibold text-blue-600"><?php echo e(optional($tickets->max('updated_at'))->diffForHumans() ?? 'Sin registros'); ?></span>
-                        </div>
-                        <div class="flex flex-col gap-2 pt-2 text-xs text-slate-500">
-                            <span class="font-semibold text-slate-700">Consejo:</span>
-                            <span>Marca como revisados los tickets con actualización para mantener la comunicación fluida.</span>
-                        </div>
-                    </div>
+                    <span class="text-3xl font-bold text-slate-800"><?php echo e($tickets->where('estado', 'Cerrado')->count()); ?></span>
                 </div>
-            </section>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Resueltos</p>
+            </div>
+        </div>
 
-            <?php if(($notificationsCount ?? 0) > 0): ?>
-                <div class="mt-8 rounded-3xl border border-blue-200/60 bg-gradient-to-r from-blue-50/70 via-white to-blue-50/50 px-6 py-5 shadow-inner">
-                    <div class="flex items-start gap-4">
-                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-semibold text-blue-800">Tienes <?php echo e($notificationsCount); ?> ticket(s) con nuevas actualizaciones del equipo de TI.</p>
-                            <p class="mt-1 text-sm text-blue-600">Revisa los tickets marcados para conocer el progreso y confirmar que recibiste la información.</p>
-                        </div>
+        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+            <?php if($tickets->isEmpty()): ?>
+                <div class="flex flex-col items-center justify-center py-20 text-center">
+                    <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
+                    <h3 class="text-xl font-bold text-slate-900">No tienes tickets registrados</h3>
+                    <p class="text-slate-500 mt-2 max-w-sm mx-auto">
+                        Afortunadamente todo parece estar funcionando bien. Si surge algo, estamos aquí.
+                    </p>
+                    <a href="<?php echo e(route('welcome', ['from' => 'tickets'])); ?>" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                        Crear mi primer reporte
+                    </a>
                 </div>
-            <?php endif; ?>
-
-            <section class="mt-10">
-                <?php if(count($tickets) > 0): ?>
-                    <div class="overflow-hidden rounded-3xl border border-blue-100/70 bg-white/85 shadow-2xl shadow-blue-500/10 backdrop-blur">
-                        <div class="border-b border-blue-100/70 bg-gradient-to-r from-blue-50/80 to-white px-8 py-6">
-                            <h2 class="text-xl font-semibold text-slate-900">Mis tickets registrados</h2>
-                            <p class="text-sm text-slate-500"><?php echo e(count($tickets)); ?> ticket(s) encontrados</p>
-                        </div>
-
-                        <div class="divide-y divide-blue-100/70">
+            <?php else: ?>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-100">
+                                <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Folio</th>
+                                <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Detalles</th>
+                                <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</th>
+                                <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Prioridad</th>
+                                <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
                             <?php $__currentLoopData = $tickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ticket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <article id="ticket-<?php echo e($ticket->id); ?>" class="relative px-8 py-6 transition duration-200 <?php echo e($ticket->user_has_updates ? 'bg-blue-50/80 hover:bg-blue-100/70 border-l-4 border-blue-400' : 'hover:bg-slate-50'); ?>">
-                                    <div class="flex flex-col gap-6 lg:flex-row lg:justify-between">
-                                        <div class="flex-1 space-y-4">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="text-lg font-semibold text-blue-600"><?php echo e($ticket->folio); ?></span>
-                                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo e($ticket->estado_badge); ?>">
-                                                    <?php echo e(ucfirst(str_replace('_', ' ', $ticket->estado))); ?>
+                                <tr class="hover:bg-slate-50/80 transition-colors group">
+                                    <td class="px-8 py-5 whitespace-nowrap">
+                                        <span class="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg font-mono text-xs font-bold">#<?php echo e($ticket->id); ?></span>
+                                    </td>
+                                    <td class="px-8 py-5">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors mb-1">
+                                                <?php echo e(Str::limit($ticket->titulo, 50)); ?>
 
-                                                </span>
-                                                <?php if($ticket->closed_by_user): ?>
-                                                    <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-                                                        Cancelado por ti
-                                                    </span>
-                                                <?php endif; ?>
-                                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo e($ticket->tipo_problema === 'software' ? 'bg-blue-100 text-blue-700' : ($ticket->tipo_problema === 'hardware' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700')); ?>">
-                                                    <?php echo e(ucfirst($ticket->tipo_problema)); ?>
-
-                                                </span>
-                                                <?php if($ticket->user_has_updates): ?>
-                                                    <span class="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">Actualización</span>
-                                                <?php endif; ?>
-                                            </div>
-
-                                            <?php if($ticket->nombre_programa): ?>
+                                            </span>
+                                            <div class="flex items-center gap-2">
                                                 <?php
-                                                    $programLabel = match ($ticket->tipo_problema) {
-                                                        'hardware' => 'Tipo de equipo',
-                                                        'software' => 'Programa',
-                                                        default => 'Programa/Equipo',
+                                                    $catColor = match(strtolower($ticket->categoria)) {
+                                                        'software' => 'text-indigo-500',
+                                                        'hardware' => 'text-slate-500',
+                                                        'mantenimiento' => 'text-emerald-500',
+                                                        default => 'text-slate-400'
                                                     };
                                                 ?>
-                                                <p class="text-sm text-slate-600"><strong><?php echo e($programLabel); ?>:</strong> <?php echo e($ticket->nombre_programa); ?></p>
-                                            <?php endif; ?>
+                                                <span class="text-[10px] font-bold uppercase tracking-wide <?php echo e($catColor); ?>">
+                                                    <?php echo e($ticket->categoria); ?>
 
-                                            <p class="text-sm leading-relaxed text-slate-700"><?php echo e(Str::limit($ticket->descripcion_problema, 160)); ?></p>
-
-                                            <?php if($ticket->tipo_problema === 'mantenimiento'): ?>
-                                                <div class="space-y-2 rounded-2xl border border-green-100 bg-green-50/60 px-4 py-3 text-sm text-green-800">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="font-semibold text-green-900">Fecha programada:</span>
-                                                        <?php echo e(optional($ticket->maintenance_scheduled_at)->format('d/m/Y H:i') ?? 'Por asignar'); ?>
-
-                                                    </div>
-                                                    <?php if($ticket->maintenance_details): ?>
-                                                        <p><strong>Detalles del equipo:</strong> <?php echo e($ticket->maintenance_details); ?></p>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                                                <span>📅 <?php echo e($ticket->created_at->format('d/m/Y H:i')); ?></span>
-                                                <?php if($ticket->prioridad): ?>
-                                                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo e($ticket->prioridad_badge); ?>">
-                                                        Prioridad: <?php echo e(ucfirst($ticket->prioridad)); ?>
-
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
-
-                                            <?php if($ticket->observaciones): ?>
-                                                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                                    <strong>Observaciones:</strong> <?php echo e($ticket->observaciones); ?>
-
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <?php if($ticket->user_notification_summary): ?>
-                                                <div class="rounded-3xl border <?php echo e($ticket->user_has_updates ? 'border-blue-300 bg-blue-50/70' : 'border-slate-200 bg-slate-50'); ?> px-5 py-4">
-                                                    <div class="flex items-start gap-3">
-                                                        <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                        </svg>
-                                                        <div class="flex-1 space-y-2 text-sm text-slate-700">
-                                                            <p class="leading-relaxed"><?php echo e($ticket->user_notification_summary); ?></p>
-                                                            <?php if($ticket->user_notified_at): ?>
-                                                                <p class="text-xs text-slate-500">Actualizado <?php echo e($ticket->user_notified_at->diffForHumans()); ?></p>
-                                                            <?php endif; ?>
-                                                            <?php if($ticket->user_has_updates): ?>
-                                                                <form method="POST" action="<?php echo e(route('tickets.acknowledge', $ticket->id)); ?>">
-                                                                    <?php echo csrf_field(); ?>
-                                                                    <button type="submit" class="inline-flex items-center rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:from-blue-700 hover:to-blue-800">
-                                                                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                                        </svg>
-                                                                        Marcar como revisado
-                                                                    </button>
-                                                                </form>
-                                                            <?php elseif($ticket->user_last_read_at): ?>
-                                                                <p class="text-xs text-slate-500">Última revisión: <?php echo e($ticket->user_last_read_at->diffForHumans()); ?></p>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <?php if($ticket->imagenes && count($ticket->imagenes) > 0): ?>
-                                                <div class="space-y-3">
-                                                    <p class="text-sm font-semibold text-slate-700">Imágenes adjuntas:</p>
-                                                    <div class="flex flex-wrap gap-3">
-                                                        <?php $__currentLoopData = $ticket->imagenes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $imagen): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                            <?php
-                                                                $imageSrc = '';
-                                                                if (is_array($imagen) && isset($imagen['data'])) {
-                                                                    $imageSrc = 'data:' . ($imagen['mime'] ?? 'image/jpeg') . ';base64,' . $imagen['data'];
-                                                                } elseif (is_string($imagen)) {
-                                                                    $imageSrc = $imagen;
-                                                                }
-                                                            ?>
-
-                                                            <?php if($imageSrc): ?>
-                                                                <div class="group relative overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
-                                                                    <img src="<?php echo e($imageSrc); ?>" alt="Imagen del ticket <?php echo e($index + 1); ?>" class="h-28 w-28 cursor-pointer object-cover transition group-hover:scale-105" onclick="expandImage(this)">
-                                                                    <div class="absolute inset-0 flex items-center justify-center bg-blue-600/0 transition group-hover:bg-blue-900/40">
-                                                                        <svg class="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
-                                                                        </svg>
-                                                                    </div>
-                                                                </div>
-                                                            <?php else: ?>
-                                                                <div class="flex h-28 w-28 items-center justify-center rounded-2xl border border-red-200 bg-red-50">
-                                                                    <div class="text-center text-red-500">
-                                                                        <svg class="mx-auto h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                                        </svg>
-                                                                        <span class="mt-1 block text-xs">Error</span>
-                                                                    </div>
-                                                                </div>
-                                                            <?php endif; ?>
-                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                                    </div>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-
-                                        <div class="flex w-full flex-col gap-3 lg:max-w-xs">
-                                            <?php if(($supportEmail ?? null) || ($supportTeamsUrl ?? null)): ?>
-                                                <div class="rounded-3xl border border-blue-100 bg-white/80 p-4 shadow-sm">
-                                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contacto rápido</p>
-                                                    <div class="mt-3 flex flex-col gap-2">
-                                                        <?php if(!empty($supportEmail)): ?>
-                                                            <a href="mailto:<?php echo e($supportEmail); ?>?subject=<?php echo e(urlencode('Consulta sobre el ticket ' . $ticket->folio)); ?>"
-                                                               class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-blue-700 hover:to-blue-800">
-                                                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12H8m8 0l-3-3m3 3l-3 3m7-6V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2v-1"></path>
-                                                                </svg>
-                                                                Contactar por correo
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <?php if(!empty($supportTeamsUrl)): ?>
-                                                            <a href="<?php echo e($supportTeamsUrl); ?>"
-                                                               target="_blank"
-                                                               rel="noopener noreferrer"
-                                                               class="inline-flex items-center justify-center rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50">
-                                                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                                </svg>
-                                                                Contactar por Teams (urgente)
-                                                            </a>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <?php if($ticket->estado !== 'cerrado'): ?>
-                                                <button type="button"
-                                                        data-cancel-ticket
-                                                        data-ticket-id="<?php echo e($ticket->id); ?>"
-                                                        data-ticket-folio="<?php echo e($ticket->folio); ?>"
-                                                        data-can-cancel-url="<?php echo e(route('tickets.can-cancel', $ticket->id)); ?>"
-                                                        data-cancel-url="<?php echo e(route('tickets.destroy', $ticket->id)); ?>"
-                                                        class="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100">
-                                                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                    </svg>
-                                                    Cancelar ticket
-                                                </button>
-                                            <?php else: ?>
-                                                <span class="text-xs italic text-slate-500">
-                                                    <?php if($ticket->closed_by_user): ?>
-                                                        Ticket cancelado por ti
-                                                    <?php else: ?>
-                                                        Ticket cerrado
-                                                    <?php endif; ?>
                                                 </span>
-                                            <?php endif; ?>
+                                                <span class="text-slate-300">•</span>
+                                                <span class="text-xs text-slate-400"><?php echo e($ticket->created_at->diffForHumans()); ?></span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </article>
+                                    </td>
+                                    <td class="px-8 py-5 whitespace-nowrap">
+                                        <?php
+                                            $estadoClasses = match($ticket->estado) {
+                                                'Abierto' => 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                                                'En Proceso' => 'bg-blue-50 text-blue-700 border-blue-100',
+                                                'Esperando Respuesta' => 'bg-amber-50 text-amber-700 border-amber-100',
+                                                'Cerrado' => 'bg-slate-100 text-slate-500 border-slate-200',
+                                                default => 'bg-slate-100 text-slate-600'
+                                            };
+                                        ?>
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase border <?php echo e($estadoClasses); ?>">
+                                            <?php echo e($ticket->estado); ?>
+
+                                        </span>
+                                    </td>
+                                    <td class="px-8 py-5 whitespace-nowrap">
+                                        <?php
+                                            $prioConfig = match($ticket->prioridad) {
+                                                'Critica' => ['🔥', 'text-red-600 bg-red-50 border-red-100'],
+                                                'Alta' => ['🟠', 'text-orange-600 bg-orange-50 border-orange-100'],
+                                                'Media' => ['🔵', 'text-blue-600 bg-blue-50 border-blue-100'],
+                                                default => ['🟢', 'text-slate-500 bg-slate-100 border-slate-200']
+                                            };
+                                        ?>
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border <?php echo e($prioConfig[1]); ?>">
+                                            <span class="text-xs"><?php echo e($prioConfig[0]); ?></span>
+                                            <span class="text-[10px] font-bold uppercase"><?php echo e($ticket->prioridad); ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-5 whitespace-nowrap text-right">
+                                        <a href="<?php echo e(route('tickets.show', $ticket->id)); ?>" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm transition-all" title="Ver Detalles">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                        </a>
+                                    </td>
+                                </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <div class="rounded-3xl border border-blue-100/70 bg-white/85 px-10 py-16 text-center shadow-xl shadow-blue-500/10 backdrop-blur">
-                        <svg class="mx-auto h-16 w-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <h3 class="mt-6 text-2xl font-semibold text-slate-900">No tienes tickets registrados</h3>
-                        <p class="mt-2 text-sm text-slate-500">Aún no has creado ningún ticket. ¡Crea tu primer ticket ahora!</p>
-                        <a href="<?php echo e(route('welcome')); ?>" class="mt-6 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-700 hover:to-blue-800">
-                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Crear primer ticket
-                        </a>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <?php if(method_exists($tickets, 'links')): ?>
+                    <div class="bg-white px-8 py-6 border-t border-slate-100">
+                        <?php echo e($tickets->links()); ?>
+
                     </div>
                 <?php endif; ?>
-            </section>
-        </div>
-    </main>
-
-    <footer class="bg-white border-t border-blue-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6">
-            <p class="text-center text-sm text-slate-500">&copy; <?php echo e(date('Y')); ?> Sistema de Tickets TI. Todos los derechos reservados.</p>
-        </div>
-    </footer>
-
-    <div id="cancelModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="w-full max-w-md transform overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl">
-            <div class="px-6 py-6">
-                <div class="mb-4 flex items-center gap-3">
-                    <span class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.64 5.64l12.72 12.72M7.757 17.657A8 8 0 017.757 6.343 8 8 0 0116.243 6.343a8 8 0 010 11.314 8 8 0 01-8.486 0z" />
-                        </svg>
-                    </span>
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmar cancelación</p>
-                        <h3 class="text-lg font-bold text-slate-900">Cancelar ticket</h3>
-                    </div>
-                </div>
-                <p id="cancelModalMessage" class="text-sm leading-relaxed text-slate-600"></p>
-            </div>
-            <div class="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
-                <button type="button" id="cancelModalClose" class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Cerrar</button>
-                <button type="button" id="cancelModalConfirm" class="rounded-2xl bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-red-600 hover:to-red-700">Aceptar</button>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
-
-    <?php $__env->startPush('scripts'); ?>
-        <?php echo app('Illuminate\Foundation\Vite')('resources/js/Sistemas_IT/tickets-my.js'); ?>
-    <?php $__env->stopPush(); ?>
+</div>
 <?php $__env->stopSection(); ?>
-
-<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/tickets/mis-tickets.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('Sistemas_IT.layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/tickets/mis-tickets.blade.php ENDPATH**/ ?>

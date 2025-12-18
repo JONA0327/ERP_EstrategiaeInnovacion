@@ -10,6 +10,25 @@
                 </h2>
                 <p class="text-xs text-slate-500 mt-1">Gestión del talento y medición de competencias por área.</p>
             </div>
+            
+            
+            <div class="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 uppercase px-2">Periodo:</span>
+                <form method="GET" action="<?php echo e(route('rh.evaluacion.index')); ?>">
+                    <?php if(request('area')): ?>
+                        <input type="hidden" name="area" value="<?php echo e(request('area')); ?>">
+                    <?php endif; ?>
+                    
+                    <select name="periodo" onchange="this.form.submit()" class="text-sm border-none bg-slate-50 rounded-md focus:ring-indigo-500 text-slate-700 font-semibold cursor-pointer py-1 pl-3 pr-8">
+                        <?php $__currentLoopData = $periodos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $periodoOption): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($periodoOption); ?>" <?php echo e($selectedPeriod == $periodoOption ? 'selected' : ''); ?>>
+                                <?php echo e($periodoOption); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </form>
+            </div>
         </div>
      <?php $__env->endSlot(); ?>
 
@@ -21,6 +40,15 @@
 
     <div class="py-12 bg-slate-50 min-h-screen" x-data="{ activeTab: 'Logistica' }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+            
+            
+            <div class="flex items-center justify-end px-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    Evaluando: <?php echo e($selectedPeriod); ?>
+
+                </span>
+            </div>
+
             
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2">
                 <nav class="flex space-x-1 overflow-x-auto custom-scrollbar pb-2 md:pb-0" aria-label="Tabs">
@@ -41,6 +69,7 @@
                 </nav>
             </div>
 
+            
             <div class="space-y-6">
                 <?php $__currentLoopData = $todasLasCategorias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $categoria): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php if(!empty($categoria)): ?>
@@ -85,17 +114,31 @@
 
                                             <div class="relative z-10 flex flex-col h-full">
                                                 <div class="flex items-start justify-between mb-4">
-                                                    <div class="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow-sm">
+                                                    <div class="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow-sm overflow-hidden">
                                                         <?php if(isset($empleado->foto_path) && $empleado->foto_path): ?>
-                                                            <img src="<?php echo e(asset('storage/' . $empleado->foto_path)); ?>" class="w-full h-full object-cover rounded-2xl">
+                                                            <img src="<?php echo e(asset('storage/' . $empleado->foto_path)); ?>" class="w-full h-full object-cover">
                                                         <?php else: ?>
                                                             <?php echo e(substr($empleado->nombre, 0, 1)); ?>
 
                                                         <?php endif; ?>
                                                     </div>
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
-                                                        ACTIVO
-                                                    </span>
+                                                    
+                                                    
+                                                    <?php if(isset($empleado->evaluacion_actual)): ?>
+                                                        <?php if($empleado->evaluacion_actual->edit_count >= 1): ?>
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                FINALIZADA
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                                                                EN REVISIÓN
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100">
+                                                            PENDIENTE
+                                                        </span>
+                                                    <?php endif; ?>
                                                 </div>
 
                                                 <div class="flex-1">
@@ -113,11 +156,29 @@
                                                     </div>
                                                 </div>
 
+                                                
                                                 <div class="mt-5 pt-4 border-t border-slate-100">
-                                                    <a href="<?php echo e(route('rh.evaluacion.show', $empleado->id)); ?>" class="flex items-center justify-center w-full px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
-                                                        Iniciar Evaluación
-                                                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                                    </a>
+                                                    <?php if(isset($empleado->evaluacion_actual)): ?>
+                                                        <?php if($empleado->evaluacion_actual->edit_count >= 1): ?>
+                                                            
+                                                            <a href="<?php echo e(route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" class="flex items-center justify-center w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                                Ver Resultados
+                                                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                            </a>
+                                                        <?php else: ?>
+                                                            
+                                                            <a href="<?php echo e(route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" class="flex items-center justify-center w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                                Editar Evaluación
+                                                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        
+                                                        <a href="<?php echo e(route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" class="flex items-center justify-center w-full px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors duration-200">
+                                                            Iniciar Evaluación
+                                                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                                        </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
