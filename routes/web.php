@@ -46,6 +46,9 @@ Route::middleware(['auth','area.rh'])->group(function () {
     Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
     Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
 
+    Route::post('/recursos-humanos/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
+    Route::put('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
+
     Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
     Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
     });
