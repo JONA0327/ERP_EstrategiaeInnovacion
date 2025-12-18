@@ -1,24 +1,24 @@
-@extends('layouts.erp')
 
-@section('title', 'Evaluación - ' . $empleado->nombre)
 
-@section('content')
+<?php $__env->startSection('title', 'Evaluación - ' . $empleado->nombre); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-slate-50 py-8">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         
         <div class="mb-8">
             <nav class="flex text-sm font-medium text-slate-500 mb-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-2">
-                    <li><a href="{{ route('rh.evaluacion.index') }}" class="hover:text-indigo-600 transition">Evaluaciones</a></li>
+                    <li><a href="<?php echo e(route('rh.evaluacion.index')); ?>" class="hover:text-indigo-600 transition">Evaluaciones</a></li>
                     <li><span class="text-slate-300">/</span></li>
-                    <li><a href="{{ route('rh.evaluacion.index', ['area' => $area ?? 'General']) }}" class="hover:text-indigo-600 transition">{{ $area ?? 'General' }}</a></li>
+                    <li><a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area ?? 'General'])); ?>" class="hover:text-indigo-600 transition"><?php echo e($area ?? 'General'); ?></a></li>
                     <li><span class="text-slate-300">/</span></li>
-                    <li class="text-slate-900 font-semibold">{{ $empleado->nombre }}</li>
+                    <li class="text-slate-900 font-semibold"><?php echo e($empleado->nombre); ?></li>
                 </ol>
             </nav>
             <div class="flex justify-between items-end">
                 <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Evaluación de Competencias</h1>
-                <a href="{{ route('rh.evaluacion.index', ['area' => $area ?? '']) }}" class="hidden md:inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition">
+                <a href="<?php echo e(route('rh.evaluacion.index', ['area' => $area ?? ''])); ?>" class="hidden md:inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     Regresar
                 </a>
@@ -30,32 +30,35 @@
             <div class="w-full lg:w-1/4">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden sticky top-6">
                     <div class="p-4 bg-slate-50 border-b border-slate-200">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo: {{ $area ?? 'General' }}</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo: <?php echo e($area ?? 'General'); ?></span>
                     </div>
                     <div class="max-h-[70vh] overflow-y-auto custom-scrollbar p-2 space-y-1">
-                        @if(isset($empleados) && count($empleados) > 0)
-                            @foreach($empleados as $emp)
-                                <a href="{{ route('rh.evaluacion.show', $emp->id) }}" class="flex items-center p-3 rounded-xl transition-all duration-200 {{ $empleado->id === $emp->id ? 'bg-indigo-50 border border-indigo-100 shadow-sm' : 'hover:bg-slate-50 border border-transparent' }}">
+                        <?php if(isset($empleados) && count($empleados) > 0): ?>
+                            <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <a href="<?php echo e(route('rh.evaluacion.show', $emp->id)); ?>" class="flex items-center p-3 rounded-xl transition-all duration-200 <?php echo e($empleado->id === $emp->id ? 'bg-indigo-50 border border-indigo-100 shadow-sm' : 'hover:bg-slate-50 border border-transparent'); ?>">
                                     <div class="flex-shrink-0">
-                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden {{ $empleado->id === $emp->id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600' }}">
-                                            @if(isset($emp->foto_path) && $emp->foto_path)
-                                                <img src="{{ asset('storage/' . $emp->foto_path) }}" class="w-full h-full object-cover">
-                                            @else
-                                                {{ substr($emp->nombre, 0, 1) }}
-                                            @endif
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden <?php echo e($empleado->id === $emp->id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'); ?>">
+                                            <?php if(isset($emp->foto_path) && $emp->foto_path): ?>
+                                                <img src="<?php echo e(asset('storage/' . $emp->foto_path)); ?>" class="w-full h-full object-cover">
+                                            <?php else: ?>
+                                                <?php echo e(substr($emp->nombre, 0, 1)); ?>
+
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="ml-3 overflow-hidden">
-                                        <p class="text-sm font-semibold truncate {{ $empleado->id === $emp->id ? 'text-indigo-900' : 'text-slate-700' }}">
-                                            {{ $emp->nombre }}
+                                        <p class="text-sm font-semibold truncate <?php echo e($empleado->id === $emp->id ? 'text-indigo-900' : 'text-slate-700'); ?>">
+                                            <?php echo e($emp->nombre); ?>
+
                                         </p>
-                                        <p class="text-[10px] truncate {{ $empleado->id === $emp->id ? 'text-indigo-600' : 'text-slate-500' }}">
-                                            {{ $emp->posicion ?? 'N/A' }}
+                                        <p class="text-[10px] truncate <?php echo e($empleado->id === $emp->id ? 'text-indigo-600' : 'text-slate-500'); ?>">
+                                            <?php echo e($emp->posicion ?? 'N/A'); ?>
+
                                         </p>
                                     </div>
                                 </a>
-                            @endforeach
-                        @endif
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -68,35 +71,39 @@
                     <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
                         <div class="w-24 h-24 rounded-full bg-white p-1 shadow-lg ring-4 ring-indigo-50">
                             <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
-                                @if(isset($empleado->foto_path) && $empleado->foto_path)
-                                    <img src="{{ asset('storage/' . $empleado->foto_path) }}" class="w-full h-full object-cover">
-                                @else
-                                    <span class="text-3xl font-bold text-slate-400">{{ substr($empleado->nombre, 0, 1) }}</span>
-                                @endif
+                                <?php if(isset($empleado->foto_path) && $empleado->foto_path): ?>
+                                    <img src="<?php echo e(asset('storage/' . $empleado->foto_path)); ?>" class="w-full h-full object-cover">
+                                <?php else: ?>
+                                    <span class="text-3xl font-bold text-slate-400"><?php echo e(substr($empleado->nombre, 0, 1)); ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h2 class="text-2xl font-bold text-slate-900">{{ $empleado->nombre }} {{ $empleado->apellido_paterno }}</h2>
+                            <h2 class="text-2xl font-bold text-slate-900"><?php echo e($empleado->nombre); ?> <?php echo e($empleado->apellido_paterno); ?></h2>
                             <div class="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
                                 <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200">
-                                    {{ $empleado->posicion ?? 'Puesto no asignado' }}
+                                    <?php echo e($empleado->posicion ?? 'Puesto no asignado'); ?>
+
                                 </span>
                                 <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
-                                    ID: {{ $empleado->id_empleado ?? 'N/D' }}
+                                    ID: <?php echo e($empleado->id_empleado ?? 'N/D'); ?>
+
                                 </span>
                             </div>
                             
                             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-600">
                                 <div class="flex items-center justify-center md:justify-start gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 00-2-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                    {{ $empleado->correo ?? 'Sin correo' }}
+                                    <?php echo e($empleado->correo ?? 'Sin correo'); ?>
+
                                 </div>
-                                @if(isset($empleado->fecha_ingreso))
+                                <?php if(isset($empleado->fecha_ingreso)): ?>
                                 <div class="flex items-center justify-center md:justify-start gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    Ingreso: {{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}
+                                    Ingreso: <?php echo e(\Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y')); ?>
+
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -106,37 +113,38 @@
                     <div class="bg-slate-900 px-8 py-5 flex justify-between items-center">
                         <div>
                             <h3 class="text-lg font-bold text-white">Formulario de Evaluación</h3>
-                            <p class="text-indigo-200 text-xs mt-0.5">Criterios para: {{ $area ?? 'General' }}</p>
+                            <p class="text-indigo-200 text-xs mt-0.5">Criterios para: <?php echo e($area ?? 'General'); ?></p>
                         </div>
                     </div>
 
                     <div class="p-8">
                         <form action="#" method="POST"> 
-                            @csrf
-                            <input type="hidden" name="empleado_id" value="{{ $empleado->id }}">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="empleado_id" value="<?php echo e($empleado->id); ?>">
 
-                            @if(isset($criterios) && $criterios->isNotEmpty())
+                            <?php if(isset($criterios) && $criterios->isNotEmpty()): ?>
                                 <div class="space-y-12">
-                                    @foreach($criterios as $criterio)
+                                    <?php $__currentLoopData = $criterios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $criterio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <div class="relative" x-data="{ selected: null }">
                                             
                                             <div class="flex items-start justify-between mb-4">
                                                 <div class="flex gap-4">
                                                     <span class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm border border-slate-200">
-                                                        {{ $loop->iteration }}
+                                                        <?php echo e($loop->iteration); ?>
+
                                                     </span>
                                                     <div>
-                                                        <h4 class="text-base font-bold text-slate-800 leading-tight">{{ $criterio->criterio }}</h4>
-                                                        <p class="text-sm text-slate-500 mt-1 leading-relaxed">{{ $criterio->descripcion }}</p>
+                                                        <h4 class="text-base font-bold text-slate-800 leading-tight"><?php echo e($criterio->criterio); ?></h4>
+                                                        <p class="text-sm text-slate-500 mt-1 leading-relaxed"><?php echo e($criterio->descripcion); ?></p>
                                                     </div>
                                                 </div>
                                                 <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                                    Peso: {{ $criterio->peso }}%
+                                                    Peso: <?php echo e($criterio->peso); ?>%
                                                 </span>
                                             </div>
 
                                             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
-                                                @php
+                                                <?php
                                                     $opciones = [
                                                         [
                                                             'val' => 100, 
@@ -184,50 +192,51 @@
                                                             'check_color' => 'text-red-600'
                                                         ]
                                                     ];
-                                                @endphp
+                                                ?>
 
-                                                @foreach($opciones as $op)
+                                                <?php $__currentLoopData = $opciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $op): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                     <label class="cursor-pointer group relative">
-                                                        <input type="radio" name="calificacion[{{ $criterio->id }}]" value="{{ $op['val'] }}" class="peer sr-only" x-model="selected">
-                                                        <div class="h-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white transition-all duration-200 peer-checked:shadow-md {{ $op['container_classes'] }}">
-                                                            <div class="mb-1 text-slate-300 transition-colors {{ $op['icon_classes'] }}">
-                                                                <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $op['icon'] }}"></path></svg>
+                                                        <input type="radio" name="calificacion[<?php echo e($criterio->id); ?>]" value="<?php echo e($op['val']); ?>" class="peer sr-only" x-model="selected">
+                                                        <div class="h-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white transition-all duration-200 peer-checked:shadow-md <?php echo e($op['container_classes']); ?>">
+                                                            <div class="mb-1 text-slate-300 transition-colors <?php echo e($op['icon_classes']); ?>">
+                                                                <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo e($op['icon']); ?>"></path></svg>
                                                             </div>
-                                                            <span class="text-[10px] font-bold text-center text-slate-500 leading-tight block {{ $op['label_classes'] }}">
-                                                                {{ $op['label'] }}
+                                                            <span class="text-[10px] font-bold text-center text-slate-500 leading-tight block <?php echo e($op['label_classes']); ?>">
+                                                                <?php echo e($op['label']); ?>
+
                                                             </span>
                                                         </div>
                                                         
-                                                        <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity {{ $op['check_color'] }}">
+                                                        <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity <?php echo e($op['check_color']); ?>">
                                                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                                         </div>
                                                     </label>
-                                                @endforeach
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                             </div>
 
                                             <div class="mt-3 pl-12">
-                                                <input type="text" name="observaciones[{{ $criterio->id }}]" class="w-full text-sm border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 bg-transparent placeholder-slate-400 transition-colors" placeholder="Añadir comentario (opcional)...">
+                                                <input type="text" name="observaciones[<?php echo e($criterio->id); ?>]" class="w-full text-sm border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 bg-transparent placeholder-slate-400 transition-colors" placeholder="Añadir comentario (opcional)...">
                                             </div>
                                         </div>
-                                        @if(!$loop->last) <hr class="border-slate-100"> @endif
-                                    @endforeach
+                                        <?php if(!$loop->last): ?> <hr class="border-slate-100"> <?php endif; ?>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </div>
 
                                 <div class="mt-12 flex justify-end items-center gap-4 pt-6 border-t border-slate-200">
-                                    <a href="{{ route('rh.evaluacion.index') }}" class="px-6 py-3 text-sm font-bold text-slate-600 hover:text-slate-800 transition">Cancelar</a>
+                                    <a href="<?php echo e(route('rh.evaluacion.index')); ?>" class="px-6 py-3 text-sm font-bold text-slate-600 hover:text-slate-800 transition">Cancelar</a>
                                     <button type="submit" class="inline-flex items-center px-8 py-3 bg-indigo-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5">
                                         Guardar Resultados
                                     </button>
                                 </div>
-                            @else
+                            <?php else: ?>
                                 <div class="text-center py-16">
                                     <div class="inline-block p-4 rounded-full bg-slate-50 mb-4">
                                         <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                     </div>
                                     <h3 class="text-lg font-medium text-slate-900">Sin Criterios</h3>
-                                    <p class="text-slate-500 mt-2">No se han definido preguntas para el área de <span class="font-bold">{{ $area }}</span>.</p>
+                                    <p class="text-slate-500 mt-2">No se han definido preguntas para el área de <span class="font-bold"><?php echo e($area); ?></span>.</p>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>
@@ -236,4 +245,5 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/Recursos_Humanos/evaluacion/show.blade.php ENDPATH**/ ?>

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Empleado extends Model
 {
     use HasFactory;
+
+    protected $table = 'empleados';
 
     protected $fillable = [
         'user_id',
@@ -17,21 +17,29 @@ class Empleado extends Model
         'correo',
         'area',
         'id_empleado',
+        'es_activo',
         'subdepartamento_id',
         'posicion',
         'telefono',
         'direccion',
         'correo_personal',
         'foto_path',
+        'supervisor_id', // <--- Nuevo campo agregado
     ];
 
-    public function subdepartamento()
+    /**
+     * Relación: Un empleado tiene un supervisor (Jefe).
+     */
+    public function supervisor()
     {
-        return $this->belongsTo(Subdepartamento::class);
+        return $this->belongsTo(Empleado::class, 'supervisor_id');
     }
 
-    public function user(): BelongsTo
+    /**
+     * Relación: Un empleado (Jefe) tiene muchos subordinados.
+     */
+    public function subordinados()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Empleado::class, 'supervisor_id');
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Sistemas_IT\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Sistemas_IT\TicketController;
 use App\Http\Controllers\Sistemas_IT\MaintenanceController;
+use App\Http\Controllers\JerarquiaController;
 use App\Http\Controllers\Users\UsersController;
 use App\Http\Controllers\RH\ExpedienteController;
 use App\Http\Controllers\RH\RelojChecadorImportController; // Nuevo flujo con barra de progreso
@@ -43,7 +44,11 @@ Route::middleware(['auth','area.rh'])->group(function () {
         Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
     });
     Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
-});
+    Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+
+    Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
+    Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
+    });
 
 Route::middleware(['auth','area.logistica'])->group(function () {
     Route::get('/logistica', function () { return view('Logistica.index'); })->name('logistica.index');
@@ -262,6 +267,7 @@ Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name
     Route::delete('/maintenance/slots/destroy-past', [MaintenanceController::class, 'destroyPastSlots'])->name('maintenance.slots.destroy-past');
     // Inventory removed from admin panel
 
+    
     // Se mantienen solo tickets y usuarios en el panel admin
 
     // Gestión de usuarios (separado del dominio Sistemas)
@@ -299,27 +305,35 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// En routes/web.php
+
 Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group(function () {
     
-    // Vista principal y tabla
-    Route::get('/recursos-humanos/reloj', [RelojChecadorImportController::class, 'index'])
-        ->name('reloj.index');
+    // Rutas del Reloj Checador (Unificadas con prefijo 'rh.')
+    Route::prefix('recursos-humanos/reloj')->name('rh.reloj.')->group(function () {
+        
+        // Vista principal
+        Route::get('/', [RelojChecadorImportController::class, 'index'])
+            ->name('index'); // Genera: rh.reloj.index
 
-    // Proceso de carga (POST)
-    Route::post('/recursos-humanos/reloj/start', [RelojChecadorImportController::class, 'start'])
-        ->name('reloj.start');
+        // Procesos de Carga e Importación
+        Route::post('/start', [RelojChecadorImportController::class, 'start'])
+            ->name('start'); // Genera: rh.reloj.start
+            
+        Route::get('/progress/{key}', [RelojChecadorImportController::class, 'progress'])
+            ->name('progress'); // Genera: rh.reloj.progress
 
-    // Barra de progreso (Polling)
-    Route::get('/recursos-humanos/reloj/progress/{key}', [RelojChecadorImportController::class, 'progress'])
-        ->name('reloj.progress');
+        // Gestión de Datos
+        Route::delete('/clear', [RelojChecadorImportController::class, 'clear'])
+            ->name('clear'); // Genera: rh.reloj.clear  <-- ESTA ES LA QUE FALTABA
 
-    Route::delete('/recursos-humanos/reloj/clear', [RelojChecadorImportController::class, 'clear'])
-        ->name('reloj.clear');
+        Route::put('/update/{id}', [RelojChecadorImportController::class, 'update'])
+            ->name('update'); // Genera: rh.reloj.update
 
-    Route::put('/recursos-humanos/reloj/update/{id}', [RelojChecadorImportController::class, 'update'])
-        ->name('reloj.update');
-    Route::post('/recursos-humanos/reloj/store', [RelojChecadorImportController::class, 'store'])
-        ->name('reloj.store');
+        Route::post('/store', [RelojChecadorImportController::class, 'store'])
+            ->name('store'); // Genera: rh.reloj.store
+    });
+
 });
 
 // Ayuda pública removida

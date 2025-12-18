@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
 
             // 3. Catálogos y Configuración
             IncotermSeeder::class,
+            LogisticaEvaluacionSeeder::class,
 
             
             // 4. Inventarios

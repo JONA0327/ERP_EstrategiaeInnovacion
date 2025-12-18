@@ -4,19 +4,58 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <title><?php echo $__env->yieldContent('title','ERP E&I'); ?></title>
+
+    <title><?php echo $__env->yieldContent('title', 'ERP Corporativo'); ?> | Estrategia e Innovación</title>
+
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css','resources/js/app.js']); ?>
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+    
     <?php echo $__env->yieldPushContent('styles'); ?>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100">
-    <?php echo $__env->make('layouts.erp-navigation', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-    <main>
-        <?php echo $__env->yieldContent('content'); ?>
-    </main>
+<body class="font-sans antialiased bg-slate-50 text-slate-600">
+    
+    <div class="min-h-screen flex flex-col">
+        <?php echo $__env->make('layouts.erp-navigation', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+        <main class="flex-grow">
+            <div class="py-8">
+                <?php if(session('success') || session('error')): ?>
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
+                        <?php if(session('success')): ?>
+                            <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 flex items-center gap-3 text-emerald-700 shadow-sm" role="alert">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="font-medium text-sm"><?php echo e(session('success')); ?></span>
+                            </div>
+                        <?php endif; ?>
+                        <?php if(session('error')): ?>
+                            <div class="rounded-xl bg-red-50 border border-red-200 p-4 flex items-center gap-3 text-red-700 shadow-sm" role="alert">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="font-medium text-sm"><?php echo e(session('error')); ?></span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php echo $__env->yieldContent('content'); ?>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t border-slate-200 mt-auto py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-center md:text-left">
+                    <p class="text-xs text-slate-400">
+                        &copy; <?php echo e(date('Y')); ?> Estrategia e Innovación. <span class="hidden sm:inline">Todos los derechos reservados.</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+                    <img src="<?php echo e(asset('images/logo-ei.png')); ?>" alt="E&I" class="h-6 w-auto">
+                </div>
+            </div>
+        </footer>
+    </div>
+
     <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
-</html>
-<?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/layouts/erp.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/layouts/erp.blade.php ENDPATH**/ ?>
