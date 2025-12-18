@@ -589,4 +589,4 @@
         </div>
         <?php endif; ?>
     </div>
-</nav><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/layouts/erp-navigation.blade.php ENDPATH**/ ?>
+</nav><?php /**PATH C:\Users\Sistemas\Downloads\PROYECTOS EI\ERP_EstrategiaeInnovacion\resources\views/layouts/erp-navigation.blade.php ENDPATH**/ ?>

@@ -153,6 +153,17 @@ class OperacionLogisticaController extends Controller
             ->where('activo', true)
             ->orderBy('orden')
             ->get();
+        
+        // DEBUG: Log de campos personalizados cargados
+        \Log::info('Campos personalizados cargados:', [
+            'total' => $camposPersonalizados->count(),
+            'campos' => $camposPersonalizados->map(fn($c) => [
+                'id' => $c->id,
+                'nombre' => $c->nombre,
+                'activo' => $c->activo,
+                'ejecutivos' => $c->ejecutivos->pluck('id')->toArray()
+            ])->toArray()
+        ]);
 
         // Cargar columnas opcionales visibles para el ejecutivo actual
         $columnasOpcionalesVisibles = [];
@@ -176,6 +187,15 @@ class OperacionLogisticaController extends Controller
             $columnasPredeterminadasOcultas = [];
             $columnasOrdenadas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getColumnasOrdenadasParaEjecutivo(0, $idiomaColumnas);
         }
+        
+        // DEBUG: Log de columnas ordenadas que se enviarán al frontend
+        \Log::info('Columnas ordenadas para empleado:', [
+            'empleado_id' => $empleadoParaColumnas ? $empleadoParaColumnas->id : 'admin',
+            'es_admin' => $esAdmin,
+            'modo_preview' => $modoPreview,
+            'total_columnas' => count($columnasOrdenadas),
+            'columnas' => $columnasOrdenadas
+        ]);
 
         // Obtener nombres de columnas según idioma configurado
         $nombresColumnas = \App\Models\Logistica\ColumnaVisibleEjecutivo::getTodasLasColumnasConNombres($idiomaColumnas);
@@ -1539,7 +1559,13 @@ class OperacionLogisticaController extends Controller
 
         $request->validate([
             'archivo_excel' => 'required|mimes:xlsx,xls,csv|max:10240', // max 10MB
-            'ejecutivo_id' => 'nullable|exists:empleados,id',
+            'ejecutivo_id' => 'required|exists:empleados,id',
+        ], [
+            'ejecutivo_id.required' => 'Debe seleccionar un ejecutivo para asignar las columnas personalizadas',
+            'ejecutivo_id.exists' => 'El ejecutivo seleccionado no existe',
+            'archivo_excel.required' => 'Debe seleccionar un archivo Excel',
+            'archivo_excel.mimes' => 'El archivo debe ser de tipo Excel (.xlsx, .xls) o CSV',
+            'archivo_excel.max' => 'El archivo no debe pesar más de 10MB'
         ]);
 
         try {

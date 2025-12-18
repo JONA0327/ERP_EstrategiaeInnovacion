@@ -58,4 +58,4 @@
 
     <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
-</html><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/layouts/erp.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\Users\Sistemas\Downloads\PROYECTOS EI\ERP_EstrategiaeInnovacion\resources\views/layouts/erp.blade.php ENDPATH**/ ?>

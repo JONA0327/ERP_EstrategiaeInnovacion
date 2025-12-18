@@ -3,8 +3,11 @@
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <!-- Botón regresar -->
-    <a href="{{ route('logistica.catalogos') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors">
-        <span class="mr-2">&larr;</span> Regresar al Catálogo
+    <a href="{{ route('logistica.catalogos') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-sm transition-all duration-200 mb-4">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Regresar al Catálogo
     </a>
     
     <div class="bg-white rounded-lg shadow-md">

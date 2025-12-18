@@ -3,6 +3,7 @@
 // Variables globales
 let transportes = window.transportes || {};
 let operacionActualId = null;
+let ordenColumnasYaAplicado = false; // Flag para evitar aplicar el orden múltiples veces
 
 // ========================================
 // SISTEMA DE REORDENAMIENTO DE COLUMNAS EN TABLA
@@ -13,10 +14,19 @@ let operacionActualId = null;
  * Lee el orden desde window.columnasOrdenadasConfig (desde el servidor/BD)
  */
 window.aplicarOrdenColumnasGuardado = function() {
+    // Evitar aplicar el orden múltiples veces
+    if (ordenColumnasYaAplicado) {
+        console.log('El orden de columnas ya fue aplicado, omitiendo...');
+        return;
+    }
     // Obtener orden guardado desde el servidor (pasado por PHP)
     let ordenGuardado = window.columnasOrdenadasConfig || [];
     
+    console.log('========== DEBUG ORDEN COLUMNAS ==========');
     console.log('Orden de columnas desde BD:', ordenGuardado);
+    console.log('Total de columnas en config:', ordenGuardado.length);
+    console.log('Columnas personalizadas:', ordenGuardado.filter(c => c.personalizado));
+    console.log('=========================================');
     
     if (!ordenGuardado.length) {
         console.log('No hay orden de columnas guardado en BD para aplicar');
@@ -70,6 +80,11 @@ window.aplicarOrdenColumnasGuardado = function() {
     });
     
     console.log('Mapa de índices:', mapaIndices);
+    console.log('Columnas en tabla vs columnas en config:');
+    ordenGuardado.forEach(col => {
+        const existe = mapaIndices.hasOwnProperty(col.columna);
+        console.log(`- ${col.columna}: ${existe ? 'SI está en tabla' : 'NO está en tabla'} (personalizado: ${col.personalizado})`);
+    });
     
     // Crear el nuevo orden de índices
     const nuevoOrden = [];
@@ -120,6 +135,9 @@ window.aplicarOrdenColumnasGuardado = function() {
     });
     
     console.log('Orden de columnas aplicado exitosamente desde BD');
+    
+    // Marcar que el orden ya fue aplicado
+    ordenColumnasYaAplicado = true;
     
     // Reinicializar drag & drop después de reordenar
     setTimeout(() => {
@@ -569,10 +587,9 @@ function mostrarNotificacionExito() {
     }
 }
 
-// Inicializar drag & drop al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarDragDropColumnas();
-});
+// NOTA: Ya no inicializamos drag & drop aquí porque se inicializa automáticamente
+// después de aplicar el orden de columnas en aplicarOrdenColumnasGuardado()
+// Esto evita conflictos y duplicación de eventos
 
 // ========================================
 // SISTEMA DE FILTROS
@@ -4149,10 +4166,21 @@ window.aplicarCambiosPrevisializacion = async function() {
     }
 
     try {
+        // Obtener el empleado actual para asignarlo a los campos activados
+        const empleadoActual = window.empleadoIdActual;
+        
         // Aplicar cambios uno por uno
         for (const cambio of cambios) {
             const campo = camposPersonalizadosData.find(c => c.id === cambio.id);
             if (!campo) continue;
+
+            // Si el campo se está activando y hay un empleado actual,
+            // asegurarse de que el empleado esté en la lista de ejecutivos asignados
+            let ejecutivosAsignados = campo.ejecutivos?.map(e => e.id) || [];
+            if (cambio.activo && empleadoActual && !ejecutivosAsignados.includes(empleadoActual)) {
+                ejecutivosAsignados.push(empleadoActual);
+                console.log(`Asignando campo "${campo.nombre}" al empleado ${empleadoActual}`);
+            }
 
             const response = await fetch(`/logistica/campos-personalizados/${cambio.id}`, {
                 method: 'PUT',
@@ -4166,7 +4194,7 @@ window.aplicarCambiosPrevisializacion = async function() {
                     activo: cambio.activo,
                     requerido: cambio.requerido,
                     mostrar_despues_de: campo.mostrar_despues_de || '',
-                    ejecutivos: campo.ejecutivos?.map(e => e.id) || []
+                    ejecutivos: ejecutivosAsignados
                 })
             });
 
@@ -4175,9 +4203,13 @@ window.aplicarCambiosPrevisializacion = async function() {
             }
         }
 
-        mostrarAlerta('Configuración aplicada exitosamente', 'success');
+        mostrarAlerta('Configuración aplicada exitosamente. Recargando...', 'success');
         cerrarPrevisualizacionCampos();
-        cargarCamposPersonalizados();
+        
+        // Recargar la página después de 1 segundo para mostrar los cambios
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
         
     } catch (error) {
         console.error('Error:', error);
