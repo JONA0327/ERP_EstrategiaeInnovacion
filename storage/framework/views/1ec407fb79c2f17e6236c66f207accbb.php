@@ -1,8 +1,6 @@
-@extends(request()->get('from') === 'tickets' ? 'Sistemas_IT.layouts.master' : 'layouts.erp')
+<?php $__env->startSection('title', request()->get('from') === 'tickets' ? 'Inicio - Sistema de Tickets' : 'SISTEMA ERP ESTRATEGIA E INNOVACIÓN'); ?>
 
-@section('title', request()->get('from') === 'tickets' ? 'Inicio - Sistema de Tickets' : 'SISTEMA ERP ESTRATEGIA E INNOVACIÓN')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="relative overflow-hidden bg-slate-50 min-h-screen">
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-50/50 blur-3xl rounded-full"></div>
@@ -11,37 +9,37 @@
 
         <div class="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
             
-            @if(session('success'))
+            <?php if(session('success')): ?>
                 <div class="bg-white border-l-4 border-emerald-500 rounded-xl shadow-sm p-4 mb-8 mx-auto max-w-4xl flex items-center gap-4 animate-fade-in-up">
                     <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <p class="text-sm font-medium text-emerald-800">{{ session('success') }}</p>
+                    <p class="text-sm font-medium text-emerald-800"><?php echo e(session('success')); ?></p>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            @if(session('info'))
+            <?php if(session('info')): ?>
                 <div class="bg-white border-l-4 border-indigo-500 rounded-xl shadow-sm p-4 mb-8 mx-auto max-w-4xl flex items-center gap-4 animate-fade-in-up">
                     <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <p class="text-sm font-medium text-indigo-900">{{ session('info') }}</p>
+                    <p class="text-sm font-medium text-indigo-900"><?php echo e(session('info')); ?></p>
                 </div>
-            @endif
+            <?php endif; ?>
 
             <div class="text-center mb-12">
-                @if(request()->get('from') === 'tickets')
+                <?php if(request()->get('from') === 'tickets'): ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4 border border-indigo-100">Soporte Técnico</span>
                     <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight sm:text-5xl mb-4">Sistema de Tickets</h1>
                     <p class="mx-auto max-w-2xl text-lg text-slate-500">Portal de atención y soporte para Estrategia e Innovación.</p>
-                @else
+                <?php else: ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">Plataforma Corporativa</span>
                     <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight sm:text-5xl mb-4">ERP Estrategia e Innovación</h1>
                     <p class="mx-auto max-w-2xl text-lg text-slate-500">Gestión integral de recursos, logística y capital humano.</p>
-                @endif
+                <?php endif; ?>
             </div>
 
-            @guest
+            <?php if(auth()->guard()->guest()): ?>
                 <section class="max-w-md mx-auto">
                     <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden relative group hover:shadow-2xl transition-all duration-300">
                         <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
@@ -59,10 +57,10 @@
                             </p>
 
                             <div class="space-y-4">
-                                <a href="{{ route('login') }}" class="flex items-center justify-center w-full px-6 py-3.5 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5">
+                                <a href="<?php echo e(route('login')); ?>" class="flex items-center justify-center w-full px-6 py-3.5 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5">
                                     Iniciar Sesión
                                 </a>
-                                <a href="{{ route('register') }}" class="flex items-center justify-center w-full px-6 py-3.5 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 focus:ring-4 focus:ring-slate-100 transition-all">
+                                <a href="<?php echo e(route('register')); ?>" class="flex items-center justify-center w-full px-6 py-3.5 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 focus:ring-4 focus:ring-slate-100 transition-all">
                                     Solicitar Acceso
                                 </a>
                             </div>
@@ -79,11 +77,11 @@
                         </a>
                     </div>
                 </section>
-            @endguest
+            <?php endif; ?>
 
-            @auth
+            <?php if(auth()->guard()->check()): ?>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    @php
+                    <?php
                         $cards = [
                             [
                                 'title' => 'Soporte de Software',
@@ -110,39 +108,41 @@
                                 'color' => 'slate'
                             ],
                         ];
-                    @endphp
+                    ?>
 
-                    @foreach($cards as $card)
-                        <a href="{{ $card['route'] }}" class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
-                            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-{{ $card['color'] }}-600">
-                                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $card['icon'] }}"></path></svg>
+                    <?php $__currentLoopData = $cards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $card): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <a href="<?php echo e($card['route']); ?>" class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-<?php echo e($card['color']); ?>-600">
+                                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo e($card['icon']); ?>"></path></svg>
                             </div>
 
                             <div class="relative z-10 flex-1">
-                                <div class="w-14 h-14 rounded-2xl bg-{{ $card['color'] }}-50 text-{{ $card['color'] }}-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-{{ $card['color'] }}-100">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $card['icon'] }}"></path></svg>
+                                <div class="w-14 h-14 rounded-2xl bg-<?php echo e($card['color']); ?>-50 text-<?php echo e($card['color']); ?>-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-<?php echo e($card['color']); ?>-100">
+                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo e($card['icon']); ?>"></path></svg>
                                 </div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-{{ $card['color'] }}-600 transition-colors">
-                                    {{ $card['title'] }}
+                                <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-<?php echo e($card['color']); ?>-600 transition-colors">
+                                    <?php echo e($card['title']); ?>
+
                                 </h3>
                                 <p class="text-slate-500 text-sm leading-relaxed mb-6">
-                                    {{ $card['desc'] }}
+                                    <?php echo e($card['desc']); ?>
+
                                 </p>
                             </div>
                             
-                            <div class="relative z-10 mt-auto pt-4 border-t border-slate-100 flex items-center text-{{ $card['color'] }}-600 font-bold text-sm">
-                                {{ $card['cta'] }} <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                            <div class="relative z-10 mt-auto pt-4 border-t border-slate-100 flex items-center text-<?php echo e($card['color']); ?>-600 font-bold text-sm">
+                                <?php echo e($card['cta']); ?> <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                             </div>
                         </a>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
 
-                {{-- ------------------------------------------------------------- --}}
-                {{-- NUEVO BLOQUE: ACCESO A EVALUACIÓN DE DESEMPEÑO --}}
-                {{-- ------------------------------------------------------------- --}}
+                
+                
+                
                 <div class="mt-12 max-w-4xl mx-auto">
                     <div class="bg-white rounded-3xl p-1 shadow-sm border border-slate-200">
-                        <a href="{{ route('rh.evaluacion.index') }}" class="group relative flex items-center justify-between p-6 bg-slate-50 rounded-[1.3rem] hover:bg-slate-100 transition-all duration-300">
+                        <a href="<?php echo e(route('rh.evaluacion.index')); ?>" class="group relative flex items-center justify-between p-6 bg-slate-50 rounded-[1.3rem] hover:bg-slate-100 transition-all duration-300">
                             
                             <div class="flex items-center gap-5">
                                 <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -169,7 +169,7 @@
                         </a>
                     </div>
                 </div>
-                {{-- FIN NUEVO BLOQUE --}}
+                
 
                 <div class="mt-12 text-center">
                     <p class="text-slate-400 text-sm mb-4">¿Necesitas asistencia inmediata?</p>
@@ -178,7 +178,7 @@
                         Contactar Soporte IT
                     </a>
                 </div>
-            @endauth
+            <?php endif; ?>
 
         </div>
     </main>
@@ -186,9 +186,10 @@
     <footer class="bg-white border-t border-slate-100 py-8">
         <div class="max-w-7xl mx-auto px-4 text-center">
             <p class="text-slate-400 text-xs">
-                &copy; {{ date('Y') }} Estrategia e Innovación. Todos los derechos reservados. <br>
+                &copy; <?php echo e(date('Y')); ?> Estrategia e Innovación. Todos los derechos reservados. <br>
                 <span class="text-slate-300">v2.0.0 Enterprise Edition</span>
             </p>
         </div>
     </footer>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make(request()->get('from') === 'tickets' ? 'Sistemas_IT.layouts.master' : 'layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/welcome.blade.php ENDPATH**/ ?>

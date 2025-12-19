@@ -43,14 +43,14 @@ Route::middleware(['auth','area.rh'])->group(function () {
         Route::put('/{empleado}', [ExpedienteController::class, 'update'])->name('update');
         Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
     });
-    Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
-    Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
-
-    Route::post('/recursos-humanos/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
-    Route::put('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
-
-    Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
-    Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
+    //Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
+    //Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+//
+    //Route::post('/recursos-humanos/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
+    //Route::put('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
+//
+    //Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
+    //Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
     });
 
 Route::middleware(['auth','area.logistica'])->group(function () {
@@ -336,6 +336,26 @@ Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group
         Route::post('/store', [RelojChecadorImportController::class, 'store'])
             ->name('store'); // Genera: rh.reloj.store
     });
+
+});
+
+Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
+    
+    // Listado principal (Detecta si eres jefe o empleado)
+    Route::get('/evaluacion', [EvaluacionController::class, 'index'])
+        ->name('rh.evaluacion.index');
+
+    // Ver/Realizar evaluación específica
+    Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])
+        ->name('rh.evaluacion.show');
+
+    // Guardar evaluación (Crear)
+    Route::post('/evaluacion', [EvaluacionController::class, 'store'])
+        ->name('rh.evaluacion.store');
+
+    // Actualizar evaluación (Editar)
+    Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])
+        ->name('rh.evaluacion.update');
 
 });
 

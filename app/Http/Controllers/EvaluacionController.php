@@ -19,23 +19,49 @@ class EvaluacionController extends Controller
     private function isEvaluationWindowOpen()
     {
         $now = Carbon::now();
+        // Ventana de Junio (21 al 30) y Diciembre (22 al 31)
+        return ($now->month == 6 && $now->day >= 21 && $now->day <= 30) || 
+               ($now->month == 12 && $now->day >= 22 && $now->day <= 31);
         
-        // Ventana de Junio (30 días): del 21 al 30
-        $isJuneWindow = ($now->month == 6 && $now->day >= 21 && $now->day <= 30);
-        
-        // Ventana de Diciembre (31 días): del 22 al 31
-        $isDecWindow = ($now->month == 12 && $now->day >= 22 && $now->day <= 31);
+        // return true; // Descomentar para pruebas
+    }
 
-        // Retorna TRUE si estamos en fecha, FALSE si está cerrado
-        return $isJuneWindow || $isDecWindow; 
-        
-        // --- PARA TUS PRUEBAS (Descomenta la siguiente línea para simular que está abierto) ---
-        // return true; 
+    /**
+     * Verifica si el usuario logueado tiene permiso para evaluar al objetivo.
+     * Regla: Solo puedo evaluar a mis subordinados o a mi supervisor directo.
+     */
+    private function canEvaluate($targetId)
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+
+        // Buscamos el perfil de empleado del usuario logueado
+        // Asumiendo que el User y Empleado se vinculan por correo
+        $me = Empleado::where('correo', $user->email)->first(); 
+
+        // Si soy admin o de RH, podría tener permiso total (Opcional)
+        // if ($user->hasRole('admin') || str_contains($me->area, 'Recursos Humanos')) return true;
+
+        if (!$me) return false; // Si no tiene perfil de empleado, no evalúa
+
+        $target = Empleado::find($targetId);
+        if (!$target) return false;
+
+        // 1. Es mi subordinado (Yo soy su supervisor)
+        $isSubordinate = ($target->supervisor_id == $me->id);
+
+        // 2. Es mi supervisor (Él es mi supervisor)
+        $isBoss = ($me->supervisor_id == $target->id);
+
+        // 3. Soy yo mismo (Autoevaluación - Opcional, si quisieras permitirlo)
+        // $isMe = ($me->id == $target->id);
+
+        return $isSubordinate || $isBoss;
     }
 
     public function index(Request $request)
     {
-        // 1. Periodos
+        // 1. Lógica de Periodos
         $currentYear = Carbon::now()->year;
         $currentMonth = Carbon::now()->month;
         $defaultPeriod = ($currentMonth <= 6) ? "$currentYear | Enero - Junio" : "$currentYear | Julio - Diciembre";
@@ -49,18 +75,34 @@ class EvaluacionController extends Controller
             ($currentYear - 1) . " | Enero - Junio",
         ];
 
-        // 2. Verificar Ventana de Tiempo
         $isWindowOpen = $this->isEvaluationWindowOpen();
 
-        // 3. Filtros y Empleados
-        $areas = Empleado::select('posicion')->distinct()->pluck('posicion');
+        // 2. Filtrado por Jerarquía
+        $user = Auth::user();
+        $me = Empleado::where('correo', $user->email)->first();
+
         $query = Empleado::query();
 
+        if ($me) {
+            // Solo mostrar: Mis subordinados O Mi jefe
+            $query->where(function($q) use ($me) {
+                $q->where('supervisor_id', $me->id)   // Mis subordinados
+                  ->orWhere('id', $me->supervisor_id); // Mi jefe
+            });
+        } else {
+            // Si el usuario no es empleado (ej. Super Admin genérico), quizás ver todos o ninguno.
+            // Aquí dejamos vacío para que no vea nada por seguridad, o todos si es admin.
+             if (!$user->hasRole('admin')) { // Asumiendo Spatie o similar
+                 $query->where('id', 0); // No mostrar nada
+             }
+        }
+
+        // 3. Filtros de Búsqueda (Visuales)
         if ($request->has('area') && $request->area !== 'Todos') {
             $query->where('posicion', 'LIKE', '%' . $request->area . '%');
         }
 
-        // Cargamos empleados junto con su evaluación del periodo seleccionado
+        // Ejecutar consulta y cargar estado de evaluación
         $empleados = $query->get()->map(function($empleado) use ($selectedPeriod) {
             $empleado->evaluacion_actual = Evaluacion::where('empleado_id', $empleado->id)
                 ->where('periodo', $selectedPeriod)
@@ -68,15 +110,24 @@ class EvaluacionController extends Controller
             return $empleado;
         });
 
+        // Obtener áreas solo de los empleados visibles
+        $areas = $empleados->pluck('posicion')->unique();
+
         return view('Recursos_Humanos.evaluacion.index', compact('areas', 'empleados', 'periodos', 'selectedPeriod', 'isWindowOpen'));
     }
 
     public function show(Request $request, $id)
     {
+        // 1. Validar Permisos de Jerarquía
+        if (!$this->canEvaluate($id)) {
+            return redirect()->route('rh.evaluacion.index')
+                ->with('error', 'No tienes permiso para evaluar a este empleado.');
+        }
+
         $empleado = Empleado::findOrFail($id);
         $periodo = $request->query('periodo');
 
-        // Buscar Evaluación Existente
+        // ... (Carga de datos de evaluación igual que antes) ...
         $evaluacionExistente = Evaluacion::with('detalles')
             ->where('empleado_id', $id)
             ->where('periodo', $periodo)
@@ -91,67 +142,31 @@ class EvaluacionController extends Controller
             }
         }
 
-        // Determinar Área de Evaluación
+        // Lógica de Áreas para Criterios
         $puesto = $empleado->posicion;
         $areaEvaluacion = 'General';
-
-        if (str_contains($puesto, 'Logistica')) {
-            $areaEvaluacion = 'Logistica';
-        } elseif (str_contains($puesto, 'Pedimentos') || str_contains($puesto, 'Comercio Exterior')) {
-            $areaEvaluacion = 'Pedimentos';
-        } elseif (str_contains($puesto, 'TI') || str_contains($puesto, 'Sistemas') || str_contains($puesto, 'Tecnica')) {
-            $areaEvaluacion = 'TI';
-        } elseif (str_contains($puesto, 'Legal')) {
-            $areaEvaluacion = 'Legal';
-        } elseif (str_contains($puesto, 'Recursos Humanos') || str_contains($puesto, 'RH')) {
-            $areaEvaluacion = 'RH';
-        } elseif (str_contains($puesto, 'Auditoria')) {
-            $areaEvaluacion = 'Auditoria';
-        }
+        if (str_contains($puesto, 'Logistica')) $areaEvaluacion = 'Logistica';
+        elseif (str_contains($puesto, 'Pedimentos') || str_contains($puesto, 'Comercio Exterior')) $areaEvaluacion = 'Pedimentos';
+        elseif (str_contains($puesto, 'TI') || str_contains($puesto, 'Sistemas')) $areaEvaluacion = 'TI';
+        elseif (str_contains($puesto, 'Legal')) $areaEvaluacion = 'Legal';
+        elseif (str_contains($puesto, 'Recursos Humanos') || str_contains($puesto, 'RH')) $areaEvaluacion = 'RH';
+        elseif (str_contains($puesto, 'Auditoria')) $areaEvaluacion = 'Auditoria';
 
         $criterios = CriterioEvaluacion::where('area', $areaEvaluacion)->get();
         if ($criterios->isEmpty()) {
             $criterios = CriterioEvaluacion::where('area', 'General')->get();
         }
 
-        // Filtrar Sidebar (Compañeros del mismo equipo)
-        $querySidebar = Empleado::query();
-        switch ($areaEvaluacion) {
-            case 'Logistica':
-                $querySidebar->where('posicion', 'LIKE', '%Logistica%');
-                break;
-            case 'Pedimentos':
-                $querySidebar->where(function($q) {
-                    $q->where('posicion', 'LIKE', '%Pedimentos%')
-                      ->orWhere('posicion', 'LIKE', '%Comercio Exterior%');
-                });
-                break;
-            case 'TI':
-                $querySidebar->where(function($q) {
-                    $q->where('posicion', 'LIKE', '%TI%')
-                      ->orWhere('posicion', 'LIKE', '%Sistemas%')
-                      ->orWhere('posicion', 'LIKE', '%Tecnica%');
-                });
-                break;
-            case 'Legal':
-                $querySidebar->where('posicion', 'LIKE', '%Legal%');
-                break;
-            case 'RH':
-                $querySidebar->where(function($q) {
-                    $q->where('posicion', 'LIKE', '%Recursos Humanos%')
-                      ->orWhere('posicion', 'LIKE', '%RH%');
-                });
-                break;
-            case 'Auditoria':
-                $querySidebar->where('posicion', 'LIKE', '%Auditoria%');
-                break;
-            default:
-                $querySidebar->where('area', $empleado->area);
-                break;
-        }
-        $empleadosSidebar = $querySidebar->get();
+        // Sidebar: Filtrar usando la misma lógica de "Quién puedo ver"
+        // Para no complicar, en el sidebar mostramos SOLO al que estamos evaluando
+        // O repetimos la lógica de mis subordinados/jefe.
+        $me = Empleado::where('correo', Auth::user()->email)->first();
+        $empleadosSidebar = Empleado::where(function($q) use ($me) {
+             $q->where('supervisor_id', $me->id)
+               ->orWhere('id', $me->supervisor_id);
+        })->get();
 
-        // Verificar Bloqueo (Fecha cerrada O Ediciones agotadas)
+
         $isWindowOpen = $this->isEvaluationWindowOpen();
         $is_locked = ($evaluacionExistente && $evaluacionExistente->edit_count >= 1) || !$isWindowOpen;
 
@@ -161,7 +176,7 @@ class EvaluacionController extends Controller
             'empleados' => $empleadosSidebar,
             'criterios' => $criterios,
             'periodo' => $periodo,
-            'evaluacion' => $evaluacionExistente, 
+            'evaluacion' => $evaluacionExistente,
             'respuestas' => $respuestas,
             'observaciones' => $observaciones,
             'is_locked' => $is_locked,
@@ -171,10 +186,13 @@ class EvaluacionController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validar Fecha
         if (!$this->isEvaluationWindowOpen()) {
-            return redirect()->route('rh.evaluacion.index')
-                ->with('error', 'El periodo de evaluaciones está cerrado. Solo disponible los últimos 10 días del semestre.');
+            return redirect()->route('rh.evaluacion.index')->with('error', 'Periodo cerrado.');
+        }
+
+        // Validar Jerarquía
+        if (!$this->canEvaluate($request->empleado_id)) {
+            return redirect()->route('rh.evaluacion.index')->with('error', 'No autorizado.');
         }
 
         $request->validate([
@@ -190,7 +208,7 @@ class EvaluacionController extends Controller
 
             $evaluacion = Evaluacion::create([
                 'empleado_id' => $request->empleado_id,
-                'evaluador_id' => Auth::id() ?? 1,
+                'evaluador_id' => Auth::id(),
                 'periodo' => $request->periodo,
                 'promedio_final' => $promedio,
                 'comentarios_generales' => $request->comentarios_generales,
@@ -206,7 +224,7 @@ class EvaluacionController extends Controller
                 ]);
             }
             DB::commit();
-            return redirect()->route('rh.evaluacion.index', ['periodo' => $request->periodo])->with('success', 'Evaluación creada exitosamente.');
+            return redirect()->route('rh.evaluacion.index', ['periodo' => $request->periodo])->with('success', 'Evaluación guardada.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
@@ -215,22 +233,23 @@ class EvaluacionController extends Controller
 
     public function update(Request $request, $id)
     {
-        // 1. Validar Fecha
         if (!$this->isEvaluationWindowOpen()) {
-            return redirect()->route('rh.evaluacion.index')
-                ->with('error', 'El periodo de evaluaciones está cerrado. No se permiten ediciones fuera de fecha.');
+            return redirect()->route('rh.evaluacion.index')->with('error', 'Periodo cerrado.');
         }
 
         $evaluacion = Evaluacion::findOrFail($id);
 
-        // 2. Validar Ediciones Agotadas
+        // Validar Jerarquía usando el empleado de la evaluación
+        if (!$this->canEvaluate($evaluacion->empleado_id)) {
+            return redirect()->route('rh.evaluacion.index')->with('error', 'No autorizado.');
+        }
+
         if ($evaluacion->edit_count >= 1) {
-            return back()->with('error', 'Esta evaluación ya ha sido editada una vez y no se puede modificar más.');
+            return back()->with('error', 'Edición bloqueada.');
         }
 
         try {
             DB::beginTransaction();
-
             $calificaciones = collect($request->calificaciones);
             $promedio = $calificaciones->avg(); 
 
@@ -250,14 +269,11 @@ class EvaluacionController extends Controller
                     'observaciones' => $request->observaciones[$criterioId] ?? null
                 ]);
             }
-
             DB::commit();
-            return redirect()->route('rh.evaluacion.index', ['periodo' => $evaluacion->periodo])
-                             ->with('success', 'Evaluación actualizada. Se ha bloqueado para futuras ediciones.');
-
+            return redirect()->route('rh.evaluacion.index', ['periodo' => $evaluacion->periodo])->with('success', 'Evaluación actualizada.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al actualizar: ' . $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 }
