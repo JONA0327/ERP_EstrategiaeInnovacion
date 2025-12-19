@@ -1,21 +1,19 @@
-@extends('layouts.erp')
+<?php $__env->startSection('title','Reportes - Logística'); ?>
 
-@section('title','Reportes - Logística')
+<?php $__env->startPush('styles'); ?>
+    <link rel="stylesheet" href="<?php echo e(asset('css/Logistica/matriz-seguimiento.css')); ?>">
+    <link href="<?php echo e(asset('css/Logistica/export-styles.css')); ?>" rel="stylesheet">
+<?php $__env->stopPush(); ?>
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/Logistica/matriz-seguimiento.css') }}">
-    <link href="{{ asset('css/Logistica/export-styles.css') }}" rel="stylesheet">
-@endpush
 
-{{-- Cargar Chart.js directamente (evitar conflictos con stacks) --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-@section('content')
-    <x-slot name="header">
+<?php $__env->startSection('content'); ?>
+     <?php $__env->slot('header', null, []); ?> 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <div class="flex items-center mb-2">
-                    <a href="{{ route('logistica.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-sm transition-all duration-200">
+                    <a href="<?php echo e(route('logistica.index')); ?>" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-sm transition-all duration-200">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
@@ -23,7 +21,8 @@
                     </a>
                 </div>
                 <h2 class="font-bold text-2xl text-slate-800 leading-tight tracking-tight">
-                    {{ __('Reportes de Operaciones') }}
+                    <?php echo e(__('Reportes de Operaciones')); ?>
+
                 </h2>
                 <p class="text-xs text-slate-500 mt-1">Análisis y seguimiento de operaciones logísticas en tiempo real.</p>
             </div>
@@ -33,19 +32,19 @@
                     Enviar Correo
                 </button>
 
-                <a href="{{ route('logistica.reportes.export', request()->query()) }}"
+                <a href="<?php echo e(route('logistica.reportes.export', request()->query())); ?>"
                    class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-900 focus:outline-none focus:border-emerald-900 focus:ring ring-emerald-300 disabled:opacity-25 transition shadow-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Exportar
                 </a>
             </div>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
 
     <div class="py-12 bg-slate-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            {{-- Navegación por pestañas --}}
+            
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2">
                 <nav class="flex space-x-1 overflow-x-auto custom-scrollbar pb-2 md:pb-0" aria-label="Tabs">
                     <button type="button" data-tab-target="seguimiento"
@@ -72,15 +71,15 @@
                         <h3 class="text-lg font-semibold text-slate-800">Filtros de Búsqueda</h3>
                         <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-md">Personaliza tu reporte</span>
                     </div>
-                    <form method="GET" action="{{ route('logistica.reportes') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <form method="GET" action="<?php echo e(route('logistica.reportes')); ?>" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Período -->
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Período</label>
                             <select name="periodo" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold cursor-pointer">
-                            <option value="" {{ request('periodo') === null || request('periodo') === '' ? 'selected' : '' }}>-- Todos --</option>
-                            <option value="semanal" {{ request('periodo') === 'semanal' ? 'selected' : '' }}>Última Semana</option>
-                            <option value="mensual" {{ request('periodo') === 'mensual' ? 'selected' : '' }}>Último Mes</option>
-                            <option value="anual" {{ request('periodo') === 'anual' ? 'selected' : '' }}>Último Año</option>
+                            <option value="" <?php echo e(request('periodo') === null || request('periodo') === '' ? 'selected' : ''); ?>>-- Todos --</option>
+                            <option value="semanal" <?php echo e(request('periodo') === 'semanal' ? 'selected' : ''); ?>>Última Semana</option>
+                            <option value="mensual" <?php echo e(request('periodo') === 'mensual' ? 'selected' : ''); ?>>Último Mes</option>
+                            <option value="anual" <?php echo e(request('periodo') === 'anual' ? 'selected' : ''); ?>>Último Año</option>
                         </select>
                     </div>
 
@@ -89,16 +88,16 @@
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mes/Año</label>
                             <div class="flex gap-2">
                                 <select name="mes" class="w-1/2 text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold cursor-pointer">
-                                    <option value="" {{ request('mes') === null || request('mes') === '' ? 'selected' : '' }}>-- Mes --</option>
-                                    @for($m = 1; $m <= 12; $m++)
-                                        <option value="{{ $m }}" {{ request('mes') == $m ? 'selected' : '' }}>{{ \Carbon\Carbon::create(null, $m)->format('M') }}</option>
-                                    @endfor
+                                    <option value="" <?php echo e(request('mes') === null || request('mes') === '' ? 'selected' : ''); ?>>-- Mes --</option>
+                                    <?php for($m = 1; $m <= 12; $m++): ?>
+                                        <option value="<?php echo e($m); ?>" <?php echo e(request('mes') == $m ? 'selected' : ''); ?>><?php echo e(\Carbon\Carbon::create(null, $m)->format('M')); ?></option>
+                                    <?php endfor; ?>
                                 </select>
                                 <select name="anio" class="w-1/2 text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold cursor-pointer">
-                                <option value="" {{ request('anio') === null || request('anio') === '' ? 'selected' : '' }}>-- Año --</option>
-                                @for($y = now()->year; $y >= now()->year - 5; $y--)
-                                    <option value="{{ $y }}" {{ request('anio') == $y ? 'selected' : '' }}>{{ $y }}</option>
-                                @endfor
+                                <option value="" <?php echo e(request('anio') === null || request('anio') === '' ? 'selected' : ''); ?>>-- Año --</option>
+                                <?php for($y = now()->year; $y >= now()->year - 5; $y--): ?>
+                                    <option value="<?php echo e($y); ?>" <?php echo e(request('anio') == $y ? 'selected' : ''); ?>><?php echo e($y); ?></option>
+                                <?php endfor; ?>
                             </select>
                         </div>
                     </div>
@@ -107,14 +106,14 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cliente</label>
                             <select name="cliente" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold cursor-pointer">
-                            <option value="" {{ request('cliente') === null || request('cliente') === '' ? 'selected' : '' }}>-- Todos los Clientes --</option>
-                            @if(isset($clientes) && is_array($clientes))
-                                @foreach($clientes as $c)
-                                    @if(is_string($c))
-                                        <option value="{{ $c }}" {{ request('cliente') === $c ? 'selected' : '' }}>{{ $c }}</option>
-                                    @endif
-                                @endforeach
-                            @endif
+                            <option value="" <?php echo e(request('cliente') === null || request('cliente') === '' ? 'selected' : ''); ?>>-- Todos los Clientes --</option>
+                            <?php if(isset($clientes) && is_array($clientes)): ?>
+                                <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if(is_string($c)): ?>
+                                        <option value="<?php echo e($c); ?>" <?php echo e(request('cliente') === $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
+                                    <?php endif; ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -122,23 +121,23 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status</label>
                             <select name="status" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold cursor-pointer">
-                            <option value="" {{ request('status') === null || request('status') === '' ? 'selected' : '' }}>-- Todos los Status --</option>
-                            <option value="In Process" {{ request('status') === 'In Process' ? 'selected' : '' }}>En Proceso</option>
-                            <option value="Out of Metric" {{ request('status') === 'Out of Metric' ? 'selected' : '' }}>Fuera de Métrica</option>
-                            <option value="Done" {{ request('status') === 'Done' ? 'selected' : '' }}>Completado</option>
+                            <option value="" <?php echo e(request('status') === null || request('status') === '' ? 'selected' : ''); ?>>-- Todos los Status --</option>
+                            <option value="In Process" <?php echo e(request('status') === 'In Process' ? 'selected' : ''); ?>>En Proceso</option>
+                            <option value="Out of Metric" <?php echo e(request('status') === 'Out of Metric' ? 'selected' : ''); ?>>Fuera de Métrica</option>
+                            <option value="Done" <?php echo e(request('status') === 'Done' ? 'selected' : ''); ?>>Completado</option>
                         </select>
                     </div>
 
                         <!-- Fecha Desde -->
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Desde</label>
-                            <input type="date" name="fecha_desde" value="{{ request('fecha_desde') }}" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold">
+                            <input type="date" name="fecha_desde" value="<?php echo e(request('fecha_desde')); ?>" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold">
                         </div>
 
                         <!-- Fecha Hasta -->
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hasta</label>
-                            <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold">
+                            <input type="date" name="fecha_hasta" value="<?php echo e(request('fecha_hasta')); ?>" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-green-500 focus:border-green-500 text-slate-700 font-semibold">
                         </div>
 
                         <!-- Botones -->
@@ -147,7 +146,7 @@
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                                 Filtrar
                             </button>
-                            <a href="{{ route('logistica.reportes') }}" class="inline-flex items-center px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg font-semibold text-xs text-slate-700 uppercase tracking-widest hover:bg-slate-200 active:bg-slate-300 focus:outline-none focus:border-slate-300 focus:ring ring-slate-200 disabled:opacity-25 transition shadow-sm">
+                            <a href="<?php echo e(route('logistica.reportes')); ?>" class="inline-flex items-center px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg font-semibold text-xs text-slate-700 uppercase tracking-widest hover:bg-slate-200 active:bg-slate-300 focus:outline-none focus:border-slate-300 focus:ring ring-slate-200 disabled:opacity-25 transition shadow-sm">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Limpiar
                             </a>
@@ -155,8 +154,8 @@
                     </form>
                 </div>
 
-                {{-- Tarjetas de Métricas Principales --}}
-                @php
+                
+                <?php
                     $totalOps = $statsTemporales['total_operaciones'] ?? 0;
                     $enTiempo = $statsTemporales['en_tiempo'] ?? 0;
                     $completadoTiempo = $statsTemporales['completado_tiempo'] ?? 0;
@@ -166,13 +165,13 @@
                     $operacionesExitosas = $enTiempo + $completadoTiempo;
                     $eficienciaGeneral = $totalOps > 0 ? round(($operacionesExitosas / $totalOps) * 100, 1) : 0;
                     $promedioEjecucion = round($statsTemporales['promedio_dias'] ?? 0, 1);
-                @endphp
+                ?>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500 relative overflow-hidden group hover:shadow-md transition">
                         <div class="relative z-10">
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Eficiencia</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ $eficienciaGeneral }}<span class="text-lg text-gray-400 font-normal">%</span></p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1"><?php echo e($eficienciaGeneral); ?><span class="text-lg text-gray-400 font-normal">%</span></p>
                             <p class="text-xs text-green-600 font-medium mt-1">Operaciones exitosas</p>
                         </div>
                         <div class="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-green-50 to-transparent opacity-50 group-hover:opacity-100 transition"></div>
@@ -184,7 +183,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500 relative overflow-hidden group hover:shadow-md transition">
                         <div class="relative z-10">
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Operaciones</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ $totalOps }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1"><?php echo e($totalOps); ?></p>
                             <p class="text-xs text-blue-600 font-medium mt-1">En seguimiento</p>
                         </div>
                         <div class="absolute -right-4 -bottom-4 text-blue-100 opacity-50">
@@ -195,7 +194,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-amber-500 relative overflow-hidden group hover:shadow-md transition">
                         <div class="relative z-10">
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">En Riesgo</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ $enRiesgo + $conRetraso }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1"><?php echo e($enRiesgo + $conRetraso); ?></p>
                             <p class="text-xs text-amber-600 font-medium mt-1">Requieren atención</p>
                         </div>
                         <div class="absolute -right-4 -bottom-4 text-amber-100 opacity-50">
@@ -206,7 +205,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500 relative overflow-hidden group hover:shadow-md transition">
                         <div class="relative z-10">
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Promedio Días</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ $promedioEjecucion }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1"><?php echo e($promedioEjecucion); ?></p>
                             <p class="text-xs text-red-600 font-medium mt-1">Tiempo ejecución</p>
                         </div>
                         <div class="absolute -right-4 -bottom-4 text-red-100 opacity-50">
@@ -270,14 +269,14 @@
                                         </tr>
                             </thead>
                             <tbody>
-                                @forelse($operaciones as $op)
-                                    <tr class="border-b hover:bg-slate-50" data-operacion-id="{{ $op->id ?? '' }}">
-                                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $op->id ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">{{ is_string($op->ejecutivo) ? $op->ejecutivo : '-' }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">{{ is_string($op->cliente) ? $op->cliente : '-' }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">{{ is_string($op->tipo_operacion_enum) ? $op->tipo_operacion_enum : '-' }}</td>
+                                <?php $__empty_1 = true; $__currentLoopData = $operaciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $op): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <tr class="border-b hover:bg-slate-50" data-operacion-id="<?php echo e($op->id ?? ''); ?>">
+                                        <td class="px-4 py-3 text-sm font-medium text-slate-900"><?php echo e($op->id ?? '-'); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700"><?php echo e(is_string($op->ejecutivo) ? $op->ejecutivo : '-'); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700"><?php echo e(is_string($op->cliente) ? $op->cliente : '-'); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700"><?php echo e(is_string($op->tipo_operacion_enum) ? $op->tipo_operacion_enum : '-'); ?></td>
                                         <td class="px-4 py-3">
-                                            @php
+                                            <?php
                                                 $statusFinal = ($op->status_manual === 'Done') ? 'Done' : $op->status_calculado;
                                                 $colorFinal = ($op->status_manual === 'Done') ? 'verde' : $op->color_status;
                                                 $statusDisplay = match($statusFinal) {
@@ -292,19 +291,20 @@
                                                     'rojo' => 'bg-red-100 text-red-800',
                                                     default => 'bg-gray-100 text-gray-800'
                                                 };
-                                            @endphp
-                                            <span class="px-2 py-1 rounded text-xs {{ $badgeClass }}">
-                                                {{ $statusDisplay }}
+                                            ?>
+                                            <span class="px-2 py-1 rounded text-xs <?php echo e($badgeClass); ?>">
+                                                <?php echo e($statusDisplay); ?>
+
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">{{ $op->resultado ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">{{ $op->dias_transito ?? '-' }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700"><?php echo e($op->resultado ?? '-'); ?></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700"><?php echo e($op->dias_transito ?? '-'); ?></td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="7" class="px-4 py-8 text-center text-slate-500 text-sm">Sin operaciones recientes</td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -326,7 +326,8 @@
                         Resumen Ejecutivo
                     </h2>
                     <div class="text-sm opacity-75">
-                        {{ now()->format('d/m/Y H:i') }}
+                        <?php echo e(now()->format('d/m/Y H:i')); ?>
+
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -337,7 +338,7 @@
                             </svg>
                             Rendimiento General
                         </h3>
-                        @php
+                        <?php
                             $totalOps = $statsTemporales['total_operaciones'];
                             $enTiempo = $statsTemporales['en_tiempo'] ?? 0;
                             $completadoTiempo = $statsTemporales['completado_tiempo'] ?? 0;
@@ -348,7 +349,7 @@
                             $eficienciaGeneral = $totalOps > 0 ? round(($operacionesExitosas / $totalOps) * 100, 1) : 0;
                             $promedioEjecucion = round($statsTemporales['promedio_dias'] ?? 0, 1);
                             $targetPromedio = round($statsTemporales['promedio_target'] ?? 3, 1);
-                        @endphp
+                        ?>
                         
                         <!-- Desglose Detallado de Eficiencia -->
                         <div class="bg-slate-700 rounded-lg p-4 mb-4">
@@ -360,48 +361,48 @@
                             </h4>
                             <div class="grid grid-cols-2 gap-4 text-xs">
                                 <div>
-                                    <p class="text-green-400">✅ <strong>Operaciones Exitosas: {{ $operacionesExitosas }}</strong></p>
-                                    <p class="ml-4 opacity-80">• Activas en Tiempo: {{ $enTiempo }}</p>
-                                    <p class="ml-4 opacity-80">• Finalizadas a Tiempo: {{ $completadoTiempo }}</p>
+                                    <p class="text-green-400">✅ <strong>Operaciones Exitosas: <?php echo e($operacionesExitosas); ?></strong></p>
+                                    <p class="ml-4 opacity-80">• Activas en Tiempo: <?php echo e($enTiempo); ?></p>
+                                    <p class="ml-4 opacity-80">• Finalizadas a Tiempo: <?php echo e($completadoTiempo); ?></p>
                                 </div>
                                 <div>
                                     <p class="text-red-400 flex items-center gap-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                                         </svg>
-                                        <strong>Operaciones Problemáticas: {{ $totalOps - $operacionesExitosas }}</strong>
+                                        <strong>Operaciones Problemáticas: <?php echo e($totalOps - $operacionesExitosas); ?></strong>
                                     </p>
-                                    <p class="ml-4 opacity-80">• Activas en Riesgo: {{ $enRiesgo }}</p>
-                                    <p class="ml-4 opacity-80">• Activas con Retraso: {{ $conRetraso }}</p>
-                                    <p class="ml-4 opacity-80">• Finalizadas con Retraso: {{ $completadoRetraso }}</p>
+                                    <p class="ml-4 opacity-80">• Activas en Riesgo: <?php echo e($enRiesgo); ?></p>
+                                    <p class="ml-4 opacity-80">• Activas con Retraso: <?php echo e($conRetraso); ?></p>
+                                    <p class="ml-4 opacity-80">• Finalizadas con Retraso: <?php echo e($completadoRetraso); ?></p>
                                 </div>
                             </div>
                             <div class="mt-3 pt-3 border-t border-slate-600">
                                 <p class="text-xs opacity-80 mb-2">
                                     <span class="font-semibold">Lógica:</span> 
-                                    Activas en Tiempo ({{ $enTiempo }}) + Finalizadas a Tiempo ({{ $completadoTiempo }}) = Exitosas
+                                    Activas en Tiempo (<?php echo e($enTiempo); ?>) + Finalizadas a Tiempo (<?php echo e($completadoTiempo); ?>) = Exitosas
                                 </p>
                                 <p class="text-sm">
                                     <span class="font-semibold">Cálculo:</span> 
-                                    ({{ $operacionesExitosas }} exitosas ÷ {{ $totalOps }} total) × 100 = 
-                                    <span class="font-bold text-blue-400">{{ $eficienciaGeneral }}%</span>
+                                    (<?php echo e($operacionesExitosas); ?> exitosas ÷ <?php echo e($totalOps); ?> total) × 100 = 
+                                    <span class="font-bold text-blue-400"><?php echo e($eficienciaGeneral); ?>%</span>
                                 </p>
                             </div>
                         </div>
 
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Eficiencia General:</span> {{ $eficienciaGeneral }}%
-                            @if($eficienciaGeneral >= 80)
+                            <span class="font-semibold">Eficiencia General:</span> <?php echo e($eficienciaGeneral); ?>%
+                            <?php if($eficienciaGeneral >= 80): ?>
                                 <span class="text-green-300">🟢 Excelente</span>
-                            @elseif($eficienciaGeneral >= 60)
+                            <?php elseif($eficienciaGeneral >= 60): ?>
                                 <span class="text-yellow-300">🟡 Regular</span>
-                            @else
+                            <?php else: ?>
                                 <span class="text-red-300">🔴 Requiere Atención</span>
-                            @endif
+                            <?php endif; ?>
                         </p>
                         <p class="text-sm opacity-90">
-                            <span class="font-semibold">Tiempo Promedio:</span> {{ isset($stats['promedio_ejecucion']) ? $stats['promedio_ejecucion'] : 0 }} días
-                            (Target: {{ isset($stats['target_promedio']) ? $stats['target_promedio'] : 0 }} días)
+                            <span class="font-semibold">Tiempo Promedio:</span> <?php echo e(isset($stats['promedio_ejecucion']) ? $stats['promedio_ejecucion'] : 0); ?> días
+                            (Target: <?php echo e(isset($stats['target_promedio']) ? $stats['target_promedio'] : 0); ?> días)
                         </p>
                     </div>
                     <div>
@@ -419,15 +420,15 @@
                                 <div class="ml-4 space-y-1 text-xs">
                                     <div class="flex justify-between items-center">
                                         <span class="text-green-400">🟢 Activas en Tiempo:</span>
-                                        <span class="font-bold">{{ $enTiempo }} ({{ $totalOps > 0 ? round(($enTiempo / $totalOps) * 100, 1) : 0 }}%)</span>
+                                        <span class="font-bold"><?php echo e($enTiempo); ?> (<?php echo e($totalOps > 0 ? round(($enTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-yellow-400">⚠️ Activas en Riesgo:</span>
-                                        <span class="font-bold">{{ $enRiesgo }} ({{ $totalOps > 0 ? round(($enRiesgo / $totalOps) * 100, 1) : 0 }}%)</span>
+                                        <span class="font-bold"><?php echo e($enRiesgo); ?> (<?php echo e($totalOps > 0 ? round(($enRiesgo / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-red-400">🔴 Activas con Retraso:</span>
-                                        <span class="font-bold">{{ $conRetraso }} ({{ $totalOps > 0 ? round(($conRetraso / $totalOps) * 100, 1) : 0 }}%)</span>
+                                        <span class="font-bold"><?php echo e($conRetraso); ?> (<?php echo e($totalOps > 0 ? round(($conRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                 </div>
                                 
@@ -435,7 +436,7 @@
                                 <div class="ml-4 space-y-1 text-xs">
                                     <div class="flex justify-between items-center">
                                         <span class="text-green-300">✅ Finalizadas a Tiempo:</span>
-                                        <span class="font-bold">{{ $completadoTiempo }} ({{ $totalOps > 0 ? round(($completadoTiempo / $totalOps) * 100, 1) : 0 }}%)</span>
+                                        <span class="font-bold"><?php echo e($completadoTiempo); ?> (<?php echo e($totalOps > 0 ? round(($completadoTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-orange-400 flex items-center gap-2">
@@ -444,7 +445,7 @@
                                             </svg>
                                             Finalizadas con Retraso:
                                         </span>
-                                        <span class="font-bold">{{ $completadoRetraso }} ({{ $totalOps > 0 ? round(($completadoRetraso / $totalOps) * 100, 1) : 0 }}%)</span>
+                                        <span class="font-bold"><?php echo e($completadoRetraso); ?> (<?php echo e($totalOps > 0 ? round(($completadoRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                 </div>
                             </div>
@@ -455,25 +456,25 @@
                                         </svg>
                                         Total:
                                     </span>
-                                    <span class="font-bold text-blue-400">{{ $totalOps }} (100%)</span>
+                                    <span class="font-bold text-blue-400"><?php echo e($totalOps); ?> (100%)</span>
                                 </div>
                             </div>
                         </div>
 
                         <h4 class="font-medium mb-2 text-sm">⚠️ Alertas y Recomendaciones</h4>
                         <div class="text-sm space-y-1">
-                            @if($conRetraso > 0)
-                                <p class="text-red-300">• {{ $conRetraso }} operaciones con retraso activo</p>
-                            @endif
-                            @if($enRiesgo > 0)
-                                <p class="text-yellow-300">• {{ $enRiesgo }} operaciones en riesgo de retraso</p>
-                            @endif
-                            @if($eficienciaGeneral < 70)
+                            <?php if($conRetraso > 0): ?>
+                                <p class="text-red-300">• <?php echo e($conRetraso); ?> operaciones con retraso activo</p>
+                            <?php endif; ?>
+                            <?php if($enRiesgo > 0): ?>
+                                <p class="text-yellow-300">• <?php echo e($enRiesgo); ?> operaciones en riesgo de retraso</p>
+                            <?php endif; ?>
+                            <?php if($eficienciaGeneral < 70): ?>
                                 <p class="text-orange-300">• Considerar revisión de procesos operativos</p>
-                            @endif
-                            @if($conRetraso == 0 && $enRiesgo == 0)
+                            <?php endif; ?>
+                            <?php if($conRetraso == 0 && $enRiesgo == 0): ?>
                                 <p class="text-green-300">✅ Todas las operaciones están en tiempo</p>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -484,12 +485,12 @@
                     <div>
                         <h2 class="text-xl font-semibold text-slate-700">Análisis Temporal de Operaciones</h2>
                         <p class="text-sm text-slate-500 mt-1">
-                            @if($esAdmin ?? false)
+                            <?php if($esAdmin ?? false): ?>
                                 Mostrando datos de todos los ejecutivos
-                            @else
+                            <?php else: ?>
                                 Mostrando solo tus operaciones asignadas
-                            @endif
-                            ({{ isset($statsTemporales['total_operaciones']) ? $statsTemporales['total_operaciones'] : 0 }} operaciones)
+                            <?php endif; ?>
+                            (<?php echo e(isset($statsTemporales['total_operaciones']) ? $statsTemporales['total_operaciones'] : 0); ?> operaciones)
                         </p>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -551,23 +552,23 @@
                 <!-- Métricas rápidas -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ isset($statsTemporales['en_tiempo']) ? $statsTemporales['en_tiempo'] : 0 }}</div>
+                        <div class="text-2xl font-bold text-green-600"><?php echo e(isset($statsTemporales['en_tiempo']) ? $statsTemporales['en_tiempo'] : 0); ?></div>
                         <div class="text-xs text-green-700">En Tiempo</div>
                     </div>
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-yellow-600">{{ isset($statsTemporales['en_riesgo']) && is_scalar($statsTemporales['en_riesgo']) ? $statsTemporales['en_riesgo'] : 0 }}</div>
+                        <div class="text-2xl font-bold text-yellow-600"><?php echo e(isset($statsTemporales['en_riesgo']) && is_scalar($statsTemporales['en_riesgo']) ? $statsTemporales['en_riesgo'] : 0); ?></div>
                         <div class="text-xs text-yellow-700">En Riesgo</div>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-red-600">{{ isset($statsTemporales['con_retraso']) && is_scalar($statsTemporales['con_retraso']) ? $statsTemporales['con_retraso'] : 0 }}</div>
+                        <div class="text-2xl font-bold text-red-600"><?php echo e(isset($statsTemporales['con_retraso']) && is_scalar($statsTemporales['con_retraso']) ? $statsTemporales['con_retraso'] : 0); ?></div>
                         <div class="text-xs text-red-700">Con Retraso</div>
                     </div>
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-blue-600">{{ isset($statsTemporales['completado_tiempo']) && is_scalar($statsTemporales['completado_tiempo']) ? $statsTemporales['completado_tiempo'] : 0 }}</div>
+                        <div class="text-2xl font-bold text-blue-600"><?php echo e(isset($statsTemporales['completado_tiempo']) && is_scalar($statsTemporales['completado_tiempo']) ? $statsTemporales['completado_tiempo'] : 0); ?></div>
                         <div class="text-xs text-blue-700">Completado a Tiempo</div>
                     </div>
                     <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-purple-600">{{ isset($statsTemporales['completado_retraso']) && is_scalar($statsTemporales['completado_retraso']) ? $statsTemporales['completado_retraso'] : 0 }}</div>
+                        <div class="text-2xl font-bold text-purple-600"><?php echo e(isset($statsTemporales['completado_retraso']) && is_scalar($statsTemporales['completado_retraso']) ? $statsTemporales['completado_retraso'] : 0); ?></div>
                         <div class="text-xs text-purple-700">Completado con Retraso</div>
                     </div>
                 </div>
@@ -620,7 +621,7 @@
                 <!-- DEBUG: Panel pedimentos cargado -->
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                     <p><strong>DEBUG:</strong> Panel de pedimentos cargado correctamente</p>
-                    <p>Stats: Total={{ $pedimentoStats['total'] ?? 'NO_SET' }}, Pagados={{ $pedimentoStats['pagados'] ?? 'NO_SET' }}</p>
+                    <p>Stats: Total=<?php echo e($pedimentoStats['total'] ?? 'NO_SET'); ?>, Pagados=<?php echo e($pedimentoStats['pagados'] ?? 'NO_SET'); ?></p>
                 </div>
                 
                 <!-- Header -->
@@ -644,19 +645,19 @@
                 <!-- Estadísticas principales -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-indigo-600 mb-2">{{ $pedimentoStats['total'] ?? 0 }}</div>
+                        <div class="text-3xl font-bold text-indigo-600 mb-2"><?php echo e($pedimentoStats['total'] ?? 0); ?></div>
                         <div class="text-sm text-slate-500">Total Pedimentos</div>
                     </div>
                     <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-green-600 mb-2">{{ $pedimentoStats['pagados'] ?? 0 }}</div>
+                        <div class="text-3xl font-bold text-green-600 mb-2"><?php echo e($pedimentoStats['pagados'] ?? 0); ?></div>
                         <div class="text-sm text-slate-500">Pagados</div>
                     </div>
                     <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-amber-500 mb-2">{{ $pedimentoStats['pendientes'] ?? 0 }}</div>
+                        <div class="text-3xl font-bold text-amber-500 mb-2"><?php echo e($pedimentoStats['pendientes'] ?? 0); ?></div>
                         <div class="text-sm text-slate-500">Pendientes</div>
                     </div>
                     <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-2xl font-bold text-emerald-600 mb-2">${{ number_format(($pedimentoStats['montoPagadoMXN'] ?? 0) + ($pedimentoStats['montoPagadoUSD'] ?? 0) * 20, 0) }}</div>
+                        <div class="text-2xl font-bold text-emerald-600 mb-2">$<?php echo e(number_format(($pedimentoStats['montoPagadoMXN'] ?? 0) + ($pedimentoStats['montoPagadoUSD'] ?? 0) * 20, 0)); ?></div>
                         <div class="text-sm text-slate-500">Monto Total (MXN)</div>
                     </div>
                 </div>
@@ -669,7 +670,7 @@
                         </svg>
                         Generar Reporte Excel
                     </h3>
-                    <form action="{{ route('reportes.pedimentos.excel') }}" method="GET" class="space-y-4">
+                    <form action="<?php echo e(route('reportes.pedimentos.excel')); ?>" method="GET" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-2">Estado de pago</label>
@@ -722,7 +723,7 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                                 <span class="text-green-700 font-medium">✅ Pagados</span>
-                                <span class="text-green-800 font-bold">{{ $pedimentoStats['pagados'] ?? 0 }}</span>
+                                <span class="text-green-800 font-bold"><?php echo e($pedimentoStats['pagados'] ?? 0); ?></span>
                             </div>
                             <div class="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
                                 <span class="text-amber-700 font-medium flex items-center gap-1">
@@ -731,7 +732,7 @@
                                     </svg>
                                     Pendientes
                                 </span>
-                                <span class="text-amber-800 font-bold">{{ $pedimentoStats['pendientes'] ?? 0 }}</span>
+                                <span class="text-amber-800 font-bold"><?php echo e($pedimentoStats['pendientes'] ?? 0); ?></span>
                             </div>
                         </div>
                     </div>
@@ -739,24 +740,24 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <h3 class="text-lg font-semibold text-slate-800 mb-4">💰 Montos por Moneda</h3>
                         <div class="space-y-3">
-                            @if(isset($pedimentoStats['montoPagadoMXN']) && $pedimentoStats['montoPagadoMXN'] > 0)
+                            <?php if(isset($pedimentoStats['montoPagadoMXN']) && $pedimentoStats['montoPagadoMXN'] > 0): ?>
                             <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                                 <span class="text-blue-700 font-medium">🇲🇽 MXN</span>
-                                <span class="text-blue-800 font-bold">${{ number_format($pedimentoStats['montoPagadoMXN'], 2) }}</span>
+                                <span class="text-blue-800 font-bold">$<?php echo e(number_format($pedimentoStats['montoPagadoMXN'], 2)); ?></span>
                             </div>
-                            @endif
-                            @if(isset($pedimentoStats['montoPagadoUSD']) && $pedimentoStats['montoPagadoUSD'] > 0)
+                            <?php endif; ?>
+                            <?php if(isset($pedimentoStats['montoPagadoUSD']) && $pedimentoStats['montoPagadoUSD'] > 0): ?>
                             <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                                 <span class="text-green-700 font-medium">🇺🇸 USD</span>
-                                <span class="text-green-800 font-bold">${{ number_format($pedimentoStats['montoPagadoUSD'], 2) }}</span>
+                                <span class="text-green-800 font-bold">$<?php echo e(number_format($pedimentoStats['montoPagadoUSD'], 2)); ?></span>
                             </div>
-                            @endif
-                            @if(isset($pedimentoStats['montoPagadoEUR']) && $pedimentoStats['montoPagadoEUR'] > 0)
+                            <?php endif; ?>
+                            <?php if(isset($pedimentoStats['montoPagadoEUR']) && $pedimentoStats['montoPagadoEUR'] > 0): ?>
                             <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                                 <span class="text-purple-700 font-medium">🇪🇺 EUR</span>
-                                <span class="text-purple-800 font-bold">€{{ number_format($pedimentoStats['montoPagadoEUR'], 2) }}</span>
+                                <span class="text-purple-800 font-bold">€<?php echo e(number_format($pedimentoStats['montoPagadoEUR'], 2)); ?></span>
                             </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -776,7 +777,8 @@
                                 y obtener información específica sobre estados de pago, tipos de operación y monedas.
                             </p>
                             <div class="mt-3 text-xs text-blue-600">
-                                <strong>Última actualización:</strong> {{ now()->format('d/m/Y H:i') }}
+                                <strong>Última actualización:</strong> <?php echo e(now()->format('d/m/Y H:i')); ?>
+
                             </div>
                         </div>
                     </div>
@@ -874,7 +876,7 @@
             });
         }
 
-        const stats = @json($stats);
+        const stats = <?php echo json_encode($stats, 15, 512) ?>;
         const total = (stats.en_proceso || 0) + (stats.fuera_metrica || 0) + (stats.done || 0);
         const showEmptyMsg = total === 0;
         const ctx = document.getElementById('statusChart').getContext('2d');
@@ -1049,8 +1051,8 @@
 
         // ==================== SEGUNDO GRÁFICO: ANÁLISIS TEMPORAL ====================
 
-        const comportamientoTemporal = @json($comportamientoTemporal ?? []);
-        const statsTemporales = @json($statsTemporales ?? []);
+        const comportamientoTemporal = <?php echo json_encode($comportamientoTemporal ?? [], 15, 512) ?>;
+        const statsTemporales = <?php echo json_encode($statsTemporales ?? [], 15, 512) ?>;
         const temporalCtx = document.getElementById('temporalChart').getContext('2d');
         let currentTemporalChart = null;
         let fullScreenTemporalChart = null;
@@ -1468,15 +1470,16 @@
                                 onchange="cargarCorreosCliente()" required>
                             <option value="">Seleccionar cliente...</option>
                             <option value="">Seleccionar cliente...</option>
-                            @if(isset($clientesEmail) && is_array($clientesEmail))
-                                @foreach($clientesEmail as $cliente)
-                                    @if(is_array($cliente) && isset($cliente['cliente']) && is_string($cliente['cliente']))
-                                        <option value="{{ $cliente['cliente'] }}" data-correos="{{ isset($cliente['correos']) && is_string($cliente['correos']) ? $cliente['correos'] : '' }}">
-                                            {{ $cliente['cliente'] }}
+                            <?php if(isset($clientesEmail) && is_array($clientesEmail)): ?>
+                                <?php $__currentLoopData = $clientesEmail; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if(is_array($cliente) && isset($cliente['cliente']) && is_string($cliente['cliente'])): ?>
+                                        <option value="<?php echo e($cliente['cliente']); ?>" data-correos="<?php echo e(isset($cliente['correos']) && is_string($cliente['correos']) ? $cliente['correos'] : ''); ?>">
+                                            <?php echo e($cliente['cliente']); ?>
+
                                         </option>
-                                    @endif
-                                @endforeach
-                            @endif
+                                    <?php endif; ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -1499,7 +1502,7 @@
                         </label>
                         <input type="text" id="asunto" name="asunto"
                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                               value="Reporte de Operaciones Logísticas - {{ date('d/m/Y') }}"
+                               value="Reporte de Operaciones Logísticas - <?php echo e(date('d/m/Y')); ?>"
                                required>
                     </div>
 
@@ -1512,12 +1515,12 @@
                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                   required>Estimados,
 
-Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha {{ date('d/m/Y') }}.
+Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha <?php echo e(date('d/m/Y')); ?>.
 
 El reporte incluye todas las operaciones registradas en el sistema según los filtros aplicados.
 
 Saludos cordiales,
-{{ auth()->user()->name ?? 'Equipo de Logística' }}</textarea>
+<?php echo e(auth()->user()->name ?? 'Equipo de Logística'); ?></textarea>
                     </div>
 
                     <!-- Opciones de adjunto -->
@@ -1552,7 +1555,7 @@ Saludos cordiales,
                         </div>
                         <p class="text-xs text-slate-500 mt-1">
                             Los correos CC se cargan automáticamente del catálogo.
-                            <a href="{{ route('logistica.correos-cc.index') }}" target="_blank"
+                            <a href="<?php echo e(route('logistica.correos-cc.index')); ?>" target="_blank"
                                class="text-blue-600 hover:text-blue-800 underline">
                                 Ver configuración
                             </a>
@@ -1610,7 +1613,7 @@ Saludos cordiales,
 
         // Cargar correos CC desde el servidor
         function cargarCorreosCC() {
-            fetch('{{ route("logistica.correos-cc.api") }}')
+            fetch('<?php echo e(route("logistica.correos-cc.api")); ?>')
                 .then(response => response.json())
                 .then(data => {
                     correosCC = data.map(item => ({
@@ -1734,15 +1737,15 @@ Saludos cordiales,
             document.getElementById('emailModal').classList.add('hidden');
             // Resetear formulario
             document.getElementById('emailForm').reset();
-            document.getElementById('asunto').value = 'Reporte de Operaciones Logísticas - {{ date("d/m/Y") }}';
+            document.getElementById('asunto').value = 'Reporte de Operaciones Logísticas - <?php echo e(date("d/m/Y")); ?>';
             document.getElementById('mensaje').value = `Estimados,
 
-Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha {{ date('d/m/Y') }}.
+Adjunto encontrará el reporte de operaciones logísticas correspondiente a la fecha <?php echo e(date('d/m/Y')); ?>.
 
 El reporte incluye todas las operaciones registradas en el sistema según los filtros aplicados.
 
 Saludos cordiales,
-{{ auth()->user()->name ?? 'Equipo de Logística' }}`;
+<?php echo e(auth()->user()->name ?? 'Equipo de Logística'); ?>`;
         }
 
         // Manejar el envío del formulario
@@ -1811,7 +1814,7 @@ Saludos cordiales,
                     formData.append('operaciones_ids', JSON.stringify(operacionesIds));
                 }
 
-                const response = await fetch('{{ route("logistica.reportes.enviar-correo") }}', {
+                const response = await fetch('<?php echo e(route("logistica.reportes.enviar-correo")); ?>', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1988,4 +1991,6 @@ Saludos cordiales,
 
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.erp', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Sistemas\Downloads\PROYECTOS EI\ERP_EstrategiaeInnovacion\resources\views/Logistica/reportes.blade.php ENDPATH**/ ?>

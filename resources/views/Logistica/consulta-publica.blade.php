@@ -23,8 +23,11 @@
         <div class="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <!-- Header -->
             <div class="text-center mb-12">
-                <h1 class="text-4xl font-bold text-slate-900 mb-4">
-                    🔍 Consulta de Operaciones Logísticas
+                <h1 class="text-4xl font-bold text-slate-900 mb-4 flex items-center justify-center gap-3">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Consulta de Operaciones Logísticas
                 </h1>
                 <p class="text-lg text-slate-600">
                     Rastrea tu operación por Número de Pedimento o Factura
@@ -43,7 +46,11 @@
                                 <label class="relative flex items-center justify-center p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-500 transition-all">
                                     <input type="radio" name="tipo_busqueda" value="pedimento" class="sr-only peer" checked>
                                     <div class="text-center peer-checked:text-blue-600">
-                                        <div class="text-3xl mb-2">📋</div>
+                                        <div class="mb-2">
+                                            <svg class="w-8 h-8 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        </div>
                                         <div class="font-semibold">N° Pedimento</div>
                                     </div>
                                     <div class="absolute inset-0 border-2 border-blue-600 rounded-xl opacity-0 peer-checked:opacity-100 transition-opacity"></div>
@@ -51,7 +58,11 @@
                                 <label class="relative flex items-center justify-center p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-500 transition-all">
                                     <input type="radio" name="tipo_busqueda" value="factura" class="sr-only peer">
                                     <div class="text-center peer-checked:text-blue-600">
-                                        <div class="text-3xl mb-2">🧾</div>
+                                        <div class="mb-2">
+                                            <svg class="w-8 h-8 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        </div>
                                         <div class="font-semibold">N° Factura</div>
                                     </div>
                                     <div class="absolute inset-0 border-2 border-blue-600 rounded-xl opacity-0 peer-checked:opacity-100 transition-opacity"></div>
@@ -75,7 +86,10 @@
                         <button 
                             type="submit" 
                             class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all shadow-lg">
-                            🔎 Buscar Operación
+                            <svg class="w-5 h-5 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            Buscar Operación
                         </button>
                     </form>
                 </div>
@@ -128,7 +142,11 @@
             <!-- Mensaje de Error -->
             <div id="mensajeError" class="hidden max-w-2xl mx-auto">
                 <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
-                    <div class="text-5xl mb-4">❌</div>
+                    <div class="mb-4">
+                        <svg class="w-16 h-16 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
                     <p class="text-red-800 font-semibold text-lg" id="textoError"></p>
                 </div>
             </div>

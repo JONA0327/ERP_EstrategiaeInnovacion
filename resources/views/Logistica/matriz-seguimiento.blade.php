@@ -26,16 +26,11 @@
     {{-- Campo oculto con el ID del empleado actual --}}
     <input type="hidden" id="empleadoIdActual" value="{{ $empleadoActual ? $empleadoActual->id : '' }}">
     
-    <main class="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100 min-h-screen">
-        <div class="absolute inset-0 pointer-events-none">
-            <div class="absolute -top-32 -left-20 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
-            <div class="absolute top-40 -right-24 w-96 h-96 bg-blue-300/30 blur-3xl rounded-full"></div>
-        </div>
-
-        <div class="relative max-w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <main class="relative max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div class="space-y-8">
             {{-- Banner de modo Preview --}}
             @if(isset($modoPreview) && $modoPreview && isset($empleadoPreview))
-            <div class="mb-4 bg-amber-100 border-2 border-amber-400 rounded-xl p-4 shadow-lg">
+            <div class="bg-amber-100 border border-amber-200 rounded-3xl p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +42,7 @@
                             <p class="text-amber-700 text-sm">Estás viendo la matriz como la vería: <strong>{{ $empleadoPreview->nombre }}</strong></p>
                         </div>
                     </div>
-                    <a href="{{ route('logistica.matriz-seguimiento') }}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                    <a href="{{ route('logistica.matriz-seguimiento') }}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors shadow-sm">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -58,38 +53,44 @@
             @endif
 
             <!-- Header -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <a href="{{ route('logistica.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        Matriz de Seguimiento
+                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600 border border-emerald-100">{{ count($operaciones) }} operaciones</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 mt-1">Control y seguimiento de operaciones logísticas con cálculo automático de días de tránsito.</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ route('logistica.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-sm transition-all duration-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                         Regresar
                     </a>
                 </div>
-                <h1 class="text-3xl font-bold text-slate-900">Matriz de Seguimiento</h1>
-                <p class="text-slate-600 mt-2">Control y seguimiento de operaciones logísticas con cálculo automático de días de tránsito</p>
             </div>
 
-            <!-- Controles -->
-            <div class="mb-6 bg-white/90 backdrop-blur rounded-2xl border border-blue-100 shadow-lg p-6">
-                <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <!-- Controles y Filtros -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                    <!-- Botones de acción -->
                     <div class="flex flex-wrap gap-3">
-                        <button onclick="abrirModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="abrirModal()" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-emerald-700 hover:to-emerald-800 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
                             Nueva Operación
                         </button>
-                        <button onclick="abrirModalPostOperaciones()" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="abrirModalPostOperaciones()" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-purple-700 hover:to-purple-800 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                             </svg>
-                            Gestionar Post-Operaciones
+                            Post-Operaciones
                         </button>
                         @if(isset($esAdmin) && $esAdmin)
-                        <button onclick="abrirModalCamposPersonalizados()" class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="abrirModalCamposPersonalizados()" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-600 to-slate-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-slate-700 hover:to-slate-800 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
@@ -97,12 +98,13 @@
                         </button>
                         @endif
                     </div>
-                    <!-- Filtros por Cliente y Ejecutivo -->
+                    
+                    <!-- Filtros -->
                     <div class="flex flex-wrap gap-4 items-center">
                         <!-- Filtro por Cliente -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-slate-600">Cliente:</label>
-                            <select id="filtroCliente" class="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm min-w-[200px]" onchange="aplicarFiltros()">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Cliente:</label>
+                            <select id="filtroCliente" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
                                 <option value="todos" {{ (!isset($filtroCliente) || $filtroCliente === 'todos') ? 'selected' : '' }}>Todos los clientes</option>
                                 @foreach($clientesUnicos ?? [] as $clienteUnico)
                                     <option value="{{ $clienteUnico }}" {{ (isset($filtroCliente) && $filtroCliente === $clienteUnico) ? 'selected' : '' }}>{{ $clienteUnico }}</option>
@@ -112,9 +114,9 @@
                         
                         @if($esAdmin)
                         <!-- Filtro por Ejecutivo (solo admin) -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-slate-600">Ejecutivo:</label>
-                            <select id="filtroEjecutivo" class="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm min-w-[200px]" onchange="aplicarFiltros()">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Ejecutivo:</label>
+                            <select id="filtroEjecutivo" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
                                 <option value="todos" {{ (!isset($filtroEjecutivo) || $filtroEjecutivo === 'todos') ? 'selected' : '' }}>Todos los ejecutivos</option>
                                 @foreach($ejecutivosUnicos ?? [] as $ejecutivoUnico)
                                     <option value="{{ $ejecutivoUnico }}" {{ (isset($filtroEjecutivo) && $filtroEjecutivo === $ejecutivoUnico) ? 'selected' : '' }}>{{ $ejecutivoUnico }}</option>
@@ -124,17 +126,12 @@
                         @endif
                         
                         <!-- Botón limpiar filtros -->
-                        <button type="button" onclick="limpiarFiltros()" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition-colors text-sm flex items-center gap-1">
+                        <button type="button" onclick="limpiarFiltros()" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors shadow-sm flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                             Limpiar
                         </button>
-                        
-                        <!-- Contador de registros -->
-                        <span class="text-sm text-slate-500 ml-4">
-                            <span class="font-semibold text-slate-700">{{ count($operaciones) }}</span> operaciones
-                        </span>
                     </div>
                 </div>
             </div>
@@ -161,7 +158,7 @@
             @endphp
 
             <!-- Tabla Principal -->
-            <div class="table-container rounded-2xl overflow-hidden">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <!-- Scroll superior sincronizado -->
                 <div id="scrollSuperior" class="overflow-x-auto" style="overflow-y: hidden; height: 20px; margin-bottom: -1px;">
                     <div id="scrollSuperiorInner" style="height: 1px;"></div>
@@ -169,28 +166,28 @@
                 <!-- Contenedor de la tabla con scroll -->
                 <div id="scrollInferior" class="overflow-x-auto">
                     <table class="w-full text-sm" id="tablaMatriz">
-                        <thead class="table-header">
+                        <thead class="bg-slate-50">
                             <tr>
                                 @if(!in_array('id', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[50px]" data-columna="id">{{ $nombresColumnas['id'] ?? 'No.' }}</th>
+                                <th class="px-5 py-3 text-left text-[11px] font-bold tracking-wide text-slate-600 uppercase border-r border-slate-200 min-w-[50px]" data-columna="id">{{ $nombresColumnas['id'] ?? 'No.' }}</th>
                                 @endif
                                 @foreach($camposPorPosicion->get('id', collect()) as $campo)
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                <th class="px-5 py-3 text-left text-[11px] font-bold tracking-wide text-slate-600 uppercase border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
                                     <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
                                 </th>
                                 @endforeach
                                 
                                 @if(!in_array('ejecutivo', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px]" data-columna="ejecutivo">{{ $nombresColumnas['ejecutivo'] ?? 'Ejecutivo' }}</th>
+                                <th class="px-5 py-3 text-left text-[11px] font-bold tracking-wide text-slate-600 uppercase border-r border-slate-200 min-w-[120px]" data-columna="ejecutivo">{{ $nombresColumnas['ejecutivo'] ?? 'Ejecutivo' }}</th>
                                 @endif
                                 @foreach($camposPorPosicion->get('ejecutivo', collect()) as $campo)
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
+                                <th class="px-5 py-3 text-left text-[11px] font-bold tracking-wide text-slate-600 uppercase border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
                                     <div class="flex items-center"><span class="text-indigo-600 mr-1">★</span>{{ $campo->nombre }}</div>
                                 </th>
                                 @endforeach
                                 
                                 @if(!in_array('operacion', $columnasPredeterminadasOcultas ?? []))
-                                <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[100px]" data-columna="operacion">{{ $nombresColumnas['operacion'] ?? 'Operación' }}</th>
+                                <th class="px-5 py-3 text-left text-[11px] font-bold tracking-wide text-slate-600 uppercase border-r border-slate-200 min-w-[100px]" data-columna="operacion">{{ $nombresColumnas['operacion'] ?? 'Operación' }}</th>
                                 @endif
                                 @foreach($camposPorPosicion->get('operacion', collect()) as $campo)
                                 <th class="px-3 py-4 text-left font-semibold text-slate-700 border-r border-slate-200 min-w-[120px] bg-indigo-50" data-campo-id="{{ $campo->id }}">
@@ -1866,7 +1863,7 @@
                     </div>
                     
                     <!-- Lista de Campos Existentes -->
-                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-6">
                         <h4 class="font-semibold text-slate-700 mb-3 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
@@ -1877,8 +1874,115 @@
                             <p class="text-slate-400 text-sm text-center py-4">Cargando campos...</p>
                         </div>
                     </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <button type="button" onclick="resetearCamposPersonalizados()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Resetear a Predeterminados
+                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="previsualizarCamposModal()" class="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Previsualizar
+                            </button>
+                            <button type="button" onclick="cerrarModalCamposPersonalizados()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Guardar Configuración
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Campo Personalizado -->
+    <div id="modalEditarCampo" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-lg font-semibold text-slate-800">
+                    <svg class="w-5 h-5 inline-block mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Editar Campo Personalizado
+                </h2>
+                <button onclick="cerrarModalEditarCampo()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="formEditarCampo" class="p-6">
+                <input type="hidden" id="editarCampoId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Campo</label>
+                        <input type="text" id="editarCampoNombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Campo</label>
+                        <select id="editarCampoTipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
+                            <option value="texto">Texto corto</option>
+                            <option value="descripcion">Descripción</option>
+                            <option value="numero">Número</option>
+                            <option value="decimal">Decimal</option>
+                            <option value="moneda">Moneda</option>
+                            <option value="fecha">Fecha</option>
+                            <option value="booleano">Sí/No</option>
+                            <option value="selector">Selector</option>
+                            <option value="multiple">Múltiple</option>
+                            <option value="email">Email</option>
+                            <option value="telefono">Teléfono</option>
+                            <option value="url">URL</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">El tipo no se puede cambiar después de crear</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                        <select id="editarCampoActivo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="1">Activo (visible en modal)</option>
+                            <option value="0">Inactivo (oculto en modal)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mostrar después de</label>
+                        <select id="editarCampoMostrarDespuesDe" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Al final de la tabla --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="flex items-center text-sm font-medium text-slate-700 mt-6">
+                            <input type="checkbox" id="editarCampoRequerido" class="mr-2 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                            Campo requerido
+                        </label>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a Ejecutivos</label>
+                        <select id="selectEjecutivosEditarCampo" multiple class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[80px]">
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">Ctrl+Click para seleccionar varios</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="cerrarModalEditarCampo()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     @endif

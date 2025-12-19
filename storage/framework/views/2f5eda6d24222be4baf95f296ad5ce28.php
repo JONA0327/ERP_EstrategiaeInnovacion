@@ -63,4 +63,4 @@ $width = match ($width) {
         </div>
     </div>
 </div>
-<?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/components/dropdown.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\Users\Sistemas\Downloads\PROYECTOS EI\ERP_EstrategiaeInnovacion\resources\views\Sistemas_IT/components/dropdown.blade.php ENDPATH**/ ?>

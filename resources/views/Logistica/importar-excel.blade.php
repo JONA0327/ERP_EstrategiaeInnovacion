@@ -64,18 +64,19 @@
                             <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
-                            Asignar columnas opcionales a Ejecutivo
+                            Asignar vista a Ejecutivo
+                            <span class="text-red-500">*</span>
                         </span>
                     </label>
-                    <select name="ejecutivo_id" id="ejecutivo_id" 
+                    <select name="ejecutivo_id" id="ejecutivo_id" required
                             class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        <option value="">-- Sin asignar (solo importar datos) --</option>
+                        <option value="">-- Seleccione un ejecutivo --</option>
                         @foreach($ejecutivos as $ejecutivo)
-                            <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }} ({{ $ejecutivo->correo }})</option>
+                            <option value="{{ $ejecutivo->id }}">{{ $ejecutivo->nombre }} {{ $ejecutivo->apellido_paterno ?? '' }} - {{ $ejecutivo->correo }}</option>
                         @endforeach
                     </select>
                     <p class="text-xs text-gray-500 mt-1">
-                        Si seleccionas un ejecutivo, las columnas opcionales encontradas en el Excel se activarán automáticamente para él.
+                        <strong>Importante:</strong> Las columnas personalizadas detectadas en el Excel (ej. "FECHA PEDIMENTO PAGADO") se activarán automáticamente y solo serán visibles para el ejecutivo seleccionado.
                     </p>
                 </div>
 
