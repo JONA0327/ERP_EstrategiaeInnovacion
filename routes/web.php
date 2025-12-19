@@ -341,21 +341,25 @@ Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group
 
 Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
     
-    // Listado principal (Detecta si eres jefe o empleado)
+    // Listado principal
     Route::get('/evaluacion', [EvaluacionController::class, 'index'])
         ->name('rh.evaluacion.index');
 
-    // Ver/Realizar evaluación específica
+    // Ver/Realizar evaluación
     Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])
         ->name('rh.evaluacion.show');
 
-    // Guardar evaluación (Crear)
+    // Guardar evaluación
     Route::post('/evaluacion', [EvaluacionController::class, 'store'])
         ->name('rh.evaluacion.store');
 
-    // Actualizar evaluación (Editar)
+    // Actualizar evaluación
     Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])
         ->name('rh.evaluacion.update');
+
+    // NUEVA RUTA: Firmar de conformidad
+    Route::post('/evaluacion/{id}/firmar', [EvaluacionController::class, 'firmarConformidad'])
+        ->name('rh.evaluacion.firmar');
 
 });
 
