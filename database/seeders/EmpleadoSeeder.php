@@ -29,7 +29,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Liliana Hernandez Castilla',
                 'correo' => 'liliana.hernandez@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Administracion',
+                'posicion' => 'Recursos Humanos',
                 'supervisor' => 'Guillermo Aguilera',
             ],
             [
@@ -178,8 +178,8 @@ class EmpleadoSeeder extends Seeder
                 'id_empleado' => '84',
                 'nombre' => 'Mariana Calderón Ojeda',
                 'correo' => 'mariana.calderon@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Recursos Humanos', // Ajustado de 'RR.HH.'
+                'area' => 'Recursos Humanos',
+                'posicion' => 'Administracion RH', // Ajustado de 'RR.HH.'
                 'supervisor' => 'Liliana Hernandez Castilla',
             ],
             [
