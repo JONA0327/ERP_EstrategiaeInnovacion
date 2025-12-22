@@ -24,8 +24,19 @@ class Empleado extends Model
         'direccion',
         'correo_personal',
         'foto_path',
-        'supervisor_id', // <--- Nuevo campo agregado
+        'supervisor_id',
     ];
+
+    // --- RELACIONES ---
+
+    /**
+     * Relación: Un empleado pertenece a un Usuario de sistema (Login).
+     * Esta es la que faltaba y causaba el error.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     /**
      * Relación: Un empleado tiene un supervisor (Jefe).
