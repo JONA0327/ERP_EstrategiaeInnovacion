@@ -17,8 +17,8 @@ class LogisticaEvaluacionSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // 1. Definimos las Competencias Blandas (COMUNES PARA AMBAS ÁREAS - 40%)
-        // Esto evita repetir código y estandariza la evaluación humana.
+        // 1. SOFT SKILLS (COMPETENCIAS BLANDAS) - 40%
+        // Se guardan bajo el área 'Recursos Humanos' para que Admin RH las encuentre.
         $softSkills = [
             [
                 'criterio' => 'Puntualidad y Asistencia',
@@ -62,7 +62,8 @@ class LogisticaEvaluacionSeeder extends Seeder
             ],
         ];
 
-        // 2. Definición de Áreas y sus Objetivos Técnicos (HARD SKILLS - 60%)
+        // 2. HARD SKILLS (COMPETENCIAS TÉCNICAS) - 60%
+        // Específicas por departamento.
         $areasConfig = [
             'Logistica' => [
                 [
@@ -97,18 +98,22 @@ class LogisticaEvaluacionSeeder extends Seeder
                     'descripcion' => 'Calidad en la elaboración de opiniones legales, análisis de riesgo y entrega puntual del reporte de actividades.',
                     'peso' => 20,
                 ],
-            ]
+            ],
+            // Puedes agregar más áreas aquí (Sistemas, Pedimentos, etc.)
         ];
 
-        // 3. Procesamiento e Inserción
+        // 3. LIMPIEZA E INSERCIÓN
         $dataToInsert = [];
 
-        // Limpiamos criterios anteriores de ambas áreas
-        DB::table('criterios_evaluacion')->whereIn('area', array_keys($areasConfig))->delete();
+        // Definimos las áreas a limpiar (Técnicas + Recursos Humanos)
+        $areasToClean = array_keys($areasConfig);
+        $areasToClean[] = 'Recursos Humanos';
 
+        // Borramos criterios viejos para evitar duplicados
+        DB::table('criterios_evaluacion')->whereIn('area', $areasToClean)->delete();
+
+        // A. Insertar Criterios Técnicos (Con su nombre de área real)
         foreach ($areasConfig as $areaName => $technicalSkills) {
-            
-            // A. Agregar Criterios Técnicos (60%)
             foreach ($technicalSkills as $tech) {
                 $dataToInsert[] = [
                     'area' => $areaName,
@@ -119,21 +124,21 @@ class LogisticaEvaluacionSeeder extends Seeder
                     'updated_at' => $now,
                 ];
             }
-
-            // B. Agregar Soft Skills (40%) - Las mismas para todos
-            foreach ($softSkills as $soft) {
-                $dataToInsert[] = [
-                    'area' => $areaName,
-                    'criterio' => $soft['criterio'],
-                    'descripcion' => $soft['descripcion'],
-                    'peso' => $soft['peso'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
         }
 
-        // Insertar todo en un solo query
+        // B. Insertar Soft Skills (Bajo el área "Recursos Humanos")
+        foreach ($softSkills as $soft) {
+            $dataToInsert[] = [
+                'area' => 'Recursos Humanos', // CLAVE: Etiqueta especial para filtrado
+                'criterio' => $soft['criterio'],
+                'descripcion' => $soft['descripcion'],
+                'peso' => $soft['peso'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Insertar todo de una sola vez
         DB::table('criterios_evaluacion')->insert($dataToInsert);
     }
 }

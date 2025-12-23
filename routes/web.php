@@ -342,28 +342,13 @@ Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group
 
 });
 
+// En web.php, dentro del grupo 'capital-humano'
 Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
-    
-    // Listado principal
-    Route::get('/evaluacion', [EvaluacionController::class, 'index'])
-        ->name('rh.evaluacion.index');
-
-    // Ver/Realizar evaluación
-    Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])
-        ->name('rh.evaluacion.show');
-
-    // Guardar evaluación
-    Route::post('/evaluacion', [EvaluacionController::class, 'store'])
-        ->name('rh.evaluacion.store');
-
-    // Actualizar evaluación
-    Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])
-        ->name('rh.evaluacion.update');
-
-    // NUEVA RUTA: Firmar de conformidad
-    Route::post('/evaluacion/{id}/firmar', [EvaluacionController::class, 'firmarConformidad'])
-        ->name('rh.evaluacion.firmar');
-
+    Route::get('/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
+    Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+    Route::post('/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
+    Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
+    // ELIMINADA: Route::post('/evaluacion/{id}/firmar', ...);
 });
 
 // Ayuda pública removida
