@@ -242,7 +242,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/maintenance/availability', [MaintenanceController::class, 'availability'])->name('maintenance.availability');
     Route::get('/maintenance/slots', [MaintenanceController::class, 'slots'])->name('maintenance.slots');
-
 });
 
 // Archivo de problemas: rutas eliminadas
@@ -352,6 +351,17 @@ Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
 
     // --- AGREGA ESTA LÍNEA ---
     Route::get('/evaluacion/{id}/resultados', [EvaluacionController::class, 'resultados'])->name('rh.evaluacion.resultados');
+});
+
+Route::middleware(['auth'])->prefix('capacitacion')->name('capacitacion.')->group(function () {
+    Route::get('/', [App\Http\Controllers\RH\CapacitacionController::class, 'index'])->name('index');
+    Route::get('/ver/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'show'])->name('show');
+});
+
+Route::middleware(['auth', 'area.rh'])->prefix('recursos-humanos/capacitacion')->name('rh.capacitacion.')->group(function () {
+    Route::get('/gestion', [App\Http\Controllers\RH\CapacitacionController::class, 'manage'])->name('manage');
+    Route::post('/subir', [App\Http\Controllers\RH\CapacitacionController::class, 'store'])->name('store');
+    Route::delete('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroy'])->name('destroy');
 });
 
 // Ayuda pública removida
