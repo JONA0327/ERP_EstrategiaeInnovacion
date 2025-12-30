@@ -2,141 +2,65 @@
 
 @section('title', 'Nuevo Ticket')
 
-{{-- 1. ESTILOS (Flatpickr Corregido) --}}
+{{-- 1. ESTILOS --}}
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
-    /* CORRECCIÓN DE ALINEACIÓN:
-       Quitamos los 'display: grid' y 'justify-content' que rompían los días.
-       Solo forzamos el ancho al 100%.
-    */
+    /* Estilos del Calendario */
     .flatpickr-calendar.inline { 
-        width: 100% !important;
-        max-width: 100% !important; 
-        box-shadow: none !important; 
-        border: none !important;
-        background: transparent !important;
-        margin: 0 !important;
-        top: 0 !important;
+        width: 100% !important; max-width: 100% !important; 
+        box-shadow: none !important; border: none !important;
+        margin: 0 !important; top: 0 !important; background: transparent !important;
     }
-    
-    .flatpickr-innerContainer { 
-        width: 100% !important; 
-    }
-    
-    .flatpickr-rContainer { 
-        width: 100% !important; 
-    }
+    .flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days { width: 100% !important; }
     
     .flatpickr-days { 
-        width: 100% !important;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 0 0 1rem 1rem;
+        background: white; border: 1px solid #e2e8f0; border-radius: 0 0 1rem 1rem; 
     }
 
     .dayContainer {
-        width: 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        /* IMPORTANTE: No tocar el display flex/block aquí para no romper la semana */
+        width: 100% !important; min-width: 100% !important; max-width: 100% !important; 
         padding: 5px 0;
     }
 
-    /* DÍAS HÁBILES */
     .flatpickr-day {
-        border-radius: 0.5rem !important;
-        height: 38px !important;
-        line-height: 38px !important;
-        margin: 0 !important; /* Quitamos márgenes extraños */
-        width: 14.28% !important; /* 100% / 7 días = 14.28% para alineación perfecta */
-        max-width: 14.28% !important;
-        color: #334155 !important;
-        font-weight: 500 !important;
+        border-radius: 0.5rem !important; height: 38px !important; line-height: 38px !important;
+        margin: 0 !important; width: 14.28% !important; max-width: 14.28% !important;
+        color: #334155 !important; font-weight: 500 !important;
     }
 
-    /* DÍAS INHÁBILES */
-    .flatpickr-day.flatpickr-disabled, 
-    .flatpickr-day.flatpickr-disabled:hover {
-        color: #cbd5e1 !important; 
-        background: transparent !important;
-        border-color: transparent !important;
-        cursor: not-allowed !important;
+    /* Días Inhábiles */
+    .flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+        color: #cbd5e1 !important; background: transparent !important; border-color: transparent !important; cursor: not-allowed !important;
     }
 
-    /* DÍA SELECCIONADO */
+    /* Día Seleccionado */
     .flatpickr-day.selected, .flatpickr-day.selected:hover { 
-        background: #10b981 !important; 
-        border-color: #10b981 !important; 
-        color: white !important;
-        font-weight: bold !important;
+        background: #10b981 !important; border-color: #10b981 !important; color: white !important; font-weight: bold !important;
     }
 
-    /* CABECERAS (Meses y Días) */
     .flatpickr-months { 
-        background: #f8fafc; 
-        border-radius: 1rem 1rem 0 0; 
-        border: 1px solid #e2e8f0; 
-        border-bottom: none;
-        padding: 15px 10px;
+        background: #f8fafc; border-radius: 1rem 1rem 0 0; border: 1px solid #e2e8f0; border-bottom: none; padding: 15px 10px;
     }
     
     .flatpickr-weekdays { 
-        background: white; 
-        border-left: 1px solid #e2e8f0; 
-        border-right: 1px solid #e2e8f0;
-        height: 36px !important;
+        background: white; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; height: 36px !important;
     }
     
-    span.flatpickr-weekday {
-        color: #64748b !important; 
-        font-weight: 700 !important;
-        font-size: 0.8rem !important;
-    }
-    
-    /* Ocultar flechas de mes anterior/siguiente si no las quieres, o estilizarlas */
-    .flatpickr-prev-month, .flatpickr-next-month {
-        fill: #64748b !important;
-    }
+    span.flatpickr-weekday { color: #64748b !important; font-weight: 700 !important; font-size: 0.8rem !important; }
+    .flatpickr-prev-month, .flatpickr-next-month { fill: #64748b !important; }
 </style>
 @endpush
 
 @section('content')
 @php
     $tipo = request('tipo', 'general');
-    
-    // Configuración visual según el tipo de ticket
     $config = match($tipo) {
-        'software' => [
-            'color' => 'indigo',
-            'titulo' => 'Soporte de Software',
-            'desc' => 'Problemas con programas, licencias, correo o acceso al ERP.',
-            'icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
-            'gradient' => 'from-indigo-500 to-purple-600'
-        ],
-        'hardware' => [
-            'color' => 'slate',
-            'titulo' => 'Falla de Hardware',
-            'desc' => 'Problemas físicos: monitor, teclado, impresora o red.',
-            'icon' => 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z',
-            'gradient' => 'from-slate-600 to-slate-800'
-        ],
-        'mantenimiento' => [
-            'color' => 'emerald',
-            'titulo' => 'Mantenimiento Preventivo',
-            'desc' => 'Solicitud de limpieza de equipos o revisión programada.',
-            'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
-            'gradient' => 'from-emerald-500 to-teal-600'
-        ],
-        default => [
-            'color' => 'blue',
-            'titulo' => 'Crear Nuevo Ticket',
-            'desc' => 'Describe tu solicitud para el departamento de sistemas.',
-            'icon' => 'M12 4v16m8-8H4',
-            'gradient' => 'from-blue-500 to-blue-600'
-        ]
+        'software' => ['color' => 'indigo', 'titulo' => 'Soporte de Software', 'desc' => 'Problemas con programas, licencias, correo o acceso al ERP.', 'icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', 'gradient' => 'from-indigo-500 to-purple-600'],
+        'hardware' => ['color' => 'slate', 'titulo' => 'Falla de Hardware', 'desc' => 'Problemas físicos: monitor, teclado, impresora o red.', 'icon' => 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z', 'gradient' => 'from-slate-600 to-slate-800'],
+        'mantenimiento' => ['color' => 'emerald', 'titulo' => 'Mantenimiento Preventivo', 'desc' => 'Solicitud de limpieza de equipos o revisión programada.', 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', 'gradient' => 'from-emerald-500 to-teal-600'],
+        default => ['color' => 'blue', 'titulo' => 'Crear Nuevo Ticket', 'desc' => 'Describe tu solicitud para el departamento de sistemas.', 'icon' => 'M12 4v16m8-8H4', 'gradient' => 'from-blue-500 to-blue-600']
     };
-    
     $c = $config['color'];
 @endphp
 
@@ -152,6 +76,7 @@
 
         <div class="bg-white rounded-[2rem] shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden relative">
             
+            {{-- Header con Gradiente --}}
             <div class="relative bg-gradient-to-r {{ $config['gradient'] }} p-8 sm:p-10 text-white overflow-hidden">
                 <div class="absolute right-0 top-0 -mt-4 -mr-4 text-white opacity-10 transform rotate-12">
                     <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 24 24"><path d="{{ $config['icon'] }}"></path></svg>
@@ -173,18 +98,20 @@
             <div class="p-8 sm:p-10">
                 <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8" id="ticketForm">
                     @csrf
-                    <input type="hidden" name="categoria" value="{{ $tipo }}">
+                    <input type="hidden" name="tipo_problema" value="{{ $tipo }}">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         
                         <div class="col-span-2">
-                            <label for="titulo" class="block text-sm font-bold text-slate-700 mb-2">Asunto Breve</label>
-                            <input type="text" name="titulo" id="titulo" required 
+                            <label for="nombre_programa" class="block text-sm font-bold text-slate-700 mb-2">Asunto Breve</label>
+                            <input type="text" name="{{ $tipo == 'software' ? 'otro_programa_nombre' : 'nombre_programa' }}" id="titulo" required 
                                 class="w-full rounded-2xl border-slate-200 bg-slate-50 focus:border-{{ $c }}-500 focus:ring-{{ $c }}-500 focus:bg-white transition-all py-3 px-4 shadow-sm placeholder:text-slate-400 font-medium"
                                 placeholder="Ej: {{ $tipo == 'hardware' ? 'El monitor parpadea' : ($tipo == 'software' ? 'Outlook no conecta' : 'Limpieza preventiva') }}">
-                            @error('titulo') <span class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</span> @enderror
+                            @if($tipo == 'software') <input type="hidden" name="nombre_programa" value="Otro"> @endif
                         </div>
 
+                        {{-- Solo mostrar Prioridad si NO es mantenimiento --}}
+                        @if($tipo != 'mantenimiento')
                         <div class="col-span-2 md:col-span-1">
                             <label for="prioridad" class="block text-sm font-bold text-slate-700 mb-2">Nivel de Impacto</label>
                             <div class="relative">
@@ -199,6 +126,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
 
                         @if($tipo == 'mantenimiento')
                             <div class="col-span-2">
@@ -216,8 +144,10 @@
                                             
                                             <input type="hidden" name="fecha_requerida" id="fecha_requerida_input" required>
                                             <input type="hidden" name="hora_requerida" id="hora_requerida_input" required>
+                                            {{-- Para compatibilidad con tu validación de backend si usas slots ID --}}
+                                            <input type="hidden" name="maintenance_slot_id" id="maintenance_slot_id" value="1"> 
 
-                                            <div id="time-slots-container" class="grid grid-cols-2 gap-3">
+                                            <div id="time-slots-container" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
                                                 <div class="col-span-2 text-center py-10">
                                                     <div class="inline-flex p-3 bg-white rounded-full text-slate-300 mb-2">
                                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -241,19 +171,11 @@
                                     </div>
                                 </div>
                             </div>
-                        @else
-                            <div class="col-span-2 md:col-span-1">
-                                <label class="block text-sm font-bold text-slate-700 mb-2">Área Responsable</label>
-                                <div class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-2 text-slate-500 font-medium cursor-not-allowed">
-                                    <span class="w-3 h-3 rounded-full bg-{{ $c }}-500"></span>
-                                    {{ ucfirst($tipo) }}
-                                </div>
-                            </div>
                         @endif
 
                         <div class="col-span-2">
-                            <label for="descripcion" class="block text-sm font-bold text-slate-700 mb-2">Detalles</label>
-                            <textarea name="descripcion" id="descripcion" rows="4" required
+                            <label for="descripcion_problema" class="block text-sm font-bold text-slate-700 mb-2">Detalles</label>
+                            <textarea name="descripcion_problema" id="descripcion_problema" rows="4" required
                                 class="w-full rounded-2xl border-slate-200 bg-slate-50 focus:border-{{ $c }}-500 focus:ring-{{ $c }}-500 focus:bg-white transition-all py-3 px-4 shadow-sm placeholder:text-slate-400 resize-none font-medium leading-relaxed"
                                 placeholder="Describe el problema o requerimiento..."></textarea>
                         </div>
@@ -264,9 +186,9 @@
                                 <div class="p-2 bg-slate-100 text-slate-400 rounded-full mb-2 group-hover:bg-white group-hover:text-{{ $c }}-500 group-hover:shadow-sm transition-all">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </div>
-                                <label for="adjunto" class="cursor-pointer text-sm font-bold text-{{ $c }}-600 hover:underline">
+                                <label for="imagenes" class="cursor-pointer text-sm font-bold text-{{ $c }}-600 hover:underline">
                                     <span>Seleccionar archivo</span>
-                                    <input id="adjunto" name="adjunto" type="file" class="sr-only">
+                                    <input id="imagenes" name="imagenes[]" type="file" multiple class="sr-only">
                                 </label>
                             </div>
                         </div>
@@ -285,14 +207,29 @@
 </div>
 @endsection
 
-{{-- 2. SCRIPTS DEL CALENDARIO --}}
+{{-- 2. LÓGICA REFORZADA DEL CALENDARIO --}}
 @if($tipo == 'mantenimiento')
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Slots de 1 hora 15 minutos
+            // ============================================
+            // 1. OBTENER FECHA DEL SERVIDOR (PHP -> JS)
+            // ============================================
+            // Esto es crucial para que la validación de horas sea correcta
+            @if(isset($serverTime))
+                const serverDateStr = "{{ $serverTime->format('Y-m-d') }}";
+                const currentServerHour = {{ $serverTime->hour }};
+                const currentServerMinute = {{ $serverTime->minute }};
+            @else
+                // Fallback por seguridad
+                const now = new Date();
+                const serverDateStr = now.toISOString().split('T')[0];
+                const currentServerHour = now.getHours();
+                const currentServerMinute = now.getMinutes();
+            @endif
+
             const timeSlots = [
                 { start: '09:00', end: '10:15', label: '09:00 AM' },
                 { start: '10:30', end: '11:45', label: '10:30 AM' },
@@ -302,7 +239,7 @@
                 { start: '17:00', end: '18:15', label: '05:00 PM' }
             ];
 
-            const bookedSlots = {}; // Inyectar datos ocupados aquí
+            const bookedSlots = {}; 
 
             const dateInput = document.getElementById('fecha_requerida_input');
             const timeInput = document.getElementById('hora_requerida_input');
@@ -313,10 +250,10 @@
             flatpickr("#calendar-inline", {
                 inline: true,
                 locale: "es",
-                minDate: "today", 
+                minDate: serverDateStr, // Bloquea fechas anteriores al servidor
+                defaultDate: serverDateStr,
                 dateFormat: "Y-m-d",
                 disable: [
-                    // Solo Sábados (6) y Domingos (0)
                     function(date) {
                         return (date.getDay() === 0 || date.getDay() === 6);
                     }
@@ -329,28 +266,60 @@
                 }
             });
 
+            // Generar slots iniciales (para hoy)
+            generateTimeSlots(serverDateStr);
+            dateInput.value = serverDateStr;
+
             function generateTimeSlots(dateStr) {
                 slotsContainer.innerHTML = '';
                 const occupiedToday = bookedSlots[dateStr] || [];
+                
+                // Determinamos si la fecha seleccionada es HOY según el servidor
+                const isToday = (dateStr === serverDateStr);
+
+                let availableCount = 0;
 
                 timeSlots.forEach(slot => {
-                    const isBooked = occupiedToday.includes(slot.start);
+                    let isBooked = occupiedToday.includes(slot.start);
+                    let isPast = false;
+
+                    // --- VALIDACIÓN DE HORA PASADA ---
+                    if (isToday) {
+                        const [slotH, slotM] = slot.start.split(':').map(Number);
+                        
+                        // Si la hora del slot es menor a la hora actual
+                        if (slotH < currentServerHour) {
+                            isPast = true;
+                        } 
+                        // Si es la misma hora, checamos minutos (opcional, aquí solo horas)
+                        else if (slotH === currentServerHour && slotM < currentServerMinute) {
+                            isPast = true;
+                        }
+                    }
+
+                    // Si ya pasó o está ocupado, lo deshabilitamos
+                    const isDisabled = isBooked || isPast;
+
+                    if (!isDisabled) availableCount++;
+
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = `
                         relative w-full py-3 px-2 rounded-xl border text-sm font-bold transition-all
                         flex flex-col items-center justify-center gap-1
-                        ${isBooked 
-                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed decoration-slate-300' 
+                        ${isDisabled 
+                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60' 
                             : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-md'
                         }
                     `;
                     
-                    if (isBooked) {
+                    if (isDisabled) {
                         btn.disabled = true;
                         btn.innerHTML = `
                             <span class="line-through">${slot.label}</span>
-                            <span class="text-[9px] uppercase font-bold text-red-300">Ocupado</span>
+                            <span class="text-[9px] uppercase font-bold text-red-300">
+                                ${isPast ? 'Pasado' : 'Ocupado'}
+                            </span>
                         `;
                     } else {
                         btn.innerHTML = `
@@ -359,17 +328,14 @@
                         `;
                         
                         btn.onclick = function() {
-                            // Resetear estilos de otros botones
                             document.querySelectorAll('#time-slots-container button').forEach(b => {
                                 if(!b.disabled) {
                                     b.className = b.className.replace('ring-2 ring-emerald-500 bg-emerald-50 border-emerald-500 text-emerald-700', 'bg-white border-slate-200 text-slate-600');
                                 }
                             });
                             
-                            // Activar este botón
                             btn.className = btn.className.replace('bg-white border-slate-200 text-slate-600', 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-500 text-emerald-700');
                             
-                            // Guardar valores
                             timeInput.value = slot.start;
                             summaryText.textContent = `${formatDate(dateStr)} • ${slot.label}`;
                             summaryBox.classList.remove('hidden');
@@ -377,12 +343,20 @@
                     }
                     slotsContainer.appendChild(btn);
                 });
+
+                if (availableCount === 0) {
+                    slotsContainer.innerHTML = `
+                        <div class="col-span-2 py-6 text-center text-slate-400 text-sm italic bg-white rounded-xl border border-dashed border-slate-200">
+                            No hay horarios disponibles para esta fecha.
+                        </div>`;
+                }
             }
 
             function formatDate(dateString) {
+                const parts = dateString.split('-');
+                // Crear fecha sin conversión de zona horaria del navegador
+                const date = new Date(parts[0], parts[1] - 1, parts[2]); 
                 const options = { weekday: 'long', day: 'numeric', month: 'short' };
-                // Parche simple para timezone (T00:00:00 evita desfases)
-                const date = new Date(dateString + 'T00:00:00');
                 return date.toLocaleDateString('es-ES', options);
             }
         });

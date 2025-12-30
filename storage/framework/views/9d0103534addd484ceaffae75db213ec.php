@@ -1,35 +1,46 @@
-<x-app-layout>
-    {{-- FONDO ATMOSFÉRICO --}}
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+    
     <div class="fixed inset-0 pointer-events-none z-0">
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-50/50 blur-3xl rounded-full mix-blend-multiply"></div>
         <div class="absolute top-1/4 right-0 w-64 h-64 bg-emerald-50/50 blur-3xl rounded-full mix-blend-multiply"></div>
     </div>
 
-    <x-slot name="header">
+     <?php $__env->slot('header', null, []); ?> 
         <div class="relative z-10 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <h2 class="font-bold text-xl text-slate-800 leading-tight tracking-tight">
-                    {{ __('Reporte de Actividades') }}
+                    <?php echo e(__('Reporte de Actividades')); ?>
+
                 </h2>
                 
-                @if(request('ver_equipo_de'))
-                    @php $lider = \App\Models\Empleado::find(request('ver_equipo_de')); @endphp
+                <?php if(request('ver_equipo_de')): ?>
+                    <?php $lider = \App\Models\Empleado::find(request('ver_equipo_de')); ?>
                     <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 border border-indigo-200 shadow-sm transition-all hover:bg-indigo-200">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Equipo: {{ $lider ? Str::limit($lider->nombre_completo, 15) : '...' }}
+                        Equipo: <?php echo e($lider ? Str::limit($lider->nombre_completo, 15) : '...'); ?>
+
                     </span>
-                    <a href="{{ route('activities.index') }}" class="text-slate-400 hover:text-red-500 font-bold px-2 text-sm transition-colors" title="Quitar filtro">✕</a>
-                @endif
+                    <a href="<?php echo e(route('activities.index')); ?>" class="text-slate-400 hover:text-red-500 font-bold px-2 text-sm transition-colors" title="Quitar filtro">✕</a>
+                <?php endif; ?>
             </div>
             
-            @if(isset($esDireccion) && $esDireccion)
+            <?php if(isset($esDireccion) && $esDireccion): ?>
                 <button x-data @click="$dispatch('open-director-sidebar')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-slate-200 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95 border border-slate-700">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     Estructura
                 </button>
-            @endif
+            <?php endif; ?>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
 
     <style>
         .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
@@ -62,7 +73,7 @@
 
             appendSignature() { 
                 const d = new Date().toLocaleString('es-MX', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); 
-                this.currentNotes += (this.currentNotes ? '\n\n' : '') + `[${d} - {{ Auth::user()->name }}]: `; 
+                this.currentNotes += (this.currentNotes ? '\n\n' : '') + `[${d} - <?php echo e(Auth::user()->name); ?>]: `; 
                 this.$nextTick(() => document.getElementById('big-note-area').focus()); 
             }
          }"
@@ -70,56 +81,56 @@
          
         <div class="max-w-[98%] mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            {{-- 1. TARJETAS DE MÉTRICAS --}}
+            
             <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
                 <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-sm border border-white/50 flex items-center justify-between transition-transform hover:-translate-y-1">
-                    <div><p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Total Actividades</p><p class="text-3xl font-extrabold text-slate-700 mt-1">{{ $activities->count() }}</p></div>
+                    <div><p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Total Actividades</p><p class="text-3xl font-extrabold text-slate-700 mt-1"><?php echo e($activities->count()); ?></p></div>
                     <div class="p-3 bg-slate-50 rounded-2xl text-slate-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div>
                 </div>
                 <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-sm border border-white/50 flex items-center justify-between transition-transform hover:-translate-y-1">
-                    <div><p class="text-[10px] uppercase text-indigo-400 font-bold tracking-wider">En Proceso</p><p class="text-3xl font-extrabold text-indigo-600 mt-1">{{ $activities->where('estatus', 'En proceso')->count() }}</p></div>
+                    <div><p class="text-[10px] uppercase text-indigo-400 font-bold tracking-wider">En Proceso</p><p class="text-3xl font-extrabold text-indigo-600 mt-1"><?php echo e($activities->where('estatus', 'En proceso')->count()); ?></p></div>
                     <div class="p-3 bg-indigo-50 rounded-2xl text-indigo-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
                 </div>
                 <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-sm border border-white/50 flex items-center justify-between transition-transform hover:-translate-y-1">
-                    <div><p class="text-[10px] uppercase text-red-400 font-bold tracking-wider">Con Retardo</p><p class="text-3xl font-extrabold text-red-600 mt-1">{{ $activities->whereIn('estatus', ['Retardo', 'Completado con retardo'])->count() }}</p></div>
+                    <div><p class="text-[10px] uppercase text-red-400 font-bold tracking-wider">Con Retardo</p><p class="text-3xl font-extrabold text-red-600 mt-1"><?php echo e($activities->whereIn('estatus', ['Retardo', 'Completado con retardo'])->count()); ?></p></div>
                     <div class="p-3 bg-red-50 rounded-2xl text-red-500 animate-pulse-fast"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
                 </div>
-                @php
+                <?php
                     $completed = $activities->whereNotNull('porcentaje')->where('porcentaje', '>', 0);
                     $avg = $completed->count() > 0 ? $completed->avg('porcentaje') : 0;
                     $effColor = $avg >= 90 ? 'text-emerald-600' : ($avg >= 70 ? 'text-yellow-600' : 'text-red-600');
                     $bgEff = $avg >= 90 ? 'bg-emerald-50 text-emerald-500' : ($avg >= 70 ? 'bg-yellow-50 text-yellow-500' : 'bg-red-50 text-red-500');
-                @endphp
+                ?>
                 <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-sm border border-white/50 flex items-center justify-between transition-transform hover:-translate-y-1">
-                    <div><p class="text-[10px] uppercase text-emerald-600/70 font-bold tracking-wider">Eficiencia</p><p class="text-3xl font-extrabold {{ $effColor }} mt-1">{{ number_format($avg, 1) }}%</p></div>
-                    <div class="p-3 rounded-2xl {{ $bgEff }}"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg></div>
+                    <div><p class="text-[10px] uppercase text-emerald-600/70 font-bold tracking-wider">Eficiencia</p><p class="text-3xl font-extrabold <?php echo e($effColor); ?> mt-1"><?php echo e(number_format($avg, 1)); ?>%</p></div>
+                    <div class="p-3 rounded-2xl <?php echo e($bgEff); ?>"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg></div>
                 </div>
             </div>
 
-            {{-- 2. FILTROS --}}
+            
             <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/60 shadow-sm">
-                <form method="GET" action="{{ route('activities.index') }}" class="flex flex-wrap gap-4 items-end">
-                    @if(request('ver_equipo_de')) <input type="hidden" name="ver_equipo_de" value="{{ request('ver_equipo_de') }}"> @endif
+                <form method="GET" action="<?php echo e(route('activities.index')); ?>" class="flex flex-wrap gap-4 items-end">
+                    <?php if(request('ver_equipo_de')): ?> <input type="hidden" name="ver_equipo_de" value="<?php echo e(request('ver_equipo_de')); ?>"> <?php endif; ?>
                     
-                    @if(isset($filterUsers) && $filterUsers->count() > 1)
+                    <?php if(isset($filterUsers) && $filterUsers->count() > 1): ?>
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Responsable</label>
                         <select name="user_filter" class="w-full text-xs border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm cursor-pointer bg-white">
                             <option value="">-- Todos --</option>
-                            @foreach($filterUsers as $u)
-                                <option value="{{ $u->id }}" {{ request('user_filter') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $filterUsers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $u): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($u->id); ?>" <?php echo e(request('user_filter') == $u->id ? 'selected' : ''); ?>><?php echo e($u->name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
-                    @endif
+                    <?php endif; ?>
 
                     <div class="w-28">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prioridad</label>
                         <select name="prioridad" class="w-full text-xs border-slate-300 rounded-lg focus:ring-indigo-500 cursor-pointer shadow-sm bg-white">
                             <option value="">Todas</option>
-                            <option value="Alta" {{ request('prioridad') == 'Alta' ? 'selected' : '' }}>Alta 🔥</option>
-                            <option value="Media" {{ request('prioridad') == 'Media' ? 'selected' : '' }}>Media</option>
-                            <option value="Baja" {{ request('prioridad') == 'Baja' ? 'selected' : '' }}>Baja</option>
+                            <option value="Alta" <?php echo e(request('prioridad') == 'Alta' ? 'selected' : ''); ?>>Alta 🔥</option>
+                            <option value="Media" <?php echo e(request('prioridad') == 'Media' ? 'selected' : ''); ?>>Media</option>
+                            <option value="Baja" <?php echo e(request('prioridad') == 'Baja' ? 'selected' : ''); ?>>Baja</option>
                         </select>
                     </div>
 
@@ -127,22 +138,22 @@
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Estatus</label>
                         <select name="estatus" class="w-full text-xs border-slate-300 rounded-lg focus:ring-indigo-500 cursor-pointer shadow-sm bg-white">
                             <option value="">Todos</option>
-                            <option value="En blanco" {{ request('estatus') == 'En blanco' ? 'selected' : '' }}>⚪ En blanco</option>
-                            <option value="En proceso" {{ request('estatus') == 'En proceso' ? 'selected' : '' }}>🔵 En proceso</option>
-                            <option value="Completado" {{ request('estatus') == 'Completado' ? 'selected' : '' }}>🟢 Completado</option>
-                            <option value="Retardo" {{ request('estatus') == 'Retardo' ? 'selected' : '' }}>🔴 Retardo</option>
-                            <option value="Completado con retardo" {{ request('estatus') == 'Completado con retardo' ? 'selected' : '' }}>🟠 Con Retardo</option>
+                            <option value="En blanco" <?php echo e(request('estatus') == 'En blanco' ? 'selected' : ''); ?>>⚪ En blanco</option>
+                            <option value="En proceso" <?php echo e(request('estatus') == 'En proceso' ? 'selected' : ''); ?>>🔵 En proceso</option>
+                            <option value="Completado" <?php echo e(request('estatus') == 'Completado' ? 'selected' : ''); ?>>🟢 Completado</option>
+                            <option value="Retardo" <?php echo e(request('estatus') == 'Retardo' ? 'selected' : ''); ?>>🔴 Retardo</option>
+                            <option value="Completado con retardo" <?php echo e(request('estatus') == 'Completado con retardo' ? 'selected' : ''); ?>>🟠 Con Retardo</option>
                         </select>
                     </div>
 
                     <div class="flex gap-2">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Desde</label>
-                            <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio') }}" class="text-xs border-slate-300 rounded-lg w-32 shadow-sm focus:ring-indigo-500 bg-white">
+                            <input type="date" name="fecha_inicio" value="<?php echo e(request('fecha_inicio')); ?>" class="text-xs border-slate-300 rounded-lg w-32 shadow-sm focus:ring-indigo-500 bg-white">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hasta</label>
-                            <input type="date" name="fecha_fin" value="{{ request('fecha_fin') }}" class="text-xs border-slate-300 rounded-lg w-32 shadow-sm focus:ring-indigo-500 bg-white">
+                            <input type="date" name="fecha_fin" value="<?php echo e(request('fecha_fin')); ?>" class="text-xs border-slate-300 rounded-lg w-32 shadow-sm focus:ring-indigo-500 bg-white">
                         </div>
                     </div>
 
@@ -152,19 +163,19 @@
                             Filtrar
                         </button>
                         
-                        @if(request()->hasAny(['prioridad', 'estatus', 'fecha_inicio', 'fecha_fin', 'user_filter', 'ver_equipo_de']))
-                            <a href="{{ route('activities.index') }}" class="bg-white text-slate-600 border border-slate-300 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition shadow-sm">
+                        <?php if(request()->hasAny(['prioridad', 'estatus', 'fecha_inicio', 'fecha_fin', 'user_filter', 'ver_equipo_de'])): ?>
+                            <a href="<?php echo e(route('activities.index')); ?>" class="bg-white text-slate-600 border border-slate-300 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition shadow-sm">
                                 Limpiar
                             </a>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
 
-            {{-- 3. FORMULARIO NUEVA ACTIVIDAD --}}
+            
             <div class="bg-white p-5 shadow-lg rounded-2xl border-l-4 border-indigo-500 relative overflow-hidden">
-                <form action="{{ route('activities.store') }}" method="POST" class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    @csrf
+                <form action="<?php echo e(route('activities.store')); ?>" method="POST" class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <?php echo csrf_field(); ?>
                     <div class="col-span-12 md:col-span-2">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Área</label>
                         <input type="text" name="area" class="w-full text-xs rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej. Sistemas" required>
@@ -197,7 +208,7 @@
                 </form>
             </div>
 
-            {{-- 4. TABLA DE ACTIVIDADES --}}
+            
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-xs text-left">
@@ -220,29 +231,31 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
-                            @forelse($activities as $act)
-                            <tr class="hover:bg-indigo-50/40 transition-colors group {{ str_contains($act->estatus, 'Completado') ? 'bg-slate-50/80' : '' }}">
+                            <?php $__empty_1 = true; $__currentLoopData = $activities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $act): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <tr class="hover:bg-indigo-50/40 transition-colors group <?php echo e(str_contains($act->estatus, 'Completado') ? 'bg-slate-50/80' : ''); ?>">
                                 
                                 <td class="px-3 py-3 text-center">
-                                    @if($act->user_id === Auth::id())
+                                    <?php if($act->user_id === Auth::id()): ?>
                                         <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[9px] border border-indigo-200 shadow-sm">YO</span>
-                                    @else
-                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold text-[9px] border border-orange-200 shadow-sm" title="{{ $act->user->name }}">
-                                            {{ strtoupper(substr($act->user->name ?? 'U', 0, 2)) }}
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold text-[9px] border border-orange-200 shadow-sm" title="<?php echo e($act->user->name); ?>">
+                                            <?php echo e(strtoupper(substr($act->user->name ?? 'U', 0, 2))); ?>
+
                                         </span>
-                                    @endif
+                                    <?php endif; ?>
                                 </td>
 
                                 <td class="px-3 py-3 text-slate-600 font-medium leading-tight text-[11px]">
-                                    {{ Str::limit($act->user->empleado->supervisor->nombre ?? '-', 25) }}
+                                    <?php echo e(Str::limit($act->user->empleado->supervisor->nombre ?? '-', 25)); ?>
+
                                 </td>
 
                                 <td class="px-3 py-3 text-slate-500">
-                                    <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200 text-[10px]">{{ Str::limit($act->tipo_actividad, 12) }}</span>
+                                    <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200 text-[10px]"><?php echo e(Str::limit($act->tipo_actividad, 12)); ?></span>
                                 </td>
                                 
                                 <td class="px-3 py-3 text-center">
-                                    @php
+                                    <?php
                                         $puedeEditar = false;
                                         $miEmpleado = Auth::user()->empleado;
                                         $suEmpleado = $act->user->empleado ?? null;
@@ -254,38 +267,41 @@
                                             'Media'=>'bg-yellow-50 text-yellow-700 border-yellow-200', 
                                             default=>'bg-blue-50 text-blue-700 border-blue-200' 
                                         };
-                                    @endphp
-                                    <form action="{{ route('activities.update', $act->id) }}" method="POST">
-                                        @csrf @method('PUT')
+                                    ?>
+                                    <form action="<?php echo e(route('activities.update', $act->id)); ?>" method="POST">
+                                        <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
                                         <select name="prioridad" onchange="this.form.submit()" 
-                                                class="text-[10px] py-1 pl-2 pr-6 rounded-md border {{ $prioColor }} font-bold shadow-sm focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed appearance-none w-full text-center"
-                                                {{ !$puedeEditar ? 'disabled' : '' }}>
-                                            <option value="Baja" {{ $act->prioridad == 'Baja' ? 'selected' : '' }}>Baja</option>
-                                            <option value="Media" {{ $act->prioridad == 'Media' ? 'selected' : '' }}>Media</option>
-                                            <option value="Alta" {{ $act->prioridad == 'Alta' ? 'selected' : '' }}>Alta 🔥</option>
+                                                class="text-[10px] py-1 pl-2 pr-6 rounded-md border <?php echo e($prioColor); ?> font-bold shadow-sm focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed appearance-none w-full text-center"
+                                                <?php echo e(!$puedeEditar ? 'disabled' : ''); ?>>
+                                            <option value="Baja" <?php echo e($act->prioridad == 'Baja' ? 'selected' : ''); ?>>Baja</option>
+                                            <option value="Media" <?php echo e($act->prioridad == 'Media' ? 'selected' : ''); ?>>Media</option>
+                                            <option value="Alta" <?php echo e($act->prioridad == 'Alta' ? 'selected' : ''); ?>>Alta 🔥</option>
                                         </select>
                                     </form>
                                 </td>
 
                                 <td class="px-3 py-3 text-slate-800 font-medium leading-snug break-words">
-                                    {{ $act->nombre_actividad }}
+                                    <?php echo e($act->nombre_actividad); ?>
+
                                 </td>
                                 
-                                <td class="px-3 py-3 text-center text-slate-500">{{ $act->fecha_inicio ? $act->fecha_inicio->format('d/m') : '-' }}</td>
-                                <td class="px-3 py-3 text-center text-indigo-700 font-bold">{{ $act->fecha_compromiso ? $act->fecha_compromiso->format('d/m') : '-' }}</td>
-                                <td class="px-3 py-3 text-center text-slate-500">{{ $act->fecha_final ? $act->fecha_final->format('d/m') : '-' }}</td>
+                                <td class="px-3 py-3 text-center text-slate-500"><?php echo e($act->fecha_inicio ? $act->fecha_inicio->format('d/m') : '-'); ?></td>
+                                <td class="px-3 py-3 text-center text-indigo-700 font-bold"><?php echo e($act->fecha_compromiso ? $act->fecha_compromiso->format('d/m') : '-'); ?></td>
+                                <td class="px-3 py-3 text-center text-slate-500"><?php echo e($act->fecha_final ? $act->fecha_final->format('d/m') : '-'); ?></td>
                                 
-                                <td class="px-2 py-3 text-center bg-slate-50 font-mono text-slate-600 border-l border-slate-100">{{ $act->metrico }}</td>
-                                <td class="px-2 py-3 text-center bg-slate-50 font-mono font-bold border-l border-slate-100 {{ ($act->resultado_dias > $act->metrico) ? 'text-red-600' : 'text-emerald-600' }}">
-                                    {{ $act->resultado_dias ?? '-' }}
+                                <td class="px-2 py-3 text-center bg-slate-50 font-mono text-slate-600 border-l border-slate-100"><?php echo e($act->metrico); ?></td>
+                                <td class="px-2 py-3 text-center bg-slate-50 font-mono font-bold border-l border-slate-100 <?php echo e(($act->resultado_dias > $act->metrico) ? 'text-red-600' : 'text-emerald-600'); ?>">
+                                    <?php echo e($act->resultado_dias ?? '-'); ?>
+
                                 </td>
                                 <td class="px-2 py-3 text-center bg-slate-50 font-bold text-slate-800 border-l border-slate-100">
-                                    {{ isset($act->porcentaje) ? number_format($act->porcentaje, 0).'%' : '-' }}
+                                    <?php echo e(isset($act->porcentaje) ? number_format($act->porcentaje, 0).'%' : '-'); ?>
+
                                 </td>
 
                                 <td class="px-3 py-3">
-                                    {{-- El estatus se muestra aquí, pero su edición se delega al Modal para soportar archivos --}}
-                                    @php
+                                    
+                                    <?php
                                         $statusStyle = match($act->estatus) {
                                             'Completado' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
                                             'Retardo' => 'bg-red-100 text-red-800 border-red-200 animate-pulse',
@@ -302,43 +318,44 @@
                                             'Completado con retardo' => '🟠 Tardío',
                                             default => $act->estatus
                                         };
-                                    @endphp
-                                    <div class="text-[10px] py-1 px-2 text-center rounded-md border {{ $statusStyle }} font-semibold shadow-sm">
-                                        {{ $statusLabel }}
+                                    ?>
+                                    <div class="text-[10px] py-1 px-2 text-center rounded-md border <?php echo e($statusStyle); ?> font-semibold shadow-sm">
+                                        <?php echo e($statusLabel); ?>
+
                                     </div>
                                 </td>
 
                                 <td class="px-2 py-3 text-center">
-                                    {{-- BOTÓN PRINCIPAL DE EDICIÓN / EVIDENCIA --}}
-                                    <button @click="openNotes({{ $act->id }}, '{{ addslashes($act->nombre_actividad) }}', '{{ $act->estatus }}', '{{ $act->evidencia_path ? \Storage::url($act->evidencia_path) : '' }}')" 
+                                    
+                                    <button @click="openNotes(<?php echo e($act->id); ?>, '<?php echo e(addslashes($act->nombre_actividad)); ?>', '<?php echo e($act->estatus); ?>', '<?php echo e($act->evidencia_path ? \Storage::url($act->evidencia_path) : ''); ?>')" 
                                             class="text-indigo-600 hover:text-white hover:bg-indigo-600 border border-indigo-200 bg-indigo-50 p-1.5 rounded-lg transition-all shadow-sm group-hover:border-indigo-300 flex items-center gap-1 mx-auto" title="Editar y Subir Evidencia">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        @if($act->evidencia_path)
+                                        <?php if($act->evidencia_path): ?>
                                             <span class="text-[9px] font-bold">📎</span>
-                                        @endif
+                                        <?php endif; ?>
                                     </button>
-                                    <textarea id="notes-data-{{ $act->id }}" class="hidden">{{ $act->comentarios }}</textarea>
+                                    <textarea id="notes-data-<?php echo e($act->id); ?>" class="hidden"><?php echo e($act->comentarios); ?></textarea>
                                 </td>
 
                                 <td class="px-2 py-3 text-center">
-                                    <button @click="openHistory({{ $act->id }}, '{{ addslashes($act->nombre_actividad) }}')" 
+                                    <button @click="openHistory(<?php echo e($act->id); ?>, '<?php echo e(addslashes($act->nombre_actividad)); ?>')" 
                                             class="text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 transition-colors" title="Ver Historial">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
-                                    <textarea id="history-data-{{ $act->id }}" class="hidden">{{ json_encode($act->historial) }}</textarea>
+                                    <textarea id="history-data-<?php echo e($act->id); ?>" class="hidden"><?php echo e(json_encode($act->historial)); ?></textarea>
                                 </td>
                             </tr>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr><td colspan="14" class="py-12 text-center text-slate-400 italic bg-slate-50/50 rounded-b-xl border-t border-slate-100">No se encontraron actividades con estos filtros.</td></tr>
-                            @endforelse
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        {{-- 5. SIDEBAR DIRECTOR --}}
-        @if(isset($esDireccion) && $esDireccion)
+        
+        <?php if(isset($esDireccion) && $esDireccion): ?>
         <div x-show="directorOpen" style="display: none;" class="fixed inset-0 overflow-hidden z-50">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="directorOpen = false"></div>
             <div class="fixed inset-y-0 left-0 flex max-w-full pr-10 pointer-events-none">
@@ -354,8 +371,8 @@
 
                     <div class="flex-1 overflow-y-auto py-6 px-3">
                         <nav class="space-y-2">
-                            <a href="{{ route('activities.index') }}" 
-                               class="text-slate-300 hover:bg-slate-800 hover:text-white group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all {{ !request('ver_equipo_de') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : '' }}">
+                            <a href="<?php echo e(route('activities.index')); ?>" 
+                               class="text-slate-300 hover:bg-slate-800 hover:text-white group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all <?php echo e(!request('ver_equipo_de') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : ''); ?>">
                                 <span class="truncate">🏢 Ver Empresa Completa</span>
                             </a>
 
@@ -363,43 +380,44 @@
                                 Gerentes Directos
                             </div>
 
-                            @if(isset($listaSupervisores) && count($listaSupervisores) > 0)
-                                @foreach($listaSupervisores as $sup)
-                                    <a href="{{ route('activities.index', ['ver_equipo_de' => $sup->id]) }}" 
-                                       class="text-slate-300 hover:bg-slate-800 hover:text-white group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all {{ request('ver_equipo_de') == $sup->id ? 'bg-slate-800 text-white border-l-4 border-indigo-500' : '' }}">
+                            <?php if(isset($listaSupervisores) && count($listaSupervisores) > 0): ?>
+                                <?php $__currentLoopData = $listaSupervisores; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <a href="<?php echo e(route('activities.index', ['ver_equipo_de' => $sup->id])); ?>" 
+                                       class="text-slate-300 hover:bg-slate-800 hover:text-white group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all <?php echo e(request('ver_equipo_de') == $sup->id ? 'bg-slate-800 text-white border-l-4 border-indigo-500' : ''); ?>">
                                         <div class="mr-3 flex-shrink-0 h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shadow-sm border border-slate-600">
-                                            {{ substr($sup->nombre_completo ?? 'S', 0, 1) }}
+                                            <?php echo e(substr($sup->nombre_completo ?? 'S', 0, 1)); ?>
+
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="truncate font-semibold">{{ $sup->nombre_completo }}</p>
-                                            <p class="text-[10px] text-slate-500 truncate">{{ $sup->posicion }}</p>
+                                            <p class="truncate font-semibold"><?php echo e($sup->nombre_completo); ?></p>
+                                            <p class="text-[10px] text-slate-500 truncate"><?php echo e($sup->posicion); ?></p>
                                         </div>
-                                        @if(request('ver_equipo_de') == $sup->id)
+                                        <?php if(request('ver_equipo_de') == $sup->id): ?>
                                             <span class="w-2 h-2 rounded-full bg-indigo-500 ml-2 shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
-                                        @endif
+                                        <?php endif; ?>
                                     </a>
-                                @endforeach
-                            @else
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php else: ?>
                                 <div class="px-4 py-8 text-center">
                                     <p class="text-xs text-slate-500 italic">No tienes supervisores directos asignados.</p>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </nav>
                     </div>
                 </div>
             </div>
         </div>
-        @endif
+        <?php endif; ?>
 
-        {{-- 6. MODAL DE EDICIÓN Y EVIDENCIA (Mejorado) --}}
+        
         <div x-show="notesOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="notesOpen = false"></div>
                 <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
                     
-                    {{-- Formulario con soporte para Archivos --}}
+                    
                     <form :action="'/activities/' + currentActivityId" method="POST" enctype="multipart/form-data">
-                        @csrf @method('PUT')
+                        <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
                         
                         <div class="bg-white px-6 pt-6 pb-4">
                             <div class="flex justify-between items-start mb-4">
@@ -408,11 +426,11 @@
                             </div>
                             <p class="text-sm text-slate-500 mb-6 border-b border-slate-100 pb-3">Actividad: <span x-text="currentActivity" class="text-indigo-600 font-bold"></span></p>
                             
-                            {{-- SECCIÓN EVIDENCIA --}}
+                            
                             <div class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">1. Evidencia / Archivo</label>
                                 
-                                {{-- Si ya existe evidencia --}}
+                                
                                 <div x-show="currentEvidenceUrl" class="mb-3 flex items-center gap-3">
                                     <a :href="currentEvidenceUrl" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-200 transition-colors">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -421,12 +439,12 @@
                                     <span class="text-[10px] text-slate-400">(Subir uno nuevo lo reemplazará)</span>
                                 </div>
 
-                                {{-- Input File --}}
+                                
                                 <input type="file" name="evidencia" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all"/>
                                 <p class="text-[10px] text-slate-400 mt-1">Soporta PDF, Imagen, ZIP (Máx 10MB)</p>
                             </div>
 
-                            {{-- SECCIÓN ESTATUS --}}
+                            
                             <div class="mb-6">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">2. Estatus de la Tarea</label>
                                 <select name="estatus" x-model="currentStatus" class="w-full text-sm border-slate-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 shadow-sm cursor-pointer bg-white">
@@ -439,7 +457,7 @@
                                 </p>
                             </div>
 
-                            {{-- SECCIÓN COMENTARIOS --}}
+                            
                             <div class="relative">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">3. Bitácora / Notas</label>
                                 <div class="absolute top-0 right-0 z-10">
@@ -460,7 +478,7 @@
             </div>
         </div>
 
-        {{-- 7. MODAL HISTORIAL (Sin cambios) --}}
+        
         <div x-show="historyOpen" style="display: none;" class="fixed inset-0 overflow-hidden z-50">
              <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="historyOpen = false"></div>
              <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
@@ -497,4 +515,13 @@
         </div>
 
     </div>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?><?php /**PATH C:\Users\trade\Desktop\Proyectos\ERP_EstrategiaeInnovacion\resources\views/activities/index.blade.php ENDPATH**/ ?>

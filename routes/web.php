@@ -348,7 +348,10 @@ Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
     Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
     Route::post('/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
     Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
-    // ELIMINADA: Route::post('/evaluacion/{id}/firmar', ...);
+    
+
+    // --- AGREGA ESTA LÍNEA ---
+    Route::get('/evaluacion/{id}/resultados', [EvaluacionController::class, 'resultados'])->name('rh.evaluacion.resultados');
 });
 
 // Ayuda pública removida
