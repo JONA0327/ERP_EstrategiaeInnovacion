@@ -362,6 +362,14 @@ Route::middleware(['auth', 'area.rh'])->prefix('recursos-humanos/capacitacion')-
     Route::get('/gestion', [App\Http\Controllers\RH\CapacitacionController::class, 'manage'])->name('manage');
     Route::post('/subir', [App\Http\Controllers\RH\CapacitacionController::class, 'store'])->name('store');
     Route::delete('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroy'])->name('destroy');
+
+    // --- RUTAS NUEVAS DE EDICIÓN ---
+    Route::get('/{id}/editar', [App\Http\Controllers\RH\CapacitacionController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'update'])->name('update');
+    Route::delete('/adjunto/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroyAdjunto'])->name('destroyAdjunto');
+    // -------------------------------
+
+    Route::delete('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroy'])->name('destroy');
 });
 
 // Ayuda pública removida

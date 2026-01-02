@@ -71,48 +71,84 @@
                     <?php endif; ?>
 
                     <?php if(isset($criterios) && $criterios->isNotEmpty()): ?>
-                        <div class="space-y-10">
-                            <?php $__currentLoopData = $criterios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $criterio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php
-                                    $valPrevio = $respuestas[$criterio->id] ?? null;
-                                    $obsPrevia = $observaciones[$criterio->id] ?? '';
-                                ?>
-                                <div class="relative bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors" x-data="{ selected: <?php echo e($valPrevio ?? 'null'); ?> }">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h4 class="text-lg font-bold text-slate-800"><?php echo e($criterio->criterio); ?></h4>
-                                            <p class="text-sm text-slate-500 mt-1 max-w-3xl"><?php echo e($criterio->descripcion); ?></p>
+                        <div class="space-y-12"> 
+                            
+                            
+                            <?php $__currentLoopData = $criterios->groupBy('criterio'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $categoria => $items): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                
+                                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    
+                                    <div class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
+                                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                            <?php echo e($categoria); ?>
+
+                                        </h3>
+                                        
+                                        <div class="flex gap-2">
+                                            
+                                            <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200">
+                                                Valor Sección: <?php echo e($items->sum('peso')); ?>%
+                                            </span>
+                                            <span class="text-xs font-semibold bg-white text-slate-500 px-3 py-1 rounded-full border border-slate-200">
+                                                <?php echo e($items->count()); ?> Puntos
+                                            </span>
                                         </div>
-                                        <span class="text-xs font-bold bg-white text-slate-400 px-2 py-1 rounded border border-slate-200 shadow-sm">Peso: <?php echo e($criterio->peso); ?>%</span>
                                     </div>
 
-                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                        <?php
-                                            $opciones = [
-                                                ['val' => 100, 'label' => 'Excelente'],
-                                                ['val' => 75, 'label' => 'Bueno'],
-                                                ['val' => 50, 'label' => 'Regular'],
-                                                ['val' => 25, 'label' => 'Deficiente'],
-                                                ['val' => 0, 'label' => 'Inaceptable']
-                                            ];
-                                        ?>
-                                        <?php $__currentLoopData = $opciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $op): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <label class="cursor-pointer group relative">
-                                                <input type="radio" name="calificaciones[<?php echo e($criterio->id); ?>]" value="<?php echo e($op['val']); ?>" class="peer sr-only" x-model="selected" required <?php echo e($is_locked ? 'disabled' : ''); ?>>
-                                                <div class="h-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-white bg-white shadow-sm transition-all duration-200 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 hover:shadow-md">
-                                                    <span class="text-lg font-bold mb-1"><?php echo e($op['val']); ?></span>
-                                                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-70"><?php echo e($op['label']); ?></span>
+                                    
+                                    <div class="p-6 space-y-8">
+                                        <?php $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $criterio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <?php
+                                                $valPrevio = $respuestas[$criterio->id] ?? null;
+                                                $obsPrevia = $observaciones[$criterio->id] ?? '';
+                                            ?>
+                                            
+                                            <div class="relative pl-4 border-l-4 border-slate-200 hover:border-indigo-400 transition-colors duration-300" x-data="{ selected: <?php echo e($valPrevio ?? 'null'); ?> }">
+                                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                                                    <div class="w-full">
+                                                        <p class="text-base font-medium text-slate-700"><?php echo e($criterio->descripcion); ?></p>
+                                                    </div>
+                                                    
+                                                    <span class="shrink-0 text-[10px] font-bold bg-slate-50 text-slate-400 px-2 py-0.5 rounded border border-slate-100">
+                                                        <?php echo e($criterio->peso); ?>%
+                                                    </span>
                                                 </div>
-                                            </label>
+
+                                                
+                                                <div class="grid grid-cols-5 gap-2 mb-3">
+                                                    <?php
+                                                        $opciones = [
+                                                            ['val' => 100, 'label' => 'Excelente'],
+                                                            ['val' => 75, 'label' => 'Bueno'],
+                                                            ['val' => 50, 'label' => 'Regular'],
+                                                            ['val' => 25, 'label' => 'Deficiente'],
+                                                            ['val' => 0, 'label' => 'Inaceptable']
+                                                        ];
+                                                    ?>
+                                                    <?php $__currentLoopData = $opciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $op): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                        <label class="cursor-pointer group relative">
+                                                            <input type="radio" name="calificaciones[<?php echo e($criterio->id); ?>]" value="<?php echo e($op['val']); ?>" class="peer sr-only" x-model="selected" required <?php echo e($is_locked ? 'disabled' : ''); ?>>
+                                                            
+                                                            <div class="h-full flex flex-col items-center justify-center py-2 px-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all duration-200 
+                                                                        peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:shadow-sm">
+                                                                <span class="text-sm font-bold"><?php echo e($op['val']); ?></span>
+                                                                <span class="hidden md:block text-[9px] uppercase font-bold opacity-60 mt-0.5"><?php echo e($op['label']); ?></span>
+                                                            </div>
+                                                        </label>
+                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                </div>
+                                                
+                                                <div class="mt-2">
+                                                    <textarea name="observaciones[<?php echo e($criterio->id); ?>]" rows="1"
+                                                        class="w-full text-xs rounded-md border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder-slate-400 resize-none transition-all" 
+                                                        placeholder="Nota opcional..." <?php echo e($is_locked ? 'disabled' : ''); ?>><?php echo e($obsPrevia); ?></textarea>
+                                                </div>
+                                            </div>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </div>
-                                    
-                                    <div class="mt-4">
-                                        <input type="text" name="observaciones[<?php echo e($criterio->id); ?>]" value="<?php echo e($obsPrevia); ?>" 
-                                            class="w-full text-sm rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 placeholder-slate-400" 
-                                            placeholder="Observaciones específicas para este punto (opcional)..." <?php echo e($is_locked ? 'disabled' : ''); ?>>
-                                    </div>
                                 </div>
+
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
 

@@ -15,10 +15,13 @@ class EvaluacionController extends Controller
 {
     private function isEvaluationWindowOpen()
     {
-        $now = Carbon::now();
-        // Ajusta las fechas a tu necesidad
-        return ($now->month == 6 && $now->day >= 21 && $now->day <= 30) || 
-               ($now->month == 12 && $now->day >= 1 && $now->day <= 31);
+        // $now = Carbon::now();
+        // // Ajusta las fechas a tu necesidad
+        // return ($now->month == 6 && $now->day >= 21 && $now->day <= 30) || 
+        //        ($now->month == 12 && $now->day >= 1 && $now->day <= 31);
+        
+        // --- MODO PRUEBAS: SIEMPRE ABIERTO ---
+        return true; 
     }
 
     // --- DETECCIÓN DE PUESTO (POSICIÓN) ---
@@ -157,11 +160,10 @@ class EvaluacionController extends Controller
 
         // CASO A: Admin RH (Posición) que NO es jefe directo -> Solo ve Soft Skills
         if ($isAdminRH && !$isDirectSupervisor && !$isBoss) {
-            // Busca la etiqueta exacta que pusimos en el Seeder
             $queryCriterios->where('area', 'Recursos Humanos');
             $areaDisplay = 'Habilidades Blandas (Evaluación RH)';
         }
-        // CASO B: Jefe Directo -> Ve Técnico + Soft Skills
+        // CASO B: Jefe Directo evalúa a Empleado -> Ve Técnico + Soft Skills
         elseif ($isDirectSupervisor) {
             $puesto = $target->posicion;
             $areaTecnica = 'General';
@@ -174,11 +176,17 @@ class EvaluacionController extends Controller
 
             $queryCriterios->where(function($q) use ($areaTecnica) {
                 $q->where('area', $areaTecnica)
-                  ->orWhere('area', 'Recursos Humanos'); // Suma las soft skills
+                  ->orWhere('area', 'Recursos Humanos');
             });
             $areaDisplay = 'Evaluación Integral (Técnica + RH)';
         }
-        // CASO C: Otros (Ej. Empleado a Jefe)
+        // CASO C: Empleado evalúa a su Jefe (Evaluación Supervisor)  <-- ESTE ES EL CAMBIO
+        elseif ($isBoss) {
+             // Aquí jalamos los 17 criterios nuevos que metimos en el Seeder
+             $queryCriterios->where('area', 'Evaluación Supervisor'); 
+             $areaDisplay = 'Evaluación de Desempeño (Supervisor)';
+        }
+        // CASO D: Default (Otros)
         else {
              $queryCriterios->where('area', 'Recursos Humanos');
              $areaDisplay = 'Evaluación de Liderazgo';

@@ -31,7 +31,7 @@
      <?php $__env->endSlot(); ?>
 
     <?php
-        $categoriasPrincipales = ['Logistica', 'Legal', 'Pedimentos', 'Anexo 24', 'Auditoria', 'TI', 'Recursos Humanos'];
+        $categoriasPrincipales = ['Logistica', 'Legal', 'Anexo 24', 'Auditoria', 'TI'];
         $todosLosPuestos = $empleados->pluck('posicion')->unique()->values()->toArray();
         $todasLasCategorias = array_unique(array_merge($categoriasPrincipales, $todosLosPuestos));
     ?>

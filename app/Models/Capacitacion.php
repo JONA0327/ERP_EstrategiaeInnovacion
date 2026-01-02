@@ -24,4 +24,9 @@ class Capacitacion extends Model
     {
         return $this->belongsTo(User::class, 'subido_por');
     }
+
+    public function adjuntos()
+    {
+        return $this->hasMany(CapacitacionAdjunto::class);
+    }
 }

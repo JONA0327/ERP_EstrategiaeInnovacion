@@ -25,6 +25,10 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                     <textarea name="descripcion" rows="2" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Material de Apoyo (Opcional)</label>
+                    <input type="file" name="adjuntos[]" multiple class="...">
+                </div>
             </div>
             <div class="mt-4 flex justify-end">
                 <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-bold shadow-sm transition">
@@ -58,6 +62,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
+                            <a href="{{ route('rh.capacitacion.edit', $video->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Editar</a>
                         </form>
                     </td>
                 </tr>

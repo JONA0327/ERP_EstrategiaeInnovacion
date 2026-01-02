@@ -24,6 +24,22 @@
         <div class="prose max-w-none text-gray-700">
             {{ $video->descripcion }}
         </div>
+        @if($video->adjuntos->isNotEmpty())
+            <div class="mt-8 border-t pt-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Material de Apoyo y Descargas</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @foreach($video->adjuntos as $adjunto)
+                        <a href="{{ asset('storage/' . $adjunto->archivo_path) }}" target="_blank" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition group">
+                            <span class="text-2xl mr-3 group-hover:scale-110 transition">📄</span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 group-hover:text-indigo-600">{{ $adjunto->titulo }}</p>
+                                <p class="text-xs text-gray-500">Clic para descargar</p>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

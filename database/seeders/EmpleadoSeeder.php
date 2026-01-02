@@ -28,8 +28,8 @@ class EmpleadoSeeder extends Seeder
                 'id_empleado' => '36',
                 'nombre' => 'Liliana Hernandez Castilla',
                 'correo' => 'liliana.hernandez@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Recursos Humanos',
+                'area' => 'Recursos Humanos',
+                'posicion' => 'Administracion RH',
                 'supervisor' => 'Guillermo Aguilera',
             ],
             [
@@ -37,7 +37,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Silvestre Reyes Castillo',
                 'correo' => 'silvestre.castillo@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos', // Ajustado de 'Comercio Exterior' para coincidir con tus categorías
+                'posicion' => 'Auditoria', 
                 'supervisor' => 'Guillermo Aguilera',
             ],
             [
@@ -63,26 +63,17 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Mario Mojica Morales',
                 'correo' => 'mario.mojica@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos', // Ajustado
-                'supervisor' => 'Silvestre Reyes Castillo',
+                'posicion' => 'Post-Operacion', // Ajustado
+                'supervisor' => 'Guillermo Aguilera',
             ],
             [
                 'id_empleado' => '74',
                 'nombre' => 'Aneth Alejandra Herrera Hernandez',
                 'correo' => 'aneth.herrera@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos', // Ajustado
-                'supervisor' => 'Silvestre Reyes Castillo',
+                'posicion' => 'Post-Operacion', // Ajustado
+                'supervisor' => 'Mario Mojica Morales',
             ],
-            [
-                'id_empleado' => '105',
-                'nombre' => 'Patricia Mayela Rivera Martinez',
-                'correo' => 'patricia.rivera@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Auditoria',
-                'supervisor' => 'Silvestre Reyes Castillo',
-            ],
-
             // ===== REPORTAN A NANCY =====
             [
                 'id_empleado' => '22',
@@ -105,7 +96,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Guadalupe Jacqueline Mendoza Rodriguez',
                 'correo' => 'guadalupe.mendoza@empresa.com',
                 'area' => 'AGC',
-                'posicion' => 'Logistica (Home Office)',
+                'posicion' => 'Logistica',
                 'supervisor' => 'Nancy Beatriz Gomez Hernandez',
             ],
             [
@@ -137,7 +128,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Alisson Cassiel Pineda Martinez',
                 'correo' => 'alisson.pineda@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Logistica (Practicante)',
+                'posicion' => 'Logistica',
                 'supervisor' => 'Nancy Beatriz Gomez Hernandez',
             ],
             [
@@ -152,16 +143,16 @@ class EmpleadoSeeder extends Seeder
                 'id_empleado' => '87',
                 'nombre' => 'Karen Cristina Bonal Mata',
                 'correo' => 'karen.bonal@empresa.com',
-                'area' => 'EB',
-                'posicion' => 'Tecnica',
+                'area' => 'EB-Tecnica',
+                'posicion' => 'Logistica',
                 'supervisor' => 'Nancy Beatriz Gomez Hernandez',
             ],
             [
                 'id_empleado' => '96',
                 'nombre' => 'Jacob de Jesus Medina Ramirez',
                 'correo' => 'jacob.medina@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'AsiaWay',
+                'area' => 'AsiaWay',
+                'posicion' => 'Logistica',
                 'supervisor' => 'Nancy Beatriz Gomez Hernandez',
             ],
             [
@@ -205,15 +196,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Jessica Anahi Esparza Gonzalez',
                 'correo' => 'jessica.esparza@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos',
-                'supervisor' => 'Mario Mojica Morales',
-            ],
-            [
-                'id_empleado' => '91',
-                'nombre' => 'Maria Fernanda Sanchez Miranda',
-                'correo' => 'maria.sanchez@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos',
+                'posicion' => 'Anexo 24',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -221,7 +204,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Felipe de Jesus Rodriguez Ledesma',
                 'correo' => 'felipe.rodriguez@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos',
+                'posicion' => 'Anexo 24',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -229,7 +212,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Mayra Susana Coreño Arriaga',
                 'correo' => 'mayra.coreno@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos',
+                'posicion' => 'Post-Operacion',
                 'supervisor' => 'Mario Mojica Morales',
             ],
             [
@@ -237,7 +220,7 @@ class EmpleadoSeeder extends Seeder
                 'nombre' => 'Erika Liliana Mireles Sanchez',
                 'correo' => 'erika.mireles@empresa.com',
                 'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Pedimentos',
+                'posicion' => 'Anexo 24',
                 'supervisor' => 'Mario Mojica Morales',
             ],
 
