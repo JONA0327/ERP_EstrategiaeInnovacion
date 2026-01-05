@@ -16,54 +16,100 @@ use Carbon\Carbon;
 
 class RelojChecadorImportController extends Controller
 {
-    /**
-     * Muestra el panel principal y calcula KPIs de forma eficiente.
-     */
     public function index(Request $request)
     {
-        // 1. Definir Periodo (Default: Mes Actual)
+        // 1. Definir Periodo
         $inicio = $request->input('fecha_inicio', now()->startOfMonth()->toDateString());
         $fin = $request->input('fecha_fin', now()->endOfMonth()->toDateString());
+        
+        $start = Carbon::parse($inicio);
+        $end = Carbon::parse($fin);
 
-        // 2. Query Base (Reutilizable)
-        // Usamos el Scope 'enPeriodo' que creamos en el modelo
-        $baseQuery = Asistencia::enPeriodo($inicio, $fin);
+        // 2. Generar Array de Fechas (Para la vista)
+        // Este loop genera las etiquetas visuales (Lunes 31, Domingo 30...)
+        $fechas = [];
+        // Clonamos $end para no afectar la fecha original que usaremos en el query
+        $loopDate = $end->copy(); 
+        
+        while ($loopDate->gte($start)) {
+            if (!$loopDate->isWeekend()) {
+                $fechas[] = $loopDate->copy();
+            }
+            $loopDate->subDay();
+        }
 
-        // 3. Cálculo de KPIs usando Scopes (Mucho más limpio)
+        // 3. Preparar Límites para la Base de Datos
+        // TRUCO: Para incluir TODO el día final, buscamos todo lo que sea MENOR al día siguiente.
+        $dbFechaFin = Carbon::parse($fin)->addDay()->format('Y-m-d'); // Ej: Si fin es 31-12, esto será 01-01
+
+        // 4. Obtener Empleados
+        $search = $request->input('search');
+
+        $empleados = Empleado::query()
+            ->when($search, function($query, $search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('nombre', 'like', "%{$search}%")
+                      ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                      ->orWhere('id_empleado', 'like', "%{$search}%")
+                      ->orWhere('no_empleado', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('nombre')
+            // Cargamos asistencias con la lógica de "Menor al día siguiente"
+            ->with(['asistencias' => function($q) use ($inicio, $dbFechaFin) {
+                $q->where('fecha', '>=', $inicio)
+                  ->where('fecha', '<', $dbFechaFin);
+            }])
+            ->paginate(15)
+            ->withQueryString();
+
+        // 5. Calcular KPIs Globales (Con la misma lógica de fechas)
+        $baseQuery = Asistencia::query()
+            ->where('fecha', '>=', $inicio)
+            ->where('fecha', '<', $dbFechaFin);
+        
         $kpis = [
             'total' => $baseQuery->count(),
-            'ok' => (clone $baseQuery)->puntuales()->count(),
-            'retardos' => (clone $baseQuery)->retardosInjustificados()->count(),
-            'faltas' => (clone $baseQuery)->faltas()->count(),
+            'ok' => (clone $baseQuery)->where('es_retardo', false)->count(),
+            'retardos' => (clone $baseQuery)->where('es_retardo', true)->where('es_justificado', false)->count(),
+            'faltas' => (clone $baseQuery)->where('tipo_registro', 'falta')->count(),
         ];
 
-        // Porcentaje de eficiencia
-        $porcentajeAsistencia = $kpis['total'] > 0 
-            ? round(($kpis['ok'] / $kpis['total']) * 100, 1) 
-            : 0;
+        // Cálculo de Horas
+        $registrosTiempos = (clone $baseQuery)
+            ->whereNotNull('entrada')
+            ->whereNotNull('salida')
+            ->get(['entrada', 'salida']);
+            
+        $minutosTotales = 0;
+        foreach ($registrosTiempos as $registro) {
+            $entrada = Carbon::parse($registro->entrada);
+            $salida = Carbon::parse($registro->salida);
+            if ($salida->gt($entrada)) {
+                $minutosTotales += $entrada->diffInMinutes($salida);
+            }
+        }
+        $horas = floor($minutosTotales / 60);
+        $minutos = $minutosTotales % 60;
+        $horasTotales = sprintf('%d:%02d', $horas, $minutos);
 
-        // Top Retardos (Optimizado con DB::raw)
+        $porcentajeAsistencia = $kpis['total'] > 0 ? round(($kpis['ok'] / $kpis['total']) * 100, 1) : 0;
+
         $topRetardos = (clone $baseQuery)
-            ->retardosInjustificados()
+            ->where('es_retardo', true)
+            ->where('es_justificado', false)
             ->select('nombre', DB::raw('count(*) as total'))
             ->groupBy('nombre')
             ->orderByDesc('total')
             ->limit(3)
             ->get();
 
-        // 4. Obtener datos para la Tabla (Paginados y con búsqueda)
-        $asistencias = Asistencia::with('empleado')
-            ->enPeriodo($inicio, $fin)
-            ->buscar($request->search) // Scope de búsqueda
-            ->orderBy('fecha', 'desc')
-            ->orderBy('nombre', 'asc')
-            ->paginate(20)
-            ->withQueryString();
-
         return view('Recursos_Humanos.reloj_checador', compact(
-            'asistencias', 
+            'empleados', 
+            'fechas',
             'porcentajeAsistencia',
-            'topRetardos'
+            'topRetardos',
+            'horasTotales'
         ) + [
             'totalRegistros' => $kpis['total'],
             'asistenciasOk' => $kpis['ok'],
@@ -94,53 +140,79 @@ class RelojChecadorImportController extends Controller
     }
 
     /**
-     * Registra incidencias masivas (Vacaciones, Incapacidades).
-     * OPTIMIZADO: Usa upsert para evitar bucles de consultas.
+     * Registra incidencias individuales o MASIVAS (Versión Corregida "Anti-Duplicados")
      */
     public function store(Request $request)
     {
         $request->validate([
-            'empleado_id' => 'required|exists:empleados,id',
+            'empleado_id' => 'required', 
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'tipo_registro' => 'required'
         ]);
 
-        $empleado = Empleado::findOrFail($request->empleado_id);
         $inicio = Carbon::parse($request->fecha_inicio);
         $fin = $request->fecha_fin ? Carbon::parse($request->fecha_fin) : $inicio->copy();
+        
+        $targetEmpleados = collect();
 
-        // Preparar array masivo
-        $datosParaInsertar = [];
-        $now = now();
-
-        for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
-            $datosParaInsertar[] = [
-                'empleado_id' => $empleado->id,
-                'fecha' => $date->toDateString(),
-                'empleado_no' => $empleado->id_empleado ?? 'S/N',
-                'nombre' => $empleado->nombre,
-                'tipo_registro' => $request->tipo_registro,
-                'comentarios' => $request->comentarios,
-                'entrada' => null,
-                'salida' => null,
-                'checadas' => json_encode([]), // Campo obligatorio si es NOT NULL
-                'es_justificado' => true,
-                'es_retardo' => false,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+        if ($request->empleado_id === 'all') {
+            $targetEmpleados = Empleado::all(); 
+        } else {
+            $emp = Empleado::find($request->empleado_id);
+            if ($emp) {
+                $targetEmpleados->push($emp);
+            }
         }
 
-        // UN SOLO query para insertar/actualizar todo (Mucho más rápido)
-        Asistencia::upsert(
-            $datosParaInsertar, 
-            ['empleado_id', 'fecha'], // Columnas únicas para detectar duplicados
-            ['tipo_registro', 'comentarios', 'es_justificado', 'entrada', 'salida', 'updated_at'] // Qué actualizar si ya existe
-        );
+        if ($targetEmpleados->isEmpty()) {
+            return back()->with('error', 'No se encontraron empleados.');
+        }
 
-        $dias = count($datosParaInsertar);
-        return back()->with('success', "Se registraron $dias días de {$request->tipo_registro} para {$empleado->nombre}.");
+        $contador = 0;
+
+        foreach ($targetEmpleados as $empleado) {
+            $loopDate = $inicio->copy();
+
+            while ($loopDate->lte($fin)) {
+                
+                $registroExistente = Asistencia::where('empleado_id', $empleado->id)
+                    ->whereDate('fecha', $loopDate->toDateString())
+                    ->first();
+
+                // Datos base
+                $datosGuardar = [
+                    'empleado_id' => $empleado->id,
+                    'fecha' => $registroExistente ? $registroExistente->fecha : $loopDate->toDateString(),
+                    'empleado_no' => $empleado->id_empleado ?? 'S/N',
+                    'nombre' => $empleado->nombre . ' ' . $empleado->apellido_paterno,
+                    'tipo_registro' => $request->tipo_registro,
+                    'comentarios' => $request->comentarios,
+                    'es_justificado' => true,
+                    'es_retardo' => false,
+                    'updated_at' => now(),
+                ];
+
+                if ($registroExistente) {
+                    $registroExistente->update($datosGuardar);
+                } else {
+                    // Si es NUEVO, necesitamos estos campos obligatorios
+                    $datosGuardar['created_at'] = now();
+                    $datosGuardar['checadas'] = '[]'; // <--- ¡AQUÍ ESTABA EL ERROR! (Array JSON vacío)
+                    
+                    // Aseguramos que entrada/salida sean null si la BD los pide (aunque suelen ser nullable)
+                    $datosGuardar['entrada'] = null;
+                    $datosGuardar['salida'] = null;
+
+                    Asistencia::create($datosGuardar);
+                }
+                
+                $contador++;
+                $loopDate->addDay();
+            }
+        }
+
+        return back()->with('success', "Proceso terminado. Se registraron {$contador} incidencias correctamente.");
     }
 
     /**
@@ -207,4 +279,6 @@ class RelojChecadorImportController extends Controller
         Asistencia::truncate();
         return redirect()->route('rh.reloj.index')->with('success', 'Base de datos de asistencia vaciada correctamente.');
     }
+
+    
 }

@@ -351,6 +351,15 @@ Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
 
     // --- AGREGA ESTA LÍNEA ---
     Route::get('/evaluacion/{id}/resultados', [EvaluacionController::class, 'resultados'])->name('rh.evaluacion.resultados');
+
+    Route::post('/expedientes/{id}/upload', [ExpedienteController::class, 'uploadDocument'])
+        ->name('rh.expedientes.upload');
+
+    Route::delete('/expedientes/documento/{id}', [ExpedienteController::class, 'deleteDocument'])
+        ->name('rh.expedientes.delete-doc');
+
+    Route::post('/expedientes/{id}/import-excel', [ExpedienteController::class, 'importFormatoId'])
+    ->name('rh.expedientes.import-excel');
 });
 
 Route::middleware(['auth'])->prefix('capacitacion')->name('capacitacion.')->group(function () {

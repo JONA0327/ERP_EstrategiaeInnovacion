@@ -25,6 +25,9 @@ class Empleado extends Model
         'correo_personal',
         'foto_path',
         'supervisor_id',
+        'ciudad', 'estado_federativo', 'codigo_postal', 'telefono_casa',
+        'alergias', 'enfermedades_cronicas',
+        'contacto_emergencia_nombre', 'contacto_emergencia_numero', 'contacto_emergencia_parentesco'
     ];
 
     // --- RELACIONES ---
@@ -52,5 +55,30 @@ class Empleado extends Model
     public function subordinados()
     {
         return $this->hasMany(Empleado::class, 'supervisor_id');
+    }
+
+    public function asistencias()
+    {
+        return $this->hasMany(Asistencia::class, 'empleado_id');
+    }
+
+    public function documentos()
+    {
+        return $this->hasMany(\App\Models\EmpleadoDocumento::class); // Asegúrate de crear este modelo también
+    }
+
+    // Helper para calcular completitud (Opcional pero pro)
+    public function getPorcentajeExpedienteAttribute()
+    {
+        $puntos = 0;
+        $total = 5; // Digamos que pedimos 5 cosas obligatorias
+        
+        if ($this->rfc) $puntos++;
+        if ($this->nss) $puntos++;
+        if ($this->documentos()->where('categoria', 'Identificación')->exists()) $puntos++;
+        if ($this->documentos()->where('categoria', 'Contrato')->exists()) $puntos++;
+        // ... más lógica
+        
+        return ($puntos / $total) * 100;
     }
 }

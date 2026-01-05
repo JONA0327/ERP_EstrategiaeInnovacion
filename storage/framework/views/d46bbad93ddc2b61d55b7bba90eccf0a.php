@@ -20,7 +20,23 @@
     <div class="py-8 bg-gray-50/50 min-h-screen" x-data="{ openImport: false }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                
+                
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500 relative overflow-hidden group hover:shadow-md transition">
+                    <div class="relative z-10">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Horas Totales</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1"><?php echo e($horasTotales ?? 0); ?> <span class="text-lg text-gray-400 font-normal">hrs</span></p>
+                        <p class="text-xs text-blue-600 font-medium mt-1">Periodo actual</p>
+                    </div>
+                    <div class="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-50 to-transparent opacity-50 group-hover:opacity-100 transition"></div>
+                    <div class="absolute -right-2 -bottom-4 text-blue-100 opacity-50">
+                        <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                
                 <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-indigo-500 relative overflow-hidden group hover:shadow-md transition">
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Eficiencia</p>
@@ -32,6 +48,7 @@
                     </div>
                 </div>
 
+                
                 <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-amber-500 relative overflow-hidden group hover:shadow-md transition">
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Retardos</p>
@@ -43,6 +60,7 @@
                     </div>
                 </div>
 
+                
                 <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500 relative overflow-hidden group hover:shadow-md transition">
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Ausencias</p>
@@ -54,6 +72,7 @@
                     </div>
                 </div>
 
+                
                 <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 overflow-hidden">
                     <div class="flex items-center justify-between mb-3">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Top Retardos</p>
@@ -80,6 +99,7 @@
                 </div>
             </div>
 
+            
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 bg-white border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
                     
@@ -107,6 +127,7 @@
                     </form>
                 </div>
 
+                
                 <div x-show="openImport" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="bg-blue-50/50 border-b border-blue-100 p-6" style="display: none;">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
@@ -148,6 +169,7 @@
                 </div>
             </div>
 
+            
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
@@ -163,109 +185,165 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-50">
-                            <?php $currentMonth = null; ?>
-                            <?php $__empty_1 = true; $__currentLoopData = $asistencias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $asistencia): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <?php 
+                                $currentMonth = null; 
+                            ?>
+
+                            
+                            <?php $__currentLoopData = $fechas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $fechaObj): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 
-                                <?php if($currentMonth !== $asistencia->fecha->format('Y-m')): ?>
-                                    <?php $currentMonth = $asistencia->fecha->format('Y-m'); ?>
-                                    <tr class="bg-gray-50/50">
+                                
+                                <?php if($currentMonth !== $fechaObj->format('Y-m')): ?>
+                                    <?php $currentMonth = $fechaObj->format('Y-m'); ?>
+                                    <tr class="bg-gray-100">
                                         <td colspan="7" class="px-6 py-2 text-xs font-bold text-indigo-600 uppercase tracking-widest border-l-4 border-indigo-400">
-                                            <?php echo e($asistencia->fecha->isoFormat('MMMM YYYY')); ?>
+                                            <?php echo e($fechaObj->isoFormat('MMMM YYYY')); ?>
 
                                         </td>
                                     </tr>
                                 <?php endif; ?>
 
-                                <tr class="hover:bg-gray-50/80 transition-colors group">
-                                    <td class="px-6 py-3 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-indigo-100 to-white flex items-center justify-center text-indigo-700 text-xs font-bold border border-indigo-100 shadow-sm">
-                                                <?php echo e(substr($asistencia->nombre, 0, 1)); ?>
+                                
+                                <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $empleado): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
+                                        // Buscar registro exacto para empleado y fecha
+                                        $asistencia = $empleado->asistencias->first(function($item) use ($fechaObj) {
+                                            return \Carbon\Carbon::parse($item->fecha)->format('Y-m-d') === $fechaObj->format('Y-m-d');
+                                        });
+                                    ?>
+
+                                    <tr class="hover:bg-gray-50/80 transition-colors group">
+                                        
+                                        <td class="px-6 py-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-indigo-100 to-white flex items-center justify-center text-indigo-700 text-xs font-bold border border-indigo-100 shadow-sm">
+                                                    <?php echo e(substr($empleado->nombre, 0, 1)); ?>
+
+                                                </div>
+                                                <div class="ml-3">
+                                                    <div class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition"><?php echo e($empleado->nombre); ?></div>
+                                                    <div class="text-[10px] text-gray-400 uppercase tracking-wide"><?php echo e($empleado->id_empleado ?? 'S/N'); ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        
+                                        <td class="px-6 py-3 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-700"><?php echo e($fechaObj->format('d/m')); ?></div>
+                                            <div class="text-xs text-gray-400">
+                                                <?php echo e($fechaObj->isoFormat('dddd')); ?>
 
                                             </div>
-                                            <div class="ml-3">
-                                                <div class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition"><?php echo e($asistencia->nombre); ?></div>
-                                                <div class="text-[10px] text-gray-400 uppercase tracking-wide"><?php echo e($asistencia->empleado_no); ?></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    
-                                    <td class="px-6 py-3 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-700"><?php echo e($asistencia->fecha->format('d/m')); ?></div>
-                                        <div class="text-xs <?php echo e($asistencia->fecha->isWeekend() ? 'text-indigo-400 font-bold' : 'text-gray-400'); ?>">
-                                            <?php echo e($asistencia->fecha->isoFormat('dddd')); ?>
-
-                                        </div>
-                                    </td>
-
-                                    <?php if($asistencia->tipo_registro == 'asistencia'): ?>
-                                        <td class="px-6 py-3 whitespace-nowrap text-center">
-                                            <span class="font-mono text-sm <?php echo e($asistencia->es_retardo && !$asistencia->es_justificado ? 'text-red-600 font-bold' : 'text-gray-600'); ?>">
-                                                <?php echo e($asistencia->entrada ? substr($asistencia->entrada, 0, 5) : '--:--'); ?>
-
-                                            </span>
-                                            <?php if($asistencia->es_retardo && !$asistencia->es_justificado): ?>
-                                                <span class="block text-[9px] text-red-400 font-medium mt-0.5">Tarde</span>
-                                            <?php endif; ?>
                                         </td>
-                                        <td class="px-6 py-3 whitespace-nowrap text-center text-gray-600 font-mono text-sm">
-                                            <?php echo e($asistencia->salida ? substr($asistencia->salida, 0, 5) : '--:--'); ?>
 
-                                        </td>
-                                        <td class="px-6 py-3 whitespace-nowrap text-center">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                                <?php echo e($asistencia->horas_trabajadas); ?>
-
-                                            </span>
-                                        </td>
-                                    <?php else: ?>
-                                        <td colspan="3" class="px-6 py-3 text-center">
-                                            <span class="text-sm text-gray-400 italic flex items-center justify-center gap-1">
-                                                <?php if($asistencia->tipo_registro == 'vacaciones'): ?> 🌴
-                                                <?php elseif($asistencia->tipo_registro == 'incapacidad'): ?> 🏥
-                                                <?php endif; ?>
-                                                <?php echo e(ucfirst($asistencia->tipo_registro)); ?>
-
-                                            </span>
-                                        </td>
-                                    <?php endif; ?>
-
-                                    <td class="px-6 py-3 whitespace-nowrap text-center">
-                                        <?php
-                                            $badgeClass = match($asistencia->tipo_registro) {
-                                                'vacaciones' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                                'incapacidad' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                                'falta' => 'bg-red-50 text-red-700 border-red-200',
-                                                'descanso' => 'bg-gray-100 text-gray-600 border-gray-200',
-                                                default => ($asistencia->es_retardo && !$asistencia->es_justificado) 
-                                                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                                    : (($asistencia->es_justificado) ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-green-50 text-green-700 border-green-200')
-                                            };
+                                        <?php if($asistencia): ?>
                                             
-                                            $statusText = match($asistencia->tipo_registro) {
-                                                'asistencia' => ($asistencia->es_retardo && !$asistencia->es_justificado) ? 'Retardo' : (($asistencia->es_justificado) ? 'Justificado' : 'A Tiempo'),
-                                                default => ucfirst($asistencia->tipo_registro)
-                                            };
-                                        ?>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border <?php echo e($badgeClass); ?>">
-                                            <?php echo e($statusText); ?>
+                                            <?php if($asistencia->tipo_registro == 'asistencia'): ?>
+                                                <td class="px-6 py-3 whitespace-nowrap text-center">
+                                                    <span class="font-mono text-sm <?php echo e($asistencia->es_retardo && !$asistencia->es_justificado ? 'text-red-600 font-bold' : 'text-gray-600'); ?>">
+                                                        <?php echo e($asistencia->entrada ? substr($asistencia->entrada, 0, 5) : '--:--'); ?>
 
-                                        </span>
-                                    </td>
+                                                    </span>
+                                                    <?php if($asistencia->es_retardo && !$asistencia->es_justificado): ?>
+                                                        <span class="block text-[9px] text-red-400 font-medium mt-0.5">Tarde</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="px-6 py-3 whitespace-nowrap text-center text-gray-600 font-mono text-sm">
+                                                    <?php echo e($asistencia->salida ? substr($asistencia->salida, 0, 5) : '--:--'); ?>
 
-                                    <td class="px-6 py-3 whitespace-nowrap text-right">
-                                        <button onclick="abrirModalEdicion(<?php echo e($asistencia); ?>)" class="text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                                </td>
+                                                <td class="px-6 py-3 whitespace-nowrap text-center">
+                                                    <?php
+                                                        $horasRegistro = '--';
+                                                        if($asistencia->entrada && $asistencia->salida) {
+                                                            $entrada = \Carbon\Carbon::parse($asistencia->entrada);
+                                                            $salida = \Carbon\Carbon::parse($asistencia->salida);
+                                                            if($salida->gt($entrada)) {
+                                                                $diffMins = $entrada->diffInMinutes($salida);
+                                                                $h = floor($diffMins / 60);
+                                                                $m = $diffMins % 60;
+                                                                $horasRegistro = sprintf('%02d:%02d', $h, $m);
+                                                            }
+                                                        }
+                                                    ?>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 font-mono">
+                                                        <?php echo e($horasRegistro); ?>
+
+                                                    </span>
+                                                </td>
+                                            <?php else: ?>
+                                                
+                                                <td colspan="3" class="px-6 py-3 text-center">
+                                                    <span class="text-sm text-gray-400 italic flex items-center justify-center gap-1">
+                                                        <?php if($asistencia->tipo_registro == 'vacaciones'): ?> 🌴
+                                                        <?php elseif($asistencia->tipo_registro == 'incapacidad'): ?> 🏥
+                                                        <?php elseif($asistencia->tipo_registro == 'falta'): ?> ❌
+                                                        <?php endif; ?>
+                                                        <?php echo e(ucfirst($asistencia->tipo_registro)); ?>
+
+                                                    </span>
+                                                </td>
+                                            <?php endif; ?>
+
+                                            
+                                            <td class="px-6 py-3 whitespace-nowrap text-center">
+                                                <?php
+                                                    $badgeClass = match($asistencia->tipo_registro) {
+                                                        'vacaciones' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                                        'incapacidad' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                                        'falta' => ($asistencia->es_justificado) 
+                                                            ? 'bg-orange-50 text-orange-700 border-orange-200' // Falta Justificada (Naranja)
+                                                            : 'bg-red-50 text-red-700 border-red-200',         // Falta Injustificada (Rojo)
+                                                        'descanso' => 'bg-gray-100 text-gray-600 border-gray-200',
+                                                        default => ($asistencia->es_retardo && !$asistencia->es_justificado) 
+                                                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                                            : (($asistencia->es_justificado) ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-green-50 text-green-700 border-green-200')
+                                                    };
+                                                    
+                                                    $statusText = match($asistencia->tipo_registro) {
+                                                        'asistencia' => ($asistencia->es_retardo && !$asistencia->es_justificado) ? 'Retardo' : (($asistencia->es_justificado) ? 'Justificado' : 'A Tiempo'),
+                                                        'falta' => ($asistencia->es_justificado) ? 'Falta Justif.' : 'Falta', // Texto personalizado
+                                                        default => ucfirst($asistencia->tipo_registro)
+                                                    };
+                                                ?>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border <?php echo e($badgeClass); ?>">
+                                                    <?php echo e($statusText); ?>
+
+                                                </span>
+                                            </td>
+
+                                            <td class="px-6 py-3 whitespace-nowrap text-right">
+                                                <button onclick="abrirModalEdicion(<?php echo e($asistencia); ?>)" class="text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100" title="Editar Registro">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                </button>
+                                            </td>
+
+                                        <?php else: ?>
+                                            
+                                            <td colspan="3" class="px-6 py-3 text-center bg-red-50/30">
+                                                <span class="text-xs text-red-400 italic">-- Sin checada --</span>
+                                            </td>
+                                            <td class="px-6 py-3 whitespace-nowrap text-center bg-red-50/30">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                                    Sin Registro
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-3 whitespace-nowrap text-right bg-red-50/30">
+                                                
+                                                <button onclick="abrirModalIncidencia(<?php echo e($empleado->id); ?>, '<?php echo e($fechaObj->toDateString()); ?>')" class="text-red-300 hover:text-red-600 transition p-1 rounded-full hover:bg-red-50" title="Justificar Ausencia">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                </button>
+                                            </td>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+                            <?php if(empty($fechas)): ?>
                                 <tr>
                                     <td colspan="7" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center justify-center text-gray-400">
-                                            <svg class="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            <p class="text-sm font-medium">No se encontraron registros</p>
-                                            <p class="text-xs">Intente cambiar los filtros o importar un archivo.</p>
+                                            <p class="text-sm font-medium">No hay fechas que mostrar</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -274,13 +352,14 @@
                     </table>
                 </div>
                 <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                    <?php echo e($asistencias->links()); ?>
+                    <?php echo e($empleados->links()); ?>
 
                 </div>
             </div>
         </div>
     </div>
 
+    
     <div id="modalEdicion" class="fixed inset-0 z-50 hidden overflow-y-auto">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarModalEdicion()"></div>
@@ -312,7 +391,7 @@
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Guardar</button>
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Guardar Cambios</button>
                         <button type="button" onclick="cerrarModalEdicion()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
                     </div>
                 </form>
@@ -320,6 +399,7 @@
         </div>
     </div>
 
+    
     <div id="modalIncidencia" class="fixed inset-0 z-50 hidden overflow-y-auto">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarModalIncidencia()"></div>
@@ -328,7 +408,7 @@
                     <?php echo csrf_field(); ?>
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6" x-data="{ tipo: 'vacaciones' }">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-900">Registrar Incidencia / Periodo</h3>
+                            <h3 class="text-lg font-bold text-gray-900">Registrar / Justificar Incidencia</h3>
                             <button type="button" onclick="cerrarModalIncidencia()" class="text-gray-400 hover:text-gray-500">
                                 <span class="sr-only">Cerrar</span>
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -338,7 +418,14 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Empleado</label>
-                                <select name="empleado_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <select name="empleado_id" id="modal_empleado_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    
+                                    
+                                    <option value="all" class="font-bold text-indigo-600 bg-indigo-50">
+                                        👥 APLICAR A TODOS LOS EMPLEADOS (Masivo)
+                                    </option>
+                                    <option disabled>──────────────────────────</option>
+
                                     <?php $__currentLoopData = \App\Models\Empleado::orderBy('nombre')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($emp->id); ?>"><?php echo e($emp->nombre); ?> (<?php echo e($emp->id_empleado); ?>)</option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -347,11 +434,11 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Tipo de Registro</label>
-                                <select name="tipo_registro" x-model="tipo" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <select name="tipo_registro" id="modal_tipo_registro" x-model="tipo" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                     <option value="vacaciones">🌴 Vacaciones</option>
                                     <option value="incapacidad">🏥 Incapacidad</option>
                                     <option value="permiso">📄 Permiso Especial</option>
-                                    <option value="falta">❌ Falta Injustificada</option>
+                                    <option value="falta">❌ Falta / Justificación</option>
                                     <option value="descanso">🏠 Día de Descanso</option>
                                 </select>
                             </div>
@@ -361,11 +448,11 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Desde</label>
-                                        <input type="date" name="fecha_inicio" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                        <input type="date" name="fecha_inicio" id="modal_fecha_inicio" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                     </div>
                                     <div x-show="['vacaciones', 'incapacidad', 'permiso'].includes(tipo)" x-transition>
                                         <label class="block text-sm font-medium text-gray-700">Hasta (Inclusive)</label>
-                                        <input type="date" name="fecha_fin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                        <input type="date" name="fecha_fin" id="modal_fecha_fin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                     </div>
                                 </div>
                                 <p x-show="['vacaciones', 'incapacidad', 'permiso'].includes(tipo)" class="text-xs text-gray-500 mt-2">
@@ -393,7 +480,7 @@
     </div>
     
     <script>
-        // Importador JS (Igual que antes)
+        // Importador JS (Sin cambios)
         document.getElementById('importForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -404,7 +491,6 @@
             const originalText = btn.innerHTML;
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
             const progressPercent = document.getElementById('progressPercent');
             const progressMessage = document.getElementById('progressMessage');
 
@@ -467,7 +553,19 @@
         function cerrarModalEdicion() {
             document.getElementById('modalEdicion').classList.add('hidden');
         }
-        function abrirModalIncidencia() {
+
+        // Nueva función para abrir modal desde "Sin Registro" pre-llenado
+        function abrirModalIncidencia(empleadoId = null, fecha = null) {
+            if(empleadoId && fecha) {
+                // Pre-llenar datos para justificación rápida
+                document.getElementById('modal_empleado_id').value = empleadoId;
+                document.getElementById('modal_fecha_inicio').value = fecha;
+                document.getElementById('modal_fecha_fin').value = fecha; // Por defecto 1 día
+                document.getElementById('modal_tipo_registro').value = 'falta'; // Sugerir Falta/Justificación
+                
+                // Disparar evento para actualizar x-data si fuera necesario (opcional)
+                document.getElementById('modal_tipo_registro').dispatchEvent(new Event('change'));
+            }
             document.getElementById('modalIncidencia').classList.remove('hidden');
         }
         function cerrarModalIncidencia() {
