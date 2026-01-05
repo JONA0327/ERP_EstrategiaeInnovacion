@@ -6,55 +6,66 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up()
     {
-        // 1. Tabla Principal
+        // 1. TABLA PRINCIPAL (ACTIVITIES)
         Schema::create('activities', function (Blueprint $table) {
-            $table->id(); // ID
-            $table->foreignId('user_id')->constrained(); // Dueño de la actividad
+            $table->id();
             
+            // "Firma" del dueño de la actividad
+            $table->foreignId('user_id')->constrained('users'); 
+            
+            // Clasificación
             $table->string('nombre_actividad');
-            $table->enum('prioridad', ['Baja', 'Media', 'Alta']);
+            $table->string('area')->nullable();
+            $table->string('tipo_actividad')->nullable();
+            $table->string('prioridad')->default('Media');
             
             // Fechas
-            $table->date('fecha_inicio')->useCurrent(); // Se pone sola
+            $table->date('fecha_inicio')->useCurrent();
             $table->date('fecha_compromiso');
-            $table->date('fecha_final')->nullable(); // Se llena al completar
+            $table->date('fecha_final')->nullable();
             
-            // Campos Calculados (Se guardan para facilitar reportes)
-            $table->integer('metrico')->nullable(); // (fecha_compromiso - fecha_inicio)
-            $table->integer('resultado_dias')->nullable(); // (fecha_final - fecha_inicio)
-            $table->decimal('porcentaje', 10, 2)->nullable(); // (resultado_dias / metrico)
+            // Métricas
+            $table->integer('metrico')->default(1);
+            $table->integer('resultado_dias')->nullable();
+            $table->decimal('porcentaje', 10, 2)->nullable();
             
-            // Estatus: Agregamos las variantes que pediste
-            $table->string('estatus')->default('En proceso'); 
-            // Valores esperados: 'En proceso', 'Completado', 'Retardo', 'Completado con retardo', 'En blanco'
-            
-            $table->text('comentarios')->nullable();
+            // Estado y NOTAS ACTUALES
+            $table->string('estatus')->default('En blanco');
+            $table->text('comentarios')->nullable(); // <--- Aquí guardamos la nota actual
+            $table->string('evidencia_path')->nullable();
             
             $table->timestamps();
+            $table->softDeletes();
         });
 
-        // 2. Tabla de Historial (Auditoría)
+        // 2. TABLA DE HISTORIAL (FIRMAS Y AVANCES)
         Schema::create('activity_histories', function (Blueprint $table) {
             $table->id();
+            
             $table->foreignId('activity_id')->constrained('activities')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained(); // Quién hizo el cambio
-            $table->string('campo_modificado')->nullable(); // Qué campo se tocó
-            $table->text('valor_anterior')->nullable();
-            $table->text('valor_nuevo')->nullable();
-            $table->timestamp('fecha_cambio')->useCurrent();
+            
+            // "Firma" de quien hizo el cambio (Auditoría)
+            $table->foreignId('user_id')->constrained('users'); 
+            
+            // Campos Técnicos (Para el Timeline)
+            $table->string('action')->nullable();      // 'created', 'updated', 'comment'
+            $table->string('field')->nullable();       // Qué cambió (ej: estatus)
+            
+            $table->text('old_value')->nullable();     // Valor Antes
+            $table->text('new_value')->nullable();     // Valor Después
+            
+            $table->text('details')->nullable();       // Resumen
+            $table->text('comentario')->nullable();    // Comentario específico del historial
+            
+            $table->timestamps(); // Registra CUÁNDO se firmó/cambió
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('activities_tables');
+        Schema::dropIfExists('activity_histories');
+        Schema::dropIfExists('activities');
     }
 };
