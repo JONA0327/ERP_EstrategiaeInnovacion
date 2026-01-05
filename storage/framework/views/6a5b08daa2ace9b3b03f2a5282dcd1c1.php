@@ -32,11 +32,10 @@
                     Enviar Correo
                 </button>
 
-                <a href="<?php echo e(route('logistica.reportes.export', request()->query())); ?>"
-                   class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-900 focus:outline-none focus:border-emerald-900 focus:ring ring-emerald-300 disabled:opacity-25 transition shadow-sm">
+                <button onclick="openExportModal()" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-900 focus:outline-none focus:border-emerald-900 focus:ring ring-emerald-300 disabled:opacity-25 transition shadow-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Exportar
-                </a>
+                    Generar Reporte
+                </button>
             </div>
         </div>
      <?php $__env->endSlot(); ?>
@@ -51,10 +50,12 @@
                             class="tab-button whitespace-nowrap px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ease-in-out flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-50">
                         Reporte de Seguimiento
                     </button>
+
                     <button type="button" data-tab-target="pedimentos"
                             class="tab-button whitespace-nowrap px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ease-in-out flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-50">
                         Reporte de Pedimentos
                     </button>
+
                     <button type="button" data-tab-target="resumen"
                             class="tab-button whitespace-nowrap px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ease-in-out flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-50">
                         Resumen Ejecutivo
@@ -314,166 +315,405 @@
 
             </div>
 
-            <!-- Panel: Resumen ejecutivo y análisis temporal -->
-            <div data-tab-panel="resumen" class="space-y-8 hidden">
-                <!-- Resumen Ejecutivo Inteligente -->
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-slate-800 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        Resumen Ejecutivo
-                    </h2>
-                    <div class="text-sm opacity-75">
-                        <?php echo e(now()->format('d/m/Y H:i')); ?>
-
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="font-medium mb-2 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Rendimiento General
+            <!-- Panel: Reporte de Pedimentos -->
+            <div data-tab-panel="pedimentos" class="space-y-8 hidden">
+                <!-- Filtros de Pedimentos -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            Filtros de Pedimentos
                         </h3>
-                        <?php
-                            $totalOps = $statsTemporales['total_operaciones'];
-                            $enTiempo = $statsTemporales['en_tiempo'] ?? 0;
-                            $completadoTiempo = $statsTemporales['completado_tiempo'] ?? 0;
-                            $enRiesgo = $statsTemporales['en_riesgo'] ?? 0;
-                            $conRetraso = $statsTemporales['con_retraso'] ?? 0;
-                            $completadoRetraso = $statsTemporales['completado_retraso'] ?? 0;
-                            $operacionesExitosas = $enTiempo + $completadoTiempo;
-                            $eficienciaGeneral = $totalOps > 0 ? round(($operacionesExitosas / $totalOps) * 100, 1) : 0;
-                            $promedioEjecucion = round($statsTemporales['promedio_dias'] ?? 0, 1);
-                            $targetPromedio = round($statsTemporales['promedio_target'] ?? 3, 1);
-                        ?>
-                        
-                        <!-- Desglose Detallado de Eficiencia -->
-                        <div class="bg-slate-700 rounded-lg p-4 mb-4">
-                            <h4 class="font-semibold text-sm mb-3 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-md">Reportes de Pedimentos</span>
+                    </div>
+                    
+                    <form method="GET" action="<?php echo e(route('logistica.reportes')); ?>" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Estado de Pago -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Estado de Pago</label>
+                            <select name="estado_pago" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700 font-semibold cursor-pointer">
+                                <option value="" <?php echo e(request('estado_pago') === null ? 'selected' : ''); ?>>Todos</option>
+                                <option value="pagado" <?php echo e(request('estado_pago') === 'pagado' ? 'selected' : ''); ?>>Pagados</option>
+                                <option value="pendiente" <?php echo e(request('estado_pago') === 'pendiente' ? 'selected' : ''); ?>>Pendientes</option>
+                            </select>
+                        </div>
+
+                        <!-- Tipo de Operación -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tipo de Operación</label>
+                            <select name="tipo_operacion" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700 font-semibold cursor-pointer">
+                                <option value="" <?php echo e(request('tipo_operacion') === null ? 'selected' : ''); ?>>Todas</option>
+                                <option value="importacion" <?php echo e(request('tipo_operacion') === 'importacion' ? 'selected' : ''); ?>>Importación</option>
+                                <option value="exportacion" <?php echo e(request('tipo_operacion') === 'exportacion' ? 'selected' : ''); ?>>Exportación</option>
+                            </select>
+                        </div>
+
+                        <!-- Moneda -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Moneda</label>
+                            <select name="moneda" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700 font-semibold cursor-pointer">
+                                <option value="" <?php echo e(request('moneda') === null ? 'selected' : ''); ?>>Todas</option>
+                                <option value="MXN" <?php echo e(request('moneda') === 'MXN' ? 'selected' : ''); ?>>MXN - Peso Mexicano</option>
+                                <option value="USD" <?php echo e(request('moneda') === 'USD' ? 'selected' : ''); ?>>USD - Dólar Americano</option>
+                                <option value="EUR" <?php echo e(request('moneda') === 'EUR' ? 'selected' : ''); ?>>EUR - Euro</option>
+                            </select>
+                        </div>
+
+                        <!-- Clave de Pedimento -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Clave de Pedimento</label>
+                            <select name="clave_pedimento" class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700 font-semibold cursor-pointer">
+                                <option value="" <?php echo e(request('clave_pedimento') === null ? 'selected' : ''); ?>>Todas las Claves</option>
+                                <option value="A1" <?php echo e(request('clave_pedimento') === 'A1' ? 'selected' : ''); ?>>A1 - Importación para Consumo</option>
+                                <option value="A3" <?php echo e(request('clave_pedimento') === 'A3' ? 'selected' : ''); ?>>A3 - Importación Temporal</option>
+                                <option value="A4" <?php echo e(request('clave_pedimento') === 'A4' ? 'selected' : ''); ?>>A4 - Importación Temporal Maquila</option>
+                                <option value="B1" <?php echo e(request('clave_pedimento') === 'B1' ? 'selected' : ''); ?>>B1 - Exportación Definitiva</option>
+                                <option value="B2" <?php echo e(request('clave_pedimento') === 'B2' ? 'selected' : ''); ?>>B2 - Exportación Temporal</option>
+                            </select>
+                        </div>
+
+                        <!-- Fecha de Embarque (Desde) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fecha Embarque (Desde)</label>
+                            <input type="date" name="fecha_embarque_desde" value="<?php echo e(request('fecha_embarque_desde')); ?>" 
+                                   class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700">
+                        </div>
+
+                        <!-- Fecha de Embarque (Hasta) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fecha Embarque (Hasta)</label>
+                            <input type="date" name="fecha_embarque_hasta" value="<?php echo e(request('fecha_embarque_hasta')); ?>" 
+                                   class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700">
+                        </div>
+
+                        <!-- Cliente -->
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cliente</label>
+                            <input type="text" name="cliente" value="<?php echo e(request('cliente')); ?>" placeholder="Buscar por nombre de cliente..."
+                                   class="w-full text-sm border-slate-300 bg-slate-50 rounded-md focus:ring-blue-500 focus:border-blue-500 text-slate-700">
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="md:col-span-2 lg:col-span-3 flex gap-3 justify-end pt-4 border-t border-slate-200">
+                            <button type="button" onclick="limpiarFiltrosPedimentos()" class="inline-flex items-center px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg font-semibold text-xs text-slate-700 uppercase tracking-widest hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500 transition">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Limpiar Filtros
+                            </button>
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                Generar Reporte
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Resultados del Reporte de Pedimentos -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                    <div class="p-6 border-b border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                 </svg>
-                                Desglose de Eficiencia
-                            </h4>
-                            <div class="grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                    <p class="text-green-400">✅ <strong>Operaciones Exitosas: <?php echo e($operacionesExitosas); ?></strong></p>
-                                    <p class="ml-4 opacity-80">• Activas en Tiempo: <?php echo e($enTiempo); ?></p>
-                                    <p class="ml-4 opacity-80">• Finalizadas a Tiempo: <?php echo e($completadoTiempo); ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-red-400 flex items-center gap-2">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                        </svg>
-                                        <strong>Operaciones Problemáticas: <?php echo e($totalOps - $operacionesExitosas); ?></strong>
-                                    </p>
-                                    <p class="ml-4 opacity-80">• Activas en Riesgo: <?php echo e($enRiesgo); ?></p>
-                                    <p class="ml-4 opacity-80">• Activas con Retraso: <?php echo e($conRetraso); ?></p>
-                                    <p class="ml-4 opacity-80">• Finalizadas con Retraso: <?php echo e($completadoRetraso); ?></p>
+                            </div>
+                            Resultados del Reporte
+                        </h3>
+                        <p class="text-sm text-slate-600 mt-1">Visualización de pedimentos según filtros aplicados</p>
+                    </div>
+
+                    <div class="p-6">
+                        <!-- Resumen de Totales -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-slate-800">0</div>
+                                    <div class="text-sm text-slate-600">Total Pedimentos</div>
                                 </div>
                             </div>
-                            <div class="mt-3 pt-3 border-t border-slate-600">
-                                <p class="text-xs opacity-80 mb-2">
-                                    <span class="font-semibold">Lógica:</span> 
-                                    Activas en Tiempo (<?php echo e($enTiempo); ?>) + Finalizadas a Tiempo (<?php echo e($completadoTiempo); ?>) = Exitosas
-                                </p>
-                                <p class="text-sm">
-                                    <span class="font-semibold">Cálculo:</span> 
-                                    (<?php echo e($operacionesExitosas); ?> exitosas ÷ <?php echo e($totalOps); ?> total) × 100 = 
-                                    <span class="font-bold text-blue-400"><?php echo e($eficienciaGeneral); ?>%</span>
-                                </p>
+                            <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-green-800">$0</div>
+                                    <div class="text-sm text-green-600">Total Pagado</div>
+                                </div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-yellow-800">$0</div>
+                                    <div class="text-sm text-yellow-600">Total Pendiente</div>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-800">0</div>
+                                    <div class="text-sm text-blue-600">Promedio Días</div>
+                                </div>
                             </div>
                         </div>
 
-                        <p class="text-sm opacity-90">
-                            <span class="font-semibold">Eficiencia General:</span> <?php echo e($eficienciaGeneral); ?>%
-                            <?php if($eficienciaGeneral >= 80): ?>
-                                <span class="text-green-300">🟢 Excelente</span>
-                            <?php elseif($eficienciaGeneral >= 60): ?>
-                                <span class="text-yellow-300">🟡 Regular</span>
-                            <?php else: ?>
-                                <span class="text-red-300">🔴 Requiere Atención</span>
-                            <?php endif; ?>
-                        </p>
-                        <p class="text-sm opacity-90">
-                            <span class="font-semibold">Tiempo Promedio:</span> <?php echo e(isset($stats['promedio_ejecucion']) ? $stats['promedio_ejecucion'] : 0); ?> días
-                            (Target: <?php echo e(isset($stats['target_promedio']) ? $stats['target_promedio'] : 0); ?> días)
-                        </p>
+                        <!-- Tabla de Pedimentos -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pedimento</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cliente</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Clave</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado Pago</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha Embarque</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-slate-200">
+                                    <!-- Mensaje cuando no hay datos -->
+                                    <tr>
+                                        <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <p class="text-lg font-medium text-slate-900 mb-1">No hay pedimentos para mostrar</p>
+                                                <p class="text-sm text-slate-500">Aplica filtros para generar el reporte de pedimentos</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Aquí se cargarían los datos reales de pedimentos -->
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        <div class="mt-6 flex items-center justify-between border-t border-slate-200 pt-6">
+                            <div class="text-sm text-slate-700">
+                                Mostrando <span class="font-medium">0</span> resultados
+                            </div>
+                            <div class="flex gap-2">
+                                <button disabled class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Anterior</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <button disabled class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Siguiente</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="font-medium mb-2">📈 Distribución de Operaciones</h3>
-                        
-                        <!-- Distribución Visual -->
-                        <div class="bg-slate-700 rounded-lg p-4 mb-4">
-                            <div class="space-y-2">
-                                <div class="text-sm font-semibold text-blue-300 mb-2 flex items-center gap-2">
+                </div>
+            </div>
+
+            <!-- Panel: Resumen ejecutivo y análisis temporal -->
+            <div data-tab-panel="resumen" class="space-y-8 hidden">
+                <!-- Header del Resumen Ejecutivo -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                </div>
+                                Resumen Ejecutivo
+                            </h2>
+                            <p class="text-slate-600">Análisis de rendimiento y eficiencia operacional</p>
+                        </div>
+                        <div class="text-xs text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                            <?php echo e(now()->format('d/m/Y H:i')); ?>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen Ejecutivo -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Rendimiento General -->
+                        <div class="bg-slate-50 rounded-lg p-6 border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center border border-green-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                Rendimiento General
+                            </h3>
+                            
+                            <?php
+                                $totalOps = $statsTemporales['total_operaciones'];
+                                $enTiempo = $statsTemporales['en_tiempo'] ?? 0;
+                                $completadoTiempo = $statsTemporales['completado_tiempo'] ?? 0;
+                                $enRiesgo = $statsTemporales['en_riesgo'] ?? 0;
+                                $conRetraso = $statsTemporales['con_retraso'] ?? 0;
+                                $completadoRetraso = $statsTemporales['completado_retraso'] ?? 0;
+                                $operacionesExitosas = $enTiempo + $completadoTiempo;
+                                $eficienciaGeneral = $totalOps > 0 ? round(($operacionesExitosas / $totalOps) * 100, 1) : 0;
+                                $promedioEjecucion = round($statsTemporales['promedio_dias'] ?? 0, 1);
+                                $targetPromedio = round($statsTemporales['promedio_target'] ?? 3, 1);
+                            ?>
+                            
+                            <!-- Métrica Principal -->
+                            <div class="bg-white rounded-lg p-4 mb-4 border border-slate-200">
+                                <div class="text-center">
+                                    <div class="text-3xl font-bold text-slate-800 mb-2"><?php echo e($eficienciaGeneral); ?>%</div>
+                                    <div class="text-sm text-slate-600 mb-3">Eficiencia General</div>
+                                    <?php if($eficienciaGeneral >= 80): ?>
+                                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                            ✓ Excelente
+                                        </div>
+                                    <?php elseif($eficienciaGeneral >= 60): ?>
+                                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                            ⚠ Regular
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                            ⚠ Requiere Atención
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Desglose de Eficiencia -->
+                            <div class="bg-white rounded-lg p-4 border border-slate-200">
+                                <h4 class="font-medium text-slate-700 mb-3 text-sm">Desglose de Operaciones</h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-green-600">✓ Exitosas:</span>
+                                        <span class="font-semibold text-slate-800"><?php echo e($operacionesExitosas); ?> de <?php echo e($totalOps); ?></span>
+                                    </div>
+                                    <div class="ml-4 space-y-1 text-xs text-slate-600">
+                                        <div class="flex justify-between">
+                                            <span>• Activas en Tiempo:</span>
+                                            <span><?php echo e($enTiempo); ?></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>• Finalizadas a Tiempo:</span>
+                                            <span><?php echo e($completadoTiempo); ?></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+                                        <span class="text-red-600">⚠ Problemáticas:</span>
+                                        <span class="font-semibold text-slate-800"><?php echo e($totalOps - $operacionesExitosas); ?></span>
+                                    </div>
+                                    <div class="ml-4 space-y-1 text-xs text-slate-600">
+                                        <div class="flex justify-between">
+                                            <span>• En Riesgo:</span>
+                                            <span><?php echo e($enRiesgo); ?></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>• Con Retraso:</span>
+                                            <span><?php echo e($conRetraso); ?></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>• Finalizadas con Retraso:</span>
+                                            <span><?php echo e($completadoRetraso); ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-sm text-slate-600">
+                                <p><span class="font-medium">Tiempo Promedio:</span> <?php echo e($promedioEjecucion); ?> días</p>
+                                <p><span class="font-medium">Target Promedio:</span> <?php echo e($targetPromedio); ?> días</p>
+                            </div>
+                        </div>
+
+                        <!-- Distribución Visual -->
+                        <div class="bg-slate-50 rounded-lg p-6 border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                                    </svg>
+                                </div>
+                                Distribución de Operaciones
+                            </h3>
+
+                            <!-- Operaciones Activas -->
+                            <div class="bg-white rounded-lg p-4 mb-4 border border-slate-200">
+                                <h4 class="font-medium text-slate-700 mb-3 text-sm flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                     </svg>
-                                    Operaciones Activas:
-                                </div>
-                                <div class="ml-4 space-y-1 text-xs">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-green-400">🟢 Activas en Tiempo:</span>
-                                        <span class="font-bold"><?php echo e($enTiempo); ?> (<?php echo e($totalOps > 0 ? round(($enTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
+                                    Operaciones Activas
+                                </h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between items-center p-2 bg-green-50 rounded border border-green-200">
+                                        <span class="text-green-700">En Tiempo</span>
+                                        <span class="font-semibold text-green-800"><?php echo e($enTiempo); ?> (<?php echo e($totalOps > 0 ? round(($enTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-yellow-400">⚠️ Activas en Riesgo:</span>
-                                        <span class="font-bold"><?php echo e($enRiesgo); ?> (<?php echo e($totalOps > 0 ? round(($enRiesgo / $totalOps) * 100, 1) : 0); ?>%)</span>
+                                    <div class="flex justify-between items-center p-2 bg-yellow-50 rounded border border-yellow-200">
+                                        <span class="text-yellow-700">En Riesgo</span>
+                                        <span class="font-semibold text-yellow-800"><?php echo e($enRiesgo); ?> (<?php echo e($totalOps > 0 ? round(($enRiesgo / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-red-400">🔴 Activas con Retraso:</span>
-                                        <span class="font-bold"><?php echo e($conRetraso); ?> (<?php echo e($totalOps > 0 ? round(($conRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="text-sm font-semibold text-purple-300 mt-3 mb-2">🏁 Operaciones Finalizadas:</div>
-                                <div class="ml-4 space-y-1 text-xs">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-green-300">✅ Finalizadas a Tiempo:</span>
-                                        <span class="font-bold"><?php echo e($completadoTiempo); ?> (<?php echo e($totalOps > 0 ? round(($completadoTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-orange-400 flex items-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            Finalizadas con Retraso:
-                                        </span>
-                                        <span class="font-bold"><?php echo e($completadoRetraso); ?> (<?php echo e($totalOps > 0 ? round(($completadoRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
+                                    <div class="flex justify-between items-center p-2 bg-red-50 rounded border border-red-200">
+                                        <span class="text-red-700">Con Retraso</span>
+                                        <span class="font-semibold text-red-800"><?php echo e($conRetraso); ?> (<?php echo e($totalOps > 0 ? round(($conRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
                                     </div>
                                 </div>
                             </div>
-                                <div class="pt-2 mt-2 border-t border-slate-600 flex justify-between items-center">
-                                    <span class="font-semibold text-blue-400 flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                        </svg>
-                                        Total:
-                                    </span>
-                                    <span class="font-bold text-blue-400"><?php echo e($totalOps); ?> (100%)</span>
-                                </div>
-                            </div>
-                        </div>
 
-                        <h4 class="font-medium mb-2 text-sm">⚠️ Alertas y Recomendaciones</h4>
-                        <div class="text-sm space-y-1">
-                            <?php if($conRetraso > 0): ?>
-                                <p class="text-red-300">• <?php echo e($conRetraso); ?> operaciones con retraso activo</p>
-                            <?php endif; ?>
-                            <?php if($enRiesgo > 0): ?>
-                                <p class="text-yellow-300">• <?php echo e($enRiesgo); ?> operaciones en riesgo de retraso</p>
-                            <?php endif; ?>
-                            <?php if($eficienciaGeneral < 70): ?>
-                                <p class="text-orange-300">• Considerar revisión de procesos operativos</p>
-                            <?php endif; ?>
-                            <?php if($conRetraso == 0 && $enRiesgo == 0): ?>
-                                <p class="text-green-300">✅ Todas las operaciones están en tiempo</p>
+                            <!-- Operaciones Finalizadas -->
+                            <div class="bg-white rounded-lg p-4 border border-slate-200">
+                                <h4 class="font-medium text-slate-700 mb-3 text-sm flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Operaciones Finalizadas
+                                </h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between items-center p-2 bg-emerald-50 rounded border border-emerald-200">
+                                        <span class="text-emerald-700">A Tiempo</span>
+                                        <span class="font-semibold text-emerald-800"><?php echo e($completadoTiempo); ?> (<?php echo e($totalOps > 0 ? round(($completadoTiempo / $totalOps) * 100, 1) : 0); ?>%)</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                                        <span class="text-orange-700">Con Retraso</span>
+                                        <span class="font-semibold text-orange-800"><?php echo e($completadoRetraso); ?> (<?php echo e($totalOps > 0 ? round(($completadoRetraso / $totalOps) * 100, 1) : 0); ?>%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Alertas -->
+                            <?php if($conRetraso > 0 || $enRiesgo > 0): ?>
+                            <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <h4 class="font-medium text-amber-800 mb-2 text-sm">⚠ Alertas</h4>
+                                <div class="space-y-1 text-sm text-amber-700">
+                                    <?php if($conRetraso > 0): ?>
+                                        <p>• <?php echo e($conRetraso); ?> operaciones con retraso activo</p>
+                                    <?php endif; ?>
+                                    <?php if($enRiesgo > 0): ?>
+                                        <p>• <?php echo e($enRiesgo); ?> operaciones en riesgo de retraso</p>
+                                    <?php endif; ?>
+                                    <?php if($eficienciaGeneral < 70): ?>
+                                        <p>• Considerar revisión de procesos operativos</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php else: ?>
+                            <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p class="text-sm text-green-700 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Todas las operaciones están en tiempo
+                                </p>
+                            </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -616,174 +856,7 @@
             </div>
         </div>
 
-            <!-- Panel: Reporte de pedimentos -->
-            <div data-tab-panel="pedimentos" class="space-y-6 hidden">
-                <!-- DEBUG: Panel pedimentos cargado -->
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    <p><strong>DEBUG:</strong> Panel de pedimentos cargado correctamente</p>
-                    <p>Stats: Total=<?php echo e($pedimentoStats['total'] ?? 'NO_SET'); ?>, Pagados=<?php echo e($pedimentoStats['pagados'] ?? 'NO_SET'); ?></p>
-                </div>
-                
-                <!-- Header -->
-                <div class="bg-white rounded-xl shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                Reporte de Pedimentos
-                            </h2>
-                            <p class="text-slate-600">Control y seguimiento de pagos de pedimentos</p>
-                        </div>
-                        <div class="text-xs text-slate-500 bg-green-50 px-3 py-1 rounded-full">
-                            ✅ Panel Activo
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Estadísticas principales -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-indigo-600 mb-2"><?php echo e($pedimentoStats['total'] ?? 0); ?></div>
-                        <div class="text-sm text-slate-500">Total Pedimentos</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-green-600 mb-2"><?php echo e($pedimentoStats['pagados'] ?? 0); ?></div>
-                        <div class="text-sm text-slate-500">Pagados</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-3xl font-bold text-amber-500 mb-2"><?php echo e($pedimentoStats['pendientes'] ?? 0); ?></div>
-                        <div class="text-sm text-slate-500">Pendientes</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6 text-center">
-                        <div class="text-2xl font-bold text-emerald-600 mb-2">$<?php echo e(number_format(($pedimentoStats['montoPagadoMXN'] ?? 0) + ($pedimentoStats['montoPagadoUSD'] ?? 0) * 20, 0)); ?></div>
-                        <div class="text-sm text-slate-500">Monto Total (MXN)</div>
-                    </div>
-                </div>
-
-                <!-- Formulario de filtros -->
-                <div class="bg-white rounded-xl shadow p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        Generar Reporte Excel
-                    </h3>
-                    <form action="<?php echo e(route('reportes.pedimentos.excel')); ?>" method="GET" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Estado de pago</label>
-                                <select name="estado_pago" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                    <option value="">Todos los estados</option>
-                                    <option value="pagado">✅ Pagados</option>
-                                    <option value="pendiente">Pendientes</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de operación</label>
-                                <select name="tipo_operacion" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                    <option value="">Todas las operaciones</option>
-                                    <option value="importacion">📥 Importación</option>
-                                    <option value="exportacion">📤 Exportación</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Moneda</label>
-                                <select name="moneda" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                    <option value="">Todas las monedas</option>
-                                    <option value="MXN">🇲🇽 MXN</option>
-                                    <option value="USD">🇺🇸 USD</option>
-                                    <option value="EUR">🇪🇺 EUR</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-end space-x-4 pt-4 border-t">
-                            <button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center space-x-2 transition duration-200">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Generar Excel de Pedimentos</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Resumen visual -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow p-6">
-                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
-                            </svg>
-                            Distribución por Estado
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                                <span class="text-green-700 font-medium">✅ Pagados</span>
-                                <span class="text-green-800 font-bold"><?php echo e($pedimentoStats['pagados'] ?? 0); ?></span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
-                                <span class="text-amber-700 font-medium flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Pendientes
-                                </span>
-                                <span class="text-amber-800 font-bold"><?php echo e($pedimentoStats['pendientes'] ?? 0); ?></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow p-6">
-                        <h3 class="text-lg font-semibold text-slate-800 mb-4">💰 Montos por Moneda</h3>
-                        <div class="space-y-3">
-                            <?php if(isset($pedimentoStats['montoPagadoMXN']) && $pedimentoStats['montoPagadoMXN'] > 0): ?>
-                            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                                <span class="text-blue-700 font-medium">🇲🇽 MXN</span>
-                                <span class="text-blue-800 font-bold">$<?php echo e(number_format($pedimentoStats['montoPagadoMXN'], 2)); ?></span>
-                            </div>
-                            <?php endif; ?>
-                            <?php if(isset($pedimentoStats['montoPagadoUSD']) && $pedimentoStats['montoPagadoUSD'] > 0): ?>
-                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                                <span class="text-green-700 font-medium">🇺🇸 USD</span>
-                                <span class="text-green-800 font-bold">$<?php echo e(number_format($pedimentoStats['montoPagadoUSD'], 2)); ?></span>
-                            </div>
-                            <?php endif; ?>
-                            <?php if(isset($pedimentoStats['montoPagadoEUR']) && $pedimentoStats['montoPagadoEUR'] > 0): ?>
-                            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                                <span class="text-purple-700 font-medium">🇪🇺 EUR</span>
-                                <span class="text-purple-800 font-bold">€<?php echo e(number_format($pedimentoStats['montoPagadoEUR'], 2)); ?></span>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Información adicional -->
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-sm">ℹ️</span>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="text-blue-800 font-semibold">Información sobre el Reporte de Pedimentos</h4>
-                            <p class="text-blue-700 text-sm mt-1">
-                                Este reporte incluye todos los pedimentos registrados en el sistema. Utiliza los filtros para personalizar tu reporte Excel 
-                                y obtener información específica sobre estados de pago, tipos de operación y monedas.
-                            </p>
-                            <div class="mt-3 text-xs text-blue-600">
-                                <strong>Última actualización:</strong> <?php echo e(now()->format('d/m/Y H:i')); ?>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
 
     <script>
@@ -842,15 +915,7 @@
                 console.log('Tab clicked:', targetTab);
                 activateTab(targetTab);
                 
-                // Fallback específico para pedimentos
-                if (targetTab === 'pedimentos') {
-                    const pedimentosPanel = document.querySelector('[data-tab-panel="pedimentos"]');
-                    if (pedimentosPanel) {
-                        pedimentosPanel.classList.remove('hidden');
-                        pedimentosPanel.style.display = 'block';
-                        console.log('Pedimentos panel force-shown');
-                    }
-                }
+
             });
         });
 
@@ -866,15 +931,7 @@
             activateTab(activeTab);
         }, 100);
         
-        // Función para cambiar a pedimentos directamente
-        function mostrarPedimentos() {
-            activateTab('pedimentos');
-            // Scroll suave al panel
-            document.querySelector('[data-tab-panel="pedimentos"]').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }
+
 
         const stats = <?php echo json_encode($stats, 15, 512) ?>;
         const total = (stats.en_proceso || 0) + (stats.fuera_metrica || 0) + (stats.done || 0);
@@ -1438,6 +1495,137 @@
 
     </script>
 
+    <!-- Modal Selección de Reporte -->
+    <div id="exportModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeExportModal()"></div>
+            
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-emerald-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">
+                                Generar Reporte
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-500">
+                                    Selecciona el tipo de reporte que deseas generar según la información disponible en cada pestaña.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="exportForm" method="GET" class="mt-6">
+                        <div class="space-y-4">
+                            <!-- Opción: Reporte de Seguimiento -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="radio" name="report_type" value="seguimiento" class="mt-1 text-blue-600 focus:ring-blue-500 border-slate-300">
+                                    <div class="ml-3">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                            </svg>
+                                            <span class="text-sm font-medium text-slate-900">Reporte de Seguimiento</span>
+                                        </div>
+                                        <p class="text-xs text-slate-600">
+                                            Incluye todas las operaciones filtradas con campos estándar y campos personalizados habilitados para tu usuario.
+                                        </p>
+                                    </div>
+                                </label>
+                                
+                                <!-- Opciones adicionales para seguimiento -->
+                                <div class="ml-6 mt-3 space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="include_custom_fields" value="1" class="text-blue-600 focus:ring-blue-500 border-slate-300 rounded">
+                                        <span class="ml-2 text-xs text-slate-700">Incluir campos personalizados habilitados</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="include_comments" value="1" class="text-blue-600 focus:ring-blue-500 border-slate-300 rounded">
+                                        <span class="ml-2 text-xs text-slate-700">Incluir comentarios</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Opción: Reporte de Pedimentos -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="radio" name="report_type" value="pedimentos" class="mt-1 text-purple-600 focus:ring-purple-500 border-slate-300">
+                                    <div class="ml-3">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            <span class="text-sm font-medium text-slate-900">Reporte de Pedimentos</span>
+                                        </div>
+                                        <p class="text-xs text-slate-600">
+                                            Reporte específico de pedimentos con filtros de estado de pago, tipo de operación, moneda y clave.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Opción: Resumen Ejecutivo -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="radio" name="report_type" value="resumen" class="mt-1 text-green-600 focus:ring-green-500 border-slate-300">
+                                    <div class="ml-3">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                            </svg>
+                                            <span class="text-sm font-medium text-slate-900">Resumen Ejecutivo</span>
+                                        </div>
+                                        <p class="text-xs text-slate-600">
+                                            Reporte con métricas ejecutivas, gráficos y análisis de rendimiento general.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Formato de archivo -->
+                            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <h4 class="text-sm font-medium text-slate-900 mb-2">Formato de Archivo</h4>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center">
+                                        <input type="radio" name="format" value="excel" checked class="text-blue-600 focus:ring-blue-500 border-slate-300">
+                                        <span class="ml-2 text-sm text-slate-700">Excel (.xlsx)</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="format" value="csv" class="text-blue-600 focus:ring-blue-500 border-slate-300">
+                                        <span class="ml-2 text-sm text-slate-700">CSV (.csv)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-100 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse mt-6 -mx-4 -mb-4">
+                            <button type="submit" 
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-emerald-600 text-base font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50" 
+                                id="generateReportBtn">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span id="generateReportText">Generar Reporte</span>
+                            </button>
+                            <button type="button" onclick="closeExportModal()" 
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Enviar por Correo -->
     <div id="emailModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -1987,6 +2175,115 @@ Saludos cordiales,
                 }, 300);
             }, 3000);
         }
+
+        // Función para limpiar filtros de pedimentos
+        function limpiarFiltrosPedimentos() {
+            const form = document.querySelector('[data-tab-panel="pedimentos"] form');
+            if (form) {
+                // Limpiar todos los selects
+                const selects = form.querySelectorAll('select');
+                selects.forEach(select => {
+                    select.selectedIndex = 0;
+                });
+
+                // Limpiar todos los inputs
+                const inputs = form.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.value = '';
+                });
+
+                // Opcional: enviar formulario para actualizar la vista
+                // form.submit();
+            }
+        }
+
+        // Funciones del modal de exportación
+        window.openExportModal = function() {
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        window.closeExportModal = function() {
+            document.getElementById('exportModal').classList.add('hidden');
+            // Resetear formulario
+            document.getElementById('exportForm').reset();
+            document.querySelector('input[name="format"][value="excel"]').checked = true;
+        }
+
+        // Manejar el envío del formulario de exportación
+        document.getElementById('exportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const reportType = formData.get('report_type');
+            const format = formData.get('format');
+            
+            if (!reportType) {
+                alert('Por favor selecciona un tipo de reporte');
+                return;
+            }
+
+            const btn = document.getElementById('generateReportBtn');
+            const btnText = document.getElementById('generateReportText');
+            
+            // Deshabilitar botón y mostrar loading
+            btn.disabled = true;
+            btnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generando...';
+
+            // Construir URL según el tipo de reporte
+            let exportUrl = '';
+            const currentParams = new URLSearchParams(window.location.search);
+            const baseUrl = '<?php echo e(route("logistica.reportes.export")); ?>';
+            
+            switch(reportType) {
+                case 'seguimiento':
+                    // Para seguimiento, usar la ruta existente pero con parámetros adicionales
+                    exportUrl = baseUrl;
+                    
+                    // Agregar parámetros de campos personalizados si están marcados
+                    if (formData.get('include_custom_fields')) {
+                        currentParams.set('include_custom_fields', '1');
+                    }
+                    if (formData.get('include_comments')) {
+                        currentParams.set('include_comments', '1');
+                    }
+                    break;
+                    
+                case 'pedimentos':
+                    // Para pedimentos, usar una nueva ruta
+                    exportUrl = baseUrl.replace('/export', '/pedimentos/export');
+                    break;
+                    
+                case 'resumen':
+                    // Para resumen ejecutivo, usar una nueva ruta
+                    exportUrl = baseUrl.replace('/export', '/resumen/export');
+                    break;
+            }
+            
+            // Agregar formato
+            currentParams.set('format', format);
+            currentParams.set('report_type', reportType);
+            
+            // Construir URL final
+            const finalUrl = exportUrl + '?' + currentParams.toString();
+            
+            // Crear enlace temporal para descarga
+            const link = document.createElement('a');
+            link.href = finalUrl;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Cerrar modal y rehabilitar botón después de un breve delay
+            setTimeout(() => {
+                btn.disabled = false;
+                btnText.innerHTML = 'Generar Reporte';
+                closeExportModal();
+                
+                // Mostrar notificación de éxito
+                showNotification('Descarga iniciada', 'El reporte se está generando y descargando.', 'success');
+            }, 1000);
+        });
     </script>
 
         </div>
