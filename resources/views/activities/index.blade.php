@@ -94,10 +94,12 @@
                         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                     
-                    {{-- Select Responsable (Si es admin/direccion) --}}
-                    @if(isset($users) && count($users) > 0)
-                        <select name="user_id" onchange="this.form.submit()" class="bg-slate-50 border-transparent text-xs rounded-xl focus:ring-0 cursor-pointer">
-                            <option value="">Todos los Responsables</option>
+                    {{-- Select Responsable (SOLO VISIBLE PARA DIRECCIÓN O SUPERVISORES) --}}
+                    @if(isset($users) && count($users) > 1)
+                        <select name="user_id" onchange="this.form.submit()" class="bg-slate-50 border-transparent text-xs rounded-xl focus:ring-0 cursor-pointer w-full lg:w-auto">
+                            <option value="">
+                                {{ ($esDireccion ?? false) ? 'Todos los Responsables' : 'Mi Equipo' }}
+                            </option>
                             @foreach($users as $u)
                                 <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
                             @endforeach
@@ -111,36 +113,36 @@
             {{-- Filtros Expandibles --}}
             <div x-show="showFilters" x-transition class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <form method="GET" id="advancedFilters">
-                    {{-- Mantener search si existe --}}
                     <input type="hidden" name="search" value="{{ request('search') }}">
+                    @if(request('user_id')) <input type="hidden" name="user_id" value="{{ request('user_id') }}"> @endif
                     
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estatus</label>
                             <select name="estatus" onchange="this.form.form.submit()" class="w-full text-xs rounded-lg border-slate-200">
                                 <option value="">Todos</option>
-                                <option value="En blanco">En blanco</option>
-                                <option value="En proceso">En proceso</option>
-                                <option value="Completado">Completado</option>
-                                <option value="Retardo">Retardo</option>
+                                <option value="En blanco" {{ request('estatus') == 'En blanco' ? 'selected' : '' }}>En blanco</option>
+                                <option value="En proceso" {{ request('estatus') == 'En proceso' ? 'selected' : '' }}>En proceso</option>
+                                <option value="Completado" {{ request('estatus') == 'Completado' ? 'selected' : '' }}>Completado</option>
+                                <option value="Retardo" {{ request('estatus') == 'Retardo' ? 'selected' : '' }}>Retardo</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prioridad</label>
                             <select name="prioridad" onchange="this.form.form.submit()" class="w-full text-xs rounded-lg border-slate-200">
                                 <option value="">Todas</option>
-                                <option value="Alta">Alta</option>
-                                <option value="Media">Media</option>
-                                <option value="Baja">Baja</option>
+                                <option value="Alta" {{ request('prioridad') == 'Alta' ? 'selected' : '' }}>Alta</option>
+                                <option value="Media" {{ request('prioridad') == 'Media' ? 'selected' : '' }}>Media</option>
+                                <option value="Baja" {{ request('prioridad') == 'Baja' ? 'selected' : '' }}>Baja</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Desde</label>
-                            <input type="date" name="fecha_inicio" class="w-full text-xs rounded-lg border-slate-200">
+                            <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio') }}" class="w-full text-xs rounded-lg border-slate-200">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hasta</label>
-                            <input type="date" name="fecha_fin" class="w-full text-xs rounded-lg border-slate-200">
+                            <input type="date" name="fecha_fin" value="{{ request('fecha_fin') }}" class="w-full text-xs rounded-lg border-slate-200">
                         </div>
                     </div>
                     <div class="mt-2 text-right">
@@ -159,21 +161,11 @@
             <form action="{{ route('activities.store') }}" method="POST" class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 @csrf
                 
-                {{-- DEFINICIÓN DE ÁREAS (Nuevo Select) --}}
                 @php
                     $areas = [
-                        'Logistica',
-                        'Legal',
-                        'Anexo 24',
-                        'Auditoria',
-                        'TI',
-                        'Administración',
-                        'Dirección',
-                        'Recursos Humanos',
-                        'Ventas',
+                        'Logistica', 'Legal', 'Anexo 24', 'Auditoria', 'TI',
+                        'Dirección', 'Recursos Humanos',
                         'Operaciones',
-                        'Contabilidad',
-                        'Mantenimiento'
                     ];
                     sort($areas); 
                 @endphp
@@ -225,7 +217,6 @@
                         <tr>
                             <th class="px-3 py-4 w-12 text-center">Resp.</th>
                             <th class="px-3 py-4 w-48">Supervisor</th>
-                            {{-- NUEVA COLUMNA ÁREA --}}
                             <th class="px-3 py-4 w-24 text-center">Área</th>
                             <th class="px-3 py-4 w-24">Tipo</th>
                             <th class="px-3 py-4 w-28 text-center">Prio</th>
@@ -259,7 +250,6 @@
                                 {{ Str::limit($act->user->empleado->supervisor->nombre ?? '-', 25) }}
                             </td>
 
-                            {{-- CAMPO ÁREA EN TABLA --}}
                             <td class="px-3 py-3 text-center">
                                 <span class="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 text-[9px] font-bold uppercase tracking-wide">
                                     {{ Str::limit($act->area ?? 'N/A', 10) }}
@@ -277,7 +267,8 @@
                                     $suEmpleado = $act->user->empleado ?? null;
                                     if (isset($esDireccion) && $esDireccion) { $puedeEditar = true; }
                                     elseif ($miEmpleado && $suEmpleado && $miEmpleado->id === $suEmpleado->supervisor_id) { $puedeEditar = true; }
-                                    
+                                    elseif ($act->user_id === Auth::id()) { $puedeEditar = true; } // Uno mismo también puede cambiar prioridad
+
                                     $prioColor = match($act->prioridad) { 
                                         'Alta'=>'bg-red-50 text-red-700 border-red-200', 
                                         'Media'=>'bg-yellow-50 text-yellow-700 border-yellow-200', 
@@ -468,14 +459,13 @@
     </div>
 </div>
 
-{{-- SCRIPTS --}}
+{{-- SCRIPTS (Se mantienen igual, solo por referencia visual) --}}
 <script>
     function openNotes(id, name, estatus, evidenciaUrl) {
         document.getElementById('notesForm').action = "/activities/" + id;
         document.getElementById('modal-activity-name').innerText = name;
         document.getElementById('modal-estatus').value = estatus;
         
-        // Cargar comentario actual en el textarea
         var currentNote = document.getElementById('notes-data-' + id);
         if(currentNote) {
             document.getElementById('modal-comentarios').value = currentNote.value;
@@ -497,7 +487,6 @@
         document.getElementById('notesModal').classList.add('hidden');
     }
 
-    // --- LÓGICA DEL HISTORIAL (CORREGIDA) ---
     function openHistory(id, title) {
         const textarea = document.getElementById('history-data-' + id);
         if (!textarea) return;
@@ -520,19 +509,15 @@
         } else {
             emptyState.classList.add('hidden');
             
-            // Ordenar por fecha (más reciente arriba)
             history.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             history.forEach(log => {
-                // 1. CORRECCIÓN DE FECHA (Invalid Date Fix)
-                // Si la fecha viene como "2025-01-01 12:00:00", le ponemos la "T" para que sea ISO valida
                 let dateStrRaw = log.created_at || new Date().toISOString();
                 if (dateStrRaw.indexOf('T') === -1) {
                     dateStrRaw = dateStrRaw.replace(' ', 'T'); 
                 }
                 
                 const date = new Date(dateStrRaw);
-                // Validamos si la fecha es válida, si no, usamos la actual o placeholder
                 const isValidDate = !isNaN(date.getTime());
                 
                 const dateDisplay = isValidDate 
@@ -545,14 +530,12 @@
                 const userName = log.user ? log.user.name : 'Sistema';
                 const userInitials = userName.substring(0, 2).toUpperCase();
                 
-                // 2. LÓGICA DE CONTENIDO (Mostrar qué cambió)
                 let contentHtml = '';
                 
                 if (log.action === 'created') {
                     contentHtml = `<span class="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded text-xs">✨ Nueva Actividad Creada</span>`;
                 } 
                 else if (log.action === 'comment' || log.comentario) {
-                    // CASO COMENTARIO (Nuevo)
                     contentHtml = `
                         <div class="text-sm text-gray-600">Agregó un comentario:</div>
                         <div class="mt-2 text-xs bg-yellow-50 p-2 rounded-lg border border-yellow-100 text-gray-700 italic">
@@ -561,7 +544,6 @@
                     `;
                 }
                 else if (log.field) {
-                    // CASO CAMBIO DE CAMPO
                     const fieldMap = {
                         'estatus': 'Estatus',
                         'prioridad': 'Prioridad',
@@ -575,7 +557,6 @@
                     let oldVal = log.old_value || 'Vacío';
                     let newVal = log.new_value || 'Vacío';
 
-                    // Si es evidencia, poner texto amigable
                     if(log.field === 'evidencia_path') {
                         oldVal = 'Sin archivo';
                         newVal = 'Archivo adjunto 📎';
@@ -592,7 +573,6 @@
                         </div>
                     `;
                 } else {
-                    // CASO GENÉRICO (Fallback)
                     contentHtml = `<span class="text-gray-500 text-xs">Actualización registrada.</span>`;
                 }
 

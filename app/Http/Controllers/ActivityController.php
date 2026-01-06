@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\ActivityHistory;
 use App\Models\User;
+use App\Models\Empleado; // IMPORTANTE: No olvides importar este modelo
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -16,11 +17,47 @@ class ActivityController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Iniciar Query (CORREGIDO)
-        // Quitamos 'evidencias' del with(), ya que es una columna, no una relación.
+        $user = Auth::user();
+        $miEmpleado = $user->empleado; 
+
+        // 1. Iniciar Query base con relaciones
         $query = Activity::with(['user.empleado', 'historial.user']);
 
-        // 2. Aplicar Filtros
+        // --- LÓGICA DE VISIBILIDAD (SEGURIDAD) ---
+        $esDireccion = false;
+        $esSupervisor = false;
+        $idsVisibles = [$user->id]; // Por defecto, solo veo lo mío
+
+        if ($miEmpleado) {
+            // A. Checar si es Dirección (ver todo)
+            $pos = mb_strtolower($miEmpleado->posicion, 'UTF-8');
+            if (str_contains($pos, 'direccion') || str_contains($pos, 'dirección')) {
+                $esDireccion = true;
+            }
+
+            // B. Checar si es Supervisor (ver a su equipo)
+            // Buscamos empleados que reporten a él
+            $subordinadosIds = Empleado::where('supervisor_id', $miEmpleado->id)
+                                        ->pluck('user_id')
+                                        ->filter() // Quita nulos
+                                        ->toArray();
+            
+            if (count($subordinadosIds) > 0) {
+                $esSupervisor = true;
+                $idsVisibles = array_merge($idsVisibles, $subordinadosIds);
+            }
+        }
+
+        // C. Aplicar filtro maestro de seguridad
+        if (!$esDireccion) {
+            // Si NO es dirección, filtramos: solo actividades mías o de mi equipo
+            $query->whereIn('user_id', $idsVisibles);
+        }
+        // (Si es dirección, no aplicamos restricción, ve todo)
+
+        // ------------------------------------------
+
+        // 2. Aplicar Filtros del Buscador (Search bar)
         if ($request->search) {
             $query->where(function($q) use ($request) {
                 $q->where('nombre_actividad', 'like', "%{$request->search}%")
@@ -29,10 +66,15 @@ class ActivityController extends Controller
             });
         }
         
+        // Filtro específico de usuario (Dropdown)
         if ($request->user_id) {
-            $query->where('user_id', $request->user_id);
+            // Validación extra de seguridad: ¿Tengo permiso de ver a ese usuario?
+            if ($esDireccion || in_array($request->user_id, $idsVisibles)) {
+                $query->where('user_id', $request->user_id);
+            }
         }
 
+        // Otros filtros
         if ($request->estatus) {
             $query->where('estatus', $request->estatus);
         }
@@ -54,22 +96,31 @@ class ActivityController extends Controller
                             ->paginate(20)
                             ->withQueryString();
 
-        // 4. Calcular KPIs
-        // Nota: Si quieres que los KPIs respeten los filtros actuales, usa (clone $query)->...
-        // Si quieres KPIs globales (de todo el sistema), usa Activity::...
-        // Aquí dejo los globales como pediste antes:
+        // 4. Calcular KPIs (Respetando la visibilidad)
+        // Creamos una query limpia para los contadores
+        $kpiQuery = Activity::query();
+        
+        if (!$esDireccion) {
+            $kpiQuery->whereIn('user_id', $idsVisibles);
+        }
+
         $kpis = [
-            'total'       => Activity::count(),
-            'completadas' => Activity::where('estatus', 'Completado')->count(),
-            'proceso'     => Activity::where('estatus', 'En proceso')->count(),
-            'pendientes'  => Activity::where('estatus', 'En blanco')->count(),
-            'retardos'    => Activity::where('estatus', 'Retardo')->count(),
+            'total'       => (clone $kpiQuery)->count(),
+            'completadas' => (clone $kpiQuery)->where('estatus', 'Completado')->count(),
+            'proceso'     => (clone $kpiQuery)->where('estatus', 'En proceso')->count(),
+            'pendientes'  => (clone $kpiQuery)->where('estatus', 'En blanco')->count(),
+            'retardos'    => (clone $kpiQuery)->where('estatus', 'Retardo')->count(),
         ];
 
-        // 5. Lista de usuarios
-        $users = User::orderBy('name')->get();
+        // 5. Lista de usuarios para el filtro (Dropdown)
+        // Solo enviamos los usuarios que la persona logueada tiene permiso de ver
+        if ($esDireccion) {
+            $users = User::orderBy('name')->get();
+        } else {
+            $users = User::whereIn('id', $idsVisibles)->orderBy('name')->get();
+        }
 
-        return view('activities.index', compact('activities', 'kpis', 'users'));
+        return view('activities.index', compact('activities', 'kpis', 'users', 'esDireccion', 'esSupervisor'));
     }
 
     /**
@@ -115,26 +166,21 @@ class ActivityController extends Controller
     {
         $activity = Activity::findOrFail($id);
         
-        // Guardamos valores actuales antes de modificar (para el historial)
+        // Autorización simple: Solo el dueño o un admin/supervisor debería editar
+        // (Puedes refinar esto si quieres bloquear edición a subordinados)
+        
         $originalData = $activity->only(['estatus', 'prioridad', 'comentarios']);
-
-        // Actualizamos con los datos que vienen del formulario (excepto archivo)
         $activity->fill($request->except(['evidencia']));
 
-        // --- [FIX] LÓGICA DE REVERSA (IMPORTANTE) ---
-        // Si el usuario cambia manualmente a "En proceso", "En blanco" o "Retardo",
-        // debemos BORRAR la fecha final. Si no lo hacemos, el modelo verá que existe
-        // una fecha final y pensará que la actividad sigue cerrada, regresándola a "Completado".
+        // REGLA DE NEGOCIO: Si regresa a proceso, limpiamos fecha final
         if (in_array($activity->estatus, ['En proceso', 'En blanco', 'Retardo'])) {
             $activity->fecha_final = null;
             $activity->resultado_dias = null;
             $activity->porcentaje = 0; 
         }
-        // ---------------------------------------------
 
-        // Manejo de Evidencia (Archivo adjunto)
+        // Manejo de Evidencia
         if ($request->hasFile('evidencia')) {
-            // Si ya había archivo, lo borramos para no llenar el servidor
             if ($activity->evidencia_path) {
                 Storage::disk('public')->delete($activity->evidencia_path);
             }
@@ -142,7 +188,6 @@ class ActivityController extends Controller
             $path = $request->file('evidencia')->store('evidencias_actividades', 'public');
             $activity->evidencia_path = $path;
             
-            // Log en historial
             ActivityHistory::create([
                 'activity_id' => $activity->id,
                 'user_id' => Auth::id(),
@@ -153,9 +198,7 @@ class ActivityController extends Controller
             ]);
         }
 
-        // --- HISTORIAL DE CAMBIOS ---
-
-        // 1. Cambio de Estatus
+        // Historial de cambios importantes
         if ($activity->isDirty('estatus')) {
             ActivityHistory::create([
                 'activity_id' => $activity->id,
@@ -166,13 +209,11 @@ class ActivityController extends Controller
                 'new_value'   => $activity->estatus
             ]);
             
-            // Si lo marcó como completado, ponemos la fecha de hoy como cierre
             if ($activity->estatus == 'Completado') {
                 $activity->fecha_final = now();
             }
         }
 
-        // 2. Cambio de Prioridad
         if ($activity->isDirty('prioridad')) {
             ActivityHistory::create([
                 'activity_id' => $activity->id,
@@ -184,7 +225,6 @@ class ActivityController extends Controller
             ]);
         }
         
-        // 3. Comentarios (Notas nuevas)
         if ($request->comentarios && $request->comentarios !== $originalData['comentarios']) {
              ActivityHistory::create([
                 'activity_id' => $activity->id,
@@ -194,7 +234,6 @@ class ActivityController extends Controller
             ]);
         }
 
-        // Guardamos todo
         $activity->save();
 
         return redirect()->route('activities.index')

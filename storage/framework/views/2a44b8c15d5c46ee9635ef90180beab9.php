@@ -103,31 +103,6 @@
 <?php unset($__componentOriginal56804098dcf376a0e2227cb77b6cd00a); ?>
 <?php endif; ?>Editar
                             </a>
-                            <form action="<?php echo e(route('rh.expedientes.destroy',$empleado)); ?>" method="POST" class="inline" onsubmit="return confirm('¿Eliminar expediente?')">
-                                <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                                <button class="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2 py-1 text-red-600 hover:bg-red-100 shadow-sm">
-                                    <?php if (isset($component)) { $__componentOriginal56804098dcf376a0e2227cb77b6cd00a = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal56804098dcf376a0e2227cb77b6cd00a = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.ui.icon','data' => ['name' => 'trash','class' => 'h-4 w-4']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('ui.icon'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['name' => 'trash','class' => 'h-4 w-4']); ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal56804098dcf376a0e2227cb77b6cd00a)): ?>
-<?php $attributes = $__attributesOriginal56804098dcf376a0e2227cb77b6cd00a; ?>
-<?php unset($__attributesOriginal56804098dcf376a0e2227cb77b6cd00a); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal56804098dcf376a0e2227cb77b6cd00a)): ?>
-<?php $component = $__componentOriginal56804098dcf376a0e2227cb77b6cd00a; ?>
-<?php unset($__componentOriginal56804098dcf376a0e2227cb77b6cd00a); ?>
-<?php endif; ?>Borrar
-                                </button>
-                            </form>
                         </td>
                     </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
