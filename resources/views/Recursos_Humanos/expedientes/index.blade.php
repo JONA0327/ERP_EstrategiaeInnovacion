@@ -66,12 +66,6 @@
                             <a href="{{ route('rh.expedientes.edit',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-yellow-50 px-2 py-1 text-yellow-700 hover:bg-yellow-100 shadow-sm">
                                 <x-ui.icon name="pencil-square" class="h-4 w-4" />Editar
                             </a>
-                            <form action="{{ route('rh.expedientes.destroy',$empleado) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar expediente?')">
-                                @csrf @method('DELETE')
-                                <button class="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2 py-1 text-red-600 hover:bg-red-100 shadow-sm">
-                                    <x-ui.icon name="trash" class="h-4 w-4" />Borrar
-                                </button>
-                            </form>
                         </td>
                     </tr>
                 @empty

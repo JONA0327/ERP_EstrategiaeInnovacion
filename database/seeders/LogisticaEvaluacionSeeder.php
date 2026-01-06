@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\CriterioEvaluacion; // IMPORTANTE: Importar el modelo
 use Carbon\Carbon;
 
 class LogisticaEvaluacionSeeder extends Seeder
@@ -15,248 +16,109 @@ class LogisticaEvaluacionSeeder extends Seeder
      */
     public function run()
     {
-        $now = Carbon::now();
-
         // ==========================================
-        // 1. SOFT SKILLS (COMPETENCIAS BLANDAS) - 40%
+        // 1. SOFT SKILLS (COMPETENCIAS BLANDAS - RH)
         // ==========================================
         $softSkills = [
-            [
-                'criterio' => 'Puntualidad y Asistencia',
-                'descripcion' => 'Cumple consistentemente con los horarios establecidos y mantiene un registro de asistencia impecable.',
-                'peso' => 5,
+            ['criterio' => 'Puntualidad y Asistencia', 'descripcion' => 'Cumple con horarios y asistencia.', 'peso' => 5],
+            ['criterio' => 'Iniciativa y Proactividad', 'descripcion' => 'Actúa sin supervisión constante.', 'peso' => 5],
+            ['criterio' => 'Trabajo en Equipo', 'descripcion' => 'Colabora para alcanzar objetivos comunes.', 'peso' => 5],
+            ['criterio' => 'Comunicación Efectiva', 'descripcion' => 'Transmite ideas de forma clara y respetuosa.', 'peso' => 5],
+            ['criterio' => 'Actitud de Servicio', 'descripcion' => 'Disposición amable y profesional.', 'peso' => 5],
+            ['criterio' => 'Adaptabilidad', 'descripcion' => 'Se ajusta a cambios en el entorno laboral.', 'peso' => 5],
+            ['criterio' => 'Resolución de Problemas', 'descripcion' => 'Encuentra soluciones prácticas.', 'peso' => 5],
+            ['criterio' => 'Ética Profesional', 'descripcion' => 'Comportamiento íntegro y honesto.', 'peso' => 5],
+        ];
+
+        // ==========================================
+        // 2. HARD SKILLS (COMPETENCIAS TÉCNICAS POR ÁREA)
+        // ==========================================
+        $areasTecnicas = [
+            'Logistica' => [ 
+                ['criterio' => 'Operatividad Import/Export', 'descripcion' => 'Seguimiento puntual de operaciones logísticas.', 'peso' => 20],
+                ['criterio' => 'Trato con Proveedores', 'descripcion' => 'Negociación efectiva con transportistas y agentes.', 'peso' => 20],
+                ['criterio' => 'Mejora de Rutas', 'descripcion' => 'Optimización de costos y tiempos de entrega.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Iniciativa y Proactividad',
-                'descripcion' => 'Anticipa necesidades y actúa sin necesidad de supervisión constante para resolver problemas.',
-                'peso' => 5,
+            'Legal' => [ 
+                ['criterio' => 'Elaboración de Contratos', 'descripcion' => 'Redacción precisa y legalmente blindada.', 'peso' => 20],
+                ['criterio' => 'Normatividad Vigente', 'descripcion' => 'Aplicación correcta de leyes actuales.', 'peso' => 20],
+                ['criterio' => 'Gestión de Litigios', 'descripcion' => 'Seguimiento oportuno a casos legales.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Cumplimiento de Normas y Procedimientos',
-                'descripcion' => 'Se apega estrictamente a las políticas internas y códigos de conducta de la organización.',
-                'peso' => 5,
+            'Anexo 24' => [ 
+                ['criterio' => 'Control de Inventarios (Anexo 24)', 'descripcion' => 'Exactitud en el registro de entradas y salidas.', 'peso' => 20],
+                ['criterio' => 'Reporte de Descargos', 'descripcion' => 'Generación correcta de reportes mensuales.', 'peso' => 20],
+                ['criterio' => 'Conciliación de Saldos', 'descripcion' => 'Validación de datos contra glosa (DataStage).', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Trabajo en Equipo',
-                'descripcion' => 'Colabora activamente con compañeros y otros departamentos para alcanzar objetivos comunes.',
-                'peso' => 5,
+            'Post-Operacion' => [ 
+                ['criterio' => 'Integración de Expedientes', 'descripcion' => 'Expedientes digitales y físicos completos.', 'peso' => 20],
+                ['criterio' => 'Auditoría Preventiva', 'descripcion' => 'Revisión de pedimentos post-despacho.', 'peso' => 20],
+                ['criterio' => 'Atención al Cliente', 'descripcion' => 'Resolución de dudas sobre operaciones cerradas.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Comunicación',
-                'descripcion' => 'Transmite ideas e información de manera clara, oportuna y respetuosa, tanto oral como escrita.',
-                'peso' => 5,
+            'TI' => [ 
+                ['criterio' => 'Soporte a Usuarios', 'descripcion' => 'Atención rápida y efectiva a tickets.', 'peso' => 20],
+                ['criterio' => 'Mantenimiento de Redes', 'descripcion' => 'Estabilidad y seguridad de la infraestructura.', 'peso' => 20],
+                ['criterio' => 'Desarrollo e Innovación', 'descripcion' => 'Implementación de nuevas herramientas tecnológicas.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Actitud Profesional',
-                'descripcion' => 'Mantiene un comportamiento ético, respetuoso y formal en el entorno laboral.',
-                'peso' => 5,
+            'Auditoria' => [ 
+                ['criterio' => 'Detección de Riesgos', 'descripcion' => 'Identificación proactiva de irregularidades.', 'peso' => 20],
+                ['criterio' => 'Calidad de Informes', 'descripcion' => 'Reportes claros, objetivos y basados en evidencia.', 'peso' => 20],
+                ['criterio' => 'Seguimiento a Hallazgos', 'descripcion' => 'Verificación del cierre de no conformidades.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Adaptabilidad',
-                'descripcion' => 'Capacidad para ajustarse eficazmente a cambios en el entorno, tareas o responsabilidades.',
-                'peso' => 5,
+            'Pedimentos' => [ 
+                ['criterio' => 'Captura de Pedimentos', 'descripcion' => 'Velocidad y precisión en la captura de datos.', 'peso' => 20],
+                ['criterio' => 'Clasificación Arancelaria', 'descripcion' => 'Asignación correcta de fracciones.', 'peso' => 20],
+                ['criterio' => 'Validación Previa', 'descripcion' => 'Revisión de documentos antes del pago.', 'peso' => 20],
             ],
-            [
-                'criterio' => 'Manejo de Estrés',
-                'descripcion' => 'Mantiene la calma y la eficiencia en situaciones de alta presión o carga de trabajo.',
-                'peso' => 5,
+            'Gestion RH' => [ // Competencias TÉCNICAS para el personal de RH (Liliana, Mariana)
+                ['criterio' => 'Reclutamiento Efectivo', 'descripcion' => 'Cobertura de vacantes en tiempo y forma.', 'peso' => 20],
+                ['criterio' => 'Administración de Personal', 'descripcion' => 'Manejo impecable de incidencias y nómina.', 'peso' => 20],
+                ['criterio' => 'Desarrollo Organizacional', 'descripcion' => 'Ejecución de planes de capacitación y clima.', 'peso' => 20],
+            ],
+            'General' => [ // Fallback para puestos no especificados
+                ['criterio' => 'Cumplimiento de Metas', 'descripcion' => 'Logro de los objetivos asignados al puesto.', 'peso' => 20],
+                ['criterio' => 'Calidad en el Trabajo', 'descripcion' => 'Entregables libres de errores.', 'peso' => 20],
+                ['criterio' => 'Organización', 'descripcion' => 'Orden y gestión adecuada del tiempo.', 'peso' => 20],
             ],
         ];
 
         // ==========================================
-        // 2. HARD SKILLS (COMPETENCIAS TÉCNICAS) - 60%
+        // 3. EVALUACIÓN DE SUPERVISOR (Upward Feedback)
         // ==========================================
-        $areasConfig = [
-            'Logistica' => [
-                [
-                    'criterio' => 'Operatividad Import/Export',
-                    'descripcion' => 'Cumplimiento, seguimiento en tiempo y forma de las actividades por cada una de las operaciones de importación y exportación.',
-                    'peso' => 20,
-                ],
-                [
-                    'criterio' => 'Cumplimiento Legal y Normativo',
-                    'descripcion' => 'Cumplimiento de la legislación aplicable y vigente por cada una de las operaciones aduaneras y logísticas.',
-                    'peso' => 20,
-                ],
-                [
-                    'criterio' => 'Resultados y Mejora Continua',
-                    'descripcion' => 'Presentación mensual de resultados e implementación de metodología de mejora continua en los procesos.',
-                    'peso' => 20,
-                ],
-            ],
-            'Legal' => [
-                [
-                    'criterio' => 'Diseño de Programas y Diagnósticos',
-                    'descripcion' => 'Diseño de programas de cumplimiento normativo y realización precisa de diagnósticos de comercio exterior.',
-                    'peso' => 20,
-                ],
-                [
-                    'criterio' => 'Representación y Defensa',
-                    'descripcion' => 'Efectividad en la representación ante autoridades aduaneras y regulatorias en litigios o procedimientos.',
-                    'peso' => 20,
-                ],
-                [
-                    'criterio' => 'Opiniones Legales y Reporte',
-                    'descripcion' => 'Calidad en la elaboración de opiniones legales, análisis de riesgo y entrega puntual del reporte de actividades.',
-                    'peso' => 20,
-                ],
-            ],
-            // Puedes agregar más áreas aquí (Sistemas, Pedimentos, etc.)
+        $supervisorSkills = [
+            ['criterio' => 'Liderazgo y Motivación', 'descripcion' => 'Inspira al equipo y reconoce logros.', 'peso' => 25],
+            ['criterio' => 'Comunicación Clara', 'descripcion' => 'Da instrucciones precisas y escucha.', 'peso' => 25],
+            ['criterio' => 'Apoyo al Desarrollo', 'descripcion' => 'Fomenta el crecimiento profesional del equipo.', 'peso' => 25],
+            ['criterio' => 'Toma de Decisiones', 'descripcion' => 'Resuelve conflictos de manera justa y oportuna.', 'peso' => 25],
         ];
 
         // ==========================================
-        // 3. EVALUACIÓN DE SUPERVISOR (100% TOTAL)
+        // PROCESO DE INSERCIÓN SEGURA (UpdateOrCreate)
         // ==========================================
-        // Estrategia de pesos: 25% por Categoría para sumar 100% exacto.
-        $criteriosSupervisor = [
-            // CATEGORÍA 1: LIDERAZGO (25%) -> 6, 6, 6, 7
-            [
-                'categoria' => 'Liderazgo y apoyo al equipo',
-                'indicador' => 'Brinda orientación clara sobre las tareas y prioridades.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Liderazgo y apoyo al equipo',
-                'indicador' => 'Está disponible para resolver dudas o apoyar cuando se requiere.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Liderazgo y apoyo al equipo',
-                'indicador' => 'Genera confianza y un ambiente de trabajo respetuoso.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Liderazgo y apoyo al equipo',
-                'indicador' => 'Motiva al equipo a dar lo mejor de si.',
-                'peso' => 7
-            ],
+        
+        // 1. Soft Skills (RH)
+        foreach ($softSkills as $skill) {
+            CriterioEvaluacion::updateOrCreate(
+                ['area' => 'Recursos Humanos', 'criterio' => $skill['criterio']], 
+                ['descripcion' => $skill['descripcion'], 'peso' => $skill['peso']]
+            );
+        }
 
-            // CATEGORÍA 2: COMUNICACIÓN (25%) -> 6, 6, 6, 7
-            [
-                'categoria' => 'Comunicación',
-                'indicador' => 'Comunica instrucciones de manera clara y oportuna.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Comunicación',
-                'indicador' => 'Escucha activamente las inquietudes del equipo.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Comunicación',
-                'indicador' => 'Informa cambios, decisiones o prioridades a tiempo.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Comunicación',
-                'indicador' => 'Mantiene una comunicación respetuosa y profesional.',
-                'peso' => 7
-            ],
-
-            // CATEGORÍA 3: ORGANIZACIÓN (25%) -> 6, 6, 6, 7
-            [
-                'categoria' => 'Organización y gestión del trabajo',
-                'indicador' => 'Define prioridades claras.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Organización y gestión del trabajo',
-                'indicador' => 'Distribuye el trabajo de forma equitativa.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Organización y gestión del trabajo',
-                'indicador' => 'Da seguimiento adecuado a las actividades asignadas.',
-                'peso' => 6
-            ],
-            [
-                'categoria' => 'Organización y gestión del trabajo',
-                'indicador' => 'Cumple y promueve el cumplimiento de tiempos y objetivos.',
-                'peso' => 7
-            ],
-
-            // CATEGORÍA 4: TOMA DE DECISIONES (25%) -> 5, 5, 5, 5, 5
-            [
-                'categoria' => 'Toma de decisiones, feedback y desarrollo',
-                'indicador' => 'Considera la opinión del equipo cuando es pertinente.',
-                'peso' => 5
-            ],
-            [
-                'categoria' => 'Toma de decisiones, feedback y desarrollo',
-                'indicador' => 'Resuelve conflictos de forma justa.',
-                'peso' => 5
-            ],
-            [
-                'categoria' => 'Toma de decisiones, feedback y desarrollo',
-                'indicador' => 'Reconoce el buen desempeño.',
-                'peso' => 5
-            ],
-            [
-                'categoria' => 'Toma de decisiones, feedback y desarrollo',
-                'indicador' => 'Señala áreas de mejora de manera respetuosa.',
-                'peso' => 5
-            ],
-            [
-                'categoria' => 'Toma de decisiones, feedback y desarrollo',
-                'indicador' => 'Apoya el desarrollo profesional del equipo.',
-                'peso' => 5
-            ],
-        ];
-
-        // ==========================================
-        // 4. LIMPIEZA E INSERCIÓN
-        // ==========================================
-        $dataToInsert = [];
-
-        // Definimos las áreas a limpiar: Técnicas + RH + Evaluación Supervisor
-        $areasToClean = array_keys($areasConfig);
-        $areasToClean[] = 'Recursos Humanos';
-        $areasToClean[] = 'Evaluación Supervisor';
-
-        // Borramos criterios viejos para evitar duplicados
-        DB::table('criterios_evaluacion')->whereIn('area', $areasToClean)->delete();
-
-        // A. Insertar Criterios Técnicos (Hard Skills)
-        foreach ($areasConfig as $areaName => $technicalSkills) {
-            foreach ($technicalSkills as $tech) {
-                $dataToInsert[] = [
-                    'area' => $areaName,
-                    'criterio' => $tech['criterio'],
-                    'descripcion' => $tech['descripcion'],
-                    'peso' => $tech['peso'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
+        // 2. Hard Skills (Técnicas)
+        foreach ($areasTecnicas as $area => $criterios) {
+            foreach ($criterios as $skill) {
+                CriterioEvaluacion::updateOrCreate(
+                    ['area' => $area, 'criterio' => $skill['criterio']],
+                    ['descripcion' => $skill['descripcion'], 'peso' => $skill['peso']]
+                );
             }
         }
 
-        // B. Insertar Soft Skills (RH)
-        foreach ($softSkills as $soft) {
-            $dataToInsert[] = [
-                'area' => 'Recursos Humanos',
-                'criterio' => $soft['criterio'],
-                'descripcion' => $soft['descripcion'],
-                'peso' => $soft['peso'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
-
-        // C. Insertar Criterios Supervisor (NUEVO CON PESOS AJUSTADOS)
-        foreach ($criteriosSupervisor as $item) {
-            $dataToInsert[] = [
-                'area' => 'Evaluación Supervisor',
-                'criterio' => $item['categoria'],
-                'descripcion' => $item['indicador'],
-                'peso' => $item['peso'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
-
-        // Insertar todo de una sola vez
-        if (!empty($dataToInsert)) {
-            DB::table('criterios_evaluacion')->insert($dataToInsert);
+        // 3. Supervisor Skills
+        foreach ($supervisorSkills as $skill) {
+            CriterioEvaluacion::updateOrCreate(
+                ['area' => 'Evaluación Supervisor', 'criterio' => $skill['criterio']],
+                ['descripcion' => $skill['descripcion'], 'peso' => $skill['peso']]
+            );
         }
     }
 }

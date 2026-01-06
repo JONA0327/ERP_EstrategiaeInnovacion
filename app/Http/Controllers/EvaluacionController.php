@@ -15,30 +15,63 @@ class EvaluacionController extends Controller
 {
     private function isEvaluationWindowOpen()
     {
-        // $now = Carbon::now();
-        // // Ajusta las fechas a tu necesidad
-        // return ($now->month == 6 && $now->day >= 21 && $now->day <= 30) || 
-        //        ($now->month == 12 && $now->day >= 1 && $now->day <= 31);
-        
         // --- MODO PRUEBAS: SIEMPRE ABIERTO ---
-        return true; 
+        // return true; 
+        
+        $now = Carbon::now();
+        return ($now->month == 6 && $now->day >= 21 && $now->day <= 30) || 
+                ($now->month == 12 && $now->day >= 1 && $now->day <= 31);
     }
 
     // --- DETECCIÓN DE PUESTO (POSICIÓN) ---
     private function isAdminRH($empleado)
     {
         if (!$empleado) return false;
-        // Normalizamos a minúsculas para comparar
         $pos = mb_strtolower($empleado->posicion, 'UTF-8');
         
-        // Verificamos variantes comunes de la POSICIÓN
         return str_contains($pos, 'administración rh') || 
                str_contains($pos, 'administracion rh') ||
                str_contains($pos, 'administracion de rh') ||
                str_contains($pos, 'administración de rh');
     }
 
-    // --- VISIBILIDAD DE RESULTADOS ---
+    // --- NUEVO MÉTODO INTELIGENTE PARA DETECTAR ÁREA TÉCNICA ---
+    private function getTechnicalArea($posicion)
+    {
+        $pos = mb_strtolower($posicion, 'UTF-8');
+
+        // Mapeo: Palabra clave en el puesto => Área en CriteriosEvaluacion
+        $mapa = [
+            'logistica'      => 'Logistica',
+            'logística'      => 'Logistica',
+            'legal'          => 'Legal',
+            'abogado'        => 'Legal',
+            'anexo 24'       => 'Anexo 24',
+            'anexo 31'       => 'Anexo 24',
+            'ti'             => 'TI',
+            'sistemas'       => 'TI',
+            'programador'    => 'TI',
+            'soporte'        => 'TI',
+            'pedimentos'     => 'Pedimentos',
+            'glosa'          => 'Pedimentos',
+            'auditoria'      => 'Auditoria',
+            'auditor'        => 'Auditoria',
+            'post-operacion' => 'Post-Operacion',
+            'post operacion' => 'Post-Operacion',
+            'postoperacion'  => 'Post-Operacion',
+            'administracion rh' => 'Gestion RH', // Parte técnica de RH
+            'recursos humanos'  => 'Gestion RH',
+        ];
+
+        foreach ($mapa as $keyword => $area) {
+            if (str_contains($pos, $keyword)) {
+                return $area;
+            }
+        }
+
+        return 'General'; // Default si no coincide con nada
+    }
+
     private function hasFullVisibility($user)
     {
         $empleado = Empleado::where('correo', $user->email)->first();
@@ -47,7 +80,6 @@ class EvaluacionController extends Controller
         $pos = mb_strtolower($empleado->posicion, 'UTF-8');
         $area = mb_strtolower($empleado->area, 'UTF-8');
 
-        // Dirección, Admin RH o área de RH completa
         return str_contains($pos, 'dirección') || 
                str_contains($pos, 'direccion') || 
                $this->isAdminRH($empleado) ||
@@ -77,7 +109,6 @@ class EvaluacionController extends Controller
         $query = Empleado::query();
 
         if ($hasFullVisibility) {
-            // Admin RH ve a TODOS en la lista
             if ($request->has('area') && $request->area !== 'Todos') {
                 $query->where('posicion', 'LIKE', '%' . $request->area . '%');
             }
@@ -90,6 +121,7 @@ class EvaluacionController extends Controller
             $query->where('id', 0);
         }
 
+        // Nota: Idealmente usar eager loading (with) aquí en el futuro
         $empleados = $query->get()->map(function($target) use ($selectedPeriod, $user) {
             $target->mi_evaluacion = Evaluacion::where('empleado_id', $target->id)
                 ->where('evaluador_id', $user->id)
@@ -112,16 +144,15 @@ class EvaluacionController extends Controller
 
         if (!$periodo) return back()->with('error', 'Periodo requerido');
 
-        // Checamos si es Admin RH por su POSICIÓN
         $isAdminRH = $this->isAdminRH($me);
         $hasFullVisibility = $this->hasFullVisibility($user);
 
-        // 1. Nadie se evalúa a sí mismo
+        // 1. Validar auto-evaluación
         if ($me && $me->id == $target->id && !$hasFullVisibility) {
             return redirect()->route('rh.evaluacion.index')->with('error', 'No puedes evaluarte a ti mismo.');
         }
 
-        // 2. Permisos de Evaluación
+        // 2. Permisos
         $canEvaluate = false;
         $isDirectSupervisor = false;
         $isBoss = false;
@@ -132,14 +163,13 @@ class EvaluacionController extends Controller
             if ($isDirectSupervisor || $isBoss) $canEvaluate = true;
         }
 
-        // Admin RH siempre puede evaluar (por política de negocio)
         if ($isAdminRH) $canEvaluate = true;
 
         if (!$canEvaluate && !$hasFullVisibility) {
             return redirect()->route('rh.evaluacion.index')->with('error', 'No autorizado.');
         }
 
-        // Cargar evaluación previa
+        // Cargar evaluación existente
         $evaluacion = Evaluacion::with('detalles')
             ->where('empleado_id', $id)
             ->where('evaluador_id', $user->id)
@@ -155,41 +185,35 @@ class EvaluacionController extends Controller
             }
         }
 
-        // --- SELECCIÓN DE CRITERIOS (Lógica corregida) ---
+        // --- SELECCIÓN DE CRITERIOS (LOGICA MEJORADA) ---
         $queryCriterios = CriterioEvaluacion::query();
+        $areaDisplay = '';
 
-        // CASO A: Admin RH (Posición) que NO es jefe directo -> Solo ve Soft Skills
-        if ($isAdminRH && !$isDirectSupervisor && !$isBoss) {
-            $queryCriterios->where('area', 'Recursos Humanos');
-            $areaDisplay = 'Habilidades Blandas (Evaluación RH)';
-        }
-        // CASO B: Jefe Directo evalúa a Empleado -> Ve Técnico + Soft Skills
-        elseif ($isDirectSupervisor) {
-            $puesto = $target->posicion;
-            $areaTecnica = 'General';
-            
-            if (str_contains($puesto, 'Logistica')) $areaTecnica = 'Logistica';
-            elseif (str_contains($puesto, 'Pedimentos')) $areaTecnica = 'Pedimentos';
-            elseif (str_contains($puesto, 'TI') || str_contains($puesto, 'Sistemas')) $areaTecnica = 'TI';
-            elseif (str_contains($puesto, 'Legal')) $areaTecnica = 'Legal';
-            elseif (str_contains($puesto, 'Auditoria')) $areaTecnica = 'Auditoria';
-
-            $queryCriterios->where(function($q) use ($areaTecnica) {
-                $q->where('area', $areaTecnica)
-                  ->orWhere('area', 'Recursos Humanos');
-            });
-            $areaDisplay = 'Evaluación Integral (Técnica + RH)';
-        }
-        // CASO C: Empleado evalúa a su Jefe (Evaluación Supervisor)  <-- ESTE ES EL CAMBIO
-        elseif ($isBoss) {
-             // Aquí jalamos los 17 criterios nuevos que metimos en el Seeder
+        // CASO A: Evaluación Hacia Arriba (Analista -> Jefe)
+        if ($isBoss) {
              $queryCriterios->where('area', 'Evaluación Supervisor'); 
-             $areaDisplay = 'Evaluación de Desempeño (Supervisor)';
+             $areaDisplay = 'Evaluación de Liderazgo (A tu Supervisor)';
         }
-        // CASO D: Default (Otros)
+        // CASO B: Evaluación Hacia Abajo (Jefe -> Subordinado)
+        elseif ($isDirectSupervisor) {
+            // Detectamos el área técnica basada en el PUESTO del evaluado
+            $areaTecnica = $this->getTechnicalArea($target->posicion);
+            
+            $queryCriterios->where(function($q) use ($areaTecnica) {
+                $q->where('area', $areaTecnica)          // Preguntas técnicas
+                  ->orWhere('area', 'Recursos Humanos'); // Preguntas Soft Skills
+            });
+            $areaDisplay = "Evaluación de Desempeño ($areaTecnica + RH)";
+        }
+        // CASO C: Admin RH que no es jefe directo (Solo ve Soft Skills)
+        elseif ($isAdminRH) {
+             $queryCriterios->where('area', 'Recursos Humanos');
+             $areaDisplay = 'Evaluación de Habilidades Blandas (RH)';
+        }
+        // CASO D: Default
         else {
              $queryCriterios->where('area', 'Recursos Humanos');
-             $areaDisplay = 'Evaluación de Liderazgo';
+             $areaDisplay = 'Evaluación General';
         }
 
         $criterios = $queryCriterios->get();
@@ -212,7 +236,6 @@ class EvaluacionController extends Controller
         ]);
     }
 
-    // ... (Métodos store, update y resultados se mantienen igual que la versión anterior) ...
     public function store(Request $request)
     {
         if (!$this->isEvaluationWindowOpen()) return back()->with('error', 'Periodo cerrado.');
@@ -229,6 +252,7 @@ class EvaluacionController extends Controller
 
         try {
             DB::beginTransaction();
+            // Calcular promedio ponderado
             $criteriosDb = CriterioEvaluacion::whereIn('id', array_keys($request->calificaciones))->get();
             $totalPuntos = 0;
             $totalPeso = 0;
@@ -327,7 +351,6 @@ class EvaluacionController extends Controller
             $evaluador = $eval->evaluador->empleado;
             $rol = 'Colaborador';
             if ($evaluador) {
-                // Checamos si el evaluador es Admin RH (Posición)
                 $pos = mb_strtolower($evaluador->posicion ?? '', 'UTF-8');
                 $esAdminRH = str_contains($pos, 'administración rh') || str_contains($pos, 'administracion rh');
 
