@@ -66,10 +66,10 @@
                 <section id="tab-profiles" data-tab-panel class="space-y-8">
                     <div class="space-y-2">
                         <h3 class="text-xl font-semibold text-slate-900">Registrar ficha técnica de equipo</h3>
-                        <p class="text-sm text-slate-500 max-w-2xl">Documenta la configuración técnica, los componentes reemplazados y el estado de préstamo para tener un seguimiento completo desde el expediente de mantenimientos.</p>
+                        <p class="text-sm text-slate-500 max-w-2xl">Selecciona un ticket desde "Seguimiento administrativo de tickets" para completar los datos de la ficha técnica del equipo.</p>
                     </div>
 
-                    <form method="POST" action="{{ route('admin.maintenance.computers.store') }}" class="space-y-8">
+                    <form method="POST" action="{{ route('admin.maintenance.computers.store') }}" class="space-y-8 hidden" id="technicalProfileForm">
                         @csrf
 
                         <div class="grid grid-cols-1 lg:grid-cols-[2fr,3fr] gap-8">
@@ -95,7 +95,16 @@
                                                     @php
                                                         $createdAt = optional($ticket->created_at)->timezone('America/Mexico_City');
                                                     @endphp
-                                                    <option value="{{ $ticket->id }}" {{ (string) old('maintenance_ticket_id') === (string) $ticket->id ? 'selected' : '' }}>
+                                                    <option value="{{ $ticket->id }}" 
+                                                        {{ (string) old('maintenance_ticket_id') === (string) $ticket->id ? 'selected' : '' }}
+                                                        data-equipment-identifier="{{ $ticket->equipment_identifier ?? '' }}"
+                                                        data-equipment-brand="{{ $ticket->equipment_brand ?? '' }}"
+                                                        data-equipment-model="{{ $ticket->equipment_model ?? '' }}"
+                                                        data-disk-type="{{ $ticket->disk_type ?? '' }}"
+                                                        data-ram-capacity="{{ $ticket->ram_capacity ?? '' }}"
+                                                        data-battery-status="{{ $ticket->battery_status ?? '' }}"
+                                                        data-aesthetic-observations="{{ $ticket->aesthetic_observations ?? '' }}"
+                                                        data-replacement-components="{{ $ticket->replacement_components ? json_encode($ticket->replacement_components) : '[]' }}">
                                                         {{ $ticket->folio }} · {{ $ticket->nombre_solicitante }} · {{ $createdAt ? $createdAt->format('d/m/Y H:i') : 'Sin fecha' }}
                                                     </option>
                                                 @endforeach
@@ -268,16 +277,20 @@
                         <div class="p-6 space-y-6">
                             @php
                                 $activeTicketId = old('target_ticket_id', session('active_ticket_form'));
+                                // Filtrar solo tickets sin ficha técnica asociada y no cancelados por el usuario
+                                $ticketsWithoutProfile = $maintenanceTickets->filter(function($ticket) {
+                                    return is_null($ticket->computer_profile_id) && !$ticket->closed_by_user;
+                                });
                             @endphp
 
-                            @if($maintenanceTickets->isEmpty())
-                                <p class="text-sm text-slate-500">Aún no hay tickets de mantenimiento registrados para administrar desde esta vista.</p>
+                            @if($ticketsWithoutProfile->isEmpty())
+                                <p class="text-sm text-slate-500">Todos los tickets de mantenimiento ya tienen ficha técnica registrada.</p>
                             @else
                                 <div class="space-y-2">
                                     <label for="maintenanceTicketSelector" class="block text-sm font-medium text-slate-700">Ticket de mantenimiento</label>
                                     <select id="maintenanceTicketSelector" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-default="{{ $activeTicketId ? 'ticket-' . $activeTicketId : '' }}">
                                         <option value="">Selecciona un ticket para gestionarlo</option>
-                                        @foreach($maintenanceTickets as $ticket)
+                                        @foreach($ticketsWithoutProfile as $ticket)
                                             @php
                                                 $createdAt = optional($ticket->created_at)->timezone('America/Mexico_City');
                                                 $closedAt = optional($ticket->fecha_cierre)->timezone('America/Mexico_City');
@@ -291,7 +304,7 @@
                                 </div>
 
                                 <div class="space-y-6" id="maintenanceTicketForms">
-                                    @foreach($maintenanceTickets as $ticket)
+                                    @foreach($ticketsWithoutProfile as $ticket)
                                         @php
                                             $isActiveTicket = (string) $activeTicketId === (string) $ticket->id;
                                             $createdAt = optional($ticket->created_at)->timezone('America/Mexico_City');
@@ -983,7 +996,71 @@
             };
 
             maintenanceSelector.addEventListener('change', (event) => {
-                showMaintenancePanel(event.target.value);
+                const selectedValue = event.target.value;
+                console.log('Ticket seleccionado:', selectedValue);
+                showMaintenancePanel(selectedValue);
+                
+                // Si se seleccionó un ticket, también seleccionarlo arriba en el formulario de ficha técnica
+                if (selectedValue) {
+                    const ticketId = selectedValue.replace('ticket-', '');
+                    console.log('ID del ticket:', ticketId);
+                    
+                    // Activar el tab de "Ficha técnica" primero
+                    const tabProfilesTrigger = document.querySelector('[data-tab-target="tab-profiles"]');
+                    console.log('Tab trigger encontrado:', tabProfilesTrigger);
+                    
+                    if (tabProfilesTrigger) {
+                        // Simular el click en el tab
+                        const targetId = 'tab-profiles';
+                        
+                        // Actualizar estilos de los botones
+                        const tabButtons = document.querySelectorAll('.tab-trigger');
+                        tabButtons.forEach(btn => {
+                            btn.classList.remove('bg-white', 'shadow-sm', 'text-blue-700');
+                            btn.classList.add('text-slate-600');
+                        });
+                        tabProfilesTrigger.classList.add('bg-white', 'shadow-sm', 'text-blue-700');
+                        tabProfilesTrigger.classList.remove('text-slate-600');
+                        
+                        // Mostrar el panel correcto
+                        const tabPanels = document.querySelectorAll('[data-tab-panel]');
+                        tabPanels.forEach(panel => {
+                            panel.classList.toggle('hidden', panel.id !== targetId);
+                        });
+                        console.log('Tab activado');
+                    }
+                    
+                    // Pequeña pausa para que el tab se active
+                    setTimeout(() => {
+                        const profileTicketSelector = document.getElementById('maintenance_ticket_id');
+                        const technicalProfileForm = document.getElementById('technicalProfileForm');
+                        console.log('Formulario encontrado:', technicalProfileForm);
+                        console.log('Selector de ticket encontrado:', profileTicketSelector);
+                        
+                        if (profileTicketSelector && technicalProfileForm) {
+                            // Mostrar el formulario
+                            technicalProfileForm.classList.remove('hidden');
+                            console.log('Formulario mostrado');
+                            
+                            // Seleccionar el ticket
+                            profileTicketSelector.value = ticketId;
+                            // Disparar evento change para que se llenen los campos
+                            profileTicketSelector.dispatchEvent(new Event('change'));
+                            console.log('Campos llenados');
+                            
+                            // Scroll hacia el formulario
+                            technicalProfileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        } else {
+                            console.error('No se encontró el formulario o el selector de ticket');
+                        }
+                    }, 150);
+                } else {
+                    // Si se deselecciona, ocultar el formulario
+                    const technicalProfileForm = document.getElementById('technicalProfileForm');
+                    if (technicalProfileForm) {
+                        technicalProfileForm.classList.add('hidden');
+                    }
+                }
             });
 
             applyDefaultPanel();
@@ -1004,6 +1081,59 @@
                     : `${count} archivos seleccionados.`;
             });
         });
+
+        // Auto-rellenar campos de ficha técnica al seleccionar un ticket
+        const ticketSelector = document.getElementById('maintenance_ticket_id');
+        if (ticketSelector) {
+            ticketSelector.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                
+                if (!selectedOption || !selectedOption.value) {
+                    // Limpiar campos si no hay ticket seleccionado
+                    document.getElementById('identifier').value = '';
+                    document.getElementById('brand').value = '';
+                    document.getElementById('model').value = '';
+                    document.getElementById('disk_type').value = '';
+                    document.getElementById('ram_capacity').value = '';
+                    document.getElementById('battery_status').value = '';
+                    document.getElementById('aesthetic_observations').value = '';
+                    
+                    // Desmarcar todos los checkboxes de componentes
+                    document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    return;
+                }
+
+                // Rellenar campos con datos del ticket
+                const identifier = selectedOption.getAttribute('data-equipment-identifier') || '';
+                const brand = selectedOption.getAttribute('data-equipment-brand') || '';
+                const model = selectedOption.getAttribute('data-equipment-model') || '';
+                const diskType = selectedOption.getAttribute('data-disk-type') || '';
+                const ramCapacity = selectedOption.getAttribute('data-ram-capacity') || '';
+                const batteryStatus = selectedOption.getAttribute('data-battery-status') || '';
+                const aestheticObs = selectedOption.getAttribute('data-aesthetic-observations') || '';
+                const replacementComponents = JSON.parse(selectedOption.getAttribute('data-replacement-components') || '[]');
+
+                document.getElementById('identifier').value = identifier;
+                document.getElementById('brand').value = brand;
+                document.getElementById('model').value = model;
+                document.getElementById('disk_type').value = diskType;
+                document.getElementById('ram_capacity').value = ramCapacity;
+                document.getElementById('battery_status').value = batteryStatus;
+                document.getElementById('aesthetic_observations').value = aestheticObs;
+
+                // Marcar checkboxes de componentes reemplazados
+                document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
+                    checkbox.checked = replacementComponents.includes(checkbox.value);
+                });
+            });
+
+            // Disparar el evento change si hay un valor pre-seleccionado
+            if (ticketSelector.value) {
+                ticketSelector.dispatchEvent(new Event('change'));
+            }
+        }
     }
 </script>
 @endsection

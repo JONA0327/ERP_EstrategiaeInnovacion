@@ -70,15 +70,15 @@
                                 </svg>
                                 Información del Solicitante
                             </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-4">
                                 <div>
-                                    <p class="text-sm font-medium text-gray-500">Nombre</p>
-                                    <p class="text-lg text-gray-900">{{ $ticket->nombre_solicitante }}</p>
+                                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Nombre</p>
+                                    <p class="text-base text-gray-900 font-medium">{{ $ticket->nombre_solicitante }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-medium text-gray-500">Correo</p>
-                                    <p class="text-lg text-blue-600">
-                                        <a href="mailto:{{ $ticket->correo_solicitante }}">{{ $ticket->correo_solicitante }}</a>
+                                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Correo</p>
+                                    <p class="text-base text-blue-600">
+                                        <a href="mailto:{{ $ticket->correo_solicitante }}" class="hover:underline">{{ $ticket->correo_solicitante }}</a>
                                     </p>
                                 </div>
                             </div>
@@ -187,29 +187,7 @@
                             </div>
 
                             @if($ticket->maintenance_report || $ticket->closure_observations)
-                                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
-                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                                        <svg class="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6h13m-7 0V7a4 4 0 10-8 0v4m-2 0h12" />
-                                        </svg>
-                                        Reportes del mantenimiento
-                                    </h3>
-                                    <div class="space-y-4 text-sm text-gray-700">
-                                        @if($ticket->maintenance_report)
-                                            <div>
-                                                <p class="text-xs text-gray-500 uppercase tracking-wider">Informe técnico</p>
-                                                <p class="mt-1 text-gray-800">{{ $ticket->maintenance_report }}</p>
-                                            </div>
-                                        @endif
-                                        @if($ticket->closure_observations)
-                                            <div>
-                                                <p class="text-xs text-gray-500 uppercase tracking-wider">Observaciones al cerrar</p>
-                                                <p class="mt-1 text-gray-800">{{ $ticket->closure_observations }}</p>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
+                        @endif
                         @endif
 
                         <!-- Imágenes -->
@@ -489,53 +467,7 @@
                                         @endif
                                     </div>
                                 </div>
-
-                                <div class="mt-6">
-                                    <h4 class="text-sm font-semibold text-gray-700 mb-4">Reportes y observaciones</h4>
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label for="maintenance_report" class="block text-xs font-medium text-gray-600 mb-1">Reporte técnico</label>
-                                            <textarea id="maintenance_report" name="maintenance_report" rows="4" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ old('maintenance_report', $ticket->maintenance_report) }}</textarea>
-                                            @error('maintenance_report')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-                                        </div>
-                                        <div>
-                                            <label for="closure_observations" class="block text-xs font-medium text-gray-600 mb-1">Observaciones al cerrar</label>
-                                            <textarea id="closure_observations" name="closure_observations" rows="3" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ old('closure_observations', $ticket->closure_observations) }}</textarea>
-                                            @error('closure_observations')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-                                        </div>
-                                    </div>
-                                </div>
                             @endif
-
-                            <!-- Información de Fechas -->
-                            <div class="border-t border-gray-200 pt-6">
-                                <h4 class="text-sm font-semibold text-gray-700 mb-3">Información de Fechas</h4>
-                                
-                                <div class="space-y-3 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Apertura:</span>
-                                        <span class="text-gray-900">
-                                            @if($ticket->fecha_apertura)
-                                                {{ $ticket->fecha_apertura->timezone('America/Mexico_City')->format('d/m/Y H:i') }}
-                                            @else
-                                                Sin registro
-                                            @endif
-                                        </span>
-                                    </div>
-                                    
-                                    @if($ticket->fecha_cierre)
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Cierre:</span>
-                                        <span class="text-gray-900">{{ $ticket->fecha_cierre->timezone('America/Mexico_City')->format('d/m/Y H:i') }}</span>
-                                    </div>
-                                    @endif
-                                    
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Última actualización:</span>
-                                        <span class="text-gray-900">{{ $ticket->updated_at->timezone('America/Mexico_City')->format('d/m/Y H:i') }}</span>
-                                    </div>
-                                </div>
-                            </div>
 
                             <!-- Botón de Actualizar -->
                             <!-- Botón de Actualizar -->

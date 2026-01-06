@@ -100,14 +100,6 @@ class EmpleadoSeeder extends Seeder
                 'supervisor' => 'Nancy Beatriz Gomez Hernandez',
             ],
             [
-                'id_empleado' => '70',
-                'nombre' => 'Karen Michelle Echevarria Garcia',
-                'correo' => 'karen.echevarria@empresa.com',
-                'area' => 'Estrategia e Innovacion',
-                'posicion' => 'Logistica',
-                'supervisor' => 'Nancy Beatriz Gomez Hernandez',
-            ],
-            [
                 'id_empleado' => '73',
                 'nombre' => 'Mariana Rodriguez Rueda',
                 'correo' => 'mariana.rodriguez@empresa.com',
@@ -255,17 +247,62 @@ class EmpleadoSeeder extends Seeder
 
         // Crear/Actualizar Empleados Reales
         foreach ($empleados as $emp) {
-            $user = User::firstOrCreate(
-                ['email' => $emp['correo']],
-                [
-                    'name' => $emp['nombre'],
-                    'password' => Hash::make('password'),
-                ]
-            );
+            // Normalizar nombre para búsqueda
+            $nombreNormalizado = strtolower(trim($emp['nombre']));
+            
+            // 1. BUSCAR EMPLEADO POR ID_EMPLEADO (prioridad)
+            $empleadoExistente = Empleado::where('id_empleado', $emp['id_empleado'])->first();
+            
+            // 2. Si no existe, buscar por nombre similar (más estricto)
+            if (!$empleadoExistente) {
+                $empleadoExistente = Empleado::whereRaw('LOWER(TRIM(nombre)) = ?', [$nombreNormalizado])->first();
+            }
+            
+            // 3. BUSCAR USUARIO
+            if ($empleadoExistente && $empleadoExistente->user_id) {
+                // Ya tiene usuario asignado, usarlo
+                $user = User::find($empleadoExistente->user_id);
+                if ($user) {
+                    $user->update(['name' => $emp['nombre']]);
+                }
+            } else {
+                // Buscar usuario por email o nombre
+                $user = User::where('email', $empleadoExistente ? $empleadoExistente->correo : $emp['correo'])->first();
+                
+                if (!$user) {
+                    // Buscar por similitud de nombre
+                    $user = User::whereRaw('LOWER(TRIM(name)) = ?', [$nombreNormalizado])->first();
+                }
+                
+                if ($user) {
+                    // Usuario existe: solo actualizar nombre
+                    $user->update(['name' => $emp['nombre']]);
+                } else {
+                    // Usuario no existe: crear nuevo
+                    $user = User::create([
+                        'email' => $emp['correo'],
+                        'name' => $emp['nombre'],
+                        'password' => Hash::make('Pass123456'),
+                    ]);
+                }
+            }
 
-            $empleado = Empleado::updateOrCreate(
-                ['id_empleado' => $emp['id_empleado']],
-                [
+            // 4. ACTUALIZAR O CREAR EMPLEADO
+            if ($empleadoExistente) {
+                // Empleado existe: actualizar toda la info, MANTENER CORREO REAL
+                $empleadoExistente->update([
+                    'id_empleado' => $emp['id_empleado'],
+                    'nombre' => $emp['nombre'],
+                    'area' => $emp['area'],
+                    'posicion' => $emp['posicion'],
+                    'user_id' => $user->id,
+                    // NO actualizar correo para mantener el real
+                ]);
+                $empleado = $empleadoExistente;
+            } else {
+                // Empleado no existe: crear nuevo
+                $empleado = Empleado::create([
+                    'id_empleado' => $emp['id_empleado'],
                     'nombre' => $emp['nombre'],
                     'correo' => $emp['correo'],
                     'area' => $emp['area'],
@@ -276,8 +313,8 @@ class EmpleadoSeeder extends Seeder
                     'foto_path' => null,
                     'subdepartamento_id' => null,
                     'user_id' => $user->id,
-                ]
-            );
+                ]);
+            }
 
             $mapaEmpleados[$emp['nombre']] = $empleado->id;
         }

@@ -123,8 +123,6 @@ return new class extends Migration
             $table->string('ram_capacity')->nullable();
             $table->string('battery_status')->nullable();
             $table->text('aesthetic_observations')->nullable();
-            $table->text('maintenance_report')->nullable();
-            $table->text('closure_observations')->nullable();
             $table->longText('replacement_components')->nullable();
 
             $table->timestamps();

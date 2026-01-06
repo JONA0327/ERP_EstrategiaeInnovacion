@@ -44,7 +44,11 @@
                 'label' => 'Panel Admin',
                 'route' => route('admin.dashboard'),
                 'active' => request()->routeIs('admin.*'),
-                'visible' => $user && method_exists($user, 'isAdmin') && $user->isAdmin() && optional($user->empleado)->area === 'Sistemas',
+                'visible' => $user && method_exists($user, 'isAdmin') && $user->isAdmin() && (
+                    optional($user->empleado)->area === 'Sistemas' || 
+                    optional($user->empleado)->posicion === 'TI' || 
+                    optional($user->empleado)->posicion === 'IT'
+                ),
             ],
             [
                 'label' => 'Mis Tickets',
@@ -113,7 +117,11 @@
 
             <div class="hidden sm:flex sm:items-center sm:ml-6">
                 
-                @if (!$isRHContext && !$isLogisticaContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin() && optional($user->empleado)->area === 'Sistemas')
+                @if (!$isRHContext && !$isLogisticaContext && $user && method_exists($user, 'isAdmin') && $user->isAdmin() && (
+                    optional($user->empleado)->area === 'Sistemas' || 
+                    optional($user->empleado)->posicion === 'TI' || 
+                    optional($user->empleado)->posicion === 'IT'
+                ))
                     <div class="mr-4">
                         <x-admin.notification-center />
                     </div>

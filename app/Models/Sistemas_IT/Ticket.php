@@ -42,8 +42,6 @@ class Ticket extends Model
         'ram_capacity',
         'battery_status',
         'aesthetic_observations',
-        'maintenance_report',
-        'closure_observations',
         'replacement_components',
         'computer_profile_id',
         'imagenes_admin',
