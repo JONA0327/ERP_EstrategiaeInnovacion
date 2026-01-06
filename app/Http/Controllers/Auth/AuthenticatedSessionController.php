@@ -30,29 +30,28 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        // Seguridad: si por alguna razón no hay usuario autenticado, vuelve a login
+        // 1. Seguridad: Verificar usuario
         if (!$user) {
             return redirect()->route('login');
         }
 
-        // Normaliza el área desde el perfil de empleado (si existe)
+        // 2. Normalizar el área para evitar errores por mayúsculas o espacios
         $areaRaw = optional($user->empleado)->area;
         $area = $areaRaw ? mb_strtolower(preg_replace('/\s+/u', ' ', $areaRaw), 'UTF-8') : null;
 
-        // Invitados: solo portada ERP/Tickets
-        if ($user->role === 'invitado') {
-            return redirect()->route('welcome');
-        }
+        // --- A. REDIRECCIONES A "CUEVAS" ESPECÍFICAS ---
 
-        // Redirecciones por área con prioridad a vistas propias
+        // RH -> Su Dashboard
         if ($area === 'rh' || $area === 'recursos humanos') {
             return redirect()->route('recursos-humanos.index');
         }
 
+        // Logística -> Su Dashboard
         if ($area === 'logistica' || $area === 'logística') {
             return redirect()->route('logistica.index');
         }
 
+        // Sistemas -> Tickets o Admin
         if ($area === 'sistemas') {
             if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
                 return redirect()->route('admin.dashboard');
@@ -60,13 +59,16 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('tickets.mis-tickets');
         }
 
-        // Comercio Exterior
+        // Comercio Exterior -> (Si consideras que ellos tienen "cueva" de tickets, déjalo, si no, quítalo para que vayan al welcome)
         if ($area === 'comercio exterior') {
             return redirect()->route('tickets.mis-tickets');
         }
 
-        // Cualquier otra área aprobada o sin área: ir al centro de tickets
-        return redirect()->route('tickets.mis-tickets');
+        // --- B. EL RESTO DEL MUNDO (FALLBACK) ---
+        // Si no cayó en ninguna de las "cuevas" anteriores (Ventas, Contabilidad, Dirección, etc.)
+        // los mandamos al Portal Corporativo Nuevo.
+        
+        return redirect()->route('welcome');
     }
 
     /**

@@ -31,7 +31,7 @@
      <?php $__env->endSlot(); ?>
 
     <?php
-        $categoriasPrincipales = ['Logistica', 'Legal', 'Pedimentos', 'Anexo 24', 'Auditoria', 'TI', 'Recursos Humanos'];
+        $categoriasPrincipales = ['Logistica', 'Legal', 'Anexo 24', 'Auditoria', 'TI'];
         $todosLosPuestos = $empleados->pluck('posicion')->unique()->values()->toArray();
         $todasLasCategorias = array_unique(array_merge($categoriasPrincipales, $todosLosPuestos));
     ?>
@@ -156,9 +156,20 @@
                                                                 </a>
                                                             <?php endif; ?>
                                                         <?php else: ?>
-                                                            <a href="<?php echo e(route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" class="flex items-center justify-center w-full px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors">
-                                                                Iniciar Evaluación
-                                                            </a>
+                                                            <div class="mt-4 flex gap-2">
+                                                                <a href="<?php echo e(route('rh.evaluacion.show', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" 
+                                                                class="flex-1 text-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-100 transition">
+                                                                Evaluar
+                                                                </a>
+
+                                                                <?php if(isset($hasFullVisibility) && $hasFullVisibility): ?>
+                                                                    <a href="<?php echo e(route('rh.evaluacion.resultados', ['id' => $empleado->id, 'periodo' => $selectedPeriod])); ?>" 
+                                                                    class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition" 
+                                                                    title="Ver Resultados Consolidados">
+                                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                                                    </a>
+                                                                <?php endif; ?>
+                                                            </div>
                                                         <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>

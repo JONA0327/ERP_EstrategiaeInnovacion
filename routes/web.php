@@ -16,6 +16,7 @@ use App\Http\Controllers\Logistica\OperacionLogisticaController;
 use App\Http\Controllers\Logistica\PedimentoController;
 use App\Http\Controllers\Logistica\LogisticaCorreoCCController;
 use App\Http\Controllers\EvaluacionController;
+use App\Http\Controllers\ActivityController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -43,14 +44,14 @@ Route::middleware(['auth','area.rh'])->group(function () {
         Route::put('/{empleado}', [ExpedienteController::class, 'update'])->name('update');
         Route::delete('/{empleado}', [ExpedienteController::class, 'destroy'])->name('destroy');
     });
-    Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
-    Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
-
-    Route::post('/recursos-humanos/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
-    Route::put('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
-
-    Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
-    Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
+    //Route::get('/recursos-humanos/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
+    //Route::get('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+//
+    //Route::post('/recursos-humanos/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
+    //Route::put('/recursos-humanos/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
+//
+    //Route::get('/jerarquia', [JerarquiaController::class, 'index'])->name('rh.jerarquia.index');
+    //Route::patch('/jerarquia/{id}', [JerarquiaController::class, 'update'])->name('rh.jerarquia.update');
     });
 
 Route::middleware(['auth','area.logistica'])->group(function () {
@@ -243,7 +244,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/maintenance/availability', [MaintenanceController::class, 'availability'])->name('maintenance.availability');
     Route::get('/maintenance/slots', [MaintenanceController::class, 'slots'])->name('maintenance.slots');
-
 });
 
 // Archivo de problemas: rutas eliminadas
@@ -308,6 +308,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::resource('activities', ActivityController::class);
 });
 
 // En routes/web.php
@@ -339,6 +341,46 @@ Route::middleware(['auth', \App\Http\Middleware\AreaRHMiddleware::class])->group
             ->name('store'); // Genera: rh.reloj.store
     });
 
+});
+
+// En web.php, dentro del grupo 'capital-humano'
+Route::middleware(['auth'])->prefix('capital-humano')->group(function () {
+    Route::get('/evaluacion', [EvaluacionController::class, 'index'])->name('rh.evaluacion.index');
+    Route::get('/evaluacion/{id}', [EvaluacionController::class, 'show'])->name('rh.evaluacion.show');
+    Route::post('/evaluacion', [EvaluacionController::class, 'store'])->name('rh.evaluacion.store');
+    Route::put('/evaluacion/{id}', [EvaluacionController::class, 'update'])->name('rh.evaluacion.update');
+    
+
+    // --- AGREGA ESTA LÍNEA ---
+    Route::get('/evaluacion/{id}/resultados', [EvaluacionController::class, 'resultados'])->name('rh.evaluacion.resultados');
+
+    Route::post('/expedientes/{id}/upload', [ExpedienteController::class, 'uploadDocument'])
+        ->name('rh.expedientes.upload');
+
+    Route::delete('/expedientes/documento/{id}', [ExpedienteController::class, 'deleteDocument'])
+        ->name('rh.expedientes.delete-doc');
+
+    Route::post('/expedientes/{id}/import-excel', [ExpedienteController::class, 'importFormatoId'])
+    ->name('rh.expedientes.import-excel');
+});
+
+Route::middleware(['auth'])->prefix('capacitacion')->name('capacitacion.')->group(function () {
+    Route::get('/', [App\Http\Controllers\RH\CapacitacionController::class, 'index'])->name('index');
+    Route::get('/ver/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'show'])->name('show');
+});
+
+Route::middleware(['auth', 'area.rh'])->prefix('recursos-humanos/capacitacion')->name('rh.capacitacion.')->group(function () {
+    Route::get('/gestion', [App\Http\Controllers\RH\CapacitacionController::class, 'manage'])->name('manage');
+    Route::post('/subir', [App\Http\Controllers\RH\CapacitacionController::class, 'store'])->name('store');
+    Route::delete('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroy'])->name('destroy');
+
+    // --- RUTAS NUEVAS DE EDICIÓN ---
+    Route::get('/{id}/editar', [App\Http\Controllers\RH\CapacitacionController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'update'])->name('update');
+    Route::delete('/adjunto/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroyAdjunto'])->name('destroyAdjunto');
+    // -------------------------------
+
+    Route::delete('/{id}', [App\Http\Controllers\RH\CapacitacionController::class, 'destroy'])->name('destroy');
 });
 
 // Ayuda pública removida

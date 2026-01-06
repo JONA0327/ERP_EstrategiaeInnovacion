@@ -17,7 +17,12 @@ class Evaluacion extends Model
         'periodo',
         'promedio_final',
         'comentarios_generales',
-        'edit_count', // <--- ¡IMPORTANTE! AGREGAR ESTO
+        'edit_count',
+        'fecha_firma_empleado', // <--- NUEVO CAMPO AGREGADO
+    ];
+
+    protected $casts = [
+        'fecha_firma_empleado' => 'datetime',
     ];
 
     public function detalles()
@@ -28,5 +33,10 @@ class Evaluacion extends Model
     public function empleado()
     {
         return $this->belongsTo(Empleado::class);
+    }
+
+    public function evaluador()
+    {
+        return $this->belongsTo(User::class, 'evaluador_id');
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Empleado;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -32,6 +33,7 @@ class User extends Authenticatable
         'status',
         'approved_at',
         'rejected_at',
+        // 'area', // Descomenta si agregas la columna a la tabla users
     ];
 
     /**
@@ -60,6 +62,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Helper privado para normalizar texto (minusculas, sin acentos)
+     */
+    private function normalizeString(?string $value): string
+    {
+        if (empty($value)) return '';
+        // Convierte a minúsculas y reemplaza acentos comunes
+        $value = mb_strtolower(trim($value), 'UTF-8');
+        $replacements = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n'];
+        return strtr($value, $replacements);
+    }
+
+    /**
      * Determina si el usuario está aprobado para acceder al sistema.
      */
     public function isApproved(): bool
@@ -73,6 +87,75 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * Verificar si el usuario es de RH (Busca en Rol, Area, Departamento y Puesto)
+     */
+    public function isRh(): bool
+    {
+        // 1. Obtener todos los valores posibles donde podría decir "RH"
+        $valoresAChecar = [
+            $this->role,
+            $this->area ?? '',
+        ];
+
+        // Si tiene relación con empleado, checar sus datos también
+        if ($this->empleado) {
+            $valoresAChecar[] = $this->empleado->departamento ?? '';
+            $valoresAChecar[] = $this->empleado->puesto ?? '';
+            $valoresAChecar[] = $this->empleado->area ?? '';
+        }
+
+        // 2. Palabras clave aceptadas
+        $palabrasClave = ['rh', 'recursos humanos', 'capital humano', 'administracion rh', 'human resources'];
+
+        // 3. Revisar cada valor
+        foreach ($valoresAChecar as $valor) {
+            $normalizado = $this->normalizeString($valor);
+            
+            // Si el valor normalizado está en la lista exacta
+            if (in_array($normalizado, $palabrasClave)) {
+                return true;
+            }
+
+            // O si contiene la frase (ej: "Gerente de Recursos Humanos")
+            if (str_contains($normalizado, 'recursos humanos') || str_contains($normalizado, 'capital humano')) {
+                return true;
+            }
+            
+            // Caso especial para "Administracion RH" que mencionaste
+            if (str_contains($normalizado, 'administracion rh')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Verificar si el usuario es de Logística
+     */
+    public function isLogistica(): bool
+    {
+        $valoresAChecar = [
+            $this->role,
+            $this->area ?? '',
+        ];
+
+        if ($this->empleado) {
+            $valoresAChecar[] = $this->empleado->departamento ?? '';
+            $valoresAChecar[] = $this->empleado->puesto ?? '';
+        }
+
+        foreach ($valoresAChecar as $valor) {
+            $normalizado = $this->normalizeString($valor);
+            if (str_contains($normalizado, 'logistica') || str_contains($normalizado, 'operaciones') || str_contains($normalizado, 'aduana')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -91,23 +174,11 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Relación con empleado
+     */
     public function empleado()
     {
         return $this->hasOne(Empleado::class);
     }
-
-    /**
-     * Relación con préstamos activos de inventario
-     */
-    // Feature removed
-
-    /**
-     * Relación con todos los préstamos de inventario
-     */
-    // Feature removed
-
-    /**
-     * Relación con inventarios creados por el usuario
-     */
-    // Feature removed
 }

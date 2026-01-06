@@ -17,8 +17,9 @@ class LogisticaEvaluacionSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // 1. Definimos las Competencias Blandas (COMUNES PARA AMBAS ÁREAS - 40%)
-        // Esto evita repetir código y estandariza la evaluación humana.
+        // ==========================================
+        // 1. SOFT SKILLS (COMPETENCIAS BLANDAS) - 40%
+        // ==========================================
         $softSkills = [
             [
                 'criterio' => 'Puntualidad y Asistencia',
@@ -62,7 +63,9 @@ class LogisticaEvaluacionSeeder extends Seeder
             ],
         ];
 
-        // 2. Definición de Áreas y sus Objetivos Técnicos (HARD SKILLS - 60%)
+        // ==========================================
+        // 2. HARD SKILLS (COMPETENCIAS TÉCNICAS) - 60%
+        // ==========================================
         $areasConfig = [
             'Logistica' => [
                 [
@@ -97,18 +100,124 @@ class LogisticaEvaluacionSeeder extends Seeder
                     'descripcion' => 'Calidad en la elaboración de opiniones legales, análisis de riesgo y entrega puntual del reporte de actividades.',
                     'peso' => 20,
                 ],
-            ]
+            ],
+            // Puedes agregar más áreas aquí (Sistemas, Pedimentos, etc.)
         ];
 
-        // 3. Procesamiento e Inserción
+        // ==========================================
+        // 3. EVALUACIÓN DE SUPERVISOR (100% TOTAL)
+        // ==========================================
+        // Estrategia de pesos: 25% por Categoría para sumar 100% exacto.
+        $criteriosSupervisor = [
+            // CATEGORÍA 1: LIDERAZGO (25%) -> 6, 6, 6, 7
+            [
+                'categoria' => 'Liderazgo y apoyo al equipo',
+                'indicador' => 'Brinda orientación clara sobre las tareas y prioridades.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Liderazgo y apoyo al equipo',
+                'indicador' => 'Está disponible para resolver dudas o apoyar cuando se requiere.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Liderazgo y apoyo al equipo',
+                'indicador' => 'Genera confianza y un ambiente de trabajo respetuoso.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Liderazgo y apoyo al equipo',
+                'indicador' => 'Motiva al equipo a dar lo mejor de si.',
+                'peso' => 7
+            ],
+
+            // CATEGORÍA 2: COMUNICACIÓN (25%) -> 6, 6, 6, 7
+            [
+                'categoria' => 'Comunicación',
+                'indicador' => 'Comunica instrucciones de manera clara y oportuna.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Comunicación',
+                'indicador' => 'Escucha activamente las inquietudes del equipo.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Comunicación',
+                'indicador' => 'Informa cambios, decisiones o prioridades a tiempo.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Comunicación',
+                'indicador' => 'Mantiene una comunicación respetuosa y profesional.',
+                'peso' => 7
+            ],
+
+            // CATEGORÍA 3: ORGANIZACIÓN (25%) -> 6, 6, 6, 7
+            [
+                'categoria' => 'Organización y gestión del trabajo',
+                'indicador' => 'Define prioridades claras.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Organización y gestión del trabajo',
+                'indicador' => 'Distribuye el trabajo de forma equitativa.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Organización y gestión del trabajo',
+                'indicador' => 'Da seguimiento adecuado a las actividades asignadas.',
+                'peso' => 6
+            ],
+            [
+                'categoria' => 'Organización y gestión del trabajo',
+                'indicador' => 'Cumple y promueve el cumplimiento de tiempos y objetivos.',
+                'peso' => 7
+            ],
+
+            // CATEGORÍA 4: TOMA DE DECISIONES (25%) -> 5, 5, 5, 5, 5
+            [
+                'categoria' => 'Toma de decisiones, feedback y desarrollo',
+                'indicador' => 'Considera la opinión del equipo cuando es pertinente.',
+                'peso' => 5
+            ],
+            [
+                'categoria' => 'Toma de decisiones, feedback y desarrollo',
+                'indicador' => 'Resuelve conflictos de forma justa.',
+                'peso' => 5
+            ],
+            [
+                'categoria' => 'Toma de decisiones, feedback y desarrollo',
+                'indicador' => 'Reconoce el buen desempeño.',
+                'peso' => 5
+            ],
+            [
+                'categoria' => 'Toma de decisiones, feedback y desarrollo',
+                'indicador' => 'Señala áreas de mejora de manera respetuosa.',
+                'peso' => 5
+            ],
+            [
+                'categoria' => 'Toma de decisiones, feedback y desarrollo',
+                'indicador' => 'Apoya el desarrollo profesional del equipo.',
+                'peso' => 5
+            ],
+        ];
+
+        // ==========================================
+        // 4. LIMPIEZA E INSERCIÓN
+        // ==========================================
         $dataToInsert = [];
 
-        // Limpiamos criterios anteriores de ambas áreas
-        DB::table('criterios_evaluacion')->whereIn('area', array_keys($areasConfig))->delete();
+        // Definimos las áreas a limpiar: Técnicas + RH + Evaluación Supervisor
+        $areasToClean = array_keys($areasConfig);
+        $areasToClean[] = 'Recursos Humanos';
+        $areasToClean[] = 'Evaluación Supervisor';
 
+        // Borramos criterios viejos para evitar duplicados
+        DB::table('criterios_evaluacion')->whereIn('area', $areasToClean)->delete();
+
+        // A. Insertar Criterios Técnicos (Hard Skills)
         foreach ($areasConfig as $areaName => $technicalSkills) {
-            
-            // A. Agregar Criterios Técnicos (60%)
             foreach ($technicalSkills as $tech) {
                 $dataToInsert[] = [
                     'area' => $areaName,
@@ -119,21 +228,35 @@ class LogisticaEvaluacionSeeder extends Seeder
                     'updated_at' => $now,
                 ];
             }
-
-            // B. Agregar Soft Skills (40%) - Las mismas para todos
-            foreach ($softSkills as $soft) {
-                $dataToInsert[] = [
-                    'area' => $areaName,
-                    'criterio' => $soft['criterio'],
-                    'descripcion' => $soft['descripcion'],
-                    'peso' => $soft['peso'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
         }
 
-        // Insertar todo en un solo query
-        DB::table('criterios_evaluacion')->insert($dataToInsert);
+        // B. Insertar Soft Skills (RH)
+        foreach ($softSkills as $soft) {
+            $dataToInsert[] = [
+                'area' => 'Recursos Humanos',
+                'criterio' => $soft['criterio'],
+                'descripcion' => $soft['descripcion'],
+                'peso' => $soft['peso'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // C. Insertar Criterios Supervisor (NUEVO CON PESOS AJUSTADOS)
+        foreach ($criteriosSupervisor as $item) {
+            $dataToInsert[] = [
+                'area' => 'Evaluación Supervisor',
+                'criterio' => $item['categoria'],
+                'descripcion' => $item['indicador'],
+                'peso' => $item['peso'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Insertar todo de una sola vez
+        if (!empty($dataToInsert)) {
+            DB::table('criterios_evaluacion')->insert($dataToInsert);
+        }
     }
 }
