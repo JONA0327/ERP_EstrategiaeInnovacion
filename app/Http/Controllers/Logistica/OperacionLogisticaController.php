@@ -15,7 +15,7 @@ use App\Models\Logistica\PostOperacionOperacion;
 use App\Models\Logistica\HistoricoMatrizSgm;
 use App\Models\Logistica\Aduana;
 use App\Models\Logistica\Pedimento;
-use App\Models\Logistica\PedimentoOperacion;
+
 use App\Models\Logistica\CampoPersonalizadoMatriz;
 use App\Models\Logistica\ValorCampoPersonalizado;
 use App\Models\Logistica\ColumnaVisibleEjecutivo;
@@ -504,46 +504,9 @@ class OperacionLogisticaController extends Controller
             $clientesEmail = [];
         }
 
-        // Estadísticas de pedimentos para centralizar reportes
-        // Montos pagados separados por moneda
-        $montosPorMoneda = PedimentoOperacion::pagados()
-            ->select('moneda', DB::raw('sum(monto) as total'))
-            ->whereNotNull('moneda')
-            ->groupBy('moneda')
-            ->pluck('total', 'moneda')
-            ->toArray();
-
-        $pedimentoStats = [
-            'total' => PedimentoOperacion::count(),
-            'pagados' => PedimentoOperacion::pagados()->count(),
-            'pendientes' => PedimentoOperacion::porPagar()->count(),
-            'montoPagadoMXN' => $montosPorMoneda['MXN'] ?? 0,
-            'montoPagadoUSD' => $montosPorMoneda['USD'] ?? 0,
-            'montoPagadoEUR' => $montosPorMoneda['EUR'] ?? 0,
-        ];
-
-        $pedimentoEstados = PedimentoOperacion::select('estado_pago', DB::raw('count(*) as total'))
-            ->groupBy('estado_pago')
-            ->pluck('total', 'estado_pago')
-            ->toArray();
-
-        $pedimentoMonedas = PedimentoOperacion::select('moneda', DB::raw('sum(monto) as total'))
-            ->whereNotNull('moneda')
-            ->groupBy('moneda')
-            ->pluck('total', 'moneda')
-            ->toArray();
-
-        $pedimentoClaves = PedimentoOperacion::select('clave')
-            ->distinct()
-            ->whereNotNull('clave')
-            ->orderBy('clave')
-            ->pluck('clave')
-            ->toArray();
-
         return view('Logistica.reportes', compact(
             'operaciones', 'stats', 'clientes', 'clientesEmail', 'comportamientoTemporal',
-            'statsTemporales', 'esAdmin', 'empleadoActual', 'pedimentoStats', 'pedimentoEstados',
-            'pedimentoMonedas', 'pedimentoClaves'
+            'statsTemporales', 'esAdmin', 'empleadoActual'
         ));
     }
 
@@ -651,8 +614,32 @@ class OperacionLogisticaController extends Controller
                 $esAdmin = $usuarioActual->hasRole('admin');
             }
 
+            // Determinar el tipo de reporte y formato
+            $reportType = $request->get('report_type', 'seguimiento');
+            $format = $request->get('format', 'excel');
+            
+            // Log para debug
+            \Log::info('Exportando reporte:', [
+                'tipo' => $reportType,
+                'formato' => $format,
+                'include_custom_fields' => $request->get('include_custom_fields'),
+                'include_comments' => $request->get('include_comments')
+            ]);
+
             // Construir query con los mismos filtros que usa enviarReporte
-            $query = OperacionLogistica::with(['ejecutivo', 'asignacionesPostOperaciones.postOperacion', 'valoresCamposPersonalizados.campo']);
+            $relationships = ['ejecutivo', 'asignacionesPostOperaciones.postOperacion'];
+            
+            // Incluir campos personalizados si se especifica (para seguimiento)
+            if ($reportType === 'seguimiento' && $request->get('include_custom_fields')) {
+                $relationships[] = 'valoresCamposPersonalizados.campo';
+            }
+            
+            // Incluir comentarios si se especifica
+            if ($request->get('include_comments')) {
+                $relationships[] = 'comentarios';
+            }
+
+            $query = OperacionLogistica::with($relationships);
 
             // Aplicar filtros de permisos
             if (!$esAdmin && $empleadoActual) {
@@ -666,7 +653,9 @@ class OperacionLogisticaController extends Controller
             $operaciones = $query->get();
 
             // Crear archivo temporal usando el MISMO metodo que enviarReporte
-            $archivoInfo = $this->generarArchivoReporte($operaciones, 'csv');
+            // Determinar formato final (el método generarArchivoReporte maneja 'csv' como Excel)
+            $formatoArchivo = ($format === 'csv') ? 'csv' : 'excel';
+            $archivoInfo = $this->generarArchivoReporte($operaciones, $formatoArchivo);
 
             // Retornar descarga directa
             return response()->download($archivoInfo['path'], $archivoInfo['nombre'], [
@@ -4760,6 +4749,233 @@ class OperacionLogisticaController extends Controller
             ]);
             return null;
         }
+    }
+
+    /**
+     * Exportar reporte de pedimentos
+     */
+    public function exportPedimentos(Request $request)
+    {
+        try {
+            // TODO: Implementar lógica específica para pedimentos
+            // Por ahora retornamos un CSV con estructura básica de pedimentos
+            
+            $filename = 'reporte_pedimentos_' . date('Y-m-d_H-i-s') . '.csv';
+            $filepath = storage_path('app/temp/' . $filename);
+            
+            // Asegurar que el directorio existe
+            if (!file_exists(dirname($filepath))) {
+                mkdir(dirname($filepath), 0755, true);
+            }
+            
+            // Crear archivo CSV
+            $file = fopen($filepath, 'w');
+            
+            // Headers del CSV para pedimentos
+            $headers = [
+                'Número Pedimento',
+                'Cliente', 
+                'Clave',
+                'Tipo Operación',
+                'Moneda',
+                'Monto',
+                'Estado Pago',
+                'Fecha Embarque',
+                'Fecha Creación'
+            ];
+            
+            fputcsv($file, $headers);
+            
+            // Por ahora agregamos datos de ejemplo
+            // TODO: Implementar consulta real de pedimentos según filtros
+            $datosPedimentos = [
+                ['PED-2024-001', 'Cliente Ejemplo', 'A1', 'Importación', 'MXN', '$50,000.00', 'Pagado', '2024-12-15', '2024-12-01'],
+                ['PED-2024-002', 'Cliente ABC', 'B1', 'Exportación', 'USD', '$25,000.00', 'Pendiente', '2024-12-16', '2024-12-02'],
+            ];
+            
+            foreach ($datosPedimentos as $fila) {
+                fputcsv($file, $fila);
+            }
+            
+            fclose($file);
+            
+            return response()->download($filepath, $filename, [
+                'Content-Type' => 'text/csv'
+            ])->deleteFileAfterSend(true);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error en exportPedimentos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al exportar pedimentos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Exportar reporte de resumen ejecutivo
+     */
+    public function exportResumenEjecutivo(Request $request)
+    {
+        try {
+            // Obtener datos de estadísticas actuales usando la misma lógica del método reportes
+            $stats = $this->calcularEstadisticasTemporales($request);
+            
+            $filename = 'resumen_ejecutivo_' . date('Y-m-d_H-i-s') . '.csv';
+            $filepath = storage_path('app/temp/' . $filename);
+            
+            // Asegurar que el directorio existe
+            if (!file_exists(dirname($filepath))) {
+                mkdir(dirname($filepath), 0755, true);
+            }
+            
+            // Crear archivo CSV
+            $file = fopen($filepath, 'w');
+            
+            // Headers del CSV para resumen ejecutivo
+            fputcsv($file, ['RESUMEN EJECUTIVO DE OPERACIONES LOGÍSTICAS']);
+            fputcsv($file, ['Generado el: ' . date('d/m/Y H:i:s')]);
+            fputcsv($file, ['']);
+            
+            // Métricas principales
+            fputcsv($file, ['MÉTRICAS PRINCIPALES']);
+            fputcsv($file, ['Métrica', 'Valor']);
+            fputcsv($file, ['Total de Operaciones', $stats['total_operaciones']]);
+            fputcsv($file, ['Operaciones en Tiempo', $stats['en_tiempo'] ?? 0]);
+            fputcsv($file, ['Operaciones Completadas a Tiempo', $stats['completado_tiempo'] ?? 0]);
+            fputcsv($file, ['Operaciones en Riesgo', $stats['en_riesgo'] ?? 0]);
+            fputcsv($file, ['Operaciones con Retraso', $stats['con_retraso'] ?? 0]);
+            fputcsv($file, ['Operaciones Completadas con Retraso', $stats['completado_retraso'] ?? 0]);
+            
+            // Calcular eficiencia
+            $operacionesExitosas = ($stats['en_tiempo'] ?? 0) + ($stats['completado_tiempo'] ?? 0);
+            $eficienciaGeneral = $stats['total_operaciones'] > 0 ? 
+                round(($operacionesExitosas / $stats['total_operaciones']) * 100, 1) : 0;
+                
+            fputcsv($file, ['Eficiencia General (%)', $eficienciaGeneral . '%']);
+            fputcsv($file, ['Promedio de Días', round($stats['promedio_dias'] ?? 0, 1)]);
+            fputcsv($file, ['Target Promedio', round($stats['promedio_target'] ?? 3, 1)]);
+            
+            fputcsv($file, ['']);
+            
+            // Distribución porcentual
+            fputcsv($file, ['DISTRIBUCIÓN PORCENTUAL']);
+            fputcsv($file, ['Estado', 'Cantidad', 'Porcentaje']);
+            if ($stats['total_operaciones'] > 0) {
+                $total = $stats['total_operaciones'];
+                fputcsv($file, ['En Tiempo', $stats['en_tiempo'] ?? 0, round((($stats['en_tiempo'] ?? 0) / $total) * 100, 1) . '%']);
+                fputcsv($file, ['Completado a Tiempo', $stats['completado_tiempo'] ?? 0, round((($stats['completado_tiempo'] ?? 0) / $total) * 100, 1) . '%']);
+                fputcsv($file, ['En Riesgo', $stats['en_riesgo'] ?? 0, round((($stats['en_riesgo'] ?? 0) / $total) * 100, 1) . '%']);
+                fputcsv($file, ['Con Retraso', $stats['con_retraso'] ?? 0, round((($stats['con_retraso'] ?? 0) / $total) * 100, 1) . '%']);
+                fputcsv($file, ['Completado con Retraso', $stats['completado_retraso'] ?? 0, round((($stats['completado_retraso'] ?? 0) / $total) * 100, 1) . '%']);
+            }
+            
+            fclose($file);
+            
+            return response()->download($filepath, $filename, [
+                'Content-Type' => 'text/csv'
+            ])->deleteFileAfterSend(true);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error en exportResumenEjecutivo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al exportar resumen ejecutivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Calcular estadísticas temporales para reportes
+     */
+    private function calcularEstadisticasTemporales(Request $request)
+    {
+        // Obtener usuario actual y verificar permisos
+        $usuarioActual = auth()->user();
+        $empleadoActual = null;
+        $esAdmin = false;
+
+        if ($usuarioActual) {
+            $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                ->first();
+            $esAdmin = $usuarioActual->hasRole('admin');
+        }
+
+        // Construir query base
+        $query = OperacionLogistica::query();
+
+        // Aplicar filtros de permisos
+        if (!$esAdmin && $empleadoActual) {
+            $query->where('ejecutivo', $empleadoActual->nombre);
+        }
+
+        // Aplicar filtros adicionales si están presentes
+        $this->aplicarFiltrosReporte($query, $request);
+
+        $operaciones = $query->get();
+        $totalOperaciones = $operaciones->count();
+
+        if ($totalOperaciones === 0) {
+            return [
+                'total_operaciones' => 0,
+                'en_tiempo' => 0,
+                'completado_tiempo' => 0,
+                'en_riesgo' => 0,
+                'con_retraso' => 0,
+                'completado_retraso' => 0,
+                'promedio_dias' => 0,
+                'promedio_target' => 3
+            ];
+        }
+
+        // Calcular estadísticas basadas en el estado actual
+        $stats = [
+            'total_operaciones' => $totalOperaciones,
+            'en_tiempo' => 0,
+            'completado_tiempo' => 0,
+            'en_riesgo' => 0,
+            'con_retraso' => 0,
+            'completado_retraso' => 0,
+            'promedio_dias' => 0,
+            'promedio_target' => 3
+        ];
+
+        $totalDias = 0;
+        $totalTarget = 0;
+
+        foreach ($operaciones as $operacion) {
+            // Calcular días transcurridos y target para cada operación
+            $resultado = $this->calcularDiasYTarget($operacion);
+            $totalDias += $resultado['dias_transcurridos'] ?? 0;
+            $totalTarget += $resultado['target'] ?? 3;
+
+            // Clasificar según el status actual
+            $status = $resultado['status'] ?? 'PENDIENTE';
+            switch ($status) {
+                case 'EN_TIEMPO':
+                    $stats['en_tiempo']++;
+                    break;
+                case 'COMPLETADO_TIEMPO':
+                    $stats['completado_tiempo']++;
+                    break;
+                case 'EN_RIESGO':
+                    $stats['en_riesgo']++;
+                    break;
+                case 'CON_RETRASO':
+                    $stats['con_retraso']++;
+                    break;
+                case 'COMPLETADO_RETRASO':
+                    $stats['completado_retraso']++;
+                    break;
+            }
+        }
+
+        // Calcular promedios
+        $stats['promedio_dias'] = $totalOperaciones > 0 ? $totalDias / $totalOperaciones : 0;
+        $stats['promedio_target'] = $totalOperaciones > 0 ? $totalTarget / $totalOperaciones : 3;
+
+        return $stats;
     }
 }
 

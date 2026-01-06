@@ -60,6 +60,8 @@ Route::middleware(['auth','area.logistica'])->group(function () {
     // Reportes: página y exportación CSV
     Route::get('/logistica/reportes', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'reportes'])->name('logistica.reportes');
     Route::get('/logistica/reportes/export', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportCSV'])->name('logistica.reportes.export');
+    Route::get('/logistica/reportes/pedimentos/export', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportPedimentos'])->name('logistica.reportes.pedimentos.export');
+    Route::get('/logistica/reportes/resumen/export', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'exportResumenEjecutivo'])->name('logistica.reportes.resumen.export');
     Route::get('/logistica/reportes/cliente', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'getOperacionesPorCliente'])->name('logistica.reportes.cliente');
     Route::get('/logistica/catalogos', [\App\Http\Controllers\Logistica\OperacionLogisticaController::class, 'catalogos'])->name('logistica.catalogos');
     Route::get('/test-routes', function () { return view('test_routes'); });
