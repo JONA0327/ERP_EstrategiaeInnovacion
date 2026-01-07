@@ -328,6 +328,58 @@
                             </dl>
                         </div>
 
+                        @if($empleado)
+                            <div class="rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-inner">
+                                <h3 class="text-sm font-semibold text-blue-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    Empleado asociado
+                                </h3>
+                                <div class="space-y-3 text-sm">
+                                    @if($empleado->foto_path)
+                                        <div class="flex justify-center mb-4">
+                                            <img src="{{ asset('storage/' . $empleado->foto_path) }}" 
+                                                 alt="{{ $empleado->nombre }}"
+                                                 class="w-20 h-20 rounded-full object-cover border-2 border-blue-300 shadow-md">
+                                        </div>
+                                    @endif
+                                    <div>
+                                        <dt class="text-blue-600 text-xs font-medium uppercase">Nombre completo</dt>
+                                        <dd class="font-semibold text-blue-900 mt-1">{{ $empleado->nombre }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-blue-600 text-xs font-medium uppercase">ID Empleado</dt>
+                                        <dd class="font-medium text-blue-900 mt-1">{{ $empleado->id_empleado }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-blue-600 text-xs font-medium uppercase">Área</dt>
+                                        <dd class="font-medium text-blue-900 mt-1">{{ $empleado->area ?? 'Sin especificar' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-blue-600 text-xs font-medium uppercase">Posición</dt>
+                                        <dd class="font-medium text-blue-900 mt-1">{{ $empleado->posicion ?? 'Sin especificar' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-blue-600 text-xs font-medium uppercase">Correo corporativo</dt>
+                                        <dd class="font-medium text-blue-900 mt-1 break-words">{{ $empleado->correo }}</dd>
+                                    </div>
+                                    @if($empleado->telefono)
+                                        <div>
+                                            <dt class="text-blue-600 text-xs font-medium uppercase">Teléfono</dt>
+                                            <dd class="font-medium text-blue-900 mt-1">{{ $empleado->telefono }}</dd>
+                                        </div>
+                                    @endif
+                                    @if($empleado->supervisor)
+                                        <div>
+                                            <dt class="text-blue-600 text-xs font-medium uppercase">Supervisor</dt>
+                                            <dd class="font-medium text-blue-900 mt-1">{{ $empleado->supervisor->nombre ?? 'Sin asignar' }}</dd>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                             <h3 class="text-sm font-semibold text-slate-900 mb-4">Historial de mantenimientos</h3>
                             @if($historyTickets->isNotEmpty())

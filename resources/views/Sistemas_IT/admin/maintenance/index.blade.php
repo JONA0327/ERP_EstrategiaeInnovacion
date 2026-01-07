@@ -48,6 +48,11 @@
                     <span class="hidden sm:inline">Ficha técnica</span>
                     <span class="sm:hidden">Ficha</span>
                 </button>
+                <button type="button" data-tab-target="tab-expedientes"
+                    class="tab-trigger inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-700 hover:bg-white/80">
+                    <span class="hidden sm:inline">Expedientes</span>
+                    <span class="sm:hidden">Expedientes</span>
+                </button>
                 <button type="button" data-tab-target="tab-bulk"
                     class="tab-trigger inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-700 hover:bg-white/80">
                     Horarios en lote
@@ -69,198 +74,239 @@
                         <p class="text-sm text-slate-500 max-w-2xl">Selecciona un ticket desde "Seguimiento administrativo de tickets" para completar los datos de la ficha técnica del equipo.</p>
                     </div>
 
-                    <form method="POST" action="{{ route('admin.maintenance.computers.store') }}" class="space-y-8 hidden" id="technicalProfileForm">
+                    <form method="POST" action="{{ route('admin.maintenance.computers.store') }}" class="space-y-6 hidden bg-white border border-gray-200 rounded-xl p-6 shadow-sm" id="technicalProfileForm">
                         @csrf
 
-                        <div class="grid grid-cols-1 lg:grid-cols-[2fr,3fr] gap-8">
-                            <div class="space-y-6">
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1">Identificador del equipo <span class="text-red-500">*</span></label>
-                                        <input type="text" id="identifier" name="identifier" value="{{ old('identifier') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            required>
-                                        @error('identifier')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="maintenance_ticket_id" class="block text-sm font-medium text-gray-700 mb-1">Ticket de mantenimiento relacionado</label>
-                                            <select id="maintenance_ticket_id" name="maintenance_ticket_id"
-                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                <option value="">Selecciona un ticket</option>
-                                                @foreach ($maintenanceTickets as $ticket)
-                                                    @php
-                                                        $createdAt = optional($ticket->created_at)->timezone('America/Mexico_City');
-                                                    @endphp
-                                                    <option value="{{ $ticket->id }}" 
-                                                        {{ (string) old('maintenance_ticket_id') === (string) $ticket->id ? 'selected' : '' }}
-                                                        data-equipment-identifier="{{ $ticket->equipment_identifier ?? '' }}"
-                                                        data-equipment-brand="{{ $ticket->equipment_brand ?? '' }}"
-                                                        data-equipment-model="{{ $ticket->equipment_model ?? '' }}"
-                                                        data-disk-type="{{ $ticket->disk_type ?? '' }}"
-                                                        data-ram-capacity="{{ $ticket->ram_capacity ?? '' }}"
-                                                        data-battery-status="{{ $ticket->battery_status ?? '' }}"
-                                                        data-aesthetic-observations="{{ $ticket->aesthetic_observations ?? '' }}"
-                                                        data-replacement-components="{{ $ticket->replacement_components ? json_encode($ticket->replacement_components) : '[]' }}">
-                                                        {{ $ticket->folio }} · {{ $ticket->nombre_solicitante }} · {{ $createdAt ? $createdAt->format('d/m/Y H:i') : 'Sin fecha' }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <p class="text-xs text-gray-500 mt-1">El ticket seleccionado se vinculará como el último mantenimiento realizado.</p>
-                                            @error('maintenance_ticket_id')
-                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                        <div>
-                                            <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-                                            <input type="text" id="brand" name="brand" value="{{ old('brand') }}"
-                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            @error('brand')
-                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                        <div>
-                                            <label for="model" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
-                                            <input type="text" id="model" name="model" value="{{ old('model') }}"
-                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            @error('model')
-                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div>
-                                        <label for="disk_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de disco</label>
-                                        <input type="text" id="disk_type" name="disk_type" value="{{ old('disk_type') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        @error('disk_type')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <div>
-                                        <label for="ram_capacity" class="block text-sm font-medium text-gray-700 mb-1">Capacidad de RAM</label>
-                                        <input type="text" id="ram_capacity" name="ram_capacity" value="{{ old('ram_capacity') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        @error('ram_capacity')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <div>
-                                        <label for="battery_status" class="block text-sm font-medium text-gray-700 mb-1">Estado de batería</label>
-                                        <select id="battery_status" name="battery_status"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <option value="">Selecciona una opción</option>
-                                            <option value="functional" {{ old('battery_status') === 'functional' ? 'selected' : '' }}>Funcional</option>
-                                            <option value="partially_functional" {{ old('battery_status') === 'partially_functional' ? 'selected' : '' }}>Parcialmente funcional</option>
-                                            <option value="damaged" {{ old('battery_status') === 'damaged' ? 'selected' : '' }}>Dañada</option>
-                                        </select>
-                                        @error('battery_status')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="last_maintenance_at" class="block text-sm font-medium text-gray-700 mb-1">Último mantenimiento registrado</label>
-                                        <input type="datetime-local" id="last_maintenance_at" name="last_maintenance_at"
-                                            value="{{ old('last_maintenance_at') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        @error('last_maintenance_at')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <div>
-                                        <label for="aesthetic_observations" class="block text-sm font-medium text-gray-700 mb-1">Observaciones estéticas</label>
-                                        <textarea id="aesthetic_observations" name="aesthetic_observations" rows="3"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ old('aesthetic_observations') }}</textarea>
-                                        @error('aesthetic_observations')
-                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-6">
+                        <!-- Sección: Información básica del equipo -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-base font-semibold text-gray-900 mb-4">Información básica del equipo</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div>
-                                    <h4 class="text-sm font-semibold text-gray-700 mb-3">Componentes reemplazados</h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                        @foreach ($componentOptions as $value => $label)
-                                            <label class="inline-flex items-center text-xs text-gray-600 bg-slate-50 border border-gray-200 rounded-lg px-3 py-2">
-                                                <input type="checkbox" name="replacement_components[]" value="{{ $value }}"
-                                                    class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                    {{ is_array(old('replacement_components')) && in_array($value, old('replacement_components', []), true) ? 'checked' : '' }}>
-                                                {{ $label }}
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                    @error('replacement_components')
-                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                    @enderror
-                                    @error('replacement_components.*')
+                                    <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Identificador del equipo <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="identifier" name="identifier" value="{{ old('identifier') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        required placeholder="Ej: LAPTOP001">
+                                    @error('identifier')
                                         <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
 
-                                <div class="border border-blue-100 rounded-xl bg-blue-50/50 p-5 space-y-4">
-                                    <label class="flex items-start text-sm text-gray-700">
-                                        <input type="checkbox" name="is_loaned" value="1" id="is_loaned"
-                                            class="mt-1 mr-2 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                            {{ old('is_loaned') ? 'checked' : '' }}>
-                                        <span>Marcar equipo como prestado actualmente<br><span class="text-xs text-gray-500">Selecciona a la persona responsable desde el directorio de usuarios.</span></span>
-                                    </label>
+                                <div>
+                                    <label for="brand" class="block text-sm font-medium text-gray-700 mb-1.5">Marca</label>
+                                    <input type="text" id="brand" name="brand" value="{{ old('brand') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Ej: Dell, HP, Lenovo">
+                                    @error('brand')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
 
-                                    <div id="loanDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4 {{ old('is_loaned') ? '' : 'hidden' }}">
-                                        <div>
-                                            <label for="loaned_to_name" class="block text-xs font-medium text-gray-600 mb-1">Nombre de la persona</label>
-                                            <input list="loanedNameOptions" type="text" id="loaned_to_name" name="loaned_to_name"
-                                                value="{{ old('loaned_to_name') }}"
-                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <datalist id="loanedNameOptions">
-                                                @foreach ($users as $user)
-                                                    <option value="{{ $user->name }}"></option>
-                                                @endforeach
-                                            </datalist>
-                                            @error('loaned_to_name')
-                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                        <div>
-                                            <label for="loaned_to_email" class="block text-xs font-medium text-gray-600 mb-1">Correo electrónico</label>
-                                            <input list="loanedEmailOptions" type="email" id="loaned_to_email" name="loaned_to_email"
-                                                value="{{ old('loaned_to_email') }}"
-                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <datalist id="loanedEmailOptions">
-                                                @foreach ($users as $user)
-                                                    <option value="{{ $user->email }}"></option>
-                                                @endforeach
-                                            </datalist>
-                                            @error('loaned_to_email')
-                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                <div>
+                                    <label for="model" class="block text-sm font-medium text-gray-700 mb-1.5">Modelo</label>
+                                    <input type="text" id="model" name="model" value="{{ old('model') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Ej: Latitude 5420">
+                                    @error('model')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end">
+                        <!-- Sección: Especificaciones técnicas -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-base font-semibold text-gray-900 mb-4">Especificaciones técnicas</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="disk_type" class="block text-sm font-medium text-gray-700 mb-1.5">Tipo de disco</label>
+                                    <input type="text" id="disk_type" name="disk_type" value="{{ old('disk_type') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Ej: SSD 256GB">
+                                    @error('disk_type')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="ram_capacity" class="block text-sm font-medium text-gray-700 mb-1.5">Capacidad de RAM</label>
+                                    <input type="text" id="ram_capacity" name="ram_capacity" value="{{ old('ram_capacity') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Ej: 8GB DDR4">
+                                    @error('ram_capacity')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="battery_status" class="block text-sm font-medium text-gray-700 mb-1.5">Estado de batería</label>
+                                    <select id="battery_status" name="battery_status"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Selecciona una opción</option>
+                                        <option value="functional" {{ old('battery_status') === 'functional' ? 'selected' : '' }}>Funcional</option>
+                                        <option value="partially_functional" {{ old('battery_status') === 'partially_functional' ? 'selected' : '' }}>Parcialmente funcional</option>
+                                        <option value="damaged" {{ old('battery_status') === 'damaged' ? 'selected' : '' }}>Dañada</option>
+                                    </select>
+                                    @error('battery_status')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección: Mantenimiento y observaciones -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-base font-semibold text-gray-900 mb-4">Mantenimiento y observaciones</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="maintenance_ticket_id" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Ticket de mantenimiento relacionado
+                                    </label>
+                                    <select id="maintenance_ticket_id" name="maintenance_ticket_id"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Selecciona un ticket</option>
+                                        @foreach ($maintenanceTickets as $ticket)
+                                            @php
+                                                $createdAt = optional($ticket->created_at)->timezone('America/Mexico_City');
+                                            @endphp
+                                            <option value="{{ $ticket->id }}" 
+                                                {{ (string) old('maintenance_ticket_id') === (string) $ticket->id ? 'selected' : '' }}
+                                                data-equipment-identifier="{{ $ticket->equipment_identifier ?? '' }}"
+                                                data-equipment-brand="{{ $ticket->equipment_brand ?? '' }}"
+                                                data-equipment-model="{{ $ticket->equipment_model ?? '' }}"
+                                                data-disk-type="{{ $ticket->disk_type ?? '' }}"
+                                                data-ram-capacity="{{ $ticket->ram_capacity ?? '' }}"
+                                                data-battery-status="{{ $ticket->battery_status ?? '' }}"
+                                                data-aesthetic-observations="{{ $ticket->aesthetic_observations ?? '' }}"
+                                                data-replacement-components="{{ $ticket->replacement_components ? json_encode($ticket->replacement_components) : '[]' }}">
+                                                {{ $ticket->folio }} · {{ $ticket->nombre_solicitante }} · {{ $createdAt ? $createdAt->format('d/m/Y H:i') : 'Sin fecha' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="text-xs text-gray-500 mt-1.5">El ticket seleccionado se vinculará como el último mantenimiento realizado.</p>
+                                    @error('maintenance_ticket_id')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="last_maintenance_at" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Último mantenimiento registrado
+                                    </label>
+                                    <input type="datetime-local" id="last_maintenance_at" name="last_maintenance_at"
+                                        value="{{ old('last_maintenance_at') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    @error('last_maintenance_at')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="aesthetic_observations" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Observaciones estéticas
+                                </label>
+                                <textarea id="aesthetic_observations" name="aesthetic_observations" rows="3"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Describe el estado físico del equipo, rayones, golpes, etc.">{{ old('aesthetic_observations') }}</textarea>
+                                @error('aesthetic_observations')
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Sección: Componentes reemplazados -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-base font-semibold text-gray-900 mb-3">Componentes reemplazados</h3>
+                            <p class="text-sm text-gray-600 mb-4">Marca los componentes que fueron reemplazados durante el mantenimiento</p>
+                            
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                @foreach ($componentOptions as $value => $label)
+                                    <label class="flex items-center text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5 cursor-pointer transition-colors">
+                                        <input type="checkbox" name="replacement_components[]" value="{{ $value }}"
+                                            class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            {{ is_array(old('replacement_components')) && in_array($value, old('replacement_components', []), true) ? 'checked' : '' }}>
+                                        <span class="text-xs">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('replacement_components')
+                                <p class="text-xs text-red-600 mt-2">{{ $message }}</p>
+                            @enderror
+                            @error('replacement_components.*')
+                                <p class="text-xs text-red-600 mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Sección: Préstamo de equipo -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                            <label class="flex items-start text-sm text-gray-900 font-medium cursor-pointer">
+                                <input type="checkbox" name="is_loaned" value="1" id="is_loaned"
+                                    class="mt-0.5 mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    {{ old('is_loaned') ? 'checked' : '' }}>
+                                <div>
+                                    <span class="block mb-1">Marcar equipo como prestado actualmente</span>
+                                    <span class="text-xs text-gray-600 font-normal">Selecciona a la persona responsable desde el directorio de usuarios.</span>
+                                </div>
+                            </label>
+
+                            <div id="loanDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 {{ old('is_loaned') ? '' : 'hidden' }}">
+                                <div>
+                                    <label for="loaned_to_name" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Nombre de la persona
+                                    </label>
+                                    <input list="loanedNameOptions" type="text" id="loaned_to_name" name="loaned_to_name"
+                                        value="{{ old('loaned_to_name') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        placeholder="Selecciona o escribe el nombre">
+                                    <datalist id="loanedNameOptions">
+                                        @foreach ($users as $user)
+                                            <option value="{{ $user->name }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                    @error('loaned_to_name')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="loaned_to_email" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Correo electrónico
+                                    </label>
+                                    <input list="loanedEmailOptions" type="email" id="loaned_to_email" name="loaned_to_email"
+                                        value="{{ old('loaned_to_email') }}"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        placeholder="Selecciona o escribe el correo">
+                                    <datalist id="loanedEmailOptions">
+                                        @foreach ($users as $user)
+                                            <option value="{{ $user->email }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                    @error('loaned_to_email')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botón de envío -->
+
+                        <!-- Botón de envío -->
+                        <div class="flex justify-end pt-4">
                             <button type="submit"
-                                class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                class="inline-flex items-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-colors">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Registrar ficha técnica
                             </button>
                         </div>
                     </form>
 
-                    <div class="border border-blue-100 rounded-2xl bg-white shadow-sm">
+                    <div class="border border-blue-100 rounded-2xl bg-white shadow-sm mt-6">
                         <div class="px-5 py-4 border-b border-blue-100 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <h4 class="text-lg font-semibold text-slate-900">Seguimiento administrativo de tickets</h4>
@@ -416,6 +462,101 @@
                             @endif
                         </div>
                     </div>
+                </section>
+
+                <section id="tab-expedientes" data-tab-panel class="space-y-6 hidden">
+                    <div class="space-y-2">
+                        <h3 class="text-xl font-semibold text-slate-900">Expedientes de Equipos</h3>
+                        <p class="text-sm text-slate-500 max-w-2xl">Historial de equipos con mantenimiento registrado y su estado de préstamo.</p>
+                    </div>
+
+                    @if($profiles->isEmpty())
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+                            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p class="text-gray-600 font-medium">No hay equipos registrados</p>
+                            <p class="text-sm text-gray-500 mt-1">Comienza creando una ficha técnica desde la pestaña "Ficha técnica"</p>
+                        </div>
+                    @else
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-medium text-blue-900">Total de equipos registrados: {{ $profiles->count() }}</p>
+                                    <p class="text-xs text-blue-700 mt-1">Haz clic en "Ver detalles" para consultar la ficha técnica completa, tickets asociados y empleado asignado</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identificador</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipo</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último mantenimiento</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($profiles as $profile)
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-semibold text-blue-600">{{ $profile->identifier ?? 'Sin asignar' }}</div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <div class="text-sm font-semibold text-gray-900">{{ $profile->brand ?? 'Marca no definida' }} {{ $profile->model }}</div>
+                                                @if($profile->disk_type || $profile->ram_capacity)
+                                                    <div class="text-xs text-gray-500 mt-1">
+                                                        @if($profile->disk_type)
+                                                            <span>Disco: {{ $profile->disk_type }}</span>
+                                                        @endif
+                                                        @if($profile->ram_capacity)
+                                                            <span class="ml-2">RAM: {{ $profile->ram_capacity }}</span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                @php
+                                                    $lastMaintenance = $profile->last_maintenance_at
+                                                        ? $profile->last_maintenance_at->copy()->timezone('America/Mexico_City')
+                                                        : null;
+                                                @endphp
+                                                @if($lastMaintenance)
+                                                    {{ $lastMaintenance->format('d/m/Y H:i') }}
+                                                @else
+                                                    <span class="text-gray-400">Sin registro</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $profile->is_loaned ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                                    {{ $profile->is_loaned ? 'Prestado' : 'Disponible' }}
+                                                </span>
+                                                @if($profile->is_loaned && $profile->loaned_to_name)
+                                                    <div class="text-xs text-gray-500 mt-1">{{ $profile->loaned_to_name }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <a href="{{ route('admin.maintenance.computers.show', $profile) }}" 
+                                                   class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-semibold transition-colors">
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    Ver detalles
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </section>
 
                 <section id="tab-bulk" data-tab-panel class="space-y-8 hidden">
@@ -820,6 +961,211 @@
             document.querySelectorAll('input[name="days[]"]').forEach(checkbox => {
                 checkbox.addEventListener('change', updateTotalDays);
             });
+
+            // Event listener para auto-llenar formulario de ficha técnica
+            const profileTicketSelector = document.getElementById('maintenance_ticket_id');
+            if (profileTicketSelector) {
+                profileTicketSelector.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    
+                    if (selectedOption && selectedOption.value) {
+                        // Obtener los datos del ticket desde los data attributes
+                        const equipmentIdentifier = selectedOption.dataset.equipmentIdentifier || '';
+                        const equipmentBrand = selectedOption.dataset.equipmentBrand || '';
+                        const equipmentModel = selectedOption.dataset.equipmentModel || '';
+                        const diskType = selectedOption.dataset.diskType || '';
+                        const ramCapacity = selectedOption.dataset.ramCapacity || '';
+                        const batteryStatus = selectedOption.dataset.batteryStatus || '';
+                        const aestheticObservations = selectedOption.dataset.aestheticObservations || '';
+                        
+                        console.log('Datos del ticket:', {
+                            equipmentIdentifier, equipmentBrand, equipmentModel, 
+                            diskType, ramCapacity, batteryStatus
+                        });
+                        
+                        // Llenar los campos del formulario (IDs correctos)
+                        const identifierField = document.getElementById('identifier');
+                        const brandField = document.getElementById('brand');
+                        const modelField = document.getElementById('model');
+                        const diskTypeField = document.getElementById('disk_type');
+                        const ramField = document.getElementById('ram_capacity');
+                        const batteryField = document.getElementById('battery_status');
+                        const aestheticField = document.getElementById('aesthetic_observations');
+                        
+                        if (identifierField) {
+                            identifierField.value = equipmentIdentifier;
+                            console.log('Identificador llenado:', equipmentIdentifier);
+                        }
+                        if (brandField) {
+                            brandField.value = equipmentBrand;
+                            console.log('Marca llenada:', equipmentBrand);
+                        }
+                        if (modelField) {
+                            modelField.value = equipmentModel;
+                            console.log('Modelo llenado:', equipmentModel);
+                        }
+                        if (diskTypeField) diskTypeField.value = diskType;
+                        if (ramField) ramField.value = ramCapacity;
+                        if (batteryField) batteryField.value = batteryStatus;
+                        if (aestheticField) aestheticField.value = aestheticObservations;
+                        
+                        // Manejar componentes de reemplazo (checkboxes)
+                        try {
+                            const replacementComponents = JSON.parse(selectedOption.dataset.replacementComponents || '[]');
+                            
+                            // Desmarcar todos los checkboxes primero
+                            document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
+                                checkbox.checked = false;
+                            });
+                            
+                            // Marcar los checkboxes que vienen en el ticket
+                            replacementComponents.forEach(component => {
+                                const checkbox = document.querySelector(`input[name="replacement_components[]"][value="${component}"]`);
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Error al procesar componentes de reemplazo:', e);
+                        }
+                    } else {
+                        // Si se deselecciona el ticket, limpiar los campos
+                        const fieldsToClear = [
+                            'identifier', 'brand', 'model', 
+                            'disk_type', 'ram_capacity', 'battery_status', 'aesthetic_observations'
+                        ];
+                        
+                        fieldsToClear.forEach(fieldId => {
+                            const field = document.getElementById(fieldId);
+                            if (field) field.value = '';
+                        });
+                        
+                        // Desmarcar todos los checkboxes
+                        document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
+                            checkbox.checked = false;
+                        });
+                    }
+                });
+            }
+
+            const maintenanceSelector = document.getElementById('maintenanceTicketSelector');
+            const maintenancePanels = document.querySelectorAll('[data-ticket-panel]');
+
+            console.log('=== INICIALIZACIÓN DE SEGUIMIENTO ===');
+            console.log('maintenanceSelector encontrado:', maintenanceSelector);
+            console.log('maintenancePanels encontrados:', maintenancePanels.length);
+
+            if (maintenanceSelector && maintenancePanels.length) {
+                const showMaintenancePanel = (panelId) => {
+                    maintenancePanels.forEach((panel) => {
+                        panel.classList.toggle('hidden', panel.dataset.ticketPanel !== panelId || !panelId);
+                    });
+                };
+
+                const applyDefaultPanel = () => {
+                    const defaultValue = maintenanceSelector.dataset.default;
+
+                    if (maintenanceSelector.value) {
+                        showMaintenancePanel(maintenanceSelector.value);
+                    } else if (defaultValue) {
+                        maintenanceSelector.value = defaultValue;
+                        showMaintenancePanel(defaultValue);
+                    } else {
+                        showMaintenancePanel('');
+                    }
+                };
+
+                maintenanceSelector.addEventListener('change', (event) => {
+                    const selectedValue = event.target.value;
+                    console.log('=== EVENTO CHANGE EN SEGUIMIENTO ===');
+                    console.log('Valor seleccionado:', selectedValue);
+                    showMaintenancePanel(selectedValue);
+                    
+                    // Si se seleccionó un ticket, también seleccionarlo arriba en el formulario de ficha técnica
+                    if (selectedValue) {
+                        const ticketId = selectedValue.replace('ticket-', '');
+                        console.log('ID del ticket extraído:', ticketId);
+                        
+                        // Activar el tab de "Ficha técnica" primero
+                        const tabProfilesTrigger = document.querySelector('[data-tab-target="tab-profiles"]');
+                        console.log('Tab trigger encontrado:', tabProfilesTrigger);
+                        
+                        if (tabProfilesTrigger) {
+                            const targetId = 'tab-profiles';
+                            
+                            // Actualizar estilos de los botones
+                            const tabButtons = document.querySelectorAll('.tab-trigger');
+                            console.log('Botones de tab encontrados:', tabButtons.length);
+                            tabButtons.forEach(btn => {
+                                btn.classList.remove('bg-white', 'shadow-sm', 'text-blue-700');
+                                btn.classList.add('text-slate-600');
+                            });
+                            tabProfilesTrigger.classList.add('bg-white', 'shadow-sm', 'text-blue-700');
+                            tabProfilesTrigger.classList.remove('text-slate-600');
+                            
+                            // Mostrar el panel correcto
+                            const tabPanels = document.querySelectorAll('[data-tab-panel]');
+                            console.log('Paneles de tab encontrados:', tabPanels.length);
+                            tabPanels.forEach(panel => {
+                                const shouldHide = panel.id !== targetId;
+                                console.log(`Panel ${panel.id}: ${shouldHide ? 'ocultar' : 'mostrar'}`);
+                                panel.classList.toggle('hidden', shouldHide);
+                            });
+                            console.log('✓ Tab activado');
+                        } else {
+                            console.error('✗ No se encontró el tab trigger');
+                        }
+                        
+                        // Pequeña pausa para que el tab se active
+                        setTimeout(() => {
+                            const profileTicketSelector = document.getElementById('maintenance_ticket_id');
+                            const technicalProfileForm = document.getElementById('technicalProfileForm');
+                            
+                            console.log('Buscando elementos del formulario...');
+                            console.log('- Formulario:', technicalProfileForm);
+                            console.log('- Selector de ticket:', profileTicketSelector);
+                            console.log('- Clases del formulario:', technicalProfileForm?.classList.toString());
+                            
+                            if (profileTicketSelector && technicalProfileForm) {
+                                // Mostrar el formulario
+                                console.log('Removiendo clase hidden del formulario...');
+                                technicalProfileForm.classList.remove('hidden');
+                                console.log('- Clases después de remover hidden:', technicalProfileForm.classList.toString());
+                                console.log('✓ Formulario debería estar visible');
+                                
+                                // Seleccionar el ticket
+                                console.log('Asignando ticketId al selector:', ticketId);
+                                profileTicketSelector.value = ticketId;
+                                console.log('Valor del selector después de asignar:', profileTicketSelector.value);
+                                
+                                // Disparar evento change para que se llenen los campos
+                                console.log('Disparando evento change...');
+                                profileTicketSelector.dispatchEvent(new Event('change'));
+                                console.log('✓ Evento change disparado');
+                                
+                                // Scroll hacia el formulario
+                                console.log('Haciendo scroll al formulario...');
+                                technicalProfileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                console.log('✓ Scroll completado');
+                            } else {
+                                console.error('✗ No se encontró el formulario o el selector de ticket');
+                                console.error('- profileTicketSelector:', profileTicketSelector);
+                                console.error('- technicalProfileForm:', technicalProfileForm);
+                            }
+                        }, 200);
+                    } else {
+                        // Si se deselecciona, ocultar el formulario
+                        console.log('Deseleccionado - ocultando formulario');
+                        const technicalProfileForm = document.getElementById('technicalProfileForm');
+                        if (technicalProfileForm) {
+                            technicalProfileForm.classList.add('hidden');
+                            console.log('✓ Formulario oculto');
+                        }
+                    }
+                });
+
+                applyDefaultPanel();
+            }
         });
 
         function updateEndDateMin() {
@@ -970,170 +1316,7 @@
             }
             if (totalSlotsLabel) {
                 totalSlotsLabel.textContent = totalSlots.toString();
-        }
-
-        const maintenanceSelector = document.getElementById('maintenanceTicketSelector');
-        const maintenancePanels = document.querySelectorAll('[data-ticket-panel]');
-
-        if (maintenanceSelector && maintenancePanels.length) {
-            const showMaintenancePanel = (panelId) => {
-                maintenancePanels.forEach((panel) => {
-                    panel.classList.toggle('hidden', panel.dataset.ticketPanel !== panelId || !panelId);
-                });
-            };
-
-            const applyDefaultPanel = () => {
-                const defaultValue = maintenanceSelector.dataset.default;
-
-                if (maintenanceSelector.value) {
-                    showMaintenancePanel(maintenanceSelector.value);
-                } else if (defaultValue) {
-                    maintenanceSelector.value = defaultValue;
-                    showMaintenancePanel(defaultValue);
-                } else {
-                    showMaintenancePanel('');
-                }
-            };
-
-            maintenanceSelector.addEventListener('change', (event) => {
-                const selectedValue = event.target.value;
-                console.log('Ticket seleccionado:', selectedValue);
-                showMaintenancePanel(selectedValue);
-                
-                // Si se seleccionó un ticket, también seleccionarlo arriba en el formulario de ficha técnica
-                if (selectedValue) {
-                    const ticketId = selectedValue.replace('ticket-', '');
-                    console.log('ID del ticket:', ticketId);
-                    
-                    // Activar el tab de "Ficha técnica" primero
-                    const tabProfilesTrigger = document.querySelector('[data-tab-target="tab-profiles"]');
-                    console.log('Tab trigger encontrado:', tabProfilesTrigger);
-                    
-                    if (tabProfilesTrigger) {
-                        // Simular el click en el tab
-                        const targetId = 'tab-profiles';
-                        
-                        // Actualizar estilos de los botones
-                        const tabButtons = document.querySelectorAll('.tab-trigger');
-                        tabButtons.forEach(btn => {
-                            btn.classList.remove('bg-white', 'shadow-sm', 'text-blue-700');
-                            btn.classList.add('text-slate-600');
-                        });
-                        tabProfilesTrigger.classList.add('bg-white', 'shadow-sm', 'text-blue-700');
-                        tabProfilesTrigger.classList.remove('text-slate-600');
-                        
-                        // Mostrar el panel correcto
-                        const tabPanels = document.querySelectorAll('[data-tab-panel]');
-                        tabPanels.forEach(panel => {
-                            panel.classList.toggle('hidden', panel.id !== targetId);
-                        });
-                        console.log('Tab activado');
-                    }
-                    
-                    // Pequeña pausa para que el tab se active
-                    setTimeout(() => {
-                        const profileTicketSelector = document.getElementById('maintenance_ticket_id');
-                        const technicalProfileForm = document.getElementById('technicalProfileForm');
-                        console.log('Formulario encontrado:', technicalProfileForm);
-                        console.log('Selector de ticket encontrado:', profileTicketSelector);
-                        
-                        if (profileTicketSelector && technicalProfileForm) {
-                            // Mostrar el formulario
-                            technicalProfileForm.classList.remove('hidden');
-                            console.log('Formulario mostrado');
-                            
-                            // Seleccionar el ticket
-                            profileTicketSelector.value = ticketId;
-                            // Disparar evento change para que se llenen los campos
-                            profileTicketSelector.dispatchEvent(new Event('change'));
-                            console.log('Campos llenados');
-                            
-                            // Scroll hacia el formulario
-                            technicalProfileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        } else {
-                            console.error('No se encontró el formulario o el selector de ticket');
-                        }
-                    }, 150);
-                } else {
-                    // Si se deselecciona, ocultar el formulario
-                    const technicalProfileForm = document.getElementById('technicalProfileForm');
-                    if (technicalProfileForm) {
-                        technicalProfileForm.classList.add('hidden');
-                    }
-                }
-            });
-
-            applyDefaultPanel();
-        }
-
-        document.querySelectorAll('[data-ticket-panel] input[type="file"][data-maintenance-upload]').forEach((input) => {
-            const panel = input.closest('[data-ticket-panel]');
-            const statusLabel = panel ? panel.querySelector('[data-upload-status]') : null;
-
-            if (!statusLabel) {
-                return;
-            }
-
-            input.addEventListener('change', () => {
-                const count = input.files ? input.files.length : 0;
-                statusLabel.textContent = count === 1
-                    ? '1 archivo seleccionado.'
-                    : `${count} archivos seleccionados.`;
-            });
-        });
-
-        // Auto-rellenar campos de ficha técnica al seleccionar un ticket
-        const ticketSelector = document.getElementById('maintenance_ticket_id');
-        if (ticketSelector) {
-            ticketSelector.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                
-                if (!selectedOption || !selectedOption.value) {
-                    // Limpiar campos si no hay ticket seleccionado
-                    document.getElementById('identifier').value = '';
-                    document.getElementById('brand').value = '';
-                    document.getElementById('model').value = '';
-                    document.getElementById('disk_type').value = '';
-                    document.getElementById('ram_capacity').value = '';
-                    document.getElementById('battery_status').value = '';
-                    document.getElementById('aesthetic_observations').value = '';
-                    
-                    // Desmarcar todos los checkboxes de componentes
-                    document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
-                        checkbox.checked = false;
-                    });
-                    return;
-                }
-
-                // Rellenar campos con datos del ticket
-                const identifier = selectedOption.getAttribute('data-equipment-identifier') || '';
-                const brand = selectedOption.getAttribute('data-equipment-brand') || '';
-                const model = selectedOption.getAttribute('data-equipment-model') || '';
-                const diskType = selectedOption.getAttribute('data-disk-type') || '';
-                const ramCapacity = selectedOption.getAttribute('data-ram-capacity') || '';
-                const batteryStatus = selectedOption.getAttribute('data-battery-status') || '';
-                const aestheticObs = selectedOption.getAttribute('data-aesthetic-observations') || '';
-                const replacementComponents = JSON.parse(selectedOption.getAttribute('data-replacement-components') || '[]');
-
-                document.getElementById('identifier').value = identifier;
-                document.getElementById('brand').value = brand;
-                document.getElementById('model').value = model;
-                document.getElementById('disk_type').value = diskType;
-                document.getElementById('ram_capacity').value = ramCapacity;
-                document.getElementById('battery_status').value = batteryStatus;
-                document.getElementById('aesthetic_observations').value = aestheticObs;
-
-                // Marcar checkboxes de componentes reemplazados
-                document.querySelectorAll('input[name="replacement_components[]"]').forEach(checkbox => {
-                    checkbox.checked = replacementComponents.includes(checkbox.value);
-                });
-            });
-
-            // Disparar el evento change si hay un valor pre-seleccionado
-            if (ticketSelector.value) {
-                ticketSelector.dispatchEvent(new Event('change'));
             }
         }
-    }
-</script>
+    </script>
 @endsection

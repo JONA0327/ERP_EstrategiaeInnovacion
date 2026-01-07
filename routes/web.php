@@ -263,6 +263,9 @@ Route::middleware(['auth', 'verified', 'sistemas_admin'])->prefix('admin')->name
         return redirect()->route('admin.maintenance.index');
     })->name('maintenance.computers.index');
     Route::get('/maintenance/computers/{computerProfile}', [MaintenanceController::class, 'showComputer'])->name('maintenance.computers.show');
+    Route::get('/maintenance/computers/{computerProfile}/edit', [MaintenanceController::class, 'editComputer'])->name('maintenance.computers.edit');
+    Route::put('/maintenance/computers/{computerProfile}', [MaintenanceController::class, 'updateComputer'])->name('maintenance.computers.update');
+    Route::delete('/maintenance/computers/{computerProfile}', [MaintenanceController::class, 'destroyComputer'])->name('maintenance.computers.destroy');
     Route::post('/maintenance/computers', [MaintenanceController::class, 'storeComputer'])->name('maintenance.computers.store');
     // Slots management
     Route::post('/maintenance/slots', [MaintenanceController::class, 'store'])->name('maintenance.slots.store');

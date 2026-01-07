@@ -128,6 +128,19 @@ class MaintenanceController extends Controller
     {
         $slots = MaintenanceSlot::orderBy('date')->orderBy('start_time')->get();
         $groupedSlots = $slots->groupBy(fn ($slot) => Carbon::parse($slot->date)->format('Y-m-d'));
+        
+        // Tickets sin ficha técnica asociada para el seguimiento
+        $ticketsWithoutProfile = Ticket::query()
+            ->where('tipo_problema', 'mantenimiento')
+            ->whereNull('computer_profile_id')
+            ->where(function ($query) {
+                $query->whereNull('closed_by_user')
+                      ->orWhere('closed_by_user', false);
+            })
+            ->with(['maintenanceSlot'])
+            ->orderByDesc('created_at')
+            ->get();
+
         $maintenanceTickets = Ticket::query()
             ->where('tipo_problema', 'mantenimiento')
             ->with(['computerProfile', 'maintenanceSlot'])
@@ -135,11 +148,18 @@ class MaintenanceController extends Controller
             ->limit(15)
             ->get();
 
+        // Perfiles de computadoras para expedientes
+        $profiles = ComputerProfile::with(['ticket'])
+            ->orderByDesc('updated_at')
+            ->get();
+
         return view('admin.maintenance.index', [
             'groupedSlots' => $groupedSlots,
             'componentOptions' => $this->getReplacementComponentOptions(),
             'users' => User::orderBy('name')->get(['id', 'name', 'email']),
             'maintenanceTickets' => $maintenanceTickets,
+            'ticketsWithoutProfile' => $ticketsWithoutProfile,
+            'profiles' => $profiles,
         ]);
     }
 
@@ -152,9 +172,25 @@ class MaintenanceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        // Obtener el último ticket asociado
+        $latestTicket = $tickets->first();
+        
+        // Obtener tickets históricos (excluyendo el último)
+        $historyTickets = $tickets->skip(1);
+
+        // Obtener el empleado asociado al equipo prestado
+        $empleado = null;
+        if ($computerProfile->is_loaned && $computerProfile->loaned_to_email) {
+            $empleado = \App\Models\Empleado::where('correo', $computerProfile->loaned_to_email)->first();
+        }
+
         return view('admin.maintenance.computers.show', [
+            'profile' => $computerProfile,
             'computerProfile' => $computerProfile,
             'tickets' => $tickets,
+            'latestTicket' => $latestTicket,
+            'historyTickets' => $historyTickets,
+            'empleado' => $empleado,
             'componentOptions' => $this->getReplacementComponentOptions(),
         ]);
     }
@@ -356,5 +392,62 @@ class MaintenanceController extends Controller
             MaintenanceSlot::whereIn('id', $toDelete->pluck('id'))->delete();
         }
         return back()->with('success', "Se eliminaron {$count} horarios pasados.");
+    }
+
+    public function editComputer(ComputerProfile $computerProfile): View
+    {
+        return view('admin.maintenance.computers.edit', [
+            'profile' => $computerProfile,
+            'componentOptions' => $this->getReplacementComponentOptions(),
+            'users' => User::orderBy('name')->get(['id', 'name', 'email']),
+            'maintenanceTickets' => Ticket::where('tipo_problema', 'mantenimiento')
+                ->orderByDesc('created_at')
+                ->get(),
+        ]);
+    }
+
+    public function updateComputer(Request $request, ComputerProfile $computerProfile): RedirectResponse
+    {
+        $data = $request->validate([
+            'identifier' => ['required', 'string', 'max:100', Rule::unique('computer_profiles', 'identifier')->ignore($computerProfile->id)],
+            'brand' => ['nullable', 'string', 'max:100'],
+            'model' => ['nullable', 'string', 'max:100'],
+            'disk_type' => ['nullable', 'string', 'max:100'],
+            'ram_capacity' => ['nullable', 'string', 'max:50'],
+            'battery_status' => ['nullable', 'in:functional,partially_functional,damaged'],
+            'last_maintenance_at' => ['nullable', 'date'],
+            'aesthetic_observations' => ['nullable', 'string'],
+            'replacement_components' => ['nullable', 'array'],
+            'replacement_components.*' => ['string'],
+            'is_loaned' => ['nullable', 'boolean'],
+            'loaned_to_name' => ['nullable', 'required_if:is_loaned,1', 'string', 'max:255'],
+            'loaned_to_email' => ['nullable', 'required_if:is_loaned,1', 'email', 'max:255'],
+            'maintenance_ticket_id' => ['nullable', 'exists:tickets,id'],
+        ]);
+
+        $data['is_loaned'] = $request->has('is_loaned');
+        if (!$data['is_loaned']) {
+            $data['loaned_to_name'] = null;
+            $data['loaned_to_email'] = null;
+        }
+
+        if (!empty($data['maintenance_ticket_id'])) {
+            $data['last_ticket_id'] = $data['maintenance_ticket_id'];
+        }
+
+        $computerProfile->update($data);
+
+        return redirect()
+            ->route('admin.maintenance.computers.show', $computerProfile)
+            ->with('success', 'Ficha técnica actualizada correctamente.');
+    }
+
+    public function destroyComputer(ComputerProfile $computerProfile): RedirectResponse
+    {
+        $computerProfile->delete();
+
+        return redirect()
+            ->route('admin.maintenance.index')
+            ->with('success', 'Ficha técnica eliminada correctamente.');
     }
 }
