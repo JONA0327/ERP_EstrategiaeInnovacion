@@ -4,7 +4,7 @@ namespace App\Http\Controllers\RH;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empleado;
-use App\Models\EmpleadoDocumento; // Modelo nuevo
+use App\Models\EmpleadoDocumento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
@@ -22,24 +22,53 @@ class ExpedienteController extends Controller
                   ->orWhere('apellido_paterno', 'like', "%{$request->search}%");
         }
 
-        // Cargamos documentos para contar cuantos tiene cada uno rápido
-        $empleados = $query->withCount('documentos')->paginate(12);
+        // Usamos 'with' para traer los documentos y calcular el % óptimamente
+        $empleados = $query->with('documentos')->paginate(12);
 
         return view('Recursos_Humanos.expedientes.index', compact('empleados'));
     }
 
     public function show($id)
     {
-        // Cargamos al empleado con sus documentos ordenados
         $empleado = Empleado::with('documentos')->findOrFail($id);
         
         // Agrupamos documentos por categoría para la vista
         $docsGrouped = $empleado->documentos->groupBy('categoria');
 
-        return view('Recursos_Humanos.expedientes.show', compact('empleado', 'docsGrouped'));
+        // Preparamos la lista de checklist para la vista según el tipo
+        if ($empleado->es_practicante) {
+            $checklistDocs = ['INE', 'CURP', 'Comprobante de Domicilio', 'Estado de Cuenta', 'Formato ID', 'Contrato'];
+        } else {
+            $checklistDocs = ['INE', 'CURP', 'Comprobante de Domicilio', 'NSS', 'Titulo', 'Constancia de Situacion Fiscal', 'Formato ID', 'Contrato'];
+        }
+
+        return view('Recursos_Humanos.expedientes.show', compact('empleado', 'docsGrouped', 'checklistDocs'));
     }
 
-    // --- NUEVA FUNCIÓN: SUBIR DOCUMENTO ---
+    /**
+     * Método UPDATE para actualizar datos del expediente.
+     * Utiliza la ruta existente: Route::put('/{empleado}', ...)->name('update');
+     */
+    public function update(Request $request, $id)
+    {
+        $empleado = Empleado::findOrFail($id);
+
+        // Si estamos enviando el formulario del switch de practicante
+        if ($request->has('toggle_practicante')) {
+            // El checkbox envía '1' si está marcado. Si no está marcado, Laravel $request->boolean maneja el false si usamos input hidden o validamos.
+            // Aquí usamos la técnica de input hidden previo con valor 0 para asegurar el envío.
+            $empleado->es_practicante = $request->boolean('es_practicante');
+            $empleado->save();
+
+            return back()->with('success', 'Tipo de expediente actualizado correctamente.');
+        }
+
+        // Si hubiera lógica para actualización general de datos del empleado, iría aquí.
+        $empleado->update($request->all());
+
+        return back()->with('success', 'Información actualizada.');
+    }
+
     public function uploadDocument(Request $request, $empleadoId)
     {
         $request->validate([
@@ -52,7 +81,6 @@ class ExpedienteController extends Controller
         $empleado = Empleado::findOrFail($empleadoId);
         $file = $request->file('documento');
         
-        // Guardar en carpeta privada o publica según seguridad (aquí ejemplo pública)
         $path = $file->storeAs(
             "expedientes/{$empleado->id}", 
             \Str::slug($request->nombre) . '_' . time() . '.' . $file->getClientOriginalExtension(), 
@@ -96,34 +124,24 @@ class ExpedienteController extends Controller
             $data = [];
 
             foreach ($rows as $row) {
-                // 1. Obtenemos la etiqueta y el valor
                 $rawLabel = $row[0] ?? '';
                 $value = $row[1] ?? null;
 
-                // 2. Limpieza PROFUNDA de la etiqueta
-                // "Teléfono de Casa:" -> "telefono-de-casa" -> "telefonodecasa"
                 $label = str_replace('-', '', Str::slug($rawLabel)); 
                 
                 if (!$value || $value == 'No llenar - sera llenado por Administracion y RH') continue;
 
-                // 3. Mapeo exacto basado en tu CSV
-                
-                // Dirección
                 if (str_contains($label, 'direccionactual')) $data['direccion'] = $value;
                 if ($label == 'ciudad') $data['ciudad'] = $value;
                 if ($label == 'estado') $data['estado_federativo'] = $value;
                 if (str_contains($label, 'codigopostal')) $data['codigo_postal'] = $value;
                 
-                // Teléfonos
                 if (str_contains($label, 'telefonocelular')) $data['telefono'] = $value;
                 if (str_contains($label, 'telefonodecasa')) $data['telefono_casa'] = $value;
                 
-                // Salud
                 if (str_contains($label, 'alergias')) $data['alergias'] = $value;
                 if (str_contains($label, 'enfermedades')) $data['enfermedades_cronicas'] = $value;
                 
-                // Emergencia
-                // Buscamos "no de contacto" primero para que no se confunda con el nombre
                 if (str_contains($label, 'nodecontacto')) {
                     $data['contacto_emergencia_numero'] = $value;
                 } elseif (str_contains($label, 'contactodeemergencia')) {
@@ -135,10 +153,9 @@ class ExpedienteController extends Controller
                 }
             }
 
-            // Guardamos
             $empleado->update($data);
 
-            return back()->with('success', '¡Información importada correctamente! Se actualizaron campos de contacto y domicilio.');
+            return back()->with('success', '¡Información importada correctamente!');
 
         } catch (\Exception $e) {
             return back()->with('error', 'Error al leer el Excel: ' . $e->getMessage());

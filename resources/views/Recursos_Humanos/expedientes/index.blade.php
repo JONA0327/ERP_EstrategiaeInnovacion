@@ -37,6 +37,7 @@
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">NOMBRE</th>
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">CORREO</th>
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">ÁREA</th>
+                    <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">EXPEDIENTE</th>
                     <th class="px-5 py-2 text-right text-[11px] font-semibold tracking-wide text-slate-600">ACCIONES</th>
                 </tr>
             </thead>
@@ -59,6 +60,38 @@
                                 <span class="text-slate-400">—</span>
                             @endif
                         </td>
+                        
+                        {{-- NUEVA COLUMNA: BARRA DE PROGRESO --}}
+                        <td class="px-5 py-2 align-middle">
+                            @php 
+                                $porcentaje = $empleado->porcentaje_expediente; 
+                                // Lógica de colores semáforo
+                                $colorBarra = 'bg-red-500';
+                                $textoColor = 'text-red-600';
+                                
+                                if($porcentaje > 50) { 
+                                    $colorBarra = 'bg-yellow-400'; 
+                                    $textoColor = 'text-yellow-600'; 
+                                }
+                                if($porcentaje >= 90) { 
+                                    $colorBarra = 'bg-green-500'; 
+                                    $textoColor = 'text-green-600'; 
+                                }
+                            @endphp
+
+                            <div class="w-full max-w-[120px]">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-[10px] font-bold {{ $textoColor }}">{{ $porcentaje }}%</span>
+                                    <span class="text-[10px] text-slate-400" title="{{ $empleado->es_practicante ? 'Evaluado como Practicante' : 'Evaluado como Empleado' }}">
+                                        {{ $empleado->es_practicante ? 'Prac.' : 'Emp.' }}
+                                    </span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div class="{{ $colorBarra }} h-1.5 rounded-full transition-all duration-500" style="width: {{ $porcentaje }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+
                         <td class="px-5 py-2 text-xs text-right space-x-1">
                             <a href="{{ route('rh.expedientes.show',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-blue-600 hover:bg-blue-100 shadow-sm">
                                 <x-ui.icon name="eye" class="h-4 w-4" />Ver
@@ -70,7 +103,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">No hay expedientes registrados.</td>
+                        <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500">No hay expedientes registrados.</td>
                     </tr>
                 @endforelse
             </tbody>
