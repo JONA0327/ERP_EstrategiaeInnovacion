@@ -100,38 +100,95 @@
                     </div>
                     
                     <!-- Filtros -->
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <!-- Filtro por Cliente -->
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Cliente:</label>
-                            <select id="filtroCliente" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
-                                <option value="todos" {{ (!isset($filtroCliente) || $filtroCliente === 'todos') ? 'selected' : '' }}>Todos los clientes</option>
-                                @foreach($clientesUnicos ?? [] as $clienteUnico)
-                                    <option value="{{ $clienteUnico }}" {{ (isset($filtroCliente) && $filtroCliente === $clienteUnico) ? 'selected' : '' }}>{{ $clienteUnico }}</option>
-                                @endforeach
-                            </select>
+                    <div class="flex flex-col gap-4">
+                        <!-- Primera fila de filtros -->
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <!-- Filtro por Cliente -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Cliente:</label>
+                                <select id="filtroCliente" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
+                                    <option value="todos" {{ (!isset($filtroCliente) || $filtroCliente === 'todos') ? 'selected' : '' }}>Todos los clientes</option>
+                                    @foreach($clientesUnicos ?? [] as $clienteUnico)
+                                        <option value="{{ $clienteUnico }}" {{ (isset($filtroCliente) && $filtroCliente === $clienteUnico) ? 'selected' : '' }}>{{ $clienteUnico }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            @if($esAdmin)
+                            <!-- Filtro por Ejecutivo (solo admin) -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Ejecutivo:</label>
+                                <select id="filtroEjecutivo" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
+                                    <option value="todos" {{ (!isset($filtroEjecutivo) || $filtroEjecutivo === 'todos') ? 'selected' : '' }}>Todos los ejecutivos</option>
+                                    @foreach($ejecutivosUnicos ?? [] as $ejecutivoUnico)
+                                        <option value="{{ $ejecutivoUnico }}" {{ (isset($filtroEjecutivo) && $filtroEjecutivo === $ejecutivoUnico) ? 'selected' : '' }}>{{ $ejecutivoUnico }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+
+                            <!-- Filtro por Status -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Status:</label>
+                                <select id="filtroStatus" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[180px]" onchange="aplicarFiltros()">
+                                    <option value="todos" {{ (!isset($filtroStatus) || $filtroStatus === 'todos') ? 'selected' : '' }}>Todos los status</option>
+                                    <option value="In Process" {{ (isset($filtroStatus) && $filtroStatus === 'In Process') ? 'selected' : '' }}>En Proceso</option>
+                                    <option value="Done" {{ (isset($filtroStatus) && $filtroStatus === 'Done') ? 'selected' : '' }}>Completado (Manual)</option>
+                                    <option value="Out of Metric" {{ (isset($filtroStatus) && $filtroStatus === 'Out of Metric') ? 'selected' : '' }}>Fuera de Métrica</option>
+                                </select>
+                            </div>
                         </div>
-                        
-                        @if($esAdmin)
-                        <!-- Filtro por Ejecutivo (solo admin) -->
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Ejecutivo:</label>
-                            <select id="filtroEjecutivo" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 shadow-sm min-w-[200px]" onchange="aplicarFiltros()">
-                                <option value="todos" {{ (!isset($filtroEjecutivo) || $filtroEjecutivo === 'todos') ? 'selected' : '' }}>Todos los ejecutivos</option>
-                                @foreach($ejecutivosUnicos ?? [] as $ejecutivoUnico)
-                                    <option value="{{ $ejecutivoUnico }}" {{ (isset($filtroEjecutivo) && $filtroEjecutivo === $ejecutivoUnico) ? 'selected' : '' }}>{{ $ejecutivoUnico }}</option>
-                                @endforeach
-                            </select>
+
+                        <!-- Segunda fila de filtros: Fechas -->
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <!-- Filtro por Fecha de Creación -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Creación:</label>
+                                <div class="flex gap-1 items-center">
+                                    <input type="date" id="filtroFechaCreacionDesde" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaCreacionDesde ?? '' }}" onchange="aplicarFiltros()">
+                                    <span class="text-xs text-slate-400">-</span>
+                                    <input type="date" id="filtroFechaCreacionHasta" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaCreacionHasta ?? '' }}" onchange="aplicarFiltros()">
+                                </div>
+                            </div>
+
+                            <!-- Filtro por Fecha de Embarque -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Embarque:</label>
+                                <div class="flex gap-1 items-center">
+                                    <input type="date" id="filtroFechaEmbarqueDesde" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaEmbarqueDesde ?? '' }}" onchange="aplicarFiltros()">
+                                    <span class="text-xs text-slate-400">-</span>
+                                    <input type="date" id="filtroFechaEmbarqueHasta" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaEmbarqueHasta ?? '' }}" onchange="aplicarFiltros()">
+                                </div>
+                            </div>
+
+                            <!-- Filtro por Fecha de Arribo a Aduana -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Arribo Aduana:</label>
+                                <div class="flex gap-1 items-center">
+                                    <input type="date" id="filtroFechaArriboAduanaDesde" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaArriboAduanaDesde ?? '' }}" onchange="aplicarFiltros()">
+                                    <span class="text-xs text-slate-400">-</span>
+                                    <input type="date" id="filtroFechaArriboAduanaHasta" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaArriboAduanaHasta ?? '' }}" onchange="aplicarFiltros()">
+                                </div>
+                            </div>
+
+                            <!-- Filtro por Fecha de Arribo a Planta -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Arribo Planta:</label>
+                                <div class="flex gap-1 items-center">
+                                    <input type="date" id="filtroFechaArriboPlantaDesde" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaArriboPlantaDesde ?? '' }}" onchange="aplicarFiltros()">
+                                    <span class="text-xs text-slate-400">-</span>
+                                    <input type="date" id="filtroFechaArriboPlantaHasta" class="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs focus:border-emerald-400 focus:ring-0 shadow-sm" value="{{ $filtroFechaArriboPlantaHasta ?? '' }}" onchange="aplicarFiltros()">
+                                </div>
+                            </div>
+                            
+                            <!-- Botón limpiar filtros -->
+                            <button type="button" onclick="limpiarFiltros()" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Limpiar
+                            </button>
                         </div>
-                        @endif
-                        
-                        <!-- Botón limpiar filtros -->
-                        <button type="button" onclick="limpiarFiltros()" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            Limpiar
-                        </button>
                     </div>
                 </div>
             </div>

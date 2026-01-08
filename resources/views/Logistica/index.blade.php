@@ -37,7 +37,6 @@
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">Matriz de Seguimiento</h4>
                     <p class="text-slate-500 text-sm leading-relaxed mb-4">Gestiona y da seguimiento a todas las operaciones logísticas en tiempo real.</p>
-                    <div class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded-full w-fit border border-emerald-200">✓ Disponible</div>
                 </div>
             </a>
 
@@ -52,7 +51,6 @@
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">Pedimentos</h4>
                     <p class="text-slate-500 text-sm leading-relaxed mb-4">Administra el estado de pago de pedimentos asociados a las operaciones.</p>
-                    <div class="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-full w-fit border border-blue-200">✓ Disponible</div>
                 </div>
             </a>
 
@@ -67,11 +65,10 @@
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-purple-600 transition-colors">Catálogos</h4>
                     <p class="text-slate-500 text-sm leading-relaxed mb-4">Administra clientes, agentes aduanales, transportes y ejecutivos del área.</p>
-                    <div class="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded-full w-fit border border-purple-200">✓ Disponible</div>
                 </div>
             </a>
 
-            <div class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
+            <a href="{{ route('logistica.reportes') }}" class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                 <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-orange-600">
                     <svg class="w-40 h-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 </div>
@@ -81,22 +78,9 @@
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-orange-600 transition-colors">Reportes</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-4">Descarga reportes en CSV y visualiza gráficos de estado de operaciones.</p>
-                    
-                    <!-- Opciones de reportes -->
-                    <div class="space-y-2 mt-4">
-                        <a href="{{ route('logistica.reportes') }}" class="flex items-center gap-2 text-xs text-slate-600 hover:text-orange-600 transition-colors">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                            Reporte de Seguimiento
-                        </a>
-
-                    </div>
-                    
-                    <div class="text-xs text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-full w-fit border border-orange-200 mt-4">✓ Disponible</div>
+                    <p class="text-slate-500 text-sm leading-relaxed">Descarga reportes en CSV y visualiza gráficos de estado de operaciones.</p>
                 </div>
-            </div>
+            </a>
 
             <a href="{{ route('logistica.consulta-publica') }}" class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                 <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-cyan-600">
@@ -109,29 +93,8 @@
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-cyan-600 transition-colors">Consulta Pública</h4>
                     <p class="text-slate-500 text-sm leading-relaxed mb-4">Portal de consulta externa para seguimiento de operaciones por parte de clientes.</p>
-                    <div class="text-xs text-cyan-600 font-semibold bg-cyan-50 px-2 py-1 rounded-full w-fit border border-cyan-200">✓ Disponible</div>
                 </div>
             </a>
-
-            <div class="group relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col opacity-75">
-                <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-slate-400">
-                    <svg class="w-40 h-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                
-                <div class="relative z-10 flex-1">
-                    <div class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-slate-100">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <h4 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-slate-600 transition-colors">Evaluación de Desempeño</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-4">Monitorea el rendimiento del equipo y evalúa el cumplimiento de metas logísticas.</p>
-                    <div class="text-xs text-slate-500 font-semibold bg-slate-50 px-2 py-1 rounded-full w-fit border border-slate-200 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Próximamente
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

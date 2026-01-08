@@ -32,17 +32,20 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     Enviar Correo
                 </button>
-
-                <button onclick="openExportModal()" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-900 focus:outline-none focus:border-emerald-900 focus:ring ring-emerald-300 disabled:opacity-25 transition shadow-sm">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Generar Reporte
-                </button>
             </div>
         </div>
     </x-slot>
 
     <div class="py-12 bg-slate-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+
+            {{-- Botón General Generar Reporte --}}
+            <div class="flex justify-center">
+                <button onclick="openGeneralExportModal()" class="inline-flex items-center px-6 py-3 bg-emerald-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-900 focus:outline-none focus:border-emerald-900 focus:ring-2 ring-emerald-300 disabled:opacity-25 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Generar Reporte
+                </button>
+            </div>
 
             {{-- Navegación por pestañas --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2">
@@ -409,7 +412,7 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
-                                Generar Reporte
+                                Aplicar Filtros
                             </button>
                         </div>
                     </form>
@@ -1525,6 +1528,102 @@
 
     </script>
 
+    <!-- Modal General Generar Reporte -->
+    <div id="generalExportModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeGeneralExportModal()"></div>
+            
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-emerald-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-slate-900">
+                                Seleccionar Tipo de Reporte
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-500">
+                                    Elige el tipo de reporte que deseas generar. Cada opción corresponde a las pestañas disponibles.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 space-y-4">
+                        <!-- Opción: Matriz de Seguimiento -->
+                        <button onclick="exportMatrizSeguimiento()" class="w-full bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 hover:border-blue-400 rounded-lg p-4 transition-all duration-200 text-left">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h4 class="text-sm font-semibold text-slate-900">Matriz de Seguimiento</h4>
+                                    <p class="text-xs text-slate-600 mt-1">
+                                        Genera un Excel con la matriz de seguimiento. 
+                                        @if($esAdmin)
+                                            <span class="font-medium text-blue-700">Como admin, se generará una hoja por cada ejecutivo.</span>
+                                        @else
+                                            <span class="font-medium text-blue-700">Se generará con tus operaciones asignadas.</span>
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Opción: Reporte de Pedimentos -->
+                        <button onclick="exportPedimentos()" class="w-full bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 hover:border-purple-400 rounded-lg p-4 transition-all duration-200 text-left">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h4 class="text-sm font-semibold text-slate-900">Reporte de Pedimentos</h4>
+                                    <p class="text-xs text-slate-600 mt-1">
+                                        Genera un reporte detallado de pedimentos con información específica de aduana y documentación.
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Opción: Resumen Ejecutivo -->
+                        <button onclick="exportResumenEjecutivo()" class="w-full bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-400 rounded-lg p-4 transition-all duration-200 text-left">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h4 class="text-sm font-semibold text-slate-900">Resumen Ejecutivo</h4>
+                                    <p class="text-xs text-slate-600 mt-1">
+                                        Genera un reporte ejecutivo con métricas clave, estadísticas y análisis de rendimiento.
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-100 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse mt-6 -mx-4 -mb-4">
+                        <button type="button" onclick="closeGeneralExportModal()" 
+                            class="w-full inline-flex justify-center rounded-md border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Selección de Reporte -->
     <div id="exportModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -2236,6 +2335,65 @@ Saludos cordiales,
             // Resetear formulario
             document.getElementById('exportForm').reset();
             document.querySelector('input[name="format"][value="excel"]').checked = true;
+        }
+
+        // Funciones del modal general de reportes
+        window.openGeneralExportModal = function() {
+            document.getElementById('generalExportModal').classList.remove('hidden');
+        }
+
+        window.closeGeneralExportModal = function() {
+            document.getElementById('generalExportModal').classList.add('hidden');
+        }
+
+        // Función para exportar Matriz de Seguimiento
+        window.exportMatrizSeguimiento = function() {
+            showExportLoader('Generando Matriz de Seguimiento...');
+            closeGeneralExportModal();
+            
+            // Construir URL con filtros actuales
+            const params = new URLSearchParams(window.location.search);
+            const url = '{{ route("logistica.reportes.export-matriz") }}?' + params.toString();
+            
+            // Descargar archivo
+            window.location.href = url;
+            
+            setTimeout(() => {
+                hideExportLoader();
+                showNotification('Matriz de Seguimiento generada exitosamente', 'success');
+            }, 2000);
+        }
+
+        // Función para exportar Pedimentos
+        window.exportPedimentos = function() {
+            showExportLoader('Generando Reporte de Pedimentos...');
+            closeGeneralExportModal();
+            
+            const params = new URLSearchParams(window.location.search);
+            const url = '{{ route("logistica.reportes.pedimentos.export") }}?' + params.toString();
+            
+            window.location.href = url;
+            
+            setTimeout(() => {
+                hideExportLoader();
+                showNotification('Reporte de Pedimentos generado exitosamente', 'success');
+            }, 2000);
+        }
+
+        // Función para exportar Resumen Ejecutivo
+        window.exportResumenEjecutivo = function() {
+            showExportLoader('Generando Resumen Ejecutivo...');
+            closeGeneralExportModal();
+            
+            const params = new URLSearchParams(window.location.search);
+            const url = '{{ route("logistica.reportes.resumen.export") }}?' + params.toString();
+            
+            window.location.href = url;
+            
+            setTimeout(() => {
+                hideExportLoader();
+                showNotification('Resumen Ejecutivo generado exitosamente', 'success');
+            }, 2000);
         }
 
         // Manejar el envío del formulario de exportación

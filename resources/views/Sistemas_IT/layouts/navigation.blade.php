@@ -41,14 +41,10 @@
                 'visible' => true,
             ],
             [
-                'label' => 'Panel Admin',
-                'route' => route('admin.dashboard'),
-                'active' => request()->routeIs('admin.*'),
-                'visible' => $user && method_exists($user, 'isAdmin') && $user->isAdmin() && (
-                    optional($user->empleado)->area === 'Sistemas' || 
-                    optional($user->empleado)->posicion === 'TI' || 
-                    optional($user->empleado)->posicion === 'IT'
-                ),
+                'label' => $user ? ($user->getPanelInfo()['label'] ?? 'Panel Admin') : 'Panel Admin',
+                'route' => $user && $user->getPanelInfo()['available'] ? $user->getPanelInfo()['route'] : route('admin.dashboard'),
+                'active' => request()->routeIs('admin.*') || request()->routeIs('recursos-humanos.*') || request()->routeIs('logistica.*'),
+                'visible' => $user && $user->getPanelInfo()['available'],
             ],
             [
                 'label' => 'Mis Tickets',

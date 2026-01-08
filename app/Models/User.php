@@ -146,6 +146,8 @@ class User extends Authenticatable
         if ($this->empleado) {
             $valoresAChecar[] = $this->empleado->departamento ?? '';
             $valoresAChecar[] = $this->empleado->puesto ?? '';
+            // Ahora también checamos la posición
+            $valoresAChecar[] = $this->empleado->posicion ?? '';
         }
 
         foreach ($valoresAChecar as $valor) {
@@ -156,6 +158,59 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    /**
+     * Obtener información del panel según la posición del usuario
+     * Retorna un array con 'route', 'label' y 'available'
+     */
+    public function getPanelInfo(): array
+    {
+        // Si no es admin, no tiene panel
+        if (!$this->isAdmin()) {
+            return [
+                'available' => false,
+                'route' => null,
+                'label' => null,
+            ];
+        }
+
+        // Obtener posición normalizada
+        $posicion = $this->normalizeString($this->empleado->posicion ?? '');
+
+        // Determinar panel según posición (orden específico para evitar coincidencias parciales)
+        // Primero checar logística porque contiene "ti" dentro
+        if (str_contains($posicion, 'logistica') || str_contains($posicion, 'operaciones') || str_contains($posicion, 'aduana')) {
+            return [
+                'available' => true,
+                'route' => route('logistica.index'),
+                'label' => 'Panel Logística',
+            ];
+        }
+
+        // Luego checar IT/TI con búsqueda más específica
+        if (str_contains($posicion, ' ti') || str_contains($posicion, 'ti ') || $posicion === 'ti' || $posicion === 'it' || str_contains($posicion, 'sistemas')) {
+            return [
+                'available' => true,
+                'route' => route('admin.dashboard'),
+                'label' => 'Panel IT',
+            ];
+        }
+
+        if (str_contains($posicion, 'administracion rh')) {
+            return [
+                'available' => true,
+                'route' => route('recursos-humanos.index'),
+                'label' => 'Panel RH',
+            ];
+        }
+
+        // Si es admin pero no tiene posición específica (IT, RH o Logística), NO mostrar panel
+        return [
+            'available' => false,
+            'route' => null,
+            'label' => null,
+        ];
     }
 
     /**

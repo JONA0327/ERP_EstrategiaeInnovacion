@@ -80,27 +80,14 @@
                     {{-- ACCIONES RÁPIDAS POR ROL --}}
                     <div class="mt-6 md:mt-0 flex flex-wrap gap-3 items-center">
                         
-                        {{-- Botón ADMIN --}}
-                        @if(Auth::user()->isAdmin())
-                            <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-xs font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
+                        {{-- Botón PANEL DINÁMICO (según posición) - Solo muestra si es IT, RH o Logística --}}
+                        @php
+                            $panelInfo = Auth::user()->getPanelInfo();
+                        @endphp
+                        @if($panelInfo['available'])
+                            <a href="{{ $panelInfo['route'] }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-xs font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                                Panel Admin
-                            </a>
-                        @endif
-
-                        {{-- Botón RH --}}
-                        @if(Auth::user()->isRh())
-                             <a href="{{ route('recursos-humanos.index') }}" class="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-xs font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-pink-200 hover:bg-pink-700 hover:-translate-y-0.5 transition-all">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                Portal RH
-                            </a>
-                        @endif
-
-                        {{-- Botón Logística --}}
-                        @if(Auth::user()->isLogistica())
-                             <a href="{{ route('logistica.index') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1zm8-1a1 1 0 01-1 1h-6v-5a1 1 0 011-1h5a1 1 0 011 1v4zm-1-9a1 1 0 011 1v2a1 1 0 01-1 1h-5v-4h5z"></path></svg>
-                                Logística
+                                {{ $panelInfo['label'] }}
                             </a>
                         @endif
 

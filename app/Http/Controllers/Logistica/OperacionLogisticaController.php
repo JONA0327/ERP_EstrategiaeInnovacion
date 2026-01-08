@@ -62,6 +62,15 @@ class OperacionLogisticaController extends Controller
         // Obtener filtros del request
         $filtroCliente = $request->get('cliente');
         $filtroEjecutivo = $request->get('ejecutivo');
+        $filtroStatus = $request->get('status');
+        $filtroFechaCreacionDesde = $request->get('fecha_creacion_desde');
+        $filtroFechaCreacionHasta = $request->get('fecha_creacion_hasta');
+        $filtroFechaEmbarqueDesde = $request->get('fecha_embarque_desde');
+        $filtroFechaEmbarqueHasta = $request->get('fecha_embarque_hasta');
+        $filtroFechaArriboAduanaDesde = $request->get('fecha_arribo_aduana_desde');
+        $filtroFechaArriboAduanaHasta = $request->get('fecha_arribo_aduana_hasta');
+        $filtroFechaArriboPlantaDesde = $request->get('fecha_arribo_planta_desde');
+        $filtroFechaArriboPlantaHasta = $request->get('fecha_arribo_planta_hasta');
 
         // Base query con relaciones
         $query = OperacionLogistica::with(['ejecutivo', 'postoperacion', 'valoresCamposPersonalizados.campo']);
@@ -82,6 +91,37 @@ class OperacionLogisticaController extends Controller
         }
         if ($filtroEjecutivo && $filtroEjecutivo !== 'todos') {
             $query->where('ejecutivo', $filtroEjecutivo);
+        }
+        if ($filtroStatus && $filtroStatus !== 'todos') {
+            $query->where(function($q) use ($filtroStatus) {
+                $q->where('status_manual', $filtroStatus)
+                  ->orWhere('status_calculado', $filtroStatus);
+            });
+        }
+        // Filtros de fechas
+        if ($filtroFechaCreacionDesde) {
+            $query->whereDate('created_at', '>=', $filtroFechaCreacionDesde);
+        }
+        if ($filtroFechaCreacionHasta) {
+            $query->whereDate('created_at', '<=', $filtroFechaCreacionHasta);
+        }
+        if ($filtroFechaEmbarqueDesde) {
+            $query->whereDate('fecha_embarque', '>=', $filtroFechaEmbarqueDesde);
+        }
+        if ($filtroFechaEmbarqueHasta) {
+            $query->whereDate('fecha_embarque', '<=', $filtroFechaEmbarqueHasta);
+        }
+        if ($filtroFechaArriboAduanaDesde) {
+            $query->whereDate('fecha_arribo_aduana', '>=', $filtroFechaArriboAduanaDesde);
+        }
+        if ($filtroFechaArriboAduanaHasta) {
+            $query->whereDate('fecha_arribo_aduana', '<=', $filtroFechaArriboAduanaHasta);
+        }
+        if ($filtroFechaArriboPlantaDesde) {
+            $query->whereDate('fecha_arribo_planta', '>=', $filtroFechaArriboPlantaDesde);
+        }
+        if ($filtroFechaArriboPlantaHasta) {
+            $query->whereDate('fecha_arribo_planta', '<=', $filtroFechaArriboPlantaHasta);
         }
 
         // Obtener operaciones con paginación (10 por página)
@@ -135,12 +175,11 @@ class OperacionLogisticaController extends Controller
         }
 
         $agentesAduanales = AgenteAduanal::orderBy('agente_aduanal')->get();
-        // Solo empleados del rea de LOGISTICA
+        // Solo empleados con posición de LOGISTICA
         $empleados = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%LOGISTICA%');
+                $query->where('posicion', 'like', '%LOGISTICA%')
+                      ->orWhere('posicion', 'like', '%Logistica%')
+                      ->orWhere('posicion', 'like', '%logistica%');
             })
             ->orderBy('nombre')
             ->get();
@@ -215,6 +254,15 @@ class OperacionLogisticaController extends Controller
             'clientesUnicos',
             'filtroCliente',
             'filtroEjecutivo',
+            'filtroStatus',
+            'filtroFechaCreacionDesde',
+            'filtroFechaCreacionHasta',
+            'filtroFechaEmbarqueDesde',
+            'filtroFechaEmbarqueHasta',
+            'filtroFechaArriboAduanaDesde',
+            'filtroFechaArriboAduanaHasta',
+            'filtroFechaArriboPlantaDesde',
+            'filtroFechaArriboPlantaHasta',
             'columnasOpcionalesVisibles',
             'columnasPredeterminadasOcultas',
             'idiomaColumnas',
@@ -251,22 +299,20 @@ class OperacionLogisticaController extends Controller
         // Agregar pedimentos
         $pedimentos = \App\Models\Logistica\Pedimento::orderBy('clave')->paginate(15, ['*'], 'pedimentos_page');
 
-        // Solo empleados del rea de LOGISTICA
+        // Solo empleados con posición de LOGISTICA
         $ejecutivos = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%LOGISTICA%');
+                $query->where('posicion', 'like', '%LOGISTICA%')
+                      ->orWhere('posicion', 'like', '%Logistica%')
+                      ->orWhere('posicion', 'like', '%logistica%');
             })
             ->orderBy('nombre')
             ->paginate(15, ['*'], 'ejecutivos_page');
 
         // Obtener todos los ejecutivos para el select de asignacin
         $todosEjecutivos = Empleado::where(function($query) {
-                $query->where('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%Logistica%')
-                      ->orWhere('area', 'like', '%LOGISTICA%')
-                      ->orWhere('area', 'like', '%LOGISTICA%');
+                $query->where('posicion', 'like', '%LOGISTICA%')
+                      ->orWhere('posicion', 'like', '%Logistica%')
+                      ->orWhere('posicion', 'like', '%logistica%');
             })
             ->orderBy('nombre')
             ->get();
@@ -293,13 +339,13 @@ class OperacionLogisticaController extends Controller
         }
 
         // Construir query base
-        $query = OperacionLogistica::with('ejecutivo');
+        $query = OperacionLogistica::query();
         $statsQuery = OperacionLogistica::query();
 
         // Si no es admin, filtrar solo sus operaciones
         if (!$esAdmin && $empleadoActual) {
-            $query->where('ejecutivo', $empleadoActual->nombre);
-            $statsQuery->where('ejecutivo', $empleadoActual->nombre);
+            $query->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%');
+            $statsQuery->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%');
         }
 
         // Aplicar filtros
@@ -4748,6 +4794,169 @@ class OperacionLogisticaController extends Controller
                 'error' => $e->getMessage()
             ]);
             return null;
+        }
+    }
+
+    /**
+     * Exportar matriz de seguimiento en Excel
+     * - Para usuarios normales: una hoja con sus operaciones
+     * - Para admin: una hoja por cada ejecutivo
+     */
+    public function exportMatrizSeguimiento(Request $request)
+    {
+        try {
+            $usuarioActual = auth()->user();
+            $empleadoActual = null;
+            $esAdmin = false;
+
+            if ($usuarioActual) {
+                $empleadoActual = Empleado::where('correo', $usuarioActual->email)
+                    ->orWhere('nombre', 'like', '%' . $usuarioActual->name . '%')
+                    ->first();
+                $esAdmin = $usuarioActual->hasRole('admin');
+            }
+
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $spreadsheet->removeSheetByIndex(0); // Remover hoja por defecto
+
+            if ($esAdmin) {
+                // Admin: Generar una hoja por cada ejecutivo
+                $ejecutivos = Empleado::where('posicion', 'LIKE', '%Logistica%')
+                    ->orderBy('nombre')
+                    ->get();
+
+                $sheetIndex = 0;
+                foreach ($ejecutivos as $ejecutivo) {
+                    // Crear query para el ejecutivo
+                    $query = OperacionLogistica::query();
+                    $query->where('ejecutivo', 'LIKE', '%' . $ejecutivo->nombre . '%');
+                    
+                    // Aplicar filtros de la request
+                    $this->aplicarFiltrosReporte($query, $request);
+                    
+                    $operaciones = $query->orderByDesc('created_at')->get();
+
+                    // Solo crear hoja si tiene operaciones
+                    if ($operaciones->count() > 0) {
+                        // Limitar nombre de la hoja a 31 caracteres (límite de Excel)
+                        $nombreHoja = substr($ejecutivo->nombre, 0, 31);
+                        $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $nombreHoja);
+                        $spreadsheet->addSheet($sheet, $sheetIndex);
+                        
+                        $this->llenarHojaMatriz($sheet, $operaciones, $ejecutivo->nombre);
+                        $sheetIndex++;
+                    }
+                }
+
+                // Si no hay hojas, crear una vacía
+                if ($spreadsheet->getSheetCount() == 0) {
+                    $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Sin Datos');
+                    $spreadsheet->addSheet($sheet, 0);
+                    $sheet->setCellValue('A1', 'No hay datos disponibles');
+                }
+
+            } else {
+                // Usuario normal: Una sola hoja con sus operaciones
+                $query = OperacionLogistica::query();
+                
+                if ($empleadoActual) {
+                    $query->where('ejecutivo', 'LIKE', '%' . $empleadoActual->nombre . '%');
+                }
+                
+                // Aplicar filtros de la request
+                $this->aplicarFiltrosReporte($query, $request);
+                
+                $operaciones = $query->orderByDesc('created_at')->get();
+
+                $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Mis Operaciones');
+                $spreadsheet->addSheet($sheet, 0);
+                
+                $this->llenarHojaMatriz($sheet, $operaciones, $empleadoActual ? $empleadoActual->nombre : 'Usuario');
+            }
+
+            // Establecer la primera hoja como activa
+            $spreadsheet->setActiveSheetIndex(0);
+
+            // Generar archivo
+            $filename = 'matriz_seguimiento_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filepath = storage_path('app/temp/' . $filename);
+
+            if (!file_exists(dirname($filepath))) {
+                mkdir(dirname($filepath), 0755, true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($filepath);
+
+            return response()->download($filepath)->deleteFileAfterSend(true);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al exportar matriz de seguimiento: ' . $e->getMessage());
+            return back()->with('error', 'Error al generar el reporte: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Llenar una hoja de Excel con datos de operaciones (formato matriz)
+     */
+    private function llenarHojaMatriz($sheet, $operaciones, $nombreEjecutivo)
+    {
+        // Encabezados
+        $headers = [
+            'No.', 'Ejecutivo', 'Operación', 'Cliente', 'Proveedor/Cliente',
+            'Fecha Embarque', 'No. Factura', 'T. Operación', 'Clave', 'Referencia Interna',
+            'Aduana', 'A.A', 'Referencia A.A', 'No Pedimento', 'Transporte',
+            'Fecha Arribo Aduana', 'Guía/BL', 'Status', 'Salida Aduana', 'Arribo Planta',
+            'Resultado', 'Target', 'Días Tránsito', 'Post-Operaciones', 'Comentarios'
+        ];
+
+        // Escribir encabezados
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $sheet->getStyle($col . '1')->getFont()->setBold(true);
+            $sheet->getStyle($col . '1')->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FF4472C4');
+            $sheet->getStyle($col . '1')->getFont()->getColor()->setARGB('FFFFFFFF');
+            $col++;
+        }
+
+        // Escribir datos
+        $row = 2;
+        foreach ($operaciones as $op) {
+            $sheet->setCellValue('A' . $row, $op->id);
+            $sheet->setCellValue('B' . $row, $op->ejecutivo);
+            $sheet->setCellValue('C' . $row, $op->operacion);
+            $sheet->setCellValue('D' . $row, $op->cliente);
+            $sheet->setCellValue('E' . $row, $op->proveedor_o_cliente);
+            $sheet->setCellValue('F' . $row, $op->fecha_embarque ? $op->fecha_embarque->format('Y-m-d') : '');
+            $sheet->setCellValue('G' . $row, $op->no_factura);
+            $sheet->setCellValue('H' . $row, $op->tipo_operacion_enum);
+            $sheet->setCellValue('I' . $row, $op->clave);
+            $sheet->setCellValue('J' . $row, $op->referencia_interna);
+            $sheet->setCellValue('K' . $row, $op->aduana);
+            $sheet->setCellValue('L' . $row, $op->agente_aduanal);
+            $sheet->setCellValue('M' . $row, $op->referencia_aa);
+            $sheet->setCellValue('N' . $row, $op->no_pedimento);
+            $sheet->setCellValue('O' . $row, $op->transporte);
+            $sheet->setCellValue('P' . $row, $op->fecha_arribo_aduana ? $op->fecha_arribo_aduana->format('Y-m-d') : '');
+            $sheet->setCellValue('Q' . $row, $op->guia_bl);
+            $sheet->setCellValue('R' . $row, $op->status_manual ?: $op->status_calculado);
+            $sheet->setCellValue('S' . $row, $op->fecha_modulacion ? $op->fecha_modulacion->format('Y-m-d') : '');
+            $sheet->setCellValue('T' . $row, $op->fecha_arribo_planta ? $op->fecha_arribo_planta->format('Y-m-d') : '');
+            $sheet->setCellValue('U' . $row, $op->resultado);
+            $sheet->setCellValue('V' . $row, $op->target);
+            $sheet->setCellValue('W' . $row, $op->dias_transito);
+            $sheet->setCellValue('X' . $row, $op->post_operaciones);
+            $sheet->setCellValue('Y' . $row, $op->comentarios);
+            
+            $row++;
+        }
+
+        // Auto-ajustar columnas
+        foreach (range('A', 'Y') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
     }
 

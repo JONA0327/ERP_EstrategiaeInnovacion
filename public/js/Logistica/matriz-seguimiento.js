@@ -602,6 +602,17 @@ window.aplicarFiltros = function() {
     const cliente = document.getElementById('filtroCliente')?.value || 'todos';
     const ejecutivoSelect = document.getElementById('filtroEjecutivo');
     const ejecutivo = ejecutivoSelect ? ejecutivoSelect.value : 'todos';
+    const status = document.getElementById('filtroStatus')?.value || 'todos';
+    
+    // Obtener filtros de fechas
+    const fechaCreacionDesde = document.getElementById('filtroFechaCreacionDesde')?.value || '';
+    const fechaCreacionHasta = document.getElementById('filtroFechaCreacionHasta')?.value || '';
+    const fechaEmbarqueDesde = document.getElementById('filtroFechaEmbarqueDesde')?.value || '';
+    const fechaEmbarqueHasta = document.getElementById('filtroFechaEmbarqueHasta')?.value || '';
+    const fechaArriboAduanaDesde = document.getElementById('filtroFechaArriboAduanaDesde')?.value || '';
+    const fechaArriboAduanaHasta = document.getElementById('filtroFechaArriboAduanaHasta')?.value || '';
+    const fechaArriboPlantaDesde = document.getElementById('filtroFechaArriboPlantaDesde')?.value || '';
+    const fechaArriboPlantaHasta = document.getElementById('filtroFechaArriboPlantaHasta')?.value || '';
     
     const params = new URLSearchParams();
     if (cliente && cliente !== 'todos') {
@@ -610,6 +621,19 @@ window.aplicarFiltros = function() {
     if (ejecutivo && ejecutivo !== 'todos') {
         params.set('ejecutivo', ejecutivo);
     }
+    if (status && status !== 'todos') {
+        params.set('status', status);
+    }
+    
+    // Agregar filtros de fechas si tienen valor
+    if (fechaCreacionDesde) params.set('fecha_creacion_desde', fechaCreacionDesde);
+    if (fechaCreacionHasta) params.set('fecha_creacion_hasta', fechaCreacionHasta);
+    if (fechaEmbarqueDesde) params.set('fecha_embarque_desde', fechaEmbarqueDesde);
+    if (fechaEmbarqueHasta) params.set('fecha_embarque_hasta', fechaEmbarqueHasta);
+    if (fechaArriboAduanaDesde) params.set('fecha_arribo_aduana_desde', fechaArriboAduanaDesde);
+    if (fechaArriboAduanaHasta) params.set('fecha_arribo_aduana_hasta', fechaArriboAduanaHasta);
+    if (fechaArriboPlantaDesde) params.set('fecha_arribo_planta_desde', fechaArriboPlantaDesde);
+    if (fechaArriboPlantaHasta) params.set('fecha_arribo_planta_hasta', fechaArriboPlantaHasta);
     
     const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     window.location.href = url;

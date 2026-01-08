@@ -11,11 +11,20 @@ class AreaLogisticaMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        $area = $user?->empleado?->area;
-        $norm = $area ? mb_strtolower(preg_replace('/\s+/u',' ',$area),'UTF-8') : null;
-        if (!$user || ($norm !== 'logistica' && $norm !== 'logística')) {
+        
+        // Permitir acceso a administradores
+        if ($user && $user->hasRole('admin')) {
+            return $next($request);
+        }
+        
+        // Verificar si la posición contiene "logistica" (más flexible)
+        $posicion = $user?->empleado?->posicion;
+        $norm = $posicion ? mb_strtolower(preg_replace('/\s+/u',' ',$posicion),'UTF-8') : null;
+        
+        if (!$user || !$norm || (stripos($norm, 'logistic') === false)) {
             return redirect()->route('login')->with('info','Acceso restringido a Logística');
         }
+        
         return $next($request);
     }
 }
