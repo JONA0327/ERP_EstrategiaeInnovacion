@@ -1,335 +1,505 @@
 @extends('layouts.erp')
-
-@section('title', 'Expediente Digital')
-
+@section('title','Expediente de ' . $empleado->nombre)
 @section('content')
-<div class="min-h-screen bg-gray-50 py-8" x-data="{ tab: 'general' }">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 relative">
+    
+    {{-- HEADER --}}
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            @if($empleado->foto_path)
+                <img src="{{ asset('storage/'.$empleado->foto_path) }}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md">
+            @else
+                <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl shadow-sm">
+                    {{ substr($empleado->nombre, 0, 1) }}
+                </div>
+            @endif
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">{{ $empleado->nombre }}</h1>
+                <p class="text-sm text-slate-500">{{ $empleado->posicion }} • {{ $empleado->area }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-xs text-slate-400">{{ $empleado->correo }}</p>
+                    {{-- Botón para abrir modal de edición --}}
+                    <button onclick="openEditModal()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded border border-slate-300 transition flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        Editar Info
+                    </button>
+                </div>
+            </div>
+        </div>
         
-        {{-- BOTÓN REGRESAR --}}
-        <div class="mb-6">
-            <a href="{{ route('rh.expedientes.index') }}" class="inline-flex items-center text-gray-500 hover:text-indigo-600 transition font-bold group">
-                <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-2 shadow-sm group-hover:border-indigo-300 group-hover:bg-indigo-50">
-                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                </div>
-                Regresar al listado
-            </a>
+        <div class="flex gap-2">
+            <a href="{{ route('rh.expedientes.index') }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 shadow-sm transition">Volver</a>
         </div>
+    </div>
 
-        {{-- Encabezado con Perfil --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 flex flex-col md:flex-row items-center gap-6">
-            <div class="relative">
-                <div class="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600 border-4 border-white shadow-md overflow-hidden">
-                    @if($empleado->foto_path)
-                        <img src="{{ Storage::url($empleado->foto_path) }}" alt="{{ $empleado->nombre }}" class="w-full h-full object-cover">
-                    @else
-                        {{ substr($empleado->nombre, 0, 1) }}
-                    @endif
-                </div>
-                <div class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white {{ $empleado->es_activo ? 'bg-emerald-500' : 'bg-gray-400' }}"></div>
+    {{-- ALERTA INTELIGENTE DE FALTANTES --}}
+    @php
+        $faltantes = [];
+        if(empty($empleado->telefono)) $faltantes[] = 'Teléfono Celular';
+        if(empty($empleado->direccion)) $faltantes[] = 'Domicilio';
+        if(empty($empleado->contacto_emergencia_nombre)) $faltantes[] = 'Nombre Emergencia';
+        if(empty($empleado->contacto_emergencia_numero)) $faltantes[] = 'Tel. Emergencia';
+        
+        if($empleado->es_practicante) {
+            if(empty($empleado->curp)) $faltantes[] = 'CURP (Texto)';
+        } else {
+            if(empty($empleado->nss)) $faltantes[] = 'NSS';
+            if(empty($empleado->rfc)) $faltantes[] = 'RFC';
+            if(empty($empleado->curp)) $faltantes[] = 'CURP';
+        }
+    @endphp
+
+    @if(count($faltantes) > 0)
+    <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm animate-pulse">
+        <div class="flex items-start gap-4">
+            <div class="p-2 bg-red-100 rounded-full text-red-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
-            <div class="flex-1 text-center md:text-left">
-                <h1 class="text-2xl font-bold text-gray-900">{{ $empleado->nombre }} {{ $empleado->apellido_paterno }}</h1>
-                <p class="text-gray-500">{{ $empleado->posicion ?? 'Sin Puesto' }} - {{ $empleado->area ?? 'Sin Área' }}</p>
-                <div class="mt-2 flex flex-wrap justify-center md:justify-start gap-2">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        {{ $empleado->id_empleado ?? 'S/N' }}
-                    </span>
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                        Ingreso: {{ $empleado->created_at->format('d M Y') }}
-                    </span>
+            <div class="flex-1">
+                <h3 class="text-sm font-bold text-red-800">Acción Requerida: Faltan Datos en el Perfil</h3>
+                <p class="text-xs text-red-600 mt-1">Tu expediente está incompleto. Captura estos datos para llegar al 100%:</p>
+                <ul class="mt-2 list-disc list-inside text-xs text-red-700 font-medium grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    @foreach($faltantes as $falta)
+                        <li>{{ $falta }}</li>
+                    @endforeach
+                </ul>
+                <div class="mt-3">
+                    <button onclick="openEditModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow transition">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Completar Información Ahora
+                    </button>
                 </div>
             </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- BARRA DE PROGRESO --}}
+    @php 
+        $porcentaje = $empleado->porcentaje_expediente;
+        $color = $porcentaje < 50 ? 'bg-red-500' : ($porcentaje < 90 ? 'bg-yellow-500' : 'bg-green-500');
+        $textoColor = $porcentaje < 50 ? 'text-red-600' : ($porcentaje < 90 ? 'text-yellow-600' : 'text-green-600');
+    @endphp
+    <div class="mb-8 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-end mb-2">
+            <div>
+                <h3 class="font-semibold text-slate-800">Completitud del Expediente</h3>
+                <p class="text-xs text-slate-500">Evaluando requisitos para: 
+                    <strong class="text-slate-700">{{ $empleado->es_practicante ? 'Practicantes / Becarios' : 'Empleados de Nómina' }}</strong>
+                </p>
+            </div>
+            <span class="text-3xl font-bold {{ $textoColor }}">{{ $porcentaje }}%</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-3">
+            <div class="{{ $color }} h-3 rounded-full transition-all duration-1000 shadow-sm" style="width: {{ $porcentaje }}%"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {{-- COLUMNA IZQUIERDA: Herramientas --}}
+        <div class="lg:col-span-1 space-y-6">
             
-            {{-- Barra de Progreso (Simulada o Real) --}}
-            <div class="w-full md:w-48 bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full text-[10px] text-center text-white leading-4" style="width: {{ $empleado->porcentaje_expediente ?? '50' }}%">{{ $empleado->porcentaje_expediente ?? '50' }}%</div>
-            </div>
-        </div>
-
-        {{-- Navegación de Pestañas --}}
-        <div class="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 mb-6 overflow-x-auto">
-            @foreach(['general' => 'Información General', 'docs' => 'Documentos y Archivos'] as $key => $label)
-                <button @click="tab = '{{ $key }}'" 
-                    :class="{ 'bg-indigo-50 text-indigo-700 shadow-sm border-indigo-200': tab === '{{ $key }}', 'text-gray-500 hover:bg-gray-50': tab !== '{{ $key }}' }"
-                    class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap border border-transparent outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
-
-        {{-- CONTENIDO: INFORMACIÓN GENERAL (AQUÍ ESTÁ LA MAGIA) --}}
-        <div x-show="tab === 'general'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
+            {{-- Switch Tipo Empleado --}}
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-800">Detalles del Empleado</h3>
-                    <p class="text-sm text-gray-500">Información personal y de contacto importada.</p>
+                    <h4 class="text-sm font-bold text-slate-700">Tipo de Expediente</h4>
+                    <p class="text-[10px] text-slate-400">Define los documentos requeridos.</p>
                 </div>
-                
-                <div class="flex flex-wrap gap-2">
-                    {{-- Botón Importar Excel --}}
-                    <form action="{{ route('rh.expedientes.import-excel', $empleado->id) }}" method="POST" enctype="multipart/form-data" class="flex items-center">
-                        @csrf
-                        <label class="cursor-pointer inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 hover:bg-emerald-100 transition gap-2 shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span>Importar Formato ID (Excel)</span>
-                            <input type="file" name="archivo_excel" class="hidden" onchange="this.form.submit()">
-                        </label>
-                    </form>
-
-                    <a href="{{ route('rh.expedientes.edit', $empleado->id) }}" class="inline-flex items-center px-4 py-2 bg-white text-indigo-600 rounded-lg text-xs font-bold border border-indigo-200 hover:bg-indigo-50 transition gap-2 shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        Editar Manualmente
-                    </a>
-                </div>
+                <form action="{{ route('rh.expedientes.update', $empleado->id) }}" method="POST" id="form-toggle-tipo">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="toggle_practicante" value="1">
+                    <input type="hidden" name="es_practicante" value="0">
+                    
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="es_practicante" value="1" class="sr-only peer" onchange="document.getElementById('form-toggle-tipo').submit()" {{ $empleado->es_practicante ? 'checked' : '' }}>
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span class="ml-2 text-xs font-medium text-slate-600">{{ $empleado->es_practicante ? 'Practicante' : 'Empleado' }}</span>
+                    </label>
+                </form>
             </div>
 
-            {{-- GRID DE INFORMACIÓN --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
-                
-                {{-- Sección 1: Datos Personales Básicos --}}
-                <div>
-                    <h4 class="text-sm font-bold text-indigo-900 uppercase tracking-wide border-b border-indigo-100 pb-2 mb-4 flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        Datos Personales
-                    </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Nombre Completo</label>
-                            <p class="text-gray-900 font-medium">{{ $empleado->nombre }} {{ $empleado->apellido_paterno }} {{ $empleado->apellido_materno }}</p>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Correo Electrónico</label>
-                            <p class="text-gray-900 font-medium break-all">{{ $empleado->correo }}</p>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">RFC</label>
-                            <p class="text-gray-900 font-medium">{{ $empleado->rfc ?? '--' }}</p>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">CURP</label>
-                            <p class="text-gray-900 font-medium">{{ $empleado->curp ?? '--' }}</p>
-                        </div>
-                    </div>
+            {{-- Checklist Status --}}
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                    <h3 class="font-semibold text-slate-800 text-sm">Lista de Requisitos</h3>
                 </div>
-
-                {{-- Sección 2: Domicilio y Contacto --}}
-                <div>
-                    <h4 class="text-sm font-bold text-indigo-900 uppercase tracking-wide border-b border-indigo-100 pb-2 mb-4 flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Domicilio y Contacto
-                    </h4>
-                    <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        {{-- Dirección Completa --}}
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Dirección</label>
-                            <p class="text-gray-900 font-medium text-sm">{{ $empleado->direccion ?? 'Sin calle registrada' }}</p>
-                        </div>
-                        
-                        {{-- Ciudad, Estado, CP --}}
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Ciudad / Estado</label>
-                                <p class="text-gray-900 font-medium text-sm">
-                                    {{ $empleado->ciudad ?? '' }}
-                                    @if($empleado->ciudad && $empleado->estado_federativo), @endif
-                                    {{ $empleado->estado_federativo ?? '' }}
-                                    @if(!$empleado->ciudad && !$empleado->estado_federativo) -- @endif
-                                </p>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 uppercase font-bold block mb-1">C.P.</label>
-                                <span class="inline-block bg-white border border-gray-200 px-2 py-1 rounded text-sm font-mono text-gray-700">
-                                    {{ $empleado->codigo_postal ?? '----' }}
+                <div class="p-4 space-y-2">
+                    @foreach($checklistDocs as $reqDoc)
+                        @php
+                            $subido = $empleado->documentos->contains(function($doc) use ($reqDoc) {
+                                $kwd = Str::lower($reqDoc);
+                                if(Str::contains($kwd, 'titulo')) return Str::contains(Str::lower($doc->nombre), ['titulo', 'cedula', 'pasante']);
+                                if(Str::contains($kwd, 'nss')) return Str::contains(Str::lower($doc->nombre), ['nss', 'imss', 'seguro']);
+                                return Str::contains(Str::lower($doc->nombre), $kwd);
+                            });
+                        @endphp
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="{{ $subido ? 'text-slate-500 line-through' : 'text-slate-800 font-medium' }}">{{ $reqDoc }}</span>
+                            @if($subido)
+                                <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> OK
                                 </span>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-slate-200 my-2"></div>
-
-                        {{-- Teléfonos --}}
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs text-gray-400 uppercase font-bold block mb-1 flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                    Celular
-                                </label>
-                                <p class="text-indigo-600 font-bold text-sm">{{ $empleado->telefono ?? '--' }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 uppercase font-bold block mb-1 flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                                    Tel. Casa
-                                </label>
-                                <p class="text-gray-700 font-medium text-sm">{{ $empleado->telefono_casa ?? '--' }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Sección 3: Salud (Datos del Excel) --}}
-                <div>
-                    <h4 class="text-sm font-bold text-indigo-900 uppercase tracking-wide border-b border-indigo-100 pb-2 mb-4 flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                        Información Médica
-                    </h4>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Alergias</label>
-                            @if($empleado->alergias && strtolower($empleado->alergias) != 'no')
-                                <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-md">
-                                    <p class="text-red-700 font-bold text-sm">{{ $empleado->alergias }}</p>
-                                </div>
                             @else
-                                <p class="text-gray-500 italic text-sm">Niega alergias.</p>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Falta
+                                </span>
                             @endif
                         </div>
-                        <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold block mb-1">Enfermedades Crónicas</label>
-                            @if($empleado->enfermedades_cronicas && strtolower($empleado->enfermedades_cronicas) != 'no')
-                                <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-md">
-                                    <p class="text-amber-800 font-bold text-sm">{{ $empleado->enfermedades_cronicas }}</p>
-                                </div>
-                            @else
-                                <p class="text-gray-500 italic text-sm">Niega enfermedades crónicas.</p>
-                            @endif
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
+            </div>
 
-                {{-- Sección 4: Emergencia (Datos del Excel) --}}
-                <div>
-                    <h4 class="text-sm font-bold text-indigo-900 uppercase tracking-wide border-b border-indigo-100 pb-2 mb-4 flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        Contacto de Emergencia
-                    </h4>
-                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                        <div class="flex items-center mb-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-3">
-                                {{ substr($empleado->contacto_emergencia_nombre ?? '?', 0, 1) }}
-                            </div>
-                            <div>
-                                <p class="text-gray-900 font-bold text-sm">{{ $empleado->contacto_emergencia_nombre ?? 'No registrado' }}</p>
-                                <p class="text-indigo-600 text-xs font-semibold">{{ $empleado->contacto_emergencia_parentesco ?? 'Parentesco no especificado' }}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center text-sm text-gray-600 bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                            <span class="font-mono font-bold">{{ $empleado->contacto_emergencia_numero ?? '--' }}</span>
-                        </div>
-                    </div>
+            {{-- Carga Masiva --}}
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-indigo-900 flex items-center gap-2 text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Auto-Indexar Carpeta
+                    </h3>
+                    <span class="text-[10px] font-bold bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded">BETA</span>
                 </div>
+                <div class="relative group">
+                    <input type="file" id="folderInput" webkitdirectory directory multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-lg shadow transition flex justify-center items-center gap-2">
+                        Seleccionar Carpeta
+                    </button>
+                </div>
+                <div id="loading-indicator" class="hidden mt-3 text-center">
+                    <span class="flex items-center justify-center gap-2 text-xs font-bold text-indigo-800 animate-pulse">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Procesando...
+                    </span>
+                </div>
+                <ul id="results-list" class="mt-3 space-y-1 text-[10px] max-h-32 overflow-y-auto custom-scrollbar"></ul>
+            </div>
 
+            {{-- Carga Manual --}}
+            <div class="bg-blue-50 rounded-xl border border-blue-100 p-5 shadow-sm">
+                <h3 class="font-bold text-blue-900 mb-4 flex items-center gap-2 text-sm">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    Subir Manual
+                </h3>
+                <form action="{{ route('rh.expedientes.upload', $empleado->id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                    @csrf
+                    <div>
+                        <select name="nombre" class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5">
+                            <option value="">-- Seleccionar Requisito --</option>
+                            @foreach($checklistDocs as $doc)
+                                <option value="{{ $doc }}">{{ $doc }}</option>
+                            @endforeach
+                            <option value="Otro">Otro (Escribir manual)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select name="categoria" class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5">
+                            <option value="Identificación">Identificación</option>
+                            <option value="Legal">Legal / Contratos</option>
+                            <option value="Fiscal">Fiscal / IMSS</option>
+                            <option value="Académico">Académico</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <input type="file" name="documento" required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx" class="block w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"/>
+                    <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2 text-xs font-bold shadow hover:bg-blue-700 transition">Guardar</button>
+                </form>
+            </div>
+            
+             {{-- Importar Excel --}}
+             <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                 <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Formato ID</h4>
+                 <form action="{{ route('rh.expedientes.import-excel', $empleado->id) }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
+                    @csrf
+                    <input type="file" name="archivo_excel" required accept=".xlsx,.xls,.csv" class="block w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"/>
+                    <button type="submit" class="w-full px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded hover:bg-slate-700 transition">Subir Formato ID</button>
+                 </form>
             </div>
         </div>
 
-        {{-- CONTENIDO: DOCUMENTOS --}}
-        <div x-show="tab === 'docs'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {{-- Columna Izquierda: Formulario de Carga --}}
-                <div class="lg:col-span-1">
-                    <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 sticky top-4">
-                        <h3 class="font-bold text-indigo-900 mb-2 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            Subir Nuevo Documento
-                        </h3>
-                        
-                        @if(session('success'))
-                            <div class="bg-green-100 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-xs mb-4">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        <form action="{{ route('rh.expedientes.upload', $empleado->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4 mt-4">
-                            @csrf
-                            <div>
-                                <label class="block text-xs font-bold text-indigo-700 mb-1">Nombre del Archivo</label>
-                                <input type="text" name="nombre" required class="w-full rounded-lg border-indigo-200 text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: INE, Contrato 2025...">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-indigo-700 mb-1">Categoría</label>
-                                <select name="categoria" class="w-full rounded-lg border-indigo-200 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option>Identificación</option>
-                                    <option>Laboral / Contratos</option>
-                                    <option>Médico</option>
-                                    <option>Certificaciones</option>
-                                    <option>Otros</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-indigo-700 mb-1">Vencimiento (Opcional)</label>
-                                <input type="date" name="fecha_vencimiento" class="w-full rounded-lg border-indigo-200 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-                            <div>
-                                <input type="file" name="documento" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-200 file:text-indigo-700 hover:file:bg-indigo-300">
-                            </div>
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5">
-                                Guardar Documento
-                            </button>
-                        </form>
-                    </div>
+        {{-- COLUMNA DERECHA: Documentos --}}
+        <div class="lg:col-span-2 space-y-6">
+            {{-- Info Card Resumen --}}
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4 relative group">
+                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+                    <button onclick="openEditModal()" class="bg-blue-50 text-blue-600 p-1.5 rounded-lg border border-blue-100 hover:bg-blue-100" title="Editar Información">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
                 </div>
+                <div class="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                    <h3 class="font-semibold text-slate-800 text-sm">Resumen de Datos Capturados</h3>
+                </div>
+                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                     <div>
+                        <p class="font-bold text-slate-400">Domicilio</p>
+                        <p class="text-slate-800">{{ $empleado->direccion ?? 'NR' }}</p>
+                     </div>
+                     <div>
+                        <p class="font-bold text-slate-400">Teléfono</p>
+                        <p class="text-slate-800">{{ $empleado->telefono ?? 'NR' }}</p>
+                     </div>
+                     <div>
+                        <p class="font-bold text-slate-400">Emergencia</p>
+                        <p class="text-slate-800">{{ $empleado->contacto_emergencia_nombre ?? 'NR' }}</p>
+                        <p class="text-slate-500">{{ $empleado->contacto_emergencia_numero ?? '' }}</p>
+                     </div>
+                </div>
+            </div>
 
-                {{-- Columna Derecha: Lista de Archivos --}}
-                <div class="lg:col-span-2 space-y-6">
-                    @forelse($docsGrouped as $categoria => $docs)
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
-                                <span>{{ $categoria }}</span>
-                                <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{{ count($docs) }} archivos</span>
-                            </div>
-                            <div class="divide-y divide-gray-100">
-                                @foreach($docs as $doc)
-                                    <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition group">
-                                        <div class="flex items-center gap-3 overflow-hidden">
-                                            <div class="w-10 h-10 rounded-lg bg-red-50 flex-shrink-0 flex items-center justify-center text-red-500">
-                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                            </div>
-                                            <div class="min-w-0">
-                                                <p class="text-sm font-bold text-gray-800 truncate">{{ $doc->nombre }}</p>
-                                                <div class="flex items-center gap-2">
-                                                    <p class="text-xs text-gray-400">Subido: {{ $doc->created_at->format('d/m/Y') }}</p>
-                                                    @if($doc->fecha_vencimiento)
-                                                        @php 
-                                                            $vence = \Carbon\Carbon::parse($doc->fecha_vencimiento);
-                                                            $dias = now()->diffInDays($vence, false);
-                                                        @endphp
-                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded {{ $dias < 0 ? 'bg-gray-100 text-gray-500 line-through' : ($dias < 30 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600') }}">
-                                                            {{ $dias < 0 ? 'Vencido' : 'Vence en ' . round($dias) . ' días' }}
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </div>
+            @if($docsGrouped->isEmpty())
+                <div class="bg-white rounded-xl border-2 border-dashed border-slate-300 p-12 text-center h-64 flex flex-col items-center justify-center">
+                    <div class="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-10 h-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 012 2v-5a2 2 0 01-2-2H9a2 2 0 01-2-2v-5a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-900">Expediente vacío</h3>
+                    <p class="text-slate-500 mt-1 max-w-xs mx-auto text-sm">Sube documentos para comenzar.</p>
+                </div>
+            @else
+                @foreach($docsGrouped as $categoria => $docs)
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition duration-300">
+                        <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                                <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                                {{ $categoria }}
+                            </h3>
+                            <span class="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-500">{{ count($docs) }}</span>
+                        </div>
+                        <ul class="divide-y divide-slate-100">
+                            @foreach($docs as $doc)
+                                <li class="px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition group gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="bg-red-50 text-red-600 p-2 rounded-lg">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         </div>
-                                        <div class="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                            <a href="{{ Storage::url($doc->ruta_archivo) }}" target="_blank" class="p-2 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition shadow-sm" title="Ver / Descargar">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </a>
-                                            
-                                            <form action="{{ route('rh.expedientes.delete-doc', $doc->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este documento? Esta acción no se puede deshacer.');">
-                                                @csrf @method('DELETE')
-                                                <button class="p-2 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-600 hover:border-red-300 transition shadow-sm" title="Eliminar">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                </button>
-                                            </form>
+                                        <div>
+                                            <p class="text-sm font-bold text-slate-800">{{ $doc->nombre }}</p>
+                                            <p class="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                                <span>{{ $doc->created_at->format('d/m/Y') }}</span>
+                                                @if($doc->fecha_vencimiento)
+                                                    <span class="text-slate-300">•</span>
+                                                    <span class="{{ $doc->fecha_vencimiento->isPast() ? 'text-red-500 font-bold' : 'text-orange-500' }}">Vence: {{ $doc->fecha_vencimiento->format('d/m/Y') }}</span>
+                                                @endif
+                                            </p>
                                         </div>
                                     </div>
-                                @endforeach
+                                    <div class="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                                        <a href="{{ asset('storage/'.$doc->ruta_archivo) }}" target="_blank" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition shadow-sm">Ver</a>
+                                        <form action="{{ route('rh.expedientes.delete-doc', $doc->id) }}" method="POST" onsubmit="return confirm('¿Eliminar documento?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition shadow-sm">X</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+</main>
+
+{{-- MODAL DE EDICIÓN DE DATOS (FUSIÓN DEL EDIT) --}}
+<div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeEditModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        {{-- Modal Content --}}
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="flex justify-between items-center mb-5 border-b pb-2 border-slate-100">
+                    <h3 class="text-lg leading-6 font-bold text-slate-900" id="modal-title">Editar Información Completa</h3>
+                    <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <form method="POST" action="{{ route('rh.expedientes.update',$empleado) }}" id="editForm" class="space-y-6">
+                    @csrf @method('PUT')
+
+                    {{-- 1. Datos Corporativos --}}
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h4 class="text-xs font-bold text-blue-900 uppercase tracking-wider mb-3">Corporativo</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Nombre</label>
+                                <input type="text" value="{{ $empleado->nombre }}" disabled class="w-full rounded-lg border-slate-200 bg-slate-100 text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">ID Empleado</label>
+                                <input type="text" name="id_empleado" value="{{ $empleado->id_empleado }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-blue-500 focus:border-blue-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Puesto</label>
+                                <input type="text" name="posicion" value="{{ $empleado->posicion }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-blue-500 focus:border-blue-500" />
                             </div>
                         </div>
-                    @empty
-                        <div class="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
-                            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <p class="text-gray-500 font-medium">El expediente de documentos está vacío.</p>
-                            <p class="text-xs text-gray-400 mt-1">Usa el formulario de la izquierda para agregar archivos.</p>
-                        </div>
-                    @endforelse
-                </div>
+                    </div>
+
+                    {{-- 2. Datos Personales --}}
+                    <div>
+                         <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">Información Personal</h4>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Domicilio Completo</label>
+                                <input type="text" name="direccion" value="{{ $empleado->direccion }}" placeholder="Calle, Número, Colonia" class="w-full rounded-lg border-slate-300 text-xs focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Ciudad</label>
+                                <input type="text" name="ciudad" value="{{ $empleado->ciudad }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Teléfono Celular <span class="text-red-500">*</span></label>
+                                <input type="text" name="telefono" value="{{ $empleado->telefono }}" required class="w-full rounded-lg border-slate-300 text-xs focus:ring-indigo-500" />
+                            </div>
+                         </div>
+                    </div>
+
+                    {{-- 3. Fiscales --}}
+                    <div>
+                         <h4 class="text-xs font-bold text-green-900 uppercase tracking-wider mb-3">Datos Fiscales</h4>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">CURP <span class="text-red-500">*</span></label>
+                                <input type="text" name="curp" value="{{ $empleado->curp }}" required class="w-full rounded-lg border-slate-300 text-xs focus:ring-green-500 uppercase" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">RFC</label>
+                                <input type="text" name="rfc" value="{{ $empleado->rfc }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-green-500 uppercase" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">NSS</label>
+                                <input type="text" name="nss" value="{{ $empleado->nss }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-green-500" />
+                            </div>
+                         </div>
+                    </div>
+
+                    {{-- 4. Emergencia --}}
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                         <h4 class="text-xs font-bold text-red-900 uppercase tracking-wider mb-3">Emergencia & Salud</h4>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Contacto Emergencia</label>
+                                <input type="text" name="contacto_emergencia_nombre" value="{{ $empleado->contacto_emergencia_nombre }}" required class="w-full rounded-lg border-slate-300 text-xs focus:ring-red-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Teléfono Emergencia</label>
+                                <input type="text" name="contacto_emergencia_numero" value="{{ $empleado->contacto_emergencia_numero }}" required class="w-full rounded-lg border-slate-300 text-xs focus:ring-red-500" />
+                            </div>
+                             <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Alergias</label>
+                                <input type="text" name="alergias" value="{{ $empleado->alergias }}" class="w-full rounded-lg border-slate-300 text-xs focus:ring-red-500" />
+                            </div>
+                         </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-end gap-3">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow">Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
         </div>
-
     </div>
 </div>
+
+{{-- SCRIPTS (Modal + Carga Inteligente) --}}
+<script>
+    // --- LÓGICA DEL MODAL ---
+    function openEditModal() {
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    // --- LÓGICA DE CARGA INTELIGENTE ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const folderInput = document.getElementById('folderInput');
+        const resultsList = document.getElementById('results-list');
+        const loader = document.getElementById('loading-indicator');
+        
+        const reglas = [
+            { keys: ['ine', 'ife', 'identificacion', 'id_oficial'], name: 'INE', cat: 'Identificación' },
+            { keys: ['curp'], name: 'CURP', cat: 'Identificación' },
+            { keys: ['domicilio', 'agua', 'luz', 'cfe', 'predial'], name: 'Comprobante de Domicilio', cat: 'Identificación' },
+            { keys: ['nss', 'imss', 'seguro', 'social'], name: 'NSS', cat: 'Fiscal' },
+            { keys: ['rfc', 'csf', 'situacion', 'fiscal', 'constancia'], name: 'Constancia de Situacion Fiscal', cat: 'Fiscal' },
+            { keys: ['nacimiento', 'acta'], name: 'Acta de Nacimiento', cat: 'Identificación' },
+            { keys: ['titulo', 'cedula', 'profesional'], name: 'Titulo', cat: 'Académico' },
+            { keys: ['contrato', 'laboral'], name: 'Contrato', cat: 'Legal' },
+            { keys: ['cuenta', 'banco', 'clabe', 'santander', 'bbva'], name: 'Estado de Cuenta', cat: 'Administrativo' },
+            { keys: ['formato', 'ficha', 'ingreso', 'xls', 'xlsx'], name: 'Formato ID', cat: 'Interno' }
+        ];
+
+        folderInput.addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files).filter(f => !f.name.startsWith('.'));
+            if(files.length === 0) return;
+
+            if(!confirm(`Se encontraron ${files.length} archivos. ¿Procesar carga inteligente?`)) {
+                this.value = ''; return;
+            }
+
+            loader.classList.remove('hidden');
+            resultsList.innerHTML = '';
+            let subidos = 0;
+
+            for (let file of files) {
+                let filename = file.name.toLowerCase();
+                let match = reglas.find(r => r.keys.some(k => filename.includes(k)));
+
+                if (match) {
+                    // Si es Excel, usamos la ruta especial de importación
+                    if(match.name === 'Formato ID' && (filename.endsWith('xls') || filename.endsWith('xlsx'))) {
+                         const exito = await subirExcel(file);
+                         agregarLog(file.name, 'Formato ID (Procesado)', exito);
+                         if(exito) subidos++;
+                    } else {
+                         const exito = await subirArchivo(file, match.name, match.cat);
+                         agregarLog(file.name, match.name, exito);
+                         if(exito) subidos++;
+                    }
+                } else {
+                    agregarLog(file.name, 'No reconocido', false);
+                }
+            }
+
+            loader.classList.add('hidden');
+            setTimeout(() => { 
+                alert(`Proceso finalizado. ${subidos} documentos importados.`);
+                window.location.reload(); 
+            }, 500);
+        });
+
+        // Subida normal de PDF/Img
+        async function subirArchivo(file, nombreDoc, categoria) {
+            let formData = new FormData();
+            formData.append('documento', file);
+            formData.append('nombre', nombreDoc);
+            formData.append('categoria', categoria);
+            formData.append('_token', '{{ csrf_token() }}'); 
+            try {
+                let r = await fetch("{{ route('rh.expedientes.upload', $empleado->id) }}", { method: 'POST', body: formData });
+                return r.ok;
+            } catch (e) { return false; }
+        }
+
+        // Subida especial de Excel
+        async function subirExcel(file) {
+            let formData = new FormData();
+            formData.append('archivo_excel', file);
+            formData.append('_token', '{{ csrf_token() }}');
+            try {
+                let r = await fetch("{{ route('rh.expedientes.import-excel', $empleado->id) }}", { method: 'POST', body: formData });
+                return r.ok;
+            } catch (e) { return false; }
+        }
+
+        function agregarLog(archivo, resultado, exito) {
+            const li = document.createElement('li');
+            li.className = exito ? 'text-green-600 flex items-center gap-2' : 'text-slate-400 flex items-center gap-2 italic opacity-60';
+            li.innerHTML = `<span class="${exito?'bg-green-100 text-green-700':'bg-slate-100 text-slate-500'} px-1 rounded font-bold text-[9px]">${exito?'OK':'SKIP'}</span> <span class="truncate max-w-[150px]">${archivo}</span> ➜ ${resultado}`;
+            resultsList.prepend(li);
+        }
+    });
+</script>
 @endsection

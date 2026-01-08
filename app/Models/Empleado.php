@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Empleado extends Model
 {
@@ -20,6 +21,7 @@ class Empleado extends Model
         'es_activo',
         'subdepartamento_id',
         'posicion',
+        'es_practicante',
         'telefono',
         'direccion',
         'correo_personal',
@@ -27,31 +29,22 @@ class Empleado extends Model
         'supervisor_id',
         'ciudad', 'estado_federativo', 'codigo_postal', 'telefono_casa',
         'alergias', 'enfermedades_cronicas',
-        'contacto_emergencia_nombre', 'contacto_emergencia_numero', 'contacto_emergencia_parentesco'
+        'contacto_emergencia_nombre', 'contacto_emergencia_numero', 'contacto_emergencia_parentesco',
+        'rfc', 'curp', 'nss'
     ];
 
     // --- RELACIONES ---
 
-    /**
-     * Relación: Un empleado pertenece a un Usuario de sistema (Login).
-     * Esta es la que faltaba y causaba el error.
-     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Relación: Un empleado tiene un supervisor (Jefe).
-     */
     public function supervisor()
     {
         return $this->belongsTo(Empleado::class, 'supervisor_id');
     }
 
-    /**
-     * Relación: Un empleado (Jefe) tiene muchos subordinados.
-     */
     public function subordinados()
     {
         return $this->hasMany(Empleado::class, 'supervisor_id');
@@ -64,21 +57,93 @@ class Empleado extends Model
 
     public function documentos()
     {
-        return $this->hasMany(\App\Models\EmpleadoDocumento::class); // Asegúrate de crear este modelo también
+        return $this->hasMany(\App\Models\EmpleadoDocumento::class);
     }
 
-    // Helper para calcular completitud (Opcional pero pro)
+    // --- LÓGICA DE NEGOCIO CENTRALIZADA ---
+
+    /**
+     * Devuelve la lista de documentos requeridos según el tipo de empleado.
+     * Esta es la "Fuente de la Verdad".
+     */
+    public static function getRequisitos($esPracticante)
+    {
+        if ($esPracticante) {
+            return [
+                'INE', 
+                'CURP', 
+                'Comprobante de Domicilio', 
+                'Estado de Cuenta', 
+                'Formato ID', 
+                'Contrato'
+            ];
+        }
+
+        return [
+            'INE', 
+            'CURP', 
+            'Comprobante de Domicilio', 
+            'NSS',    
+            'Titulo', // O Carta Pasante / Cedula
+            'Constancia de Situacion Fiscal', 
+            'Formato ID', 
+            'Contrato'
+        ];
+    }
+
+    /**
+     * Calcula el porcentaje de completitud del expediente (0-100).
+     */
     public function getPorcentajeExpedienteAttribute()
     {
-        $puntos = 0;
-        $total = 5; // Digamos que pedimos 5 cosas obligatorias
-        
-        if ($this->rfc) $puntos++;
-        if ($this->nss) $puntos++;
-        if ($this->documentos()->where('categoria', 'Identificación')->exists()) $puntos++;
-        if ($this->documentos()->where('categoria', 'Contrato')->exists()) $puntos++;
-        // ... más lógica
-        
-        return ($puntos / $total) * 100;
+        // 1. Datos obligatorios en Base de Datos
+        $datosRequeridos = [
+            'nombre', 'correo', 'telefono', 'direccion', 
+            'contacto_emergencia_numero', 'contacto_emergencia_nombre'
+        ];
+
+        // 2. Obtener lista de docs desde la función centralizada
+        $docsRequeridos = self::getRequisitos($this->es_practicante);
+
+        // 3. Reglas extra de BD según tipo
+        if ($this->es_practicante) {
+            $datosRequeridos[] = 'curp';
+        } else {
+            $datosRequeridos[] = 'nss';
+            $datosRequeridos[] = 'rfc';
+            $datosRequeridos[] = 'curp';
+        }
+
+        $puntosPosibles = count($docsRequeridos) + count($datosRequeridos);
+        $puntosObtenidos = 0;
+
+        // A) Calcular puntos por Información en BD
+        foreach ($datosRequeridos as $campo) {
+            if (!empty($this->$campo)) {
+                $puntosObtenidos++;
+            }
+        }
+
+        // B) Calcular puntos por Documentos Subidos
+        $docsSubidos = $this->documentos->map(function ($doc) {
+            return Str::lower($doc->nombre);
+        });
+
+        foreach ($docsRequeridos as $req) {
+            $reqLower = Str::lower($req);
+            
+            // Lógica de coincidencia flexible (Fuzzy Matching)
+            if ($req === 'Titulo') {
+                if ($docsSubidos->contains(fn($d) => Str::contains($d, ['titulo', 'cedula', 'pasante', 'profesional']))) $puntosObtenidos++;
+            } elseif ($req === 'NSS') {
+                if ($docsSubidos->contains(fn($d) => Str::contains($d, ['nss', 'imss', 'seguro']))) $puntosObtenidos++;
+            } else {
+                if ($docsSubidos->contains(fn($d) => Str::contains($d, $reqLower))) $puntosObtenidos++;
+            }
+        }
+
+        if ($puntosPosibles == 0) return 0;
+
+        return round(($puntosObtenidos / $puntosPosibles) * 100);
     }
 }
