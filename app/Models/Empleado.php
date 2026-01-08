@@ -21,7 +21,7 @@ class Empleado extends Model
         'es_activo',
         'subdepartamento_id',
         'posicion',
-        'es_practicante', // <--- NUEVO CAMPO
+        'es_practicante',
         'telefono',
         'direccion',
         'correo_personal',
@@ -60,23 +60,16 @@ class Empleado extends Model
         return $this->hasMany(\App\Models\EmpleadoDocumento::class);
     }
 
-    // --- LÓGICA DE COMPLETITUD DE EXPEDIENTE ---
+    // --- LÓGICA DE NEGOCIO CENTRALIZADA ---
 
     /**
-     * Calcula el porcentaje de completitud del expediente (0-100).
+     * Devuelve la lista de documentos requeridos según el tipo de empleado.
+     * Esta es la "Fuente de la Verdad".
      */
-    public function getPorcentajeExpedienteAttribute()
+    public static function getRequisitos($esPracticante)
     {
-        // 1. Validar Información General (Base de Datos)
-        $datosRequeridos = [
-            'nombre', 'correo', 'telefono', 'direccion', 
-            'contacto_emergencia_numero', 'contacto_emergencia_nombre'
-        ];
-
-        // 2. Definir Documentos Requeridos basado en la bandera es_practicante
-        if ($this->es_practicante) {
-            // Reglas para PRACTICANTES
-            $docsRequeridos = [
+        if ($esPracticante) {
+            return [
                 'INE', 
                 'CURP', 
                 'Comprobante de Domicilio', 
@@ -84,21 +77,38 @@ class Empleado extends Model
                 'Formato ID', 
                 'Contrato'
             ];
-            // Dato extra requerido en BD
+        }
+
+        return [
+            'INE', 
+            'CURP', 
+            'Comprobante de Domicilio', 
+            'NSS',    
+            'Titulo', // O Carta Pasante / Cedula
+            'Constancia de Situacion Fiscal', 
+            'Formato ID', 
+            'Contrato'
+        ];
+    }
+
+    /**
+     * Calcula el porcentaje de completitud del expediente (0-100).
+     */
+    public function getPorcentajeExpedienteAttribute()
+    {
+        // 1. Datos obligatorios en Base de Datos
+        $datosRequeridos = [
+            'nombre', 'correo', 'telefono', 'direccion', 
+            'contacto_emergencia_numero', 'contacto_emergencia_nombre'
+        ];
+
+        // 2. Obtener lista de docs desde la función centralizada
+        $docsRequeridos = self::getRequisitos($this->es_practicante);
+
+        // 3. Reglas extra de BD según tipo
+        if ($this->es_practicante) {
             $datosRequeridos[] = 'curp';
         } else {
-            // Reglas para EMPLEADOS (Nómina)
-            $docsRequeridos = [
-                'INE', 
-                'CURP', 
-                'Comprobante de Domicilio', 
-                'NSS',    
-                'Titulo', // O Carta Pasante / Cedula
-                'Constancia de Situacion Fiscal', 
-                'Formato ID', 
-                'Contrato'
-            ];
-            // Datos extra requeridos en BD
             $datosRequeridos[] = 'nss';
             $datosRequeridos[] = 'rfc';
             $datosRequeridos[] = 'curp';
@@ -122,7 +132,7 @@ class Empleado extends Model
         foreach ($docsRequeridos as $req) {
             $reqLower = Str::lower($req);
             
-            // Lógica de coincidencia flexible
+            // Lógica de coincidencia flexible (Fuzzy Matching)
             if ($req === 'Titulo') {
                 if ($docsSubidos->contains(fn($d) => Str::contains($d, ['titulo', 'cedula', 'pasante', 'profesional']))) $puntosObtenidos++;
             } elseif ($req === 'NSS') {
