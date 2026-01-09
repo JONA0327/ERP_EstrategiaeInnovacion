@@ -13,6 +13,7 @@ class Activity extends Model
     protected $fillable = [
         'user_id', 
         'area', 
+        'cliente',        // <--- CAMPO NUEVO AGREGADO
         'tipo_actividad', 
         'nombre_actividad', 
         'prioridad', 

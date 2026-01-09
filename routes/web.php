@@ -314,6 +314,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('activities', ActivityController::class);
+    // --- Rutas para el Planificador Semanal ---
+    Route::post('/activities/batch', [App\Http\Controllers\ActivityController::class, 'storeBatch'])->name('activities.storeBatch');
+    Route::put('/activities/{id}/approve', [App\Http\Controllers\ActivityController::class, 'approve'])->name('activities.approve');
+    Route::delete('/activities/{id}/reject', [App\Http\Controllers\ActivityController::class, 'reject'])->name('activities.reject');
+    Route::put('/activities/{id}/start', [App\Http\Controllers\ActivityController::class, 'start'])->name('activities.start');
 });
 
 // En routes/web.php
