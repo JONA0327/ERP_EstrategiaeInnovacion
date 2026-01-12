@@ -71,8 +71,9 @@ class ActivityController extends Controller
             $query->whereIn('user_id', $idsVisibles);
         }
 
-        // Ocultamos lo que es "futuro" (Planeado) o "limbo" (Por Aprobar)
-        $query->whereNotIn('estatus', ['Por Aprobar', 'Planeado']);
+        // Ocultamos lo que es "futuro" (Planeado), "limbo" (Por Aprobar) o "Rechazado" (para no ensuciar tabla)
+        // El rechazado se ve en la alerta superior
+        $query->whereNotIn('estatus', ['Por Aprobar', 'Planeado', 'Rechazado']);
 
         // Filtros
         if ($request->search) {
@@ -94,8 +95,11 @@ class ActivityController extends Controller
 
         $activities = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
+        // Buscamos las rechazadas APARTE para pasarlas a la vista
+        $misRechazos = Activity::where('user_id', $user->id)->where('estatus', 'Rechazado')->get();
+
         // KPIs (Solo cuentan lo Real)
-        $kpiQuery = Activity::query()->whereNotIn('estatus', ['Por Aprobar', 'Planeado']);
+        $kpiQuery = Activity::query()->whereNotIn('estatus', ['Por Aprobar', 'Planeado', 'Rechazado']);
         if (!$esDireccion) $kpiQuery->whereIn('user_id', $idsVisibles);
 
         $kpis = [
@@ -108,15 +112,15 @@ class ActivityController extends Controller
 
         $users = $esDireccion ? User::orderBy('name')->get() : User::whereIn('id', $idsVisibles)->orderBy('name')->get();
 
-        return view('activities.index', compact('activities', 'kpis', 'users', 'esDireccion', 'esSupervisor', 'necesitaCliente', 'pendingApprovals', 'plannedActivities'));
+        return view('activities.index', compact('activities', 'kpis', 'users', 'esDireccion', 'esSupervisor', 'necesitaCliente', 'pendingApprovals', 'plannedActivities', 'misRechazos'));
     }
 
     // --- GUARDAR PLAN SEMANAL (LOTE) ---
+    // --- GUARDAR PLAN SEMANAL (LOTE) ---
     public function storeBatch(Request $request)
     {
-        // 1. REGLA DE NEGOCIO: Solo Lunes antes de las 11:00 AM
+        // 1. REGLA DE NEGOCIO: Solo Lunes antes de las 11:00 AM (Excepto Dirección)
         $now = now();
-        // Permitimos a Dirección saltarse la regla por si acaso
         $esDireccion = Auth::user()->empleado && str_contains(strtolower(Auth::user()->empleado->posicion), 'direccion');
 
         if ( (!$now->isMonday() || $now->hour >= 11) && !$esDireccion ) {
@@ -131,26 +135,31 @@ class ActivityController extends Controller
         $fechaBase = Carbon::parse($request->semana_inicio);
         $count = 0;
 
-        // Recorremos los días (Array index 0=Lunes, 4=Viernes)
         foreach ($request->plan as $diaIndex => $tareasDelDia) {
-            
+            // diaIndex 0 = Lunes, 1 = Martes, etc.
             $fechaReal = $fechaBase->copy()->addDays($diaIndex);
-
+            
             if (!is_array($tareasDelDia)) continue;
 
             foreach ($tareasDelDia as $tarea) {
+                // Si la descripción está vacía, saltamos
                 if (empty($tarea['actividad'])) continue;
 
                 Activity::create([
                     'user_id'          => Auth::id(),
-                    'area'             => $tarea['area'] ?? 'Anexo 24',
+                    'area'             => $tarea['area'] ?? 'Anexo 24', // O el área por defecto de tu empresa
                     'cliente'          => $tarea['cliente'] ?? null,
-                    'tipo_actividad'   => $tarea['tipo'] ?? 'General', // Toma el tipo del input
+                    'tipo_actividad'   => $tarea['tipo'] ?? 'General', 
                     'nombre_actividad' => $tarea['actividad'],
-                    'fecha_inicio'     => now(),
-                    'fecha_compromiso' => $fechaReal,
+                    
+                    // --- NUEVOS CAMPOS DE TIEMPO ---
+                    'hora_inicio_programada' => $tarea['start_time'] ?? null, 
+                    'hora_fin_programada'    => $tarea['end_time'] ?? null,
+                    
+                    'fecha_inicio'     => now(), // Fecha de registro
+                    'fecha_compromiso' => $fechaReal, // Fecha planeada de ejecución
                     'prioridad'        => 'Media',
-                    'estatus'          => 'Por Aprobar', // Se va al Limbo
+                    'estatus'          => 'Por Aprobar', 
                     'metrico'          => 1,
                 ]);
                 $count++;
@@ -161,7 +170,6 @@ class ActivityController extends Controller
             ->with('success', "Se enviaron $count actividades a revisión de tu supervisor.");
     }
 
-    // --- APROBAR ACTIVIDAD (Pasa a Planeado) ---
     public function approve(Request $request, $id)
     {
         $activity = Activity::findOrFail($id);
@@ -169,8 +177,9 @@ class ActivityController extends Controller
         if($request->filled('ajuste_nombre')) $activity->nombre_actividad = $request->ajuste_nombre;
         if($request->filled('ajuste_prio')) $activity->prioridad = $request->ajuste_prio;
 
-        // CAMBIO: Al aprobar, pasa a "Planeado". Aún no es reporte oficial.
         $activity->estatus = 'Planeado'; 
+        // Limpiamos rechazo previo si existía
+        $activity->motivo_rechazo = null; 
         $activity->save();
 
         ActivityHistory::create([
@@ -183,14 +192,11 @@ class ActivityController extends Controller
         return back()->with('success', 'Actividad aprobada e integrada a los objetivos del usuario.');
     }
 
-    // --- INICIAR ACTIVIDAD (Pasa a Real) ---
     public function start($id)
     {
         $activity = Activity::findOrFail($id);
-        
-        // Al iniciar, entra al Reporte Diario
         $activity->estatus = 'En proceso';
-        $activity->fecha_inicio = now(); // Seteamos inicio real
+        $activity->fecha_inicio = now(); 
         $activity->save();
 
         ActivityHistory::create([
@@ -203,11 +209,26 @@ class ActivityController extends Controller
         return back()->with('success', 'Actividad activada en tu bitácora diaria.');
     }
 
-    public function reject($id)
+    // --- NUEVO: RECHAZAR CON MOTIVO (NO BORRAR) ---
+    public function reject(Request $request, $id)
     {
+        $request->validate([
+            'motivo' => 'required|string|min:3'
+        ]);
+
         $activity = Activity::findOrFail($id);
-        $activity->forceDelete();
-        return back()->with('warning', 'La actividad fue rechazada y eliminada.');
+        $activity->estatus = 'Rechazado';
+        $activity->motivo_rechazo = $request->motivo;
+        $activity->save();
+
+        ActivityHistory::create([
+            'activity_id' => $activity->id,
+            'user_id' => Auth::id(),
+            'action' => 'rejected', // Asegúrate de manejar este string si lo usas en la vista
+            'details' => 'Rechazado: ' . $request->motivo
+        ]);
+
+        return back()->with('warning', 'La actividad fue enviada de regreso al usuario para corrección.');
     }
 
     public function store(Request $request)
@@ -247,6 +268,17 @@ class ActivityController extends Controller
         $originalData = $activity->only(['estatus', 'prioridad', 'comentarios', 'cliente']);
         $activity->fill($request->except(['evidencia']));
 
+        // --- LÓGICA DE CORRECCIÓN DE RECHAZO ---
+        if ($activity->estatus === 'Rechazado') {
+            // Si el usuario edita una rechazada, la devolvemos a "Por Aprobar"
+            $activity->estatus = 'Por Aprobar';
+            // Guardamos un historial específico
+            ActivityHistory::create([
+                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated', 
+                'details' => 'Corrección realizada tras rechazo'
+            ]);
+        }
+
         if (in_array($activity->estatus, ['En proceso', 'En blanco', 'Retardo'])) {
             $activity->fecha_final = null;
             $activity->resultado_dias = null;
@@ -271,19 +303,12 @@ class ActivityController extends Controller
             ]);
         }
 
-        if ($activity->isDirty('estatus')) {
+        if ($activity->isDirty('estatus') && $activity->estatus !== 'Por Aprobar') { // Evitamos duplicar log si ya lo manejamos arriba
             ActivityHistory::create([
                 'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
                 'field' => 'estatus', 'old_value' => $originalData['estatus'], 'new_value' => $activity->estatus
             ]);
             if ($activity->estatus == 'Completado') $activity->fecha_final = now();
-        }
-
-        if ($activity->isDirty('prioridad')) {
-            ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
-                'field' => 'prioridad', 'old_value' => $originalData['prioridad'], 'new_value' => $activity->prioridad
-            ]);
         }
         
         if ($request->comentarios && $request->comentarios !== $originalData['comentarios']) {

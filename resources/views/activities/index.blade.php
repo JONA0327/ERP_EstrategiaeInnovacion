@@ -6,118 +6,194 @@
 <div class="min-h-screen bg-slate-50/50 py-8" x-data="{ showFilters: false }">
     <div class="max-w-[98%] mx-auto space-y-6">
         
-        {{-- HEADER PRINCIPAL --}}
+        {{-- HEADER PRINCIPAL CON RELOJ JS Y BLOQUEO AUTOMÁTICO --}}
         <div class="flex flex-col md:flex-row justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Tablero de Actividades</h1>
                 <p class="text-xs text-slate-500 mt-1">Gestión operativa y seguimiento de compromisos</p>
             </div>
             
-            {{-- BOTÓN PLANIFICADOR (Con Restricción de Horario) --}}
             <div class="flex gap-3 mt-4 md:mt-0 items-center">
                 @if($necesitaCliente)
                     @php
+                        // Variables PHP iniciales para renderizado server-side
                         $now = now();
-                        // REGLA: Lunes antes de las 11:00 AM (00:00 - 10:59)
                         $esTiempoDePlanear = $now->isMonday() && $now->hour < 11;
-                        if(isset($esDireccion) && $esDireccion) $esTiempoDePlanear = true; // Dirección siempre puede
+                        if(isset($esDireccion) && $esDireccion) $esTiempoDePlanear = true; 
                     @endphp
 
-                    @if($esTiempoDePlanear)
+                    {{-- Contenedor de Botones (Controlado por JS) --}}
+                    <div id="planning-controls" data-is-admin="{{ (isset($esDireccion) && $esDireccion) ? 'true' : 'false' }}">
+                        
                         {{-- Botón Activo --}}
-                        <button onclick="openPlanModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 flex items-center gap-2 transition transform hover:scale-105 animate-pulse">
+                        <button id="btn-planificar" onclick="openPlanModal()" class="{{ $esTiempoDePlanear ? '' : 'hidden' }} bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 flex items-center gap-2 transition transform hover:scale-105 animate-pulse">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             Planificar Semana
                         </button>
-                    @else
+
                         {{-- Botón Bloqueado --}}
-                        <div class="group relative">
+                        <div id="btn-bloqueado" class="group relative {{ $esTiempoDePlanear ? 'hidden' : '' }}">
                             <button disabled class="bg-slate-200 text-slate-400 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-not-allowed border border-slate-300">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                 Planificación Cerrada
                             </button>
                             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] text-center p-2 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none z-20 shadow-xl">
                                 Solo disponible los Lunes antes de las 11:00 AM.
-                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                             </div>
                         </div>
-                    @endif
+                    </div>
                 @endif
 
                 <div class="text-right hidden lg:block mr-4 border-l pl-4 border-slate-200">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Hoy</p>
-                    <p class="text-sm font-bold text-indigo-600">{{ now()->isoFormat('D MMM, YYYY · h:mm A') }}</p>
+                    <p id="live-clock" class="text-sm font-bold text-indigo-600 capitalize">
+                        {{ now()->isoFormat('D MMM, YYYY · h:mm A') }}
+                    </p>
                 </div>
             </div>
         </div>
 
-        {{-- 1. ZONA DE APROBACIÓN (SOLO SUPERVISORES) --}}
+        {{-- ALERTA DE RECHAZOS (PARA EL EMPLEADO) --}}
+        @if(isset($misRechazos) && $misRechazos->count() > 0)
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl shadow-sm animate-fade-in-down mb-2">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                </div>
+                <div class="ml-3 w-full">
+                    <h3 class="text-sm font-bold text-red-800">Atención: Tienes actividades rechazadas</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            @foreach($misRechazos as $rej)
+                                <li class="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+                                    <span><span class="font-bold">{{ $rej->nombre_actividad }}:</span> {{ $rej->motivo_rechazo ?? 'Sin motivo' }}</span>
+                                    <button onclick="openNotes({{ $rej->id }}, '{{ addslashes($rej->nombre_actividad) }}', 'Rechazado', '{{ $rej->evidencia_path ? \Storage::url($rej->evidencia_path) : '' }}', '{{ addslashes($rej->cliente ?? '') }}', '{{ $rej->fecha_compromiso->format('Y-m-d') }}', '{{ $rej->hora_inicio_programada }}', '{{ $rej->hora_fin_programada }}', '{{ addslashes($rej->motivo_rechazo) }}')" 
+                                            class="text-xs bg-white border border-red-200 px-2 py-0.5 rounded text-red-600 font-bold hover:bg-red-100 transition shadow-sm">
+                                        Corregir ahora
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- 1. ZONA DE APROBACIÓN (SOLO SUPERVISORES) - CON CARDS Y MODAL --}}
         @if(($esSupervisor || $esDireccion) && !empty($pendingApprovals) && count($pendingApprovals) > 0)
-        <div class="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-r-xl shadow-sm animate-fade-in-down mb-6">
+        <div class="mb-6">
             <div class="flex items-center gap-3 mb-4">
                 <div class="p-2 bg-orange-100 text-orange-600 rounded-full">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-orange-900">Revisiones Pendientes</h3>
-                    <p class="text-xs text-orange-700">Tu equipo ha enviado planes semanales. Revisa, ajusta tiempos si es necesario y aprueba.</p>
+                    <h3 class="text-lg font-bold text-slate-800">Revisiones Pendientes</h3>
+                    <p class="text-xs text-slate-500">Haz clic en la tarjeta del empleado para revisar su plan detallado.</p>
                 </div>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($pendingApprovals as $userId => $userActivities)
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-orange-100">
-                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-3">
-                            <span class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
-                                {{ substr($userActivities->first()->user->name, 0, 2) }}
-                            </span>
-                            <h4 class="font-bold text-slate-700 text-sm">{{ $userActivities->first()->user->name }}</h4>
-                            <span class="text-[10px] text-slate-400 bg-slate-50 px-2 py-1 rounded-lg ml-auto">{{ count($userActivities) }} tareas</span>
-                        </div>
-
-                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                            @foreach($userActivities as $act)
-                                <div class="relative bg-slate-50 p-3 rounded-lg border border-slate-200 hover:border-orange-300 transition group">
-                                    <form action="{{ route('activities.approve', $act->id) }}" method="POST">
-                                        @csrf @method('PUT')
-                                        
-                                        {{-- Campo de Edición Rápida (Nombre) --}}
-                                        <div class="mb-2">
-                                            <input type="text" name="ajuste_nombre" value="{{ $act->nombre_actividad }}" class="w-full bg-transparent border-0 border-b border-slate-300 focus:border-orange-500 focus:ring-0 text-xs px-0 font-bold text-slate-700 leading-tight" title="Editar nombre">
-                                            <div class="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-1">
-                                                <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> {{ $act->fecha_compromiso->format('D d') }}</span>
-                                                @if($act->cliente)
-                                                    <span class="bg-yellow-100 text-yellow-700 px-1.5 rounded flex items-center gap-1 font-semibold">{{ $act->cliente }}</span>
-                                                @endif
-                                                @if($act->tipo_actividad)
-                                                    <span class="bg-indigo-50 text-indigo-600 px-1.5 rounded">{{ $act->tipo_actividad }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="flex items-center justify-between gap-2">
-                                            {{-- Selector de Prioridad --}}
-                                            <select name="ajuste_prio" class="border-none bg-white rounded shadow-sm text-[10px] font-bold text-slate-600 focus:ring-orange-500 py-1 pl-2 pr-6 cursor-pointer">
-                                                <option value="Alta" {{ $act->prioridad == 'Alta' ? 'selected' : '' }}>Alta</option>
-                                                <option value="Media" {{ $act->prioridad == 'Media' ? 'selected' : '' }}>Media</option>
-                                                <option value="Baja" {{ $act->prioridad == 'Baja' ? 'selected' : '' }}>Baja</option>
-                                            </select>
-
-                                            <div class="flex gap-1">
-                                                <button type="submit" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1" title="Aprobar">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> OK
-                                                </button>
-                                                <button type="button" onclick="submitReject({{ $act->id }})" class="bg-white text-red-500 hover:bg-red-50 border border-red-200 px-2 py-1 rounded text-[10px] font-bold transition" title="Rechazar">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <form id="reject-form-{{ $act->id }}" action="{{ route('activities.reject', $act->id) }}" method="POST" class="hidden">
-                                        @csrf @method('DELETE')
-                                    </form>
+                    @php $user = $userActivities->first()->user; @endphp
+                    
+                    <div x-data="{ openModal: false }" class="relative">
+                        {{-- CARD EMPLEADO --}}
+                        <button @click="openModal = true" class="w-full bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-orange-300 transition text-left group">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 border border-slate-200 group-hover:bg-orange-50 group-hover:text-orange-600 transition">
+                                        {{ substr($user->name, 0, 2) }}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-700 text-sm group-hover:text-orange-700 transition">{{ Str::limit($user->name, 18) }}</h4>
+                                        <span class="text-[10px] text-slate-400">{{ $user->empleado->posicion ?? 'Colaborador' }}</span>
+                                    </div>
                                 </div>
-                            @endforeach
+                                <span class="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-full border border-orange-200">
+                                    {{ count($userActivities) }}
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-orange-400 h-1.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 text-right">Click para revisar plan</p>
+                        </button>
+
+                        {{-- MODAL REVISIÓN --}}
+                        <div x-show="openModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+                            <div class="flex items-center justify-center min-h-screen px-4 text-center sm:block sm:p-0">
+                                <div class="fixed inset-0 transition-opacity bg-slate-900 bg-opacity-75" @click="openModal = false"></div>
+
+                                <div class="inline-block align-bottom bg-slate-50 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+                                    
+                                    <div class="bg-white px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                                        <h3 class="text-lg font-bold text-slate-800">Plan Semanal: <span class="text-indigo-600">{{ $user->name }}</span></h3>
+                                        <button @click="openModal = false" class="text-slate-400 hover:text-red-500"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                    </div>
+
+                                    <div class="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                        <div class="grid grid-cols-1 gap-3">
+                                            @foreach($userActivities as $act)
+                                                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-start md:items-center justify-between" x-data="{ rejecting: false }">
+                                                    
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded uppercase">{{ $act->fecha_compromiso->format('l d') }}</span>
+                                                            {{-- Mostramos hora si existe --}}
+                                                            @if($act->hora_inicio_programada)
+                                                                <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                                                                    ⏰ {{ \Carbon\Carbon::parse($act->hora_inicio_programada)->format('H:i') }} - {{ \Carbon\Carbon::parse($act->hora_fin_programada)->format('H:i') }}
+                                                                </span>
+                                                            @endif
+                                                            @if($act->prioridad == 'Alta') <span class="text-[10px] font-bold text-red-600">🔥 Alta</span> @endif
+                                                            <span class="text-[10px] text-slate-400 border border-slate-100 px-1.5 rounded">{{ $act->area }}</span>
+                                                        </div>
+                                                        <p class="text-sm font-bold text-slate-800">{{ $act->nombre_actividad }}</p>
+                                                        <p class="text-xs text-slate-500 mt-0.5">
+                                                            @if($act->cliente) <span class="font-semibold text-slate-600">{{ $act->cliente }}</span> · @endif
+                                                            {{ $act->tipo_actividad }}
+                                                        </p>
+                                                    </div>
+
+                                                    <div class="flex items-center gap-2 min-w-[200px] justify-end">
+                                                        {{-- Aprobar --}}
+                                                        <form action="{{ route('activities.approve', $act->id) }}" method="POST" x-show="!rejecting">
+                                                            @csrf @method('PUT')
+                                                            <input type="hidden" name="ajuste_prio" value="{{ $act->prioridad }}">
+                                                            <button type="submit" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition">
+                                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                                Aprobar
+                                                            </button>
+                                                        </form>
+
+                                                        {{-- Botón Rechazar --}}
+                                                        <button type="button" @click="rejecting = true" x-show="!rejecting" class="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                                            Rechazar...
+                                                        </button>
+
+                                                        {{-- Form Rechazar --}}
+                                                        <form action="{{ route('activities.reject', $act->id) }}" method="POST" class="flex items-center gap-2 w-full animate-fade-in-down" x-show="rejecting" style="display: none;">
+                                                            @csrf @method('PUT') 
+                                                            <input type="text" name="motivo" required placeholder="Motivo..." class="w-full text-xs border-red-300 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm" style="min-width: 150px;">
+                                                            <button type="submit" class="bg-red-600 text-white hover:bg-red-700 p-1.5 rounded-lg shadow-sm" title="Confirmar">
+                                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                            </button>
+                                                            <button type="button" @click="rejecting = false" class="text-slate-400 hover:text-slate-600 p-1" title="Cancelar">
+                                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-slate-100 px-4 py-3 border-t border-slate-200 text-right">
+                                        <button @click="openModal = false" class="text-sm text-slate-500 hover:text-slate-700 font-bold">Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -125,56 +201,96 @@
         </div>
         @endif
 
-        {{-- 2. ZONA: MIS OBJETIVOS SEMANALES (PLAN APROBADO) --}}
+        {{-- 2. ZONA: MIS OBJETIVOS SEMANALES (AGRUPADO POR DÍA) --}}
         @if(isset($plannedActivities) && $plannedActivities->count() > 0)
-        <div class="bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                        Mis Objetivos de la Semana
-                    </h3>
-                    <p class="text-xs text-slate-500">Estas son tus intenciones aprobadas. Dale "Iniciar" cuando realmente comiences a trabajar en ellas para pasarlas a tu reporte.</p>
-                </div>
-
-                {{-- BARRA DE ADHERENCIA --}}
-                <div class="bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100 flex items-center gap-3">
-                    <span class="text-xs font-bold text-indigo-700">Pendientes por iniciar:</span>
-                    <span class="bg-white text-indigo-800 text-xs font-black px-2 py-0.5 rounded shadow-sm">{{ $plannedActivities->count() }}</span>
-                </div>
+        <div class="bg-white rounded-xl shadow-sm border border-indigo-100 p-4 mb-6 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-4 border-b border-indigo-50 pb-2">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Mis Objetivos de la Semana
+                </h3>
+                <span class="bg-indigo-50 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-indigo-100">{{ $plannedActivities->count() }} Actividades</span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                @foreach($plannedActivities as $plan)
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 hover:shadow-md transition group">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">{{ $plan->fecha_compromiso->format('l d') }}</span>
-                            @if($plan->prioridad == 'Alta')
-                                <span class="text-[10px] text-red-600 font-bold flex items-center gap-1">🔥 Alta</span>
-                            @endif
-                        </div>
+            @php
+                // Agrupamos lógicamente por fecha para pintar columnas
+                $semana = [];
+                $inicioSemana = now()->startOfWeek();
+                for($i=0; $i<5; $i++) {
+                    $dia = $inicioSemana->copy()->addDays($i);
+                    $key = $dia->format('Y-m-d');
+                    // Filtramos las actividades de este día
+                    $actividadesDelDia = $plannedActivities->filter(function($act) use ($dia) {
+                        return $act->fecha_compromiso->isSameDay($dia);
+                    });
+                    $semana[] = [
+                        'fecha' => $dia,
+                        'nombre' => $dia->isoFormat('dddd'), // lunes, martes...
+                        'actividades' => $actividadesDelDia
+                    ];
+                }
+            @endphp
+
+            {{-- GRID DE 5 COLUMNAS (LUN-VIE) --}}
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                @foreach($semana as $diaInfo)
+                    <div class="flex flex-col gap-2 pt-2 md:pt-0 md:px-2 first:pl-0 last:pr-0">
                         
-                        <h4 class="text-xs font-bold text-slate-700 mb-1 line-clamp-2" title="{{ $plan->nombre_actividad }}">{{ $plan->nombre_actividad }}</h4>
-                        
-                        <div class="flex flex-col gap-1 mb-3">
-                            @if($plan->cliente)
-                                <p class="text-[10px] text-slate-500 flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                    {{ Str::limit($plan->cliente, 20) }}
-                                </p>
-                            @endif
-                            <span class="text-[9px] text-slate-400 italic">{{ $plan->tipo_actividad }}</span>
+                        {{-- CABECERA DEL DÍA --}}
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase {{ $diaInfo['fecha']->isToday() ? 'text-indigo-600' : 'text-slate-400' }}">
+                                {{ $diaInfo['nombre'] }}
+                            </span>
+                            <span class="text-[9px] font-bold text-slate-300">{{ $diaInfo['fecha']->format('d') }}</span>
                         </div>
 
-                        <form action="{{ route('activities.start', $plan->id) }}" method="POST">
-                            @csrf @method('PUT')
-                            <button type="submit" class="w-full bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 text-xs font-bold py-1.5 rounded-md transition shadow-sm flex items-center justify-center gap-2 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Iniciar Tarea
-                            </button>
-                        </form>
+                        {{-- LISTA DE TARJETAS DEL DÍA --}}
+                        @if($diaInfo['actividades']->count() > 0)
+                            <div class="space-y-2">
+                                @foreach($diaInfo['actividades'] as $plan)
+                                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 hover:shadow-md transition group relative">
+                                        
+                                        {{-- Puntito de Prioridad --}}
+                                        @if($plan->prioridad == 'Alta')
+                                            <div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" title="Alta Prioridad"></div>
+                                        @endif
+
+                                        {{-- Hora --}}
+                                        @if($plan->hora_inicio_programada)
+                                            <div class="text-[9px] font-mono font-bold text-indigo-400 mb-0.5">
+                                                {{ \Carbon\Carbon::parse($plan->hora_inicio_programada)->format('H:i') }}
+                                            </div>
+                                        @endif
+
+                                        {{-- Título --}}
+                                        <h4 class="text-[10px] leading-snug font-bold text-slate-700 mb-1 line-clamp-2" title="{{ $plan->nombre_actividad }}">
+                                            {{ $plan->nombre_actividad }}
+                                        </h4>
+
+                                        {{-- Cliente --}}
+                                        @if($plan->cliente)
+                                            <p class="text-[9px] text-slate-400 truncate mb-1.5" title="{{ $plan->cliente }}">
+                                                {{ Str::limit($plan->cliente, 15) }}
+                                            </p>
+                                        @endif
+
+                                        {{-- Botón Iniciar --}}
+                                        <form action="{{ route('activities.start', $plan->id) }}" method="POST">
+                                            @csrf @method('PUT')
+                                            <button type="submit" class="w-full bg-white border border-indigo-100 hover:border-indigo-400 text-indigo-600 text-[9px] font-bold py-0.5 rounded shadow-sm flex items-center justify-center gap-1 transition-colors">
+                                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+                                                Iniciar
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            {{-- ESPACIO VACÍO --}}
+                            <div class="h-16 rounded-lg border border-dashed border-slate-100 flex items-center justify-center">
+                                <span class="text-[9px] text-slate-300 italic">Libre</span>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -252,7 +368,6 @@
                             @endforeach
                         </select>
                     @endif
-                    <button type="submit" class="hidden">Buscar</button>
                 </form>
             </div>
 
@@ -364,7 +479,7 @@
             </form>
         </div>
 
-        {{-- 6. TABLA --}}
+        {{-- 6. TABLA PRINCIPAL --}}
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-xs text-left">
@@ -395,7 +510,6 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse($activities as $act)
                         <tr class="hover:bg-indigo-50/40 transition-colors group {{ str_contains($act->estatus, 'Completado') ? 'bg-slate-50/80' : '' }}">
-                            
                             <td class="px-3 py-3 text-center">
                                 @if($act->user_id === Auth::id())
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[9px] border border-indigo-200 shadow-sm">YO</span>
@@ -405,17 +519,14 @@
                                     </span>
                                 @endif
                             </td>
-
                             <td class="px-3 py-3 text-slate-600 font-medium leading-tight text-[11px]">
                                 {{ Str::limit($act->user->empleado->supervisor->nombre ?? '-', 25) }}
                             </td>
-
                             <td class="px-3 py-3 text-center">
                                 <span class="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 text-[9px] font-bold uppercase tracking-wide">
                                     {{ Str::limit($act->area ?? 'N/A', 10) }}
                                 </span>
                             </td>
-
                             @if($necesitaCliente)
                                 <td class="px-3 py-3 text-slate-700 font-bold text-[10px]">
                                     @if($act->cliente)
@@ -427,11 +538,9 @@
                                     @endif
                                 </td>
                             @endif
-
                             <td class="px-3 py-3 text-slate-500">
                                 <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200 text-[10px]">{{ Str::limit($act->tipo_actividad, 12) }}</span>
                             </td>
-                            
                             <td class="px-3 py-3 text-center">
                                 @php
                                     $puedeEditar = false;
@@ -440,7 +549,6 @@
                                     if (isset($esDireccion) && $esDireccion) { $puedeEditar = true; }
                                     elseif ($miEmpleado && $suEmpleado && $miEmpleado->id === $suEmpleado->supervisor_id) { $puedeEditar = true; }
                                     elseif ($act->user_id === Auth::id()) { $puedeEditar = true; } 
-
                                     $prioColor = match($act->prioridad) { 
                                         'Alta'=>'bg-red-50 text-red-700 border-red-200', 
                                         'Media'=>'bg-yellow-50 text-yellow-700 border-yellow-200', 
@@ -458,35 +566,27 @@
                                     </select>
                                 </form>
                             </td>
-
                             <td class="px-3 py-3 text-slate-800 font-medium leading-snug break-words">
                                 <div class="flex items-start gap-2">
-                                    {{-- Distintivo Visual: Planeado vs Bomberazo --}}
-                                    @php
-                                        $esPlaneada = $act->historial->contains('action', 'approved');
-                                    @endphp
-
+                                    @php $esPlaneada = $act->historial->contains('action', 'approved'); @endphp
                                     @if($esPlaneada)
                                         <span class="mt-0.5 text-indigo-500" title="Actividad Planeada y Aprobada">
                                             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg>
                                         </span>
                                     @else
-                                        <span class="mt-0.5 text-orange-400" title="Actividad Extra / No Planeada (Bomberazo)">
+                                        <span class="mt-0.5 text-orange-400" title="Actividad Extra / Bomberazo">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>
                                         </span>
                                     @endif
-
                                     <span>{{ $act->nombre_actividad }}</span>
                                 </div>
                             </td>
-
                             <td class="px-3 py-3 text-center text-slate-500">{{ $act->fecha_inicio ? $act->fecha_inicio->format('d/m') : '-' }}</td>
                             <td class="px-3 py-3 text-center text-indigo-700 font-bold">{{ $act->fecha_compromiso ? $act->fecha_compromiso->format('d/m') : '-' }}</td>
                             <td class="px-3 py-3 text-center text-slate-500">{{ $act->fecha_final ? $act->fecha_final->format('d/m') : '-' }}</td>
                             <td class="px-2 py-3 text-center bg-slate-50 font-mono text-slate-600 border-l border-slate-100">{{ $act->metrico }}</td>
                             <td class="px-2 py-3 text-center bg-slate-50 font-mono font-bold border-l border-slate-100 {{ ($act->resultado_dias > $act->metrico) ? 'text-red-600' : 'text-emerald-600' }}">{{ $act->resultado_dias ?? '-' }}</td>
                             <td class="px-2 py-3 text-center bg-slate-50 font-bold text-slate-800 border-l border-slate-100">{{ isset($act->porcentaje) ? number_format($act->porcentaje, 0).'%' : '-' }}</td>
-
                             <td class="px-3 py-3">
                                 @php
                                     $statusStyle = match($act->estatus) {
@@ -501,16 +601,14 @@
                                     {{ $act->estatus }}
                                 </div>
                             </td>
-
                             <td class="px-2 py-3 text-center">
-                                <button @click="openNotes({{ $act->id }}, '{{ addslashes($act->nombre_actividad) }}', '{{ $act->estatus }}', '{{ $act->evidencia_path ? \Storage::url($act->evidencia_path) : '' }}', '{{ addslashes($act->cliente ?? '') }}')" 
+                                <button @click="openNotes({{ $act->id }}, '{{ addslashes($act->nombre_actividad) }}', '{{ $act->estatus }}', '{{ $act->evidencia_path ? \Storage::url($act->evidencia_path) : '' }}', '{{ addslashes($act->cliente ?? '') }}', '{{ $act->fecha_compromiso->format('Y-m-d') }}', '{{ $act->hora_inicio_programada }}', '{{ $act->hora_fin_programada }}', '{{ addslashes($act->motivo_rechazo ?? '') }}')" 
                                         class="text-indigo-600 hover:text-white hover:bg-indigo-600 border border-indigo-200 bg-indigo-50 p-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1 mx-auto" title="Editar">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     @if($act->evidencia_path) <span class="text-[9px] font-bold">📎</span> @endif
                                 </button>
                                 <textarea id="notes-data-{{ $act->id }}" class="hidden">{{ $act->comentarios }}</textarea>
                             </td>
-
                             <td class="px-2 py-3 text-center">
                                 <button @click="openHistory({{ $act->id }}, '{{ addslashes($act->nombre_actividad) }}')" 
                                         class="text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 transition-colors" title="Ver Historial">
@@ -532,18 +630,14 @@
     </div>
 </div>
 
-{{-- MODAL DE PLANIFICADOR SEMANAL (ESTILO CALENDARIO KANBAN) --}}
+{{-- MODAL DE PLANIFICADOR --}}
 @if($necesitaCliente)
 <div id="planModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-slate-900 bg-opacity-90 transition-opacity backdrop-blur-sm" onclick="closePlanModal()"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
         <div class="relative inline-block align-bottom bg-slate-100 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-[95%] w-full border border-slate-200">
             <form action="{{ route('activities.storeBatch') }}" method="POST">
                 @csrf
-                
-                {{-- Header del Modal --}}
                 <div class="bg-indigo-700 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
@@ -552,39 +646,28 @@
                         </h3>
                         <p class="text-indigo-200 text-xs mt-1">Define tus objetivos por día. Estas actividades requieren aprobación.</p>
                     </div>
-                    
                     <div class="flex items-center gap-2 bg-indigo-800 p-1.5 rounded-lg border border-indigo-600">
                         <label class="text-indigo-200 text-xs font-bold pl-2">Semana del:</label>
                         <input type="date" name="semana_inicio" id="weekPicker" class="bg-indigo-600 border-none text-white text-sm rounded font-bold focus:ring-0" 
                                value="{{ now()->startOfWeek()->format('Y-m-d') }}" onchange="updateWeekLabels()">
                     </div>
                 </div>
-                
-                {{-- GRID SEMANAL --}}
                 <div class="p-4 overflow-x-auto bg-slate-100">
                     <div class="min-w-[1000px] grid grid-cols-5 gap-4">
-                        
                         @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] as $index => $dia)
                         <div class="flex flex-col h-full">
-                            {{-- Cabecera del Día --}}
                             <div class="bg-white border-b-4 border-indigo-500 rounded-t-lg p-3 text-center shadow-sm mb-2">
                                 <h4 class="text-sm font-black text-slate-700 uppercase">{{ $dia }}</h4>
                                 <span class="text-xs text-indigo-600 font-bold" id="label-date-{{ $index }}">--/--</span>
                             </div>
-
-                            {{-- Contenedor de Tarjetas --}}
                             <div class="flex-1 bg-slate-200/60 rounded-lg p-2 space-y-2 min-h-[300px] border border-slate-200 shadow-inner" id="container-day-{{ $index }}"></div>
-
-                            {{-- Botón Agregar --}}
                             <button type="button" onclick="addTaskCard({{ $index }})" class="mt-2 w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition flex justify-center items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Agregar Tarea
                             </button>
                         </div>
                         @endforeach
-
                     </div>
                 </div>
-
                 <div class="bg-white px-6 py-4 flex justify-end items-center gap-3 border-t border-slate-200">
                     <button type="button" onclick="closePlanModal()" class="px-5 py-2.5 border border-slate-300 rounded-xl text-slate-600 text-sm font-bold hover:bg-slate-50 transition">Cancelar</button>
                     <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition transform hover:-translate-y-0.5">
@@ -600,48 +683,106 @@
 {{-- MODAL DE EDICIÓN Y NOTAS --}}
 <div id="notesModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeNotes()"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity backdrop-blur-sm" onclick="closeNotes()"></div>
+        
+        <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-200">
             <form id="notesForm" method="POST" enctype="multipart/form-data">
                 @csrf @method('PUT')
+                
+                {{-- HEADER DEL MODAL --}}
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg leading-6 font-bold text-gray-900 mb-2">Actualizar Actividad</h3>
-                    <p class="text-sm text-gray-500 mb-4" id="modal-activity-name">...</p>
-                    
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg leading-6 font-bold text-slate-800">Detalles de Actividad</h3>
+                        <button type="button" onclick="closeNotes()" class="text-slate-400 hover:text-slate-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    {{-- ALERTA DE RECHAZO (Solo visible si es rechazada) --}}
+                    <div id="modal-rejection-alert" class="hidden mb-4 bg-red-50 border-l-4 border-red-500 p-3 rounded-r text-sm">
+                        <p class="font-bold text-red-800 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            Actividad Rechazada
+                        </p>
+                        <p class="text-red-700 mt-1">Motivo: <span id="modal-rejection-reason" class="font-semibold italic">...</span></p>
+                        <p class="text-xs text-red-500 mt-2">Corrige los datos abajo y guarda para enviar a revisión nuevamente.</p>
+                    </div>
+
                     <div class="space-y-4">
+                        {{-- NOMBRE DE ACTIVIDAD (Input) --}}
+                        <div>
+                            <label id="label-activity-name" class="block text-xs font-bold text-slate-500 uppercase mb-1">Actividad</label>
+                            <textarea name="nombre_actividad" id="modal-activity-name" rows="2" 
+                                class="w-full text-sm rounded-lg border-transparent bg-slate-100 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 transition shadow-sm resize-none" 
+                                placeholder="Describe la actividad..."></textarea>
+                        </div>
+
+                        {{-- CAMPOS DE PLANIFICACIÓN (Fecha y Horas) - Ocultos por defecto --}}
+                        <div id="modal-planning-fields" class="hidden grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-100 animate-fade-in-down">
+                            <div class="col-span-2">
+                                <p class="text-[10px] font-bold text-indigo-600 uppercase mb-2 border-b border-indigo-100 pb-1">Corregir Planificación</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Fecha Compromiso</label>
+                                <input type="date" name="fecha_compromiso" id="modal-fecha" class="w-full text-xs rounded-md border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Inicio</label>
+                                    <input type="time" name="hora_inicio_programada" id="modal-hora-inicio" class="w-full text-xs rounded-md border-slate-300 shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Fin</label>
+                                    <input type="time" name="hora_fin_programada" id="modal-hora-fin" class="w-full text-xs rounded-md border-slate-300 shadow-sm">
+                                </div>
+                            </div>
+                        </div>
+
                         @if($necesitaCliente)
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                                <input type="text" name="cliente" id="modal-cliente" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente</label>
+                                <input type="text" name="cliente" id="modal-cliente" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                         @endif
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Estatus</label>
-                            <select name="estatus" id="modal-estatus" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+
+                        {{-- ESTATUS (Oculto si es rechazo) --}}
+                        <div id="div-estatus-selector">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Estatus Actual</label>
+                            <select name="estatus" id="modal-estatus" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="En blanco">Pendiente (En blanco)</option>
                                 <option value="En proceso">En proceso</option>
                                 <option value="Completado">Completado</option>
                                 <option value="Retardo">Retardo</option>
                             </select>
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios</label>
-                            <textarea name="comentarios" id="modal-comentarios" rows="3" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Comentarios / Bitácora</label>
+                            <textarea name="comentarios" id="modal-comentarios" rows="3" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Agrega notas sobre el avance..."></textarea>
                         </div>
-                        <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                            <label class="block text-sm font-medium text-indigo-900 mb-2">Evidencia</label>
-                            <input type="file" name="evidencia" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
-                            <div id="modal-evidencia-link" class="mt-2 hidden">
-                                <a href="#" target="_blank" class="text-xs text-indigo-600 hover:underline font-bold">Ver evidencia actual</a>
+
+                        <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex items-center justify-between">
+                            <div>
+                                <label class="block text-xs font-bold text-indigo-800 mb-1">Evidencia (Opcional)</label>
+                                <input type="file" name="evidencia" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-white file:text-indigo-700 hover:file:bg-indigo-100">
+                            </div>
+                            <div id="modal-evidencia-link" class="hidden">
+                                <a href="#" target="_blank" class="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline bg-white px-2 py-1 rounded shadow-sm">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    Ver Actual
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Guardar</button>
-                    <button type="button" onclick="closeNotes()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+
+                <div class="bg-slate-50 px-4 py-3 sm:px-6 flex flex-row-reverse gap-2 border-t border-slate-200">
+                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                        Guardar Cambios
+                    </button>
+                    <button type="button" onclick="closeNotes()" class="inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition">
+                        Cancelar
+                    </button>
                 </div>
             </form>
         </div>
@@ -652,7 +793,6 @@
 <div id="historyModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeHistory()"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
             <div class="bg-indigo-600 px-4 py-3 flex justify-between items-center shadow-md z-10 relative">
                 <h3 class="text-lg leading-6 font-bold text-white">Historial</h3>
@@ -671,103 +811,204 @@
 
 {{-- SCRIPTS --}}
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ejecutar inmediatamente y luego cada segundo
+        updateLiveClock();
+        setInterval(updateLiveClock, 1000);
+    });
+
+    function updateLiveClock() {
+        const now = new Date();
+        const options = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+        
+        const dia = now.getDate();
+        const mes = now.toLocaleString('es-MX', { month: 'short' });
+        const anio = now.getFullYear();
+        const hora = now.toLocaleString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true });
+        
+        const clockElement = document.getElementById('live-clock');
+        if(clockElement) {
+            clockElement.innerText = `${dia} ${mes}, ${anio} · ${hora}`;
+        }
+
+        // LÓGICA DE BLOQUEO EN TIEMPO REAL
+        const controls = document.getElementById('planning-controls');
+        if (!controls) return;
+
+        const isAdmin = controls.getAttribute('data-is-admin') === 'true';
+        if (isAdmin) return;
+
+        const day = now.getDay(); // 1 = Lunes
+        const hour = now.getHours(); 
+
+        const esLunes = (day === 1);
+        const antesDeLas11 = (hour < 11);
+        const esTiempoDePlanear = esLunes && antesDeLas11;
+
+        const btnPlanificar = document.getElementById('btn-planificar');
+        const btnBloqueado = document.getElementById('btn-bloqueado');
+
+        if (esTiempoDePlanear) {
+            if(btnPlanificar) btnPlanificar.classList.remove('hidden');
+            if(btnBloqueado) btnBloqueado.classList.add('hidden');
+        } else {
+            if(btnPlanificar) btnPlanificar.classList.add('hidden');
+            if(btnBloqueado) btnBloqueado.classList.remove('hidden');
+            
+            const modal = document.getElementById('planModal');
+            if(modal && !modal.classList.contains('hidden')) {
+                closePlanModal();
+                alert('El tiempo de planificación ha terminado.');
+            }
+        }
+    }
+
     // --- PLANIFICADOR SEMANAL ---
-    
     function openPlanModal() {
         document.getElementById('planModal').classList.remove('hidden');
         updateWeekLabels();
-        
-        // Agregar tarjetas vacías si está limpio para animar la UI
         for(let i=0; i<5; i++) {
             const container = document.getElementById(`container-day-${i}`);
             if(container && container.children.length === 0) addTaskCard(i);
         }
     }
-
-    function closePlanModal() { 
-        document.getElementById('planModal').classList.add('hidden'); 
-    }
+    function closePlanModal() { document.getElementById('planModal').classList.add('hidden'); }
 
     function updateWeekLabels() {
         const input = document.getElementById('weekPicker').value;
         if(!input) return;
-        
         const lunes = new Date(input + 'T00:00:00'); 
-        
         for(let i=0; i<5; i++) {
             const dia = new Date(lunes);
             dia.setDate(lunes.getDate() + i);
-            
             const label = dia.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
             const labelEl = document.getElementById(`label-date-${i}`);
             if(labelEl) labelEl.innerText = label;
         }
     }
 
+    // FUNCIÓN ACTUALIZADA CON TIEMPO DE INICIO Y FIN
     function addTaskCard(dayIndex) {
         const container = document.getElementById(`container-day-${dayIndex}`);
         const cardIndex = container.children.length + Math.floor(Math.random() * 10000);
-
         const card = document.createElement('div');
+        
         card.className = "bg-white p-2.5 rounded-lg shadow-sm border border-slate-200 relative group animate-fade-in-up hover:shadow-md transition";
         
         card.innerHTML = `
             <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition cursor-pointer z-10 bg-white rounded-full p-0.5 shadow-sm" onclick="this.parentElement.remove()">
                 <svg class="w-3 h-3 text-red-400 hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </div>
-            
-            <div class="space-y-1.5">
+            <div class="space-y-2">
                 <input type="hidden" name="plan[${dayIndex}][${cardIndex}][area]" value="Anexo 24">
+                
+                <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-100">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase">Inicio</label>
+                        <input type="time" name="plan[${dayIndex}][${cardIndex}][start_time]" 
+                               class="w-full text-[10px] font-bold border-0 bg-transparent p-0 focus:ring-0 text-slate-700 h-4" required>
+                    </div>
+                    <div class="text-slate-300">-</div>
+                    <div class="flex-1 text-right">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase">Fin</label>
+                        <input type="time" name="plan[${dayIndex}][${cardIndex}][end_time]" 
+                               class="w-full text-[10px] font-bold border-0 bg-transparent p-0 focus:ring-0 text-slate-700 h-4 text-right" required>
+                    </div>
+                </div>
 
                 <div class="flex gap-2">
                     <div class="flex-1">
-                        <input type="text" name="plan[${dayIndex}][${cardIndex}][cliente]" 
-                            class="w-full text-[9px] font-bold border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 bg-transparent placeholder-slate-400 text-indigo-700" 
-                            placeholder="Cliente (Opcional)">
+                        <input type="text" name="plan[${dayIndex}][${cardIndex}][cliente]" class="w-full text-[9px] font-bold border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 bg-transparent placeholder-slate-400 text-indigo-700" placeholder="Cliente (Opcional)">
                     </div>
                     <div class="w-1/3">
-                        <input type="text" name="plan[${dayIndex}][${cardIndex}][tipo]" 
-                            class="w-full text-[9px] font-bold border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 bg-transparent placeholder-slate-400 text-slate-600 text-right" 
-                            placeholder="Tipo (Ej. Proyecto)">
+                        <input type="text" name="plan[${dayIndex}][${cardIndex}][tipo]" class="w-full text-[9px] font-bold border-0 border-b border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 bg-transparent placeholder-slate-400 text-slate-600 text-right" placeholder="Tipo">
                     </div>
                 </div>
-                
-                <textarea name="plan[${dayIndex}][${cardIndex}][actividad]" rows="2"
-                          class="w-full text-[10px] border-0 bg-slate-50 rounded p-1.5 focus:ring-1 focus:ring-indigo-500 placeholder-slate-400 resize-none leading-snug text-slate-700" 
-                          placeholder="Descripción de la actividad..."></textarea>
+
+                <textarea name="plan[${dayIndex}][${cardIndex}][actividad]" rows="2" class="w-full text-[10px] border-0 bg-slate-50 rounded p-1.5 focus:ring-1 focus:ring-indigo-500 placeholder-slate-400 resize-none leading-snug text-slate-700" placeholder="Descripción de la actividad..." required></textarea>
             </div>
         `;
-        
         container.appendChild(card);
-        const txt = card.querySelector('textarea');
-        if(txt) txt.focus();
-    }
-
-    // --- RECHAZAR ACTIVIDAD ---
-    function submitReject(id) {
-        if(confirm('¿Estás seguro de RECHAZAR esta actividad? Se eliminará permanentemente.')) {
-            document.getElementById('reject-form-' + id).submit();
-        }
+        const timeInput = card.querySelector('input[type="time"]');
+        if(timeInput) timeInput.focus();
     }
 
     // --- MODALES GENERALES ---
-    function openNotes(id, name, estatus, evidenciaUrl, cliente) {
-        document.getElementById('notesForm').action = "/activities/" + id;
-        document.getElementById('modal-activity-name').innerText = name;
+    // Actualizamos la firma para recibir todos los datos de planificación
+    function openNotes(id, name, estatus, evidenciaUrl, cliente, fecha, horaInicio, horaFin, motivoRechazo) {
+        const form = document.getElementById('notesForm');
+        form.action = "/activities/" + id;
+        
+        // 1. Llenar campos básicos
+        document.getElementById('modal-activity-name').value = name;
         document.getElementById('modal-estatus').value = estatus;
         
         const clientInput = document.getElementById('modal-cliente');
         if(clientInput) clientInput.value = cliente || '';
-        
+
+        // 2. Llenar campos de planificación (NUEVO)
+        document.getElementById('modal-fecha').value = fecha || '';
+        document.getElementById('modal-hora-inicio').value = horaInicio || '';
+        document.getElementById('modal-hora-fin').value = horaFin || '';
+
+        // 3. Manejo de Comentarios Previos
         var currentNote = document.getElementById('notes-data-' + id);
         if(currentNote) document.getElementById('modal-comentarios').value = currentNote.value;
         
+        // 4. Manejo de Evidencia
         const linkDiv = document.getElementById('modal-evidencia-link');
         const linkTag = linkDiv.querySelector('a');
-        if(evidenciaUrl) { linkTag.href = evidenciaUrl; linkDiv.classList.remove('hidden'); } 
-        else { linkDiv.classList.add('hidden'); }
+        if(evidenciaUrl) { 
+            linkTag.href = evidenciaUrl; 
+            linkDiv.classList.remove('hidden'); 
+        } else { 
+            linkDiv.classList.add('hidden'); 
+        }
+
+        // 5. LÓGICA DE MODO "CORRECCIÓN" vs "AVANCE"
+        const divRechazo = document.getElementById('modal-rejection-alert');
+        const txtMotivo = document.getElementById('modal-rejection-reason');
+        const containerPlanning = document.getElementById('modal-planning-fields');
+        const labelName = document.getElementById('label-activity-name');
+
+        if (estatus === 'Rechazado') {
+            // MODO CORRECCIÓN: Mostramos alerta roja y habilitamos campos de planificación
+            divRechazo.classList.remove('hidden');
+            txtMotivo.innerText = motivoRechazo || 'Sin motivo especificado.';
+            
+            containerPlanning.classList.remove('hidden'); // Mostrar inputs de hora/fecha
+            
+            // Hacemos el nombre editable y notorio
+            document.getElementById('modal-activity-name').classList.remove('bg-gray-100', 'border-transparent');
+            document.getElementById('modal-activity-name').classList.add('bg-white', 'border-gray-300');
+            document.getElementById('modal-activity-name').readOnly = false;
+            
+            labelName.innerText = "Corregir Nombre de la Actividad:";
+            labelName.classList.add('text-red-700', 'font-bold');
+
+            // Ocultamos el selector de estatus (se auto-pondrá en Por Aprobar al guardar)
+            document.getElementById('div-estatus-selector').classList.add('hidden');
+
+        } else {
+            // MODO NORMAL: Ocultamos alerta y protegemos planificación
+            divRechazo.classList.add('hidden');
+            containerPlanning.classList.add('hidden'); // Ocultar inputs extra para no saturar
+            
+            // Nombre solo lectura
+            document.getElementById('modal-activity-name').classList.add('bg-gray-100', 'border-transparent');
+            document.getElementById('modal-activity-name').classList.remove('bg-white', 'border-gray-300');
+            document.getElementById('modal-activity-name').readOnly = true;
+            
+            labelName.innerText = "Actividad:";
+            labelName.classList.remove('text-red-700', 'font-bold');
+
+            // Mostramos selector de estatus normal
+            document.getElementById('div-estatus-selector').classList.remove('hidden');
+        }
+
         document.getElementById('notesModal').classList.remove('hidden');
     }
+
     function closeNotes() { document.getElementById('notesModal').classList.add('hidden'); }
 
     function openHistory(id, title) {
@@ -796,6 +1037,7 @@
                 const userName = log.user ? log.user.name : 'Sistema';
                 let contentHtml = log.action === 'created' ? '<span class="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded text-xs">✨ Creada</span>' : log.details || `Modificó <b>${log.field}</b>`;
                 if(log.action === 'approved') contentHtml = '<span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-xs">✅ Aprobada por Supervisor</span>';
+                if(log.action === 'rejected') contentHtml = '<span class="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs">🛑 Rechazada: ' + (log.details.replace('Rechazado: ', '') || '') + '</span>';
                 if(log.action === 'updated' && log.details && log.details.includes('Inició')) contentHtml = '<span class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs">▶️ Iniciada (Agregada a Reporte)</span>';
 
                 const item = `<li class="mb-6 ml-6"><span class="absolute flex items-center justify-center w-8 h-8 bg-white rounded-full -left-4 ring-4 ring-gray-50 shadow-sm border border-gray-100 text-[10px] font-bold text-indigo-600">${userName.substring(0,2).toUpperCase()}</span><div class="p-4 bg-white border border-gray-200 rounded-xl shadow-sm"><p class="text-xs font-bold text-gray-900">${userName} <span class="text-gray-400 font-normal">· ${dateDisplay} ${timeDisplay}</span></p><div class="text-sm mt-1">${contentHtml}</div></div></li>`;

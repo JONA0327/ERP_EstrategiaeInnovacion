@@ -11,21 +11,24 @@ class Activity extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 
-        'area', 
-        'cliente',        // <--- CAMPO NUEVO AGREGADO
-        'tipo_actividad', 
-        'nombre_actividad', 
-        'prioridad', 
-        'fecha_inicio', 
-        'fecha_compromiso', 
-        'fecha_final', 
-        'estatus', 
-        'comentarios',    // <--- Importante para guardar notas
-        'metrico',       
+        'user_id',
+        'area',
+        'cliente',
+        'tipo_actividad',
+        'nombre_actividad',
+        'fecha_inicio',
+        'fecha_compromiso',
+        'hora_inicio_programada', // <--- NUEVO
+        'hora_fin_programada',    // <--- NUEVO
+        'fecha_final',
+        'prioridad',
+        'estatus',
+        'metrico',
         'resultado_dias',
         'porcentaje',
-        'evidencia_path'
+        'comentarios',
+        'evidencia_path',
+        'motivo_rechazo'
     ];
 
     protected $casts = [
