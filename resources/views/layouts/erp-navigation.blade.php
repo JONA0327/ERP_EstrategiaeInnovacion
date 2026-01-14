@@ -68,7 +68,7 @@
                         <x-nav-link :href="route('logistica.pedimentos.index')" :active="request()->routeIs('logistica.pedimentos.*')">
                             Pedimentos
                         </x-nav-link>
-                        <x-nav-link :href="route('logistica.reportes')" :active="request()->routeIs('logistica.reportes*')">
+                        <x-nav-link :href="route('logistica.reportes.index')" :active="request()->routeIs('logistica.reportes*')">
                             Reportes
                         </x-nav-link>
                     

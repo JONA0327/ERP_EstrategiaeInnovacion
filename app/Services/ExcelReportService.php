@@ -668,11 +668,7 @@ class ExcelReportService
             $row++;
         }
 
-        // Autoajustar columnas
-        foreach (range('A', 'Q') as $col) {
-            $dataSheet->getColumnDimension($col)->setAutoSize(true);
-        }
-    }        // Autoajustar columnas
+       // Autoajustar columnas
         foreach (range('A', 'Q') as $col) {
             $dataSheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -917,5 +913,267 @@ class ExcelReportService
         ob_end_clean();
 
         return $content;
+    }
+
+    private function generarExcelTSV($operaciones, $rutaArchivo, $camposPersonalizados = null, $configColumnas = [])
+    {
+        // Usar PhpSpreadsheet para generar Excel nativo con diseño
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Operaciones Logísticas');
+        
+        // Obtener configuración de columnas
+        $columnasVisibles = $configColumnas['columnas_visibles'] ?? [];
+        $columnasOcultas = $configColumnas['columnas_ocultas'] ?? [];
+        $idioma = $configColumnas['idioma'] ?? 'es';
+        
+        // Nombres de columnas según idioma
+        $nombresPredeterminados = ColumnaVisibleEjecutivo::$columnasPredeterminadas;
+        $nombresOpcionales = ColumnaVisibleEjecutivo::$columnasOpcionales;
+        
+        // Mapeo de columnas base (predeterminadas) con sus claves para posicionamiento
+        $columnasBaseFull = [
+            'id' => $nombresPredeterminados['id'][$idioma] ?? 'No.',
+            'ejecutivo' => $nombresPredeterminados['ejecutivo'][$idioma] ?? 'Ejecutivo',
+            'operacion' => $nombresPredeterminados['operacion'][$idioma] ?? 'Operación',
+            'cliente' => $nombresPredeterminados['cliente'][$idioma] ?? 'Cliente',
+            'proveedor_o_cliente' => $nombresPredeterminados['proveedor_o_cliente'][$idioma] ?? 'Proveedor/Cliente',
+            'fecha_embarque' => $nombresPredeterminados['fecha_embarque'][$idioma] ?? 'Fecha de Embarque',
+            'no_factura' => $nombresPredeterminados['no_factura'][$idioma] ?? 'No. Factura',
+            'tipo_operacion_enum' => $nombresPredeterminados['tipo_operacion_enum'][$idioma] ?? 'T. Operación',
+            'clave' => $nombresPredeterminados['clave'][$idioma] ?? 'Clave',
+            'referencia_interna' => $nombresPredeterminados['referencia_interna'][$idioma] ?? 'Referencia Interna',
+            'aduana' => $nombresPredeterminados['aduana'][$idioma] ?? 'Aduana',
+            'agente_aduanal' => $nombresPredeterminados['agente_aduanal'][$idioma] ?? 'A.A',
+            'referencia_aa' => $nombresPredeterminados['referencia_aa'][$idioma] ?? 'Referencia A.A',
+            'no_pedimento' => $nombresPredeterminados['no_pedimento'][$idioma] ?? 'No Ped',
+            'transporte' => $nombresPredeterminados['transporte'][$idioma] ?? 'Transporte',
+            'fecha_arribo_aduana' => $nombresPredeterminados['fecha_arribo_aduana'][$idioma] ?? 'Fecha Arribo Aduana',
+            'guia_bl' => $nombresPredeterminados['guia_bl'][$idioma] ?? 'Guía/BL',
+            'status' => $nombresPredeterminados['status'][$idioma] ?? 'Status',
+            'fecha_modulacion' => $nombresPredeterminados['fecha_modulacion'][$idioma] ?? 'Fecha Modulación',
+            'fecha_arribo_planta' => $nombresPredeterminados['fecha_arribo_planta'][$idioma] ?? 'Fecha Arribo Planta',
+            'resultado' => $nombresPredeterminados['resultado'][$idioma] ?? 'Resultado',
+            'target' => $nombresPredeterminados['target'][$idioma] ?? 'Target',
+            'dias_transito' => $nombresPredeterminados['dias_transito'][$idioma] ?? 'Días en Tránsito',
+            'post_operaciones' => $nombresPredeterminados['post_operaciones'][$idioma] ?? 'Post-Operaciones',
+            'comentarios' => $nombresPredeterminados['comentarios'][$idioma] ?? 'Comentarios'
+        ];
+        
+        // Columnas opcionales con sus nombres
+        $columnasOpcionalesFull = [
+            'tipo_carga' => $nombresOpcionales['tipo_carga'][$idioma] ?? 'Tipo de Carga',
+            'tipo_incoterm' => $nombresOpcionales['tipo_incoterm'][$idioma] ?? 'Incoterm',
+            'puerto_salida' => $nombresOpcionales['puerto_salida'][$idioma] ?? 'Puerto de Salida',
+            'in_charge' => $nombresOpcionales['in_charge'][$idioma] ?? 'Responsable',
+            'proveedor' => $nombresOpcionales['proveedor'][$idioma] ?? 'Proveedor',
+            'tipo_previo' => $nombresOpcionales['tipo_previo'][$idioma] ?? 'Modalidad/Previo',
+            'fecha_etd' => $nombresOpcionales['fecha_etd'][$idioma] ?? 'Fecha ETD',
+            'fecha_zarpe' => $nombresOpcionales['fecha_zarpe'][$idioma] ?? 'Fecha Zarpe',
+            'pedimento_en_carpeta' => $nombresOpcionales['pedimento_en_carpeta'][$idioma] ?? 'Pedimento en Carpeta',
+            'referencia_cliente' => $nombresOpcionales['referencia_cliente'][$idioma] ?? 'Referencia Cliente',
+            'mail_subject' => $nombresOpcionales['mail_subject'][$idioma] ?? 'Asunto de Correo'
+        ];
+        
+        // Filtrar columnas base (quitar las ocultas)
+        $columnasBase = [];
+        foreach ($columnasBaseFull as $clave => $nombre) {
+            if (!in_array($clave, $columnasOcultas)) {
+                $columnasBase[$clave] = $nombre;
+            }
+        }
+        
+        // Agregar columnas opcionales visibles
+        foreach ($columnasVisibles as $colVisible) {
+            if (isset($columnasOpcionalesFull[$colVisible])) {
+                $columnasBase[$colVisible] = $columnasOpcionalesFull[$colVisible];
+            }
+        }
+
+        // Construir cabeceras con campos personalizados insertados en posición correcta
+        $cabeceras = [];
+        $camposEnPosicion = []; // Para rastrear qué campos personalizados van después de qué columna
+        
+        // Agrupar campos personalizados por su posición (mostrar_despues_de)
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($camposPersonalizados as $campo) {
+                $posicion = $campo->mostrar_despues_de ?? 'comentarios'; // Por defecto al final
+                if (!isset($camposEnPosicion[$posicion])) {
+                    $camposEnPosicion[$posicion] = [];
+                }
+                $camposEnPosicion[$posicion][] = $campo;
+            }
+        }
+
+        // Construir array de cabeceras insertando campos personalizados en su posición
+        foreach ($columnasBase as $clave => $nombreColumna) {
+            $cabeceras[] = ['tipo' => 'base', 'clave' => $clave, 'nombre' => $nombreColumna];
+            
+            // Si hay campos personalizados que van después de esta columna, insertarlos
+            if (isset($camposEnPosicion[$clave])) {
+                foreach ($camposEnPosicion[$clave] as $campoPersonalizado) {
+                    $cabeceras[] = ['tipo' => 'personalizado', 'campo' => $campoPersonalizado, 'nombre' => $campoPersonalizado->nombre];
+                }
+            }
+        }
+        
+        // Agregar campos personalizados sin posición definida o con posición inválida al final
+        $clavesValidas = array_keys($columnasBase);
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($camposPersonalizados as $campo) {
+                $posicion = $campo->mostrar_despues_de;
+                if (!$posicion || !in_array($posicion, $clavesValidas)) {
+                    // Solo agregar si no fue agregado antes (posición inválida o vacía)
+                    if (!$posicion) {
+                        $cabeceras[] = ['tipo' => 'personalizado', 'campo' => $campo, 'nombre' => $campo->nombre];
+                    }
+                }
+            }
+        }
+
+        // Configurar estilo profesional para cabeceras
+        $estilosCabecera = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 
+                      'startColor' => ['rgb' => '2E86AB']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+        ];
+
+        // Estilo especial para campos personalizados (fondo diferente)
+        $estilosCabeceraPersonalizado = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 
+                      'startColor' => ['rgb' => '6366F1']], // Color indigo para campos personalizados
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+        ];
+
+        // Escribir cabeceras con estilo Excel
+        $columna = 1;
+        foreach ($cabeceras as $cabecera) {
+            $coordenada = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columna) . '1';
+            $sheet->setCellValue($coordenada, $cabecera['nombre']);
+            // Aplicar estilo diferente para campos personalizados
+            if ($cabecera['tipo'] === 'personalizado') {
+                $sheet->getStyle($coordenada)->applyFromArray($estilosCabeceraPersonalizado);
+            } else {
+                $sheet->getStyle($coordenada)->applyFromArray($estilosCabecera);
+            }
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columna))->setAutoSize(true);
+            $columna++;
+        }
+
+        // Preparar mapeo de valores de campos personalizados por operación
+        $valoresPorOperacion = [];
+        if ($camposPersonalizados && $camposPersonalizados->isNotEmpty()) {
+            foreach ($operaciones as $op) {
+                $valoresPorOperacion[$op->id] = $op->valoresCamposPersonalizados->keyBy('campo_personalizado_id');
+            }
+        }
+
+        // DATOS COMPLETOS DE LA MATRIZ DE SEGUIMIENTO
+        $filaExcel = 2; // Comenzar despus de las cabeceras
+        foreach ($operaciones as $operacion) {
+            // Calcular status actual (prioriza Done manual, sino usa calculado)
+            $statusFinal = ($operacion->status_manual === 'Done') ? 'Done' : $operacion->status_calculado;
+            $statusDisplay = match($statusFinal) {
+                'In Process' => 'En Proceso',
+                'Out of Metric' => 'Fuera de METRICA',
+                'Done' => 'Completado',
+                default => $statusFinal ?? 'En Proceso'
+            };
+
+            // Mapeo de valores base (columnas predeterminadas y opcionales)
+            $valoresBase = [
+                // Columnas predeterminadas
+                'id' => $operacion->id,
+                'ejecutivo' => $operacion->ejecutivo ?? 'Sin asignar',
+                'operacion' => $operacion->operacion ?? '-',
+                'cliente' => $operacion->cliente ?? 'Sin cliente',
+                'proveedor_o_cliente' => $operacion->proveedor_o_cliente ?? '-',
+                'fecha_embarque' => optional($operacion->fecha_embarque)->format('d/m/Y') ?? '-',
+                'no_factura' => $operacion->no_factura ?? '-',
+                'tipo_operacion_enum' => $operacion->tipo_operacion_enum ?? '-',
+                'clave' => $operacion->clave ?? '-',
+                'referencia_interna' => $operacion->referencia_interna ?? '-',
+                'aduana' => $operacion->aduana ?? '-',
+                'agente_aduanal' => $operacion->agente_aduanal ?? '-',
+                'referencia_aa' => $operacion->referencia_aa ?? '-',
+                'no_pedimento' => $operacion->no_pedimento ?? '-',
+                'transporte' => $operacion->transporte ?? '-',
+                'fecha_arribo_aduana' => optional($operacion->fecha_arribo_aduana)->format('d/m/Y') ?? '-',
+                'guia_bl' => $operacion->guia_bl ?? '-',
+                'status' => $statusDisplay,
+                'fecha_modulacion' => optional($operacion->fecha_modulacion)->format('d/m/Y') ?? '-',
+                'fecha_arribo_planta' => optional($operacion->fecha_arribo_planta)->format('d/m/Y') ?? '-',
+                'resultado' => $operacion->resultado ?? '-',
+                'target' => $operacion->target ?? '-',
+                'dias_transito' => $operacion->dias_transito ?? '-',
+                'post_operaciones' => $this->formatearPostOperaciones($operacion),
+                'comentarios' => $this->limpiarTexto($operacion->comentarios ?? '-'),
+                
+                // Columnas opcionales
+                'tipo_carga' => $operacion->tipo_carga ?? '-',
+                'tipo_incoterm' => $operacion->tipo_incoterm ?? '-',
+                'puerto_salida' => $operacion->puerto_salida ?? '-',
+                'in_charge' => $operacion->in_charge ?? '-',
+                'proveedor' => $operacion->proveedor ?? '-',
+                'tipo_previo' => $operacion->tipo_previo ?? '-',
+                'fecha_etd' => optional($operacion->fecha_etd)->format('d/m/Y') ?? '-',
+                'fecha_zarpe' => optional($operacion->fecha_zarpe)->format('d/m/Y') ?? '-',
+                'pedimento_en_carpeta' => $operacion->pedimento_en_carpeta ? 'Sí' : 'No',
+                'referencia_cliente' => $operacion->referencia_cliente ?? '-',
+                'mail_subject' => $operacion->mail_subject ?? '-'
+            ];
+
+            // Construir fila siguiendo el orden de cabeceras
+            $fila = [];
+            $valoresOperacion = $valoresPorOperacion[$operacion->id] ?? collect();
+            
+            foreach ($cabeceras as $cabecera) {
+                if ($cabecera['tipo'] === 'base') {
+                    $fila[] = $valoresBase[$cabecera['clave']] ?? '-';
+                } else {
+                    // Campo personalizado
+                    $campo = $cabecera['campo'];
+                    $valorCampo = $valoresOperacion->get($campo->id);
+                    $valorMostrar = '-';
+                    if ($valorCampo && $valorCampo->valor) {
+                        $valorMostrar = $valorCampo->valor;
+                        // Formatear fecha si es campo de tipo fecha
+                        if ($campo->tipo === 'fecha') {
+                            try {
+                                $valorMostrar = \Carbon\Carbon::parse($valorCampo->valor)->format('d/m/Y');
+                            } catch (\Exception $e) {
+                                $valorMostrar = $valorCampo->valor;
+                            }
+                        }
+                    }
+                    $fila[] = $valorMostrar;
+                }
+            }
+
+            // Escribir fila de datos en Excel con estilo
+            $columna = 1;
+            foreach ($fila as $valor) {
+                $coordenada = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columna) . $filaExcel;
+                $sheet->setCellValue($coordenada, $valor);
+                
+                // Aplicar estilo a datos
+                $sheet->getStyle($coordenada)->applyFromArray([
+                    'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
+                    'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT]
+                ]);
+                
+                $columna++;
+            }
+            
+            $filaExcel++; // Incrementar fila para la siguiente iteracin
+        }
+
+        // Guardar archivo Excel
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($rutaArchivo);
     }
 }

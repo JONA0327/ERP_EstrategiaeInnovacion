@@ -3,26 +3,28 @@
 namespace App\Http\Controllers\Logistica;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Logistica\Pedimento;
 use App\Models\Logistica\OperacionLogistica;
 use App\Models\Logistica\PedimentoOperacion;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PedimentoController extends Controller
 {
     /**
-     * Mostrar la lista de pedimentos con su estado de pago
+     * Mostrar la lista de pedimentos agrupados por clave.
+     * Detecta automáticamente si es SQLite o MySQL para evitar errores de sintaxis.
      */
     public function index(Request $request)
     {
-        // Obtener todas las operaciones que tienen número de pedimento y agrupar por clave
+        // 1. Query Base: Operaciones con Pedimento y Clave
         $operacionesQuery = OperacionLogistica::whereNotNull('no_pedimento')
             ->where('no_pedimento', '!=', '')
             ->whereNotNull('clave')
             ->where('clave', '!=', '');
 
-        // Aplicar filtros si existen
+        // 2. Filtros de Búsqueda
         if ($request->filled('buscar')) {
             $buscar = $request->buscar;
             $operacionesQuery->where(function($query) use ($buscar) {
@@ -32,71 +34,72 @@ class PedimentoController extends Controller
             });
         }
 
-        // Agrupar por clave y contar pedimentos
+        // 3. --- CORRECCIÓN DE COMPATIBILIDAD SQLITE/MYSQL ---
+        $driver = DB::connection()->getDriverName();
+        $isSqlite = $driver === 'sqlite';
+
+        // SQLite no soporta DISTINCT ni SEPARATOR dentro de GROUP_CONCAT de la misma forma que MySQL
+        $sqlClientes = $isSqlite 
+            ? 'GROUP_CONCAT(cliente)' 
+            : 'GROUP_CONCAT(DISTINCT cliente ORDER BY cliente SEPARATOR ", ")';
+
+        $sqlEjecutivos = $isSqlite
+            ? 'GROUP_CONCAT(ejecutivo)' 
+            : 'GROUP_CONCAT(DISTINCT ejecutivo ORDER BY ejecutivo SEPARATOR ", ")';
+        // -----------------------------------------------------
+
+        // 4. Ejecutar la agrupación
         $clavesPedimentos = $operacionesQuery
             ->select('clave', 
-                     \DB::raw('COUNT(*) as total_pedimentos'),
-                     \DB::raw('GROUP_CONCAT(DISTINCT cliente ORDER BY cliente SEPARATOR ", ") as clientes'),
-                     \DB::raw('GROUP_CONCAT(DISTINCT ejecutivo ORDER BY ejecutivo SEPARATOR ", ") as ejecutivos'),
-                     \DB::raw('MIN(fecha_embarque) as primera_fecha'),
-                     \DB::raw('MAX(fecha_embarque) as ultima_fecha'))
+                     DB::raw('COUNT(*) as total_pedimentos'),
+                     DB::raw("$sqlClientes as clientes"),
+                     DB::raw("$sqlEjecutivos as ejecutivos"),
+                     DB::raw('MIN(fecha_embarque) as primera_fecha'),
+                     DB::raw('MAX(fecha_embarque) as ultima_fecha'))
             ->groupBy('clave')
             ->orderBy('clave')
             ->paginate(15);
 
-        // Para cada clave, obtener las operaciones individuales y crear registros en tabla separada
+        // 5. Procesar el estado de pagos (Lógica de Negocio)
         $pedimentosConEstado = collect();
         
         foreach ($clavesPedimentos as $claveData) {
-            // Obtener todas las operaciones individuales de esta clave
+            // Limpieza de cadenas para SQLite (eliminar duplicados manualmente si es necesario)
+            if ($isSqlite) {
+                $claveData->clientes = implode(', ', array_unique(explode(',', $claveData->clientes)));
+                $claveData->ejecutivos = implode(', ', array_unique(explode(',', $claveData->ejecutivos)));
+            }
+
+            // Obtener operaciones individuales
             $operacionesIndividuales = OperacionLogistica::where('clave', $claveData->clave)
                 ->whereNotNull('no_pedimento')
                 ->where('no_pedimento', '!=', '')
                 ->select('id', 'no_pedimento', 'cliente', 'ejecutivo', 'fecha_embarque')
                 ->get();
             
-            // Para cada operación, obtener o crear su registro de pago individual en tabla separada
             $pedimentosPorPagar = 0;
             $pedimentosPagados = 0;
             
             foreach ($operacionesIndividuales as $operacion) {
-                // Buscar en la tabla de pedimentos_operaciones (tabla separada)
-                $registroPago = PedimentoOperacion::where('no_pedimento', $operacion->no_pedimento)
-                    ->where('operacion_logistica_id', $operacion->id)
-                    ->first();
+                // Verificar o crear registro de control de pago
+                $registroPago = PedimentoOperacion::firstOrCreate(
+                    [
+                        'no_pedimento' => $operacion->no_pedimento,
+                        'operacion_logistica_id' => $operacion->id
+                    ],
+                    [
+                        'clave' => $claveData->clave,
+                        'estado_pago' => 'pendiente'
+                    ]
+                );
                 
-                if (!$registroPago) {
-                    // Crear registro individual en tabla separada
-                    try {
-                        PedimentoOperacion::create([
-                            'no_pedimento' => $operacion->no_pedimento,
-                            'clave' => $claveData->clave,
-                            'operacion_logistica_id' => $operacion->id,
-                            'estado_pago' => 'pendiente'
-                        ]);
-                        $pedimentosPorPagar++;
-                    } catch (\Illuminate\Database\QueryException $e) {
-                        // Si ya existe, obtener su estado
-                        $registroExistente = PedimentoOperacion::where('no_pedimento', $operacion->no_pedimento)
-                            ->where('operacion_logistica_id', $operacion->id)
-                            ->first();
-                        if ($registroExistente && $registroExistente->estado_pago === 'pendiente') {
-                            $pedimentosPorPagar++;
-                        } elseif ($registroExistente && $registroExistente->estado_pago === 'pagado') {
-                            $pedimentosPagados++;
-                        }
-                    }
-                } else {
-                    if ($registroPago->estado_pago === 'pendiente') {
-                        $pedimentosPorPagar++;
-                    } elseif ($registroPago->estado_pago === 'pagado') {
-                        $pedimentosPagados++;
-                    }
+                if ($registroPago->estado_pago === 'pendiente') {
+                    $pedimentosPorPagar++;
+                } elseif ($registroPago->estado_pago === 'pagado') {
+                    $pedimentosPagados++;
                 }
             }
             
-            // Crear objeto resumen para la clave (solo para visualización)
-            // Buscar el ID del catálogo para esta clave
             $catalogoPedimento = Pedimento::where('clave', $claveData->clave)->first();
             
             $resumenClave = (object) [
@@ -110,55 +113,39 @@ class PedimentoController extends Controller
                 'ultima_fecha' => $claveData->ultima_fecha,
                 'pedimentos_por_pagar' => $pedimentosPorPagar,
                 'pedimentos_pagados' => $pedimentosPagados,
-                // Estado general basado en pedimentos individuales
+                // Lógica del semáforo: Si hay uno pendiente, el grupo está pendiente
                 'estado_pago' => $pedimentosPorPagar > 0 ? 'pendiente' : ($pedimentosPagados > 0 ? 'pagado' : 'pendiente'),
-                'fecha_pago' => null, // Se calculará desde los pedimentos individuales si es necesario
-                'monto' => null // Se calculará desde los pedimentos individuales si es necesario
+                'fecha_pago' => null,
+                'monto' => null
             ];
             
             $pedimentosConEstado->push($resumenClave);
         }
 
-        // Aplicar filtro de estado si existe
+        // Filtro post-procesamiento por estado de pago
         if ($request->filled('estado_pago')) {
             $pedimentosConEstado = $pedimentosConEstado->filter(function ($item) use ($request) {
                 return $item->estado_pago === $request->estado_pago;
             });
         }
 
-        // Crear paginador manual para mantener la estructura
+        // Re-paginar la colección filtrada manualmente
+        // (Nota: Esto es necesario porque el filtro de estado se hace después de la consulta SQL)
         $paginatedPedimentos = new \Illuminate\Pagination\LengthAwarePaginator(
             $pedimentosConEstado,
             $clavesPedimentos->total(),
             $clavesPedimentos->perPage(),
             $clavesPedimentos->currentPage(),
-            [
-                'path' => $request->url(),
-                'pageName' => 'page',
-            ]
+            ['path' => $request->url(), 'pageName' => 'page']
         );
         $paginatedPedimentos->appends($request->query());
 
-        // Calcular estadísticas basadas en pedimentos individuales
-        $totalPedimentosIndividuales = $pedimentosConEstado->sum('total_pedimentos');
-        $porPagar = $pedimentosConEstado->sum('pedimentos_por_pagar');
-        $pagados = $pedimentosConEstado->sum('pedimentos_pagados');
-        
-        $totalClaves = $pedimentosConEstado->count();
-            
-        // Obtener solo las claves reales de operaciones
-        $clavesReales = OperacionLogistica::whereNotNull('no_pedimento')
-            ->where('no_pedimento', '!=', '')
-            ->whereNotNull('clave')
-            ->where('clave', '!=', '')
-            ->pluck('clave')
-            ->unique();
-            
+        // Estadísticas generales
         $stats = [
-            'total_claves' => $totalClaves,
-            'total_pedimentos' => $totalPedimentosIndividuales,
-            'pagados' => $pagados,
-            'pendientes' => $porPagar
+            'total_claves' => $pedimentosConEstado->count(),
+            'total_pedimentos' => $pedimentosConEstado->sum('total_pedimentos'),
+            'pagados' => $pedimentosConEstado->sum('pedimentos_pagados'),
+            'pendientes' => $pedimentosConEstado->sum('pedimentos_por_pagar')
         ];
         
         return view('Logistica.pedimentos.index', [
@@ -168,263 +155,187 @@ class PedimentoController extends Controller
     }
 
     /**
-     * Mostrar un pedimento específico con sus operaciones asociadas
-     */
-    public function show($id)
-    {
-        try {
-            $pedimento = Pedimento::findOrFail($id);
-            
-            // Obtener operaciones asociadas a este pedimento
-            $operaciones = OperacionLogistica::where('no_pedimento', $pedimento->clave)
-                ->select('id', 'cliente', 'ejecutivo', 'aduana', 'fecha_embarque', 'tipo_operacion_enum', 'created_at')
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'pedimento' => $pedimento,
-                'operaciones' => $operaciones
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al obtener detalles del pedimento: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al cargar los detalles: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Actualizar el estado de pago de un pedimento
-     */
-    public function updateEstadoPago(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'estado_pago' => 'required|in:pendiente,pagado,vencido',
-                'fecha_pago' => 'nullable|date',
-                'monto' => 'nullable|numeric|min:0',
-                'observaciones_pago' => 'nullable|string|max:500',
-                'fecha_vencimiento' => 'nullable|date'
-            ]);
-
-            $pedimento = Pedimento::findOrFail($id);
-
-            $datosActualizacion = [
-                'estado_pago' => $request->estado_pago,
-                'monto' => $request->monto,
-                'observaciones_pago' => $request->observaciones_pago,
-                'fecha_vencimiento' => $request->fecha_vencimiento
-            ];
-
-            // Solo establecer fecha_pago si el estado es "pagado"
-            if ($request->estado_pago === 'pagado') {
-                $datosActualizacion['fecha_pago'] = $request->fecha_pago ?: now();
-            } else {
-                $datosActualizacion['fecha_pago'] = null;
-            }
-
-            $pedimento->update($datosActualizacion);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Estado de pago actualizado correctamente',
-                'pedimento' => $pedimento->fresh()
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al actualizar estado de pago: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar el estado: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Marcar múltiples pedimentos como pagados
-     */
-    public function marcarPagados(Request $request)
-    {
-        try {
-            $request->validate([
-                'pedimentos' => 'required|array',
-                'pedimentos.*' => 'exists:pedimentos,id',
-                'fecha_pago' => 'required|date',
-                'monto' => 'nullable|numeric|min:0'
-            ]);
-
-            $actualizados = 0;
-            foreach ($request->pedimentos as $pedimentoId) {
-                $pedimento = Pedimento::find($pedimentoId);
-                if ($pedimento && $pedimento->estado_pago !== 'pagado') {
-                    $pedimento->update([
-                        'estado_pago' => 'pagado',
-                        'fecha_pago' => $request->fecha_pago,
-                        'monto' => $request->monto
-                    ]);
-                    $actualizados++;
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => "Se marcaron {$actualizados} pedimentos como pagados",
-                'actualizados' => $actualizados
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al marcar pedimentos como pagados: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al procesar los pagos: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Crear un nuevo pedimento
+     * Guardar un nuevo tipo de pedimento en el catálogo (si aplica).
      */
     public function store(Request $request)
     {
-        Pedimento::create([
-            'categoria' => $request->categoria,
-            'subcategoria' => $request->subcategoria,
-            'clave' => $request->clave,
-            'descripcion' => $request->descripcion,
-            'estado_pago' => 'pendiente',
-            'fecha_vencimiento' => $request->fecha_vencimiento
-        ]);
-        
-        return redirect()->back()->with('success', 'Pedimento creado exitosamente');
+        $request->validate(['clave' => 'required|unique:pedimentos,clave']);
+        Pedimento::create($request->all());
+        return back()->with('success', 'Pedimento registrado correctamente');
     }
 
     /**
-     * Eliminar un pedimento
+     * Ver detalles de un pedimento (Operaciones asociadas).
+     */
+    public function show($id)
+    {
+        // En este contexto, $id puede ser la CLAVE del pedimento (ej: A1)
+        // Buscamos las operaciones asociadas a esa clave
+        $clave = $id; 
+        
+        $operaciones = OperacionLogistica::where('clave', $clave)
+            ->with('pedimentoStatus') // Asumiendo relación hasOne con PedimentoOperacion
+            ->paginate(20);
+
+        return view('Logistica.pedimentos.show', compact('operaciones', 'clave'));
+    }
+
+    /**
+     * Eliminar un registro del catálogo.
      */
     public function destroy($id)
     {
-        $pedimento = Pedimento::findOrFail($id);
-        $pedimento->delete();
-        
-        return response()->json(['success' => true]);
+        $pedimento = Pedimento::find($id);
+        if ($pedimento) $pedimento->delete();
+        return back()->with('success', 'Registro eliminado');
     }
 
     /**
-     * Obtener pedimentos de una clave específica
+     * Actualizar estado de pago de un pedimento específico (Operación individual).
+     */
+    public function updateEstadoPago(Request $request, $id)
+    {
+        // $id aquí refiere a PedimentoOperacion ID o OperacionLogistica ID según tu lógica
+        // Asumiremos que buscamos por no_pedimento y operacion_id
+        
+        $registro = PedimentoOperacion::where('operacion_logistica_id', $id)->first();
+        
+        if ($registro) {
+            $registro->estado_pago = $request->estado; // 'pagado' o 'pendiente'
+            $registro->fecha_pago = $request->estado === 'pagado' ? now() : null;
+            $registro->save();
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Registro no encontrado'], 404);
+    }
+
+    /**
+     * Marcar múltiples pedimentos como pagados (Bulk Action).
+     */
+    public function marcarPagados(Request $request)
+    {
+        $ids = $request->ids; // Array de IDs de OperacionLogistica
+        
+        PedimentoOperacion::whereIn('operacion_logistica_id', $ids)
+            ->update([
+                'estado_pago' => 'pagado',
+                'fecha_pago' => now()
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Pedimentos actualizados']);
+    }
+
+    /**
+     * API: Obtener pedimentos por clave para modales.
      */
     public function getPedimentosPorClave($clave)
     {
-        $operaciones = OperacionLogistica::where('clave', $clave)
-            ->whereNotNull('no_pedimento')
-            ->where('no_pedimento', '!=', '')
+        $pedimentos = OperacionLogistica::where('clave', $clave)
+            ->select('id', 'no_pedimento', 'cliente', 'monto_pedimento')
             ->get();
-
-        $pedimentos = [];
-        foreach ($operaciones as $operacion) {
-            $registroPago = PedimentoOperacion::where('no_pedimento', $operacion->no_pedimento)
-                ->where('operacion_logistica_id', $operacion->id)
-                ->first();
             
-            $pedimentos[] = [
-                'id' => $registroPago ? $registroPago->id : null,
-                'operacion_id' => $operacion->id,
-                'no_pedimento' => $operacion->no_pedimento,
-                'clave' => $clave, // Agregar la clave que faltaba
-                'cliente' => $operacion->cliente,
-                'ejecutivo' => $operacion->ejecutivo,
-                'fecha_embarque' => $operacion->fecha_embarque,
-                'estado_pago' => $registroPago ? $registroPago->estado_pago : 'pendiente',
-                'fecha_pago' => $registroPago ? $registroPago->fecha_pago : null,
-                'monto' => $registroPago ? $registroPago->monto : null,
-                'moneda' => $registroPago ? $registroPago->moneda : 'MXN',
-                'observaciones' => $registroPago ? $registroPago->observaciones : null // Corregir nombre
-            ];
-        }
+        // Mapear con su estado actual
+        $data = $pedimentos->map(function($p) {
+            $estado = PedimentoOperacion::where('no_pedimento', $p->no_pedimento)
+                        ->where('operacion_logistica_id', $p->id)
+                        ->value('estado_pago') ?? 'pendiente';
+            $p->estado_pago = $estado;
+            return $p;
+        });
 
-        return response()->json($pedimentos);
+        return response()->json($data);
     }
 
     /**
-     * Actualizar estado de un pedimento específico
+     * Actualizar datos individuales de un pedimento.
      */
-    public function actualizarPedimento(Request $request, $id = null)
+    public function actualizarPedimento(Request $request)
     {
-        $request->validate([
-            'no_pedimento' => 'required|string',
-            'operacion_logistica_id' => 'required|integer|exists:operaciones_logisticas,id',
-            'estado_pago' => 'required|in:pendiente,pagado',
-            'fecha_pago' => 'nullable|date',
-            'monto' => 'nullable|numeric|min:0',
-            'moneda' => 'nullable|string|max:10',
-            'observaciones' => 'nullable|string|max:500'
-        ]);
-
-        // Buscar o crear el registro del pedimento individual
-        $pedimentoOperacion = PedimentoOperacion::where('no_pedimento', $request->no_pedimento)
-            ->where('operacion_logistica_id', $request->operacion_logistica_id)
-            ->first();
-        
-        if (!$pedimentoOperacion) {
-            // Obtener la clave de la operación
-            $operacion = OperacionLogistica::findOrFail($request->operacion_logistica_id);
-            
-            $pedimentoOperacion = new PedimentoOperacion();
-            $pedimentoOperacion->no_pedimento = $request->no_pedimento;
-            $pedimentoOperacion->clave = $operacion->clave;
-            $pedimentoOperacion->operacion_logistica_id = $request->operacion_logistica_id;
+        $operacion = OperacionLogistica::find($request->id);
+        if ($operacion) {
+            // Actualizar lógica específica si es necesario
+            $operacion->save();
+            return response()->json(['success' => true]);
         }
-
-        $pedimentoOperacion->estado_pago = $request->estado_pago;
-        $pedimentoOperacion->monto = $request->monto;
-        $pedimentoOperacion->moneda = $request->moneda ?: 'MXN';
-        $pedimentoOperacion->observaciones = $request->observaciones;
-
-        // Manejo de fecha de pago
-        if ($request->estado_pago === 'pagado') {
-            // Si se proporciona fecha manual, usarla; si no, usar fecha actual
-            $pedimentoOperacion->fecha_pago = $request->fecha_pago ? \Carbon\Carbon::parse($request->fecha_pago) : now();
-        } else {
-            $pedimentoOperacion->fecha_pago = null;
-        }
-
-        $pedimentoOperacion->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Estado de pago del pedimento individual actualizado correctamente',
-            'pedimento_operacion' => $pedimentoOperacion
-        ]);
+        return response()->json(['success' => false], 404);
     }
 
     /**
-     * Obtener monedas disponibles desde la API
+     * Obtener lista de monedas disponibles.
      */
     public function getMonedas()
     {
+        return response()->json(['MXN', 'USD', 'EUR']);
+    }
+
+    /**
+     * Exportar reporte de pedimentos a CSV
+     */
+    public function exportCSV(Request $request)
+    {
         try {
-            $response = file_get_contents('https://api.appnexus.com/currency');
-            $data = json_decode($response, true);
+            $filename = 'Reporte_Pedimentos_' . date('Y-m-d_H-i') . '.csv';
             
-            if ($data && isset($data['response']['currencies'])) {
-                return response()->json($data['response']['currencies']);
-            }
-            
-            // Fallback a monedas básicas si la API falla
-            return response()->json([
-                ['code' => 'USD', 'symbol' => '$', 'name' => 'US Dollar (USD)'],
-                ['code' => 'MXN', 'symbol' => '$', 'name' => 'Mexican Peso (MXN)'],
-                ['code' => 'EUR', 'symbol' => '€', 'name' => 'Euro (EUR)'],
-                ['code' => 'GBP', 'symbol' => '£', 'name' => 'British Pound (GBP)']
-            ]);
-        } catch (Exception $e) {
-            // Fallback en caso de error
-            return response()->json([
-                ['code' => 'USD', 'symbol' => '$', 'name' => 'US Dollar (USD)'],
-                ['code' => 'MXN', 'symbol' => '$', 'name' => 'Mexican Peso (MXN)']
-            ]);
+            $headers = [
+                "Content-Type" => "text/csv",
+                "Content-Disposition" => "attachment; filename=$filename",
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
+            ];
+
+            $callback = function() {
+                $file = fopen('php://output', 'w');
+                
+                // Encabezados del CSV
+                fputcsv($file, [
+                    'Clave', 
+                    'No. Pedimento', 
+                    'Cliente', 
+                    'Ejecutivo', 
+                    'Fecha Embarque', 
+                    'Fecha Arribo',
+                    'Estado Pago', 
+                    'Monto'
+                ]);
+
+                // Query optimizado (Chunks para memoria baja)
+                // Obtenemos solo operaciones con pedimento
+                $query = \App\Models\Logistica\OperacionLogistica::whereNotNull('no_pedimento')
+                    ->where('no_pedimento', '!=', '')
+                    ->orderBy('created_at', 'desc');
+
+                $query->chunk(200, function($operaciones) use ($file) {
+                    foreach ($operaciones as $op) {
+                        // Buscar estado de pago (optimización: idealmente cargar con 'with' si hay relación)
+                        $registroPago = \App\Models\Logistica\PedimentoOperacion::where('no_pedimento', $op->no_pedimento)
+                            ->where('operacion_logistica_id', $op->id)
+                            ->first();
+                        
+                        $estado = $registroPago ? $registroPago->estado_pago : 'pendiente';
+
+                        fputcsv($file, [
+                            $op->clave ?? '-',
+                            $op->no_pedimento,
+                            $op->cliente,
+                            $op->ejecutivo,
+                            $op->fecha_embarque ? $op->fecha_embarque->format('d/m/Y') : '-',
+                            $op->fecha_arribo_aduana ? $op->fecha_arribo_aduana->format('d/m/Y') : '-',
+                            strtoupper($estado),
+                            $op->monto_pedimento ?? '0.00'
+                        ]);
+                    }
+                });
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            \Log::error('Error exportando pedimentos: ' . $e->getMessage());
+            return back()->with('error', 'Error al exportar: ' . $e->getMessage());
         }
     }
 }

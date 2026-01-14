@@ -129,6 +129,16 @@ class OperacionLogistica extends Model
     }
 
     /**
+     * Relación con el estado de pago del pedimento.
+     * Una Operación tiene un registro de estado de pago (1 a 1).
+     */
+    public function pedimentoStatus()
+    {
+        // Asegúrate de importar el modelo al inicio o usar la ruta completa
+        return $this->hasOne(\App\Models\Logistica\PedimentoOperacion::class, 'operacion_logistica_id', 'id');
+    }
+
+    /**
      * Relación con los comentarios de la operación
      */
     public function comentarios()
