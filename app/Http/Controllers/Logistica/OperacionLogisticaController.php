@@ -38,7 +38,6 @@ class OperacionLogisticaController extends Controller
     public function index(Request $request)
     {
         // 1. Lógica de negocio crítica: Verificar status automáticos al cargar
-        $this->verificarYActualizarStatusOperaciones();
 
         $usuarioActual = auth()->user();
         $empleadoActual = null;

@@ -171,6 +171,8 @@ Route::middleware(['auth', 'area.logistica'])->prefix('logistica')->name('logist
         Route::post('globales', 'storeGlobal')->name('store-global');
         Route::get('operaciones/{id}', 'getByOperacion')->name('get-by-operacion');
         Route::put('operaciones/{id}/actualizar', 'bulkUpdate')->name('bulk-update');
+
+        
     });
 
     // Reportes
@@ -194,16 +196,17 @@ Route::middleware(['auth', 'area.logistica'])->prefix('logistica')->name('logist
         ->prefix('campos-personalizados')
         ->name('campos-personalizados.')
         ->group(function() {
-            Route::get('/', 'index')->name('index'); // JSON lista
-            Route::post('/', 'store')->name('store'); // Crear
-            Route::delete('/{id}', 'destroy')->name('destroy'); // Eliminar
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::delete('/{id}', 'destroy')->name('destroy');
             
-            // Rutas para obtener valores en modal de operación
-            Route::get('/activos', 'getCamposActivos'); // Para formulario crear/editar
-            Route::get('/operacion/{id}/valores', 'getValoresOperacion'); // Para llenar valores al editar
-            Route::post('/valor', 'storeValor'); // Guardar valor individual
+            // ESTA ES LA RUTA CRÍTICA QUE FALTA O FALLA:
+            Route::post('/valor', 'storeValor')->name('store-valor'); 
+            
+            Route::get('/activos', 'getCamposActivos');
+            Route::get('/operacion/{id}/valores', 'getValoresOperacion');
         });
-});
+    });
 
 
 // 5. MÓDULO RECURSOS HUMANOS

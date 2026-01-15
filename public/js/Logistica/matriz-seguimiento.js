@@ -130,6 +130,81 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     };
 
+    /**
+     * Lógica para Campos Personalizados
+     * Optimización: No recarga la página, solo actualiza el DOM.
+     */
+    window.editarCampoPersonalizado = function(operacionId, campoId, tipo, nombreCampo) {
+        let valorActual = document.querySelector(`td[data-operacion-id="${operacionId}"][data-campo-id="${campoId}"] .valor-campo`).innerText.trim();
+        if(valorActual === '-') valorActual = '';
+
+        let nuevoValor = null;
+
+        // 1. Manejo de Inputs según el tipo
+        if (tipo === 'booleano') {
+            // Lógica simple para SI/NO
+            const confirmar = confirm(`¿Cambiar "${nombreCampo}" a ${valorActual === 'Sí' ? 'NO' : 'SÍ'}?`);
+            if (!confirmar) return;
+            nuevoValor = (valorActual === 'Sí') ? '0' : '1'; // Invertir
+        } 
+        else if (tipo === 'fecha') {
+            // Usar un prompt simple o integrar un datepicker modal si se prefiere
+            // Para rapidez, usamos prompt validando formato YYYY-MM-DD
+            nuevoValor = prompt(`Ingrese fecha para ${nombreCampo} (YYYY-MM-DD):`, valorActual);
+        } 
+        else {
+            // Texto, Número, Decimal
+            nuevoValor = prompt(`Editar ${nombreCampo}:`, valorActual);
+        }
+
+        // Si el usuario canceló el prompt
+        if (nuevoValor === null) return;
+
+        // 2. Mostrar indicador de carga en la celda
+        const celda = document.querySelector(`td[data-operacion-id="${operacionId}"][data-campo-id="${campoId}"]`);
+        const spanValor = celda.querySelector('.valor-campo');
+        const valorAnterior = spanValor.innerText;
+        
+        spanValor.innerHTML = '<span class="text-blue-500 text-xs">Guardando...</span>';
+
+        // 3. Enviar al Servidor
+        fetch('/logistica/campos-personalizados/valor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': window.token // Asegúrate de tener el token CSRF global
+            },
+            body: JSON.stringify({
+                operacion_id: operacionId,
+                campo_id: campoId,
+                valor: nuevoValor
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 4. Actualizar vista con el nuevo valor (Formateo básico)
+                let textoMostrar = nuevoValor;
+                if(tipo === 'booleano') textoMostrar = (nuevoValor == '1' || nuevoValor === 'true') ? 'Sí' : 'No';
+                if(!nuevoValor) textoMostrar = '-';
+                
+                spanValor.innerText = textoMostrar;
+                
+                // Efecto visual de éxito
+                celda.classList.add('bg-green-50');
+                setTimeout(() => celda.classList.remove('bg-green-50'), 1000);
+            } else {
+                alert('Error al guardar: ' + data.message);
+                spanValor.innerText = valorAnterior; // Revertir
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión');
+            spanValor.innerText = valorAnterior; // Revertir
+        });
+    };
+
     window.cerrarModalPostOperaciones = function() {
         document.getElementById('modalPostOperaciones').classList.add('hidden');
     };
@@ -204,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================================================
     window.abrirModalCamposPersonalizados = function() {
         document.getElementById('modalCamposPersonalizados').classList.remove('hidden');
-        cargarConfiguracion(); // Carga inicial
+        cargarConfiguracion(); 
     };
 
     window.cerrarModalCamposPersonalizados = function() {
@@ -217,7 +292,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 const lista = document.getElementById('listaCamposConfig');
-                lista.innerHTML = data.map(c => `
+                // Aseguramos que data sea el array, a veces viene directo o dentro de una propiedad
+                const campos = Array.isArray(data) ? data : (data.campos || []); 
+                
+                lista.innerHTML = campos.map(c => `
                     <div class="flex justify-between items-center p-2 border-b text-sm">
                         <span>${c.nombre} <small class="text-gray-400">(${c.tipo})</small></span>
                         <button onclick="eliminarCampo(${c.id})" class="text-red-500 hover:text-red-700">×</button>
@@ -225,13 +303,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 `).join('') || '<p class="text-gray-400 text-sm text-center py-2">Sin campos extra.</p>';
             });
 
-        // Cargar Plantillas Post-Operación (AQUÍ ES DONDE AGREGAS LAS TAREAS)
+        // Cargar Plantillas Post-Operación (CORREGIDO)
         fetch('/logistica/post-operaciones/globales')
             .then(r => r.json())
             .then(data => {
                 const lista = document.getElementById('listaPlantillasConfig');
                 if(data.success) {
-                    lista.innerHTML = data.postoperaciones.map(p => `
+                    // CORRECCIÓN AQUÍ: Usar 'postOperaciones' (CamelCase) tal como lo envía el Controller
+                    lista.innerHTML = data.postOperaciones.map(p => ` 
                         <div class="flex justify-between items-center p-2 border-b text-sm">
                             <span>${p.nombre}</span>
                             <button onclick="eliminarPlantilla(${p.id})" class="text-red-500 hover:text-red-700">×</button>
@@ -241,19 +320,35 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Guardar Nuevo Campo Personalizado (Columna extra en tabla)
+    // Guardar Nuevo Campo Personalizado (CORREGIDO EL REFRESCO)
     document.getElementById('formNuevoCampo')?.addEventListener('submit', function(e) {
         e.preventDefault();
         const nombre = document.getElementById('newCampoNombre').value;
         if(!nombre) return;
 
+        // Añadimos indicador visual de carga
+        const btn = this.querySelector('button');
+        const txtOriginal = btn.innerText;
+        btn.innerText = 'Guardando...';
+        btn.disabled = true;
+
         fetch('/logistica/campos-personalizados', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': token},
             body: JSON.stringify({ nombre: nombre, tipo: 'texto', activo: 1, orden: 99 })
-        }).then(() => {
-            document.getElementById('newCampoNombre').value = '';
-            cargarConfiguracion(); // Recargar listas
+        }).then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('newCampoNombre').value = '';
+                // CORRECCIÓN CRÍTICA: Recargar la página para ver la nueva columna en la tabla
+                // Como es un cambio estructural de la tabla, necesitamos recargar.
+                alert('Campo agregado. La página se recargará para mostrar la nueva columna.');
+                window.location.reload(); 
+            }
+        })
+        .finally(() => {
+             btn.innerText = txtOriginal;
+             btn.disabled = false;
         });
     });
 
@@ -267,26 +362,22 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': token},
             body: JSON.stringify({ nombre: nombre, descripcion: 'Tarea estándar' })
-        }).then(() => {
-            document.getElementById('newPlantillaNombre').value = '';
-            cargarConfiguracion(); // Recargar listas
+        }).then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('newPlantillaNombre').value = '';
+                cargarConfiguracion(); // Aquí no hace falta recargar la página, solo la lista
+            }
         });
     });
 
     window.eliminarCampo = function(id) {
-        if(confirm('¿Borrar este campo y sus datos?')) {
+        if(confirm('¿Borrar este campo y sus datos? Se recargará la página.')) {
             fetch(`/logistica/campos-personalizados/${id}`, { 
                 method: 'DELETE', headers: {'X-CSRF-TOKEN': token} 
-            }).then(() => cargarConfiguracion());
-        }
-    };
-
-    window.eliminarPlantilla = function(id) {
-        if(confirm('¿Borrar esta tarea global?')) {
-            // Asumiendo que agregas una ruta DELETE para post-operaciones globales en web.php
-            // Si no, tendrás que crearla: Route::delete('post-operaciones/globales/{id}', ...)
-            // Por ahora usamos una ruta genérica de ejemplo
-            console.log('Falta implementar ruta delete específica para plantilla ID: ' + id);
+            }).then(() => {
+                window.location.reload(); // También recargamos al borrar columna
+            });
         }
     };
 
