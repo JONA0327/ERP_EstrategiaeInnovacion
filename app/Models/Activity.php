@@ -16,19 +16,19 @@ class Activity extends Model
         'cliente',
         'tipo_actividad',
         'nombre_actividad',
+        'comentarios',
         'fecha_inicio',
         'fecha_compromiso',
-        'hora_inicio_programada', // <--- NUEVO
-        'hora_fin_programada',    // <--- NUEVO
         'fecha_final',
         'prioridad',
-        'estatus',
-        'metrico',
+        'estatus',          // <--- ¡CRÍTICO! Faltaba este
+        'metrico',          // <--- También este para el cálculo de KPIs
         'resultado_dias',
         'porcentaje',
-        'comentarios',
         'evidencia_path',
-        'motivo_rechazo'
+        'motivo_rechazo',
+        'hora_inicio_programada', // <--- Nuevos campos de tiempo
+        'hora_fin_programada',
     ];
 
     protected $casts = [
@@ -36,8 +36,8 @@ class Activity extends Model
         'fecha_compromiso' => 'datetime',
         'fecha_final' => 'datetime',
         'metrico' => 'integer',
-        'resultado_dias' => 'integer',
-        'porcentaje' => 'decimal:2',
+        'hora_inicio_programada' => 'datetime:H:i', // Casting útil
+        'hora_fin_programada' => 'datetime:H:i',
     ];
 
     // --- RELACIONES ---

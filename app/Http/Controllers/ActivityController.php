@@ -11,31 +11,31 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB; 
 
 class ActivityController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
+        $user = Auth::user(); 
         $miEmpleado = $user->empleado; 
 
-        // --- CONFIGURACIÓN DE PERMISOS ---
+        // 1. CONFIGURACIÓN DE PERMISOS Y JERARQUÍA
         $esDireccion = false;
         $esSupervisor = false;
-        $necesitaCliente = false;
+        $necesitaCliente = false; // (Opcional: puedes dejarlo true siempre si todos usan clientes)
         $idsVisibles = [$user->id]; 
 
         if ($miEmpleado) {
             $posicionLower = mb_strtolower($miEmpleado->posicion, 'UTF-8');
-            
-            // Regla: Solo Anexo 24 y Post-Operacion usan Cliente y Planeador
-            $necesitaCliente = Str::contains($posicionLower, ['anexo 24', 'anexo24', 'post-operacion', 'post operacion', 'post-operación']);
+            // Regla: Define aquí qué puestos ven filtros de cliente específicos si lo deseas
+            $necesitaCliente = true; 
 
             if (str_contains($posicionLower, 'direccion') || str_contains($posicionLower, 'dirección')) {
                 $esDireccion = true;
             }
 
-            // Detectar Subordinados
+            // Obtener subordinados
             $subordinadosIds = Empleado::where('supervisor_id', $miEmpleado->id)
                                         ->pluck('user_id')->filter()->toArray();
             
@@ -45,308 +45,319 @@ class ActivityController extends Controller
             }
         }
 
-        // --- 1. ZONA DE APROBACIÓN (SOLO SUPERVISORES) ---
-        // Busca actividades estancadas en "Por Aprobar" del equipo
-        $pendingApprovals = [];
-        if (($esSupervisor || $esDireccion) && empty($request->search)) {
-            $pendingApprovals = Activity::with('user.empleado')
-                ->whereIn('user_id', $idsVisibles)
-                ->where('estatus', 'Por Aprobar')
-                ->orderBy('user_id')
-                ->get()
-                ->groupBy('user_id');
+        // 2. CONTEXTO (SELECTOR DE USUARIO)
+        $targetUserId = $user->id;
+        if (($esSupervisor || $esDireccion) && $request->filled('user_id')) {
+            if ($esDireccion || in_array($request->user_id, $idsVisibles)) {
+                $targetUserId = $request->user_id;
+            }
         }
+        $targetUser = User::findOrFail($targetUserId);
 
-        // --- 2. ZONA "MIS OBJETIVOS" (BUCKET PLANEADO) ---
-        // Actividades aprobadas pero que aún no inician (No salen en tabla principal)
-        $plannedActivities = Activity::where('user_id', $user->id)
-            ->where('estatus', 'Planeado')
-            ->orderBy('fecha_compromiso', 'asc')
-            ->get();
+        // 3. GESTIÓN DE FECHAS
+        $viewDate = $request->has('week_view') ? Carbon::parse($request->week_view) : now();
+        $startOfWeek = $viewDate->copy()->startOfWeek();
+        $endOfWeek = $viewDate->copy()->endOfWeek();
+        $isHistoryView = $endOfWeek->lt(now()->startOfWeek());
+        $verTodo = $request->has('ver_historial') && $request->ver_historial == '1';
 
-        // --- 3. TABLA PRINCIPAL (REPORTE DE ACTIVIDADES REALES) ---
-        $query = Activity::with(['user.empleado', 'historial.user']);
+        // 4. CONSULTA PRINCIPAL
+        $query = Activity::with(['user.empleado.supervisor', 'historial.user'])
+            ->where('user_id', $targetUserId) 
+            ->whereBetween('fecha_compromiso', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')]);
 
-        if (!$esDireccion) {
-            $query->whereIn('user_id', $idsVisibles);
+        // Filtro visual: Ocultar completados/rechazados si no se pide ver historial
+        if (!$verTodo && !$isHistoryView) {
+            $query->whereNotIn('estatus', ['Completado', 'Rechazado']);
         }
-
-        // Ocultamos lo que es "futuro" (Planeado), "limbo" (Por Aprobar) o "Rechazado" (para no ensuciar tabla)
-        // El rechazado se ve en la alerta superior
-        $query->whereNotIn('estatus', ['Por Aprobar', 'Planeado', 'Rechazado']);
-
-        // Filtros
+        
         if ($request->search) {
             $query->where(function($q) use ($request) {
                 $q->where('nombre_actividad', 'like', "%{$request->search}%")
-                  ->orWhere('area', 'like', "%{$request->search}%")
                   ->orWhere('cliente', 'like', "%{$request->search}%")
-                  ->orWhere('tipo_actividad', 'like', "%{$request->search}%");
+                  ->orWhere('area', 'like', "%{$request->search}%");
             });
         }
-        
-        if ($request->user_id && ($esDireccion || in_array($request->user_id, $idsVisibles))) {
-            $query->where('user_id', $request->user_id);
+
+        // --- ORDENAMIENTO ESTRICTO (TU REQUERIMIENTO) ---
+        $weeklyActivities = $query
+            // 1. Completados siempre al final
+            ->orderByRaw("CASE estatus WHEN 'Completado' THEN 2 ELSE 1 END")
+            // 2. PRIORIDAD (Alta -> Media -> Baja)
+            ->orderByRaw("CASE prioridad 
+                            WHEN 'Alta' THEN 1 
+                            WHEN 'Media' THEN 2 
+                            WHEN 'Baja' THEN 3 
+                            ELSE 4 END")
+            // 3. Fecha y Hora
+            ->orderBy('fecha_compromiso')
+            ->orderBy('hora_inicio_programada')
+            ->get();
+
+        // 5. RESCATE DE PENDIENTES (Mostrar siempre lo "Por Aprobar" aunque no sea de esta semana)
+        $pendingActivities = collect();
+        if (!$isHistoryView) { 
+            $pendingActivities = Activity::with(['user.empleado', 'historial.user'])
+                ->where('user_id', $targetUserId)
+                ->where('estatus', 'Por Aprobar')
+                ->get();
         }
-        if ($request->estatus) $query->where('estatus', $request->estatus);
-        if ($request->prioridad) $query->where('prioridad', $request->prioridad);
-        if ($request->fecha_inicio) $query->whereDate('fecha_compromiso', '>=', $request->fecha_inicio);
-        if ($request->fecha_fin) $query->whereDate('fecha_compromiso', '<=', $request->fecha_fin);
 
-        $activities = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        $mainActivities = $weeklyActivities->merge($pendingActivities)->unique('id');
 
-        // Buscamos las rechazadas APARTE para pasarlas a la vista
+        // 6. DATOS AUXILIARES
+        $teamUsers = collect();
+        if ($esDireccion) {
+            $teamUsers = User::orderBy('name')->get();
+        } elseif ($esSupervisor) {
+            $teamUsers = User::whereIn('id', $idsVisibles)->orderBy('name')->get();
+        }
+
+        // Alerta: ¿Hay pendientes en otros usuarios?
+        $globalPendingCount = 0;
+        if ($esSupervisor || $esDireccion) {
+            $q = Activity::where('estatus', 'Por Aprobar')->where('user_id', '!=', $targetUserId);
+            if (!$esDireccion) $q->whereIn('user_id', $idsVisibles);
+            $globalPendingCount = $q->count();
+        }
+
+        // Alerta Personal: Rechazos
         $misRechazos = Activity::where('user_id', $user->id)->where('estatus', 'Rechazado')->get();
 
-        // KPIs (Solo cuentan lo Real)
-        $kpiQuery = Activity::query()->whereNotIn('estatus', ['Por Aprobar', 'Planeado', 'Rechazado']);
-        if (!$esDireccion) $kpiQuery->whereIn('user_id', $idsVisibles);
-
+        // KPIs Rápidos
+        $kpiBase = $weeklyActivities; 
         $kpis = [
-            'total'       => (clone $kpiQuery)->count(),
-            'completadas' => (clone $kpiQuery)->where('estatus', 'Completado')->count(),
-            'proceso'     => (clone $kpiQuery)->where('estatus', 'En proceso')->count(),
-            'pendientes'  => (clone $kpiQuery)->where('estatus', 'En blanco')->count(),
-            'retardos'    => (clone $kpiQuery)->where('estatus', 'Retardo')->count(),
+            'total'       => $kpiBase->count(),
+            'completadas' => $kpiBase->where('estatus', 'Completado')->count(),
+            'proceso'     => $kpiBase->where('estatus', 'En proceso')->count(),
+            'pendientes'  => $kpiBase->where('estatus', 'En blanco')->count(),
+            'retardos'    => $kpiBase->where('estatus', 'Retardo')->count(),
         ];
 
-        $users = $esDireccion ? User::orderBy('name')->get() : User::whereIn('id', $idsVisibles)->orderBy('name')->get();
-
-        return view('activities.index', compact('activities', 'kpis', 'users', 'esDireccion', 'esSupervisor', 'necesitaCliente', 'pendingApprovals', 'plannedActivities', 'misRechazos'));
-    }
-
-    // --- GUARDAR PLAN SEMANAL (LOTE) ---
-    public function storeBatch(Request $request)
-    {
-        // 1. REGLA DE NEGOCIO: Solo Lunes antes de las 11:00 AM (Excepto Dirección)
-        $now = now();
-        $esDireccion = Auth::user()->empleado && str_contains(strtolower(Auth::user()->empleado->posicion), 'direccion');
-
-        if ( (!$now->isMonday() || $now->hour >= 11) && !$esDireccion ) {
-            return redirect()->back()->with('error', '🚫 El Plan Semanal solo se puede enviar los Lunes antes de las 11:00 AM. El sistema se ha cerrado.');
-        }
-
-        $request->validate([
-            'semana_inicio' => 'required|date',
-            'plan' => 'array',
-        ]);
-
-        $fechaBase = Carbon::parse($request->semana_inicio);
-        $count = 0;
-
-        foreach ($request->plan as $diaIndex => $tareasDelDia) {
-            // diaIndex 0 = Lunes, 1 = Martes, etc.
-            $fechaReal = $fechaBase->copy()->addDays($diaIndex);
-            
-            if (!is_array($tareasDelDia)) continue;
-
-            foreach ($tareasDelDia as $tarea) {
-                // Si la descripción está vacía, saltamos
-                if (empty($tarea['actividad'])) continue;
-
-                Activity::create([
-                    'user_id'          => Auth::id(),
-                    'area'             => $tarea['area'] ?? 'Anexo 24', // O el área por defecto de tu empresa
-                    'cliente'          => $tarea['cliente'] ?? null,
-                    'tipo_actividad'   => $tarea['tipo'] ?? 'General', 
-                    'nombre_actividad' => $tarea['actividad'],
-                    
-                    // --- NUEVOS CAMPOS DE TIEMPO ---
-                    'hora_inicio_programada' => $tarea['start_time'] ?? null, 
-                    'hora_fin_programada'    => $tarea['end_time'] ?? null,
-                    
-                    'fecha_inicio'     => now(), // Fecha de registro
-                    'fecha_compromiso' => $fechaReal, // Fecha planeada de ejecución
-                    'prioridad'        => 'Media',
-                    'estatus'          => 'Por Aprobar', 
-                    'metrico'          => 1,
-                ]);
-                $count++;
-            }
-        }
-
-        return redirect()->route('activities.index')
-            ->with('success', "Se enviaron $count actividades a revisión de tu supervisor.");
-    }
-
-    public function approve(Request $request, $id)
-    {
-        $activity = Activity::findOrFail($id);
-        
-        if($request->filled('ajuste_nombre')) $activity->nombre_actividad = $request->ajuste_nombre;
-        if($request->filled('ajuste_prio')) $activity->prioridad = $request->ajuste_prio;
-
-        $activity->estatus = 'Planeado'; 
-        // Limpiamos rechazo previo si existía
-        $activity->motivo_rechazo = null; 
-        $activity->save();
-
-        ActivityHistory::create([
-            'activity_id' => $activity->id,
-            'user_id' => Auth::id(),
-            'action' => 'approved',
-            'details' => 'Plan aprobado por supervisor'
-        ]);
-
-        return back()->with('success', 'Actividad aprobada e integrada a los objetivos del usuario.');
-    }
-
-    public function start($id)
-    {
-        $activity = Activity::findOrFail($id);
-        $activity->estatus = 'En proceso';
-        $activity->fecha_inicio = now(); 
-        $activity->save();
-
-        ActivityHistory::create([
-            'activity_id' => $activity->id,
-            'user_id' => Auth::id(),
-            'action' => 'updated',
-            'details' => 'Inició ejecución de actividad planeada'
-        ]);
-
-        return back()->with('success', 'Actividad activada en tu bitácora diaria.');
-    }
-
-    public function reject(Request $request, $id)
-    {
-        $request->validate([
-            'motivo' => 'required|string|min:3'
-        ]);
-
-        $activity = Activity::findOrFail($id);
-        $activity->estatus = 'Rechazado';
-        $activity->motivo_rechazo = $request->motivo;
-        $activity->save();
-
-        ActivityHistory::create([
-            'activity_id' => $activity->id,
-            'user_id' => Auth::id(),
-            'action' => 'rejected',
-            'details' => 'Rechazado: ' . $request->motivo
-        ]);
-
-        return back()->with('warning', 'La actividad fue enviada de regreso al usuario para corrección.');
+        return view('activities.index', compact(
+            'mainActivities', 'teamUsers', 'targetUser', 'kpis', 
+            'esDireccion', 'esSupervisor', 'necesitaCliente', 
+            'globalPendingCount', 'misRechazos', 
+            'startOfWeek', 'endOfWeek', 'isHistoryView', 'verTodo'
+        ));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nombre_actividad' => 'required|string|max:255',
-            'tipo_actividad'   => 'required|string|max:100',
-            'area'             => 'required|string|max:100',
+            'nombre_actividad' => 'required|max:255',
             'fecha_compromiso' => 'required|date',
-            'prioridad'        => 'nullable|in:Alta,Media,Baja',
-            'cliente'          => 'nullable|string|max:150',
+            'area'             => 'required|string'
         ]);
 
-        $activity = Activity::create([
-            'user_id'          => Auth::id(),
-            'nombre_actividad' => $request->nombre_actividad,
-            'tipo_actividad'   => $request->tipo_actividad,
-            'area'             => $request->area,
-            'cliente'          => $request->cliente,
-            'fecha_inicio'     => now(),
-            'fecha_compromiso' => $request->fecha_compromiso,
-            'prioridad'        => $request->prioridad ?? 'Media',
-            'estatus'          => 'En blanco',
-            'metrico'          => 1,
-        ]);
+        $data = $request->all();
 
-        ActivityHistory::create([
-            'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'created', 'details' => 'Creó la actividad'
-        ]);
+        // Si soy jefe y asigno a otro
+        if ($request->filled('assigned_to')) {
+            // Aquí podrías validar permisos extra si quisieras
+            $data['user_id'] = $request->assigned_to;
+        } else {
+            $data['user_id'] = Auth::id();
+        }
 
-        return redirect()->route('activities.index')->with('success', 'Actividad creada correctamente');
+        $data['fecha_inicio'] = now(); // Fecha de Asignación (Creación)
+        $data['estatus'] = 'En blanco';
+        $data['metrico'] = 1;
+
+        Activity::create($data);
+
+        return redirect()->back()->with('success', 'Actividad creada correctamente.');
     }
 
+    public function storeBatch(Request $request)
+    {
+        $request->validate(['semana_inicio' => 'required|date', 'plan' => 'array']);
+        
+        return DB::transaction(function () use ($request) {
+            $fechaBase = Carbon::parse($request->semana_inicio);
+            $count = 0;
+            
+            if (empty($request->plan)) return redirect()->back()->with('warning', 'Sin datos.');
+
+            foreach ($request->plan as $diaIndex => $tareasDelDia) {
+                $fechaReal = $fechaBase->copy()->addDays($diaIndex);
+                if (!is_array($tareasDelDia)) continue;
+
+                foreach ($tareasDelDia as $tarea) {
+                    $nombre = trim($tarea['actividad'] ?? '');
+                    if (empty($nombre)) continue;
+
+                    Activity::create([
+                        'user_id'          => Auth::id(), // Batch es personal
+                        'area'             => $tarea['area'] ?? 'General',
+                        'cliente'          => $tarea['cliente'] ?? null,
+                        'tipo_actividad'   => $tarea['tipo'] ?? 'Operativo',
+                        'nombre_actividad' => $nombre,
+                        'hora_inicio_programada' => $tarea['start_time'] ?? null,
+                        'hora_fin_programada'    => $tarea['end_time'] ?? null,
+                        'fecha_inicio'     => now(), // Fecha Asignación
+                        'fecha_compromiso' => $fechaReal,
+                        'prioridad'        => 'Media',
+                        'estatus'          => 'Por Aprobar',
+                        'metrico'          => 1,
+                    ]);
+                    $count++;
+                }
+            }
+            return redirect()->route('activities.index')->with('success', "Plan enviado: {$count} actividades.");
+        });
+    }
+
+    // --- UPDATE INTELIGENTE (LOGS Y PERMISOS) ---
     public function update(Request $request, $id)
     {
         $activity = Activity::findOrFail($id);
-        $originalData = $activity->only(['estatus', 'prioridad', 'comentarios', 'cliente']);
-        $activity->fill($request->except(['evidencia']));
+        $user = Auth::user();
+        
+        // 1. Validar Permisos
+        $esDireccion = $user->empleado && str_contains(strtolower($user->empleado->posicion), 'direcc');
+        $esSupervisor = false;
+        
+        // ¿Soy su supervisor directo?
+        if ($user->empleado && $activity->user->empleado && $user->empleado->id === $activity->user->empleado->supervisor_id) {
+            $esSupervisor = true;
+        }
+        // ¿Soy el dueño y es un borrador?
+        $esDuenoBorrador = ($activity->user_id === $user->id && $activity->estatus === 'En blanco');
 
-        // --- LÓGICA DE CORRECCIÓN DE RECHAZO ---
-        if ($activity->estatus === 'Rechazado') {
-            // Si el usuario edita una rechazada, la devolvemos a "Por Aprobar"
-            $activity->estatus = 'Por Aprobar';
+        $puedeEditarTodo = $esDireccion || $esSupervisor || $esDuenoBorrador;
+
+        $original = $activity->toArray(); // Guardar estado anterior
+
+        // 2. Asignar datos según permisos
+        if ($puedeEditarTodo) {
+            // Jefe: Puede cambiar todo
+            $activity->fill($request->except(['evidencia']));
+        } else {
+            // Empleado: Solo puede cambiar estatus y comentarios.
+            // Ignoramos cambios en fechas/prioridad que vengan del request
+            $activity->estatus = $request->estatus;
+            $activity->comentarios = $request->comentarios;
+            // No hacemos fill de lo demás para proteger integridad
+        }
+
+        // 3. DETECTOR DE CAMBIOS (LOG DETALLADO)
+        $mapaCampos = [
+            'nombre_actividad' => 'Actividad', 
+            'estatus' => 'Estatus', 
+            'prioridad' => 'Prioridad',
+            'fecha_compromiso' => 'Fecha Compromiso', 
+            'hora_inicio_programada' => 'Hora Inicio', 
+            'hora_fin_programada' => 'Hora Fin', 
+            'comentarios' => 'Comentarios',
+            'cliente' => 'Cliente',
+            'area' => 'Área'
+        ];
+
+        foreach ($activity->getDirty() as $campo => $nuevoValor) {
+            if (!array_key_exists($campo, $mapaCampos)) continue;
+            
+            $nombreLegible = $mapaCampos[$campo];
+            $valorAnterior = $original[$campo] ?? '-';
+
+            // Formato limpio para fechas
+            if (str_contains($campo, 'fecha') && $valorAnterior !== '-') {
+                $valorAnterior = \Carbon\Carbon::parse($valorAnterior)->format('Y-m-d');
+                $nuevoValor = \Carbon\Carbon::parse($nuevoValor)->format('Y-m-d');
+            }
+            // Formato limpio para horas
+            if (str_contains($campo, 'hora') && $valorAnterior !== '-') {
+                $valorAnterior = substr($valorAnterior, 0, 5);
+                $nuevoValor = substr($nuevoValor, 0, 5);
+            }
+
+            if ($valorAnterior == $nuevoValor) continue;
+
+            $mensaje = ($campo === 'comentarios') 
+                ? "Actualizó comentarios / bitácora" 
+                : "Cambió $nombreLegible: '$valorAnterior' ➝ '$nuevoValor'";
+
             ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated', 
-                'details' => 'Corrección realizada tras rechazo'
+                'activity_id' => $activity->id, 
+                'user_id' => Auth::id(),
+                'action' => 'updated', 
+                'details' => $mensaje
             ]);
         }
 
-        if (in_array($activity->estatus, ['En proceso', 'En blanco', 'Retardo'])) {
+        // 4. Lógica de Estados y Fechas Finales
+        if ($activity->estatus == 'Completado' && $original['estatus'] != 'Completado') {
+            $activity->fecha_final = now();
+        }
+        if ($original['estatus'] == 'Completado' && $activity->estatus != 'Completado') {
             $activity->fecha_final = null;
             $activity->resultado_dias = null;
-            $activity->porcentaje = 0; 
+            $activity->porcentaje = null;
+        }
+        // Auto-corrección de rechazo
+        if ($activity->estatus === 'Rechazado' && $original['estatus'] === 'Rechazado') {
+            // Sigue rechazado
+        } elseif ($activity->estatus === 'Rechazado') {
+            $activity->estatus = 'Por Aprobar';
         }
 
+        // Archivos
         if ($request->hasFile('evidencia')) {
             if ($activity->evidencia_path) Storage::disk('public')->delete($activity->evidencia_path);
-            $path = $request->file('evidencia')->store('evidencias_actividades', 'public');
-            $activity->evidencia_path = $path;
-            
+            $activity->evidencia_path = $request->file('evidencia')->store('evidencias', 'public');
             ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
-                'field' => 'evidencia_path', 'old_value' => null, 'new_value' => 'Archivo adjuntado'
-            ]);
-        }
-
-        if ($activity->isDirty('cliente')) {
-            ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
-                'field' => 'cliente', 'old_value' => $originalData['cliente'], 'new_value' => $activity->cliente
-            ]);
-        }
-
-        if ($activity->isDirty('estatus') && $activity->estatus !== 'Por Aprobar') {
-            ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
-                'field' => 'estatus', 'old_value' => $originalData['estatus'], 'new_value' => $activity->estatus
-            ]);
-            if ($activity->estatus == 'Completado') $activity->fecha_final = now();
-        }
-        
-        if ($request->comentarios && $request->comentarios !== $originalData['comentarios']) {
-             ActivityHistory::create([
-                'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'comment', 'comentario' => $request->comentarios
+                'activity_id' => $activity->id, 'user_id' => Auth::id(), 
+                'action' => 'file', 'details' => 'Adjuntó evidencia'
             ]);
         }
 
         $activity->save();
-        return redirect()->route('activities.index')->with('success', 'Actividad actualizada');
+        return redirect()->back()->with('success', 'Actualizado.');
     }
 
-    /**
-     * Eliminar actividad con verificación de permisos.
-     * Solo Dirección, Supervisor directo o el Dueño (si no ha iniciado) pueden borrar.
-     */
     public function destroy($id)
     {
         $activity = Activity::findOrFail($id);
         $user = Auth::user();
         
-        // 1. Verificar si es Dirección
-        $esDireccion = false;
-        if ($user->empleado && (str_contains(strtolower($user->empleado->posicion), 'direccion') || str_contains(strtolower($user->empleado->posicion), 'dirección'))) {
-            $esDireccion = true;
+        $esDireccion = $user->empleado && str_contains(strtolower($user->empleado->posicion), 'direcc');
+        $esSupervisor = $user->empleado && $activity->user->empleado && $user->empleado->id === $activity->user->empleado->supervisor_id;
+        $esDuenoBorrador = ($activity->user_id === $user->id && $activity->estatus === 'En blanco');
+
+        if ($esDireccion || $esSupervisor || $esDuenoBorrador) {
+            $activity->delete();
+            return redirect()->back()->with('success', 'Eliminado.');
         }
-
-        // 2. Verificar si es Supervisor del dueño de la actividad
-        $esSupervisor = false;
-        if ($user->empleado && $activity->user->empleado && $user->empleado->id === $activity->user->empleado->supervisor_id) {
-            $esSupervisor = true;
-        }
-
-        // 3. Verificar si es el Dueño (Solo si la actividad está 'En blanco' o 'Rechazado' para no borrar historial ya iniciado)
-        $esDueno = ($activity->user_id === $user->id) && in_array($activity->estatus, ['En blanco', 'Rechazado', 'Por Aprobar']);
-
-        if ($esDireccion || $esSupervisor || $esDueno) {
-            $activity->delete(); // SoftDelete activado en el modelo
-            return redirect()->route('activities.index')->with('success', 'Actividad eliminada correctamente.');
-        }
-
         abort(403, 'No tienes permiso para eliminar esta actividad.');
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $act = Activity::findOrFail($id);
+        $act->estatus = 'Planeado'; 
+        $act->motivo_rechazo = null;
+        $act->save();
+        ActivityHistory::create(['activity_id'=>$id, 'user_id'=>Auth::id(), 'action'=>'approved', 'details'=>'Aprobó la actividad']);
+        return back()->with('success', 'Aprobada.');
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $act = Activity::findOrFail($id);
+        $act->estatus = 'Rechazado';
+        $act->motivo_rechazo = $request->input('motivo', 'Revisión');
+        $act->save();
+        ActivityHistory::create(['activity_id'=>$id, 'user_id'=>Auth::id(), 'action'=>'rejected', 'details'=>'Rechazó: '.$request->motivo]);
+        return back()->with('warning', 'Rechazada.');
+    }
+
+    public function start($id)
+    {
+        $act = Activity::findOrFail($id);
+        $act->estatus = 'En proceso';
+        $act->fecha_inicio = now(); // Actualiza fecha real de inicio de ejecución (opcional, o mantienes la de creación)
+        $act->save();
+        ActivityHistory::create(['activity_id'=>$id, 'user_id'=>Auth::id(), 'action'=>'updated', 'details'=>'Inició ejecución']);
+        return back()->with('success', 'Iniciada.');
     }
 }
