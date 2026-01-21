@@ -37,8 +37,7 @@
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">NOMBRE</th>
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">CORREO</th>
                     <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">ÁREA</th>
-                    <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">EXPEDIENTE</th>
-                    <th class="px-5 py-2 text-right text-[11px] font-semibold tracking-wide text-slate-600">ACCIONES</th>
+                    <th class="px-5 py-2 text-left text-[11px] font-semibold tracking-wide text-slate-600">ESTATUS DOCUMENTACIÓN</th> <th class="px-5 py-2 text-right text-[11px] font-semibold tracking-wide text-slate-600">ACCIONES</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -61,43 +60,38 @@
                             @endif
                         </td>
                         
-                        {{-- NUEVA COLUMNA: BARRA DE PROGRESO --}}
-                        <td class="px-5 py-2 align-middle">
+                        {{-- COLUMNA ACTUALIZADA: BADGE + PROGRESO --}}
+                        <td class="px-5 py-3 align-middle">
                             @php 
-                                $porcentaje = $empleado->porcentaje_expediente; 
-                                // Lógica de colores semáforo
-                                $colorBarra = 'bg-red-500';
-                                $textoColor = 'text-red-600';
-                                
-                                if($porcentaje > 50) { 
-                                    $colorBarra = 'bg-yellow-400'; 
-                                    $textoColor = 'text-yellow-600'; 
-                                }
-                                if($porcentaje >= 90) { 
-                                    $colorBarra = 'bg-green-500'; 
-                                    $textoColor = 'text-green-600'; 
-                                }
+                                $porcentaje = $empleado->porcentaje_expediente;
+                                $alerta = $empleado->alerta_expediente; 
                             @endphp
 
-                            <div class="w-full max-w-[120px]">
-                                <div class="flex justify-between mb-1">
-                                    <span class="text-[10px] font-bold {{ $textoColor }}">{{ $porcentaje }}%</span>
-                                    <span class="text-[10px] text-slate-400" title="{{ $empleado->es_practicante ? 'Evaluado como Practicante' : 'Evaluado como Empleado' }}">
-                                        {{ $empleado->es_practicante ? 'Prac.' : 'Emp.' }}
+                            <div class="flex flex-col gap-2 max-w-[160px]">
+                                <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold {{ $alerta['bg'] }} {{ $alerta['text'] }} {{ $alerta['border'] }}">
+                                    <span class="relative flex h-2 w-2">
+                                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {{ $alerta['dot'] }}"></span>
+                                      <span class="relative inline-flex rounded-full h-2 w-2 {{ $alerta['dot'] }}"></span>
                                     </span>
+                                    {{ $alerta['status'] }}
                                 </div>
-                                <div class="w-full bg-slate-200 rounded-full h-1.5">
-                                    <div class="{{ $colorBarra }} h-1.5 rounded-full transition-all duration-500" style="width: {{ $porcentaje }}%"></div>
+
+                                <div class="w-full flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-500 {{ $porcentaje == 100 ? 'bg-emerald-500' : 'bg-slate-400' }}" 
+                                             style="width: {{ $porcentaje }}%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-500 font-medium">{{ $porcentaje }}%</span>
                                 </div>
                             </div>
                         </td>
 
                         <td class="px-5 py-2 text-xs text-right space-x-1">
-                            <a href="{{ route('rh.expedientes.show',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-blue-600 hover:bg-blue-100 shadow-sm">
-                                <x-ui.icon name="eye" class="h-4 w-4" />Ver
+                            <a href="{{ route('rh.expedientes.show',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm">
+                                <x-ui.icon name="eye" class="h-3.5 w-3.5" /> Ver
                             </a>
-                            <a href="{{ route('rh.expedientes.edit',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-yellow-50 px-2 py-1 text-yellow-700 hover:bg-yellow-100 shadow-sm">
-                                <x-ui.icon name="pencil-square" class="h-4 w-4" />Editar
+                            <a href="{{ route('rh.expedientes.edit',$empleado) }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50 hover:text-yellow-600 transition-colors shadow-sm">
+                                <x-ui.icon name="pencil-square" class="h-3.5 w-3.5" /> Editar
                             </a>
                         </td>
                     </tr>

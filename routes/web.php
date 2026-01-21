@@ -234,6 +234,7 @@ Route::middleware(['auth', 'area.rh'])->group(function () {
         Route::post('/{id}/upload', 'uploadDocument')->name('upload');
         Route::delete('/documento/{id}', 'deleteDocument')->name('delete-doc');
         Route::post('/{id}/import-excel', 'importFormatoId')->name('import-excel');
+        Route::get('/documento/{id}/descargar', 'downloadDocument')->name('download');
     });
 
     // Capacitación (Gestión)

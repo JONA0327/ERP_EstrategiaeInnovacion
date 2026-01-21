@@ -116,7 +116,6 @@ class ActivityController extends Controller
     }
 
     // --- GUARDAR PLAN SEMANAL (LOTE) ---
-    // --- GUARDAR PLAN SEMANAL (LOTE) ---
     public function storeBatch(Request $request)
     {
         // 1. REGLA DE NEGOCIO: Solo Lunes antes de las 11:00 AM (Excepto Dirección)
@@ -209,7 +208,6 @@ class ActivityController extends Controller
         return back()->with('success', 'Actividad activada en tu bitácora diaria.');
     }
 
-    // --- NUEVO: RECHAZAR CON MOTIVO (NO BORRAR) ---
     public function reject(Request $request, $id)
     {
         $request->validate([
@@ -224,7 +222,7 @@ class ActivityController extends Controller
         ActivityHistory::create([
             'activity_id' => $activity->id,
             'user_id' => Auth::id(),
-            'action' => 'rejected', // Asegúrate de manejar este string si lo usas en la vista
+            'action' => 'rejected',
             'details' => 'Rechazado: ' . $request->motivo
         ]);
 
@@ -272,7 +270,6 @@ class ActivityController extends Controller
         if ($activity->estatus === 'Rechazado') {
             // Si el usuario edita una rechazada, la devolvemos a "Por Aprobar"
             $activity->estatus = 'Por Aprobar';
-            // Guardamos un historial específico
             ActivityHistory::create([
                 'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated', 
                 'details' => 'Corrección realizada tras rechazo'
@@ -303,7 +300,7 @@ class ActivityController extends Controller
             ]);
         }
 
-        if ($activity->isDirty('estatus') && $activity->estatus !== 'Por Aprobar') { // Evitamos duplicar log si ya lo manejamos arriba
+        if ($activity->isDirty('estatus') && $activity->estatus !== 'Por Aprobar') {
             ActivityHistory::create([
                 'activity_id' => $activity->id, 'user_id' => Auth::id(), 'action' => 'updated',
                 'field' => 'estatus', 'old_value' => $originalData['estatus'], 'new_value' => $activity->estatus
@@ -321,10 +318,35 @@ class ActivityController extends Controller
         return redirect()->route('activities.index')->with('success', 'Actividad actualizada');
     }
 
+    /**
+     * Eliminar actividad con verificación de permisos.
+     * Solo Dirección, Supervisor directo o el Dueño (si no ha iniciado) pueden borrar.
+     */
     public function destroy($id)
     {
         $activity = Activity::findOrFail($id);
-        $activity->delete();
-        return redirect()->route('activities.index')->with('success', 'Actividad eliminada');
+        $user = Auth::user();
+        
+        // 1. Verificar si es Dirección
+        $esDireccion = false;
+        if ($user->empleado && (str_contains(strtolower($user->empleado->posicion), 'direccion') || str_contains(strtolower($user->empleado->posicion), 'dirección'))) {
+            $esDireccion = true;
+        }
+
+        // 2. Verificar si es Supervisor del dueño de la actividad
+        $esSupervisor = false;
+        if ($user->empleado && $activity->user->empleado && $user->empleado->id === $activity->user->empleado->supervisor_id) {
+            $esSupervisor = true;
+        }
+
+        // 3. Verificar si es el Dueño (Solo si la actividad está 'En blanco' o 'Rechazado' para no borrar historial ya iniciado)
+        $esDueno = ($activity->user_id === $user->id) && in_array($activity->estatus, ['En blanco', 'Rechazado', 'Por Aprobar']);
+
+        if ($esDireccion || $esSupervisor || $esDueno) {
+            $activity->delete(); // SoftDelete activado en el modelo
+            return redirect()->route('activities.index')->with('success', 'Actividad eliminada correctamente.');
+        }
+
+        abort(403, 'No tienes permiso para eliminar esta actividad.');
     }
 }

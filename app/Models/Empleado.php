@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Carbon\Carbon; // <--- Importante para fechas
 
 class Empleado extends Model
 {
     use HasFactory;
 
+    // ... (Mantén tu código existente de $table, $fillable y relaciones) ...
     protected $table = 'empleados';
 
     protected $fillable = [
@@ -32,8 +34,6 @@ class Empleado extends Model
         'contacto_emergencia_nombre', 'contacto_emergencia_numero', 'contacto_emergencia_parentesco',
         'rfc', 'curp', 'nss'
     ];
-
-    // --- RELACIONES ---
 
     public function user()
     {
@@ -60,79 +60,39 @@ class Empleado extends Model
         return $this->hasMany(\App\Models\EmpleadoDocumento::class);
     }
 
-    // --- LÓGICA DE NEGOCIO CENTRALIZADA ---
+    // --- LÓGICA DE NEGOCIO ---
 
-    /**
-     * Devuelve la lista de documentos requeridos según el tipo de empleado.
-     * Esta es la "Fuente de la Verdad".
-     */
     public static function getRequisitos($esPracticante)
     {
         if ($esPracticante) {
-            return [
-                'INE', 
-                'CURP', 
-                'Comprobante de Domicilio', 
-                'Estado de Cuenta', 
-                'Formato ID', 
-                'Contrato'
-            ];
+            return ['INE', 'CURP', 'Comprobante de Domicilio', 'Estado de Cuenta', 'Formato ID', 'Contrato'];
         }
-
-        return [
-            'INE', 
-            'CURP', 
-            'Comprobante de Domicilio', 
-            'NSS',    
-            'Titulo', // O Carta Pasante / Cedula
-            'Constancia de Situacion Fiscal', 
-            'Formato ID', 
-            'Contrato'
-        ];
+        return ['INE', 'CURP', 'Comprobante de Domicilio', 'NSS', 'Titulo', 'Constancia de Situacion Fiscal', 'Formato ID', 'Contrato'];
     }
 
-    /**
-     * Calcula el porcentaje de completitud del expediente (0-100).
-     */
     public function getPorcentajeExpedienteAttribute()
     {
-        // 1. Datos obligatorios en Base de Datos
-        $datosRequeridos = [
-            'nombre', 'correo', 'telefono', 'direccion', 
-            'contacto_emergencia_numero', 'contacto_emergencia_nombre'
-        ];
-
-        // 2. Obtener lista de docs desde la función centralizada
+        // ... (Tu lógica existente de porcentaje se mantiene igual) ...
+        $datosRequeridos = ['nombre', 'correo', 'telefono', 'direccion', 'contacto_emergencia_numero', 'contacto_emergencia_nombre'];
         $docsRequeridos = self::getRequisitos($this->es_practicante);
 
-        // 3. Reglas extra de BD según tipo
         if ($this->es_practicante) {
             $datosRequeridos[] = 'curp';
         } else {
-            $datosRequeridos[] = 'nss';
-            $datosRequeridos[] = 'rfc';
-            $datosRequeridos[] = 'curp';
+            $datosRequeridos[] = 'nss'; $datosRequeridos[] = 'rfc'; $datosRequeridos[] = 'curp';
         }
 
         $puntosPosibles = count($docsRequeridos) + count($datosRequeridos);
         $puntosObtenidos = 0;
 
-        // A) Calcular puntos por Información en BD
         foreach ($datosRequeridos as $campo) {
-            if (!empty($this->$campo)) {
-                $puntosObtenidos++;
-            }
+            if (!empty($this->$campo)) $puntosObtenidos++;
         }
 
-        // B) Calcular puntos por Documentos Subidos
-        $docsSubidos = $this->documentos->map(function ($doc) {
-            return Str::lower($doc->nombre);
-        });
+        $docsSubidos = $this->documentos->map(fn($doc) => Str::lower($doc->nombre));
 
         foreach ($docsRequeridos as $req) {
             $reqLower = Str::lower($req);
-            
-            // Lógica de coincidencia flexible (Fuzzy Matching)
             if ($req === 'Titulo') {
                 if ($docsSubidos->contains(fn($d) => Str::contains($d, ['titulo', 'cedula', 'pasante', 'profesional']))) $puntosObtenidos++;
             } elseif ($req === 'NSS') {
@@ -143,7 +103,70 @@ class Empleado extends Model
         }
 
         if ($puntosPosibles == 0) return 0;
-
         return round(($puntosObtenidos / $puntosPosibles) * 100);
+    }
+
+    /**
+     * NUEVO: Calcula el estado de alerta del expediente.
+     * Retorna un array con 'status' (texto), 'color' (clase tailwind base) e 'icon'.
+     */
+    public function getAlertaExpedienteAttribute()
+    {
+        // 1. Prioridad: Documentos Vencidos (Rojo Crítico)
+        $hoy = Carbon::now();
+        $docsVencidos = $this->documentos->filter(function($doc) use ($hoy) {
+            return $doc->fecha_vencimiento && $doc->fecha_vencimiento->lt($hoy);
+        });
+
+        if ($docsVencidos->count() > 0) {
+            return [
+                'status' => 'Vencido',
+                'bg' => 'bg-red-100',
+                'text' => 'text-red-700',
+                'border' => 'border-red-200',
+                'dot' => 'bg-red-500',
+                'msg' => $docsVencidos->count() . ' documento(s) caducado(s)'
+            ];
+        }
+
+        // 2. Prioridad: Documentos por Vencer (Amarillo Alerta)
+        $limiteAlerta = Carbon::now()->addDays(30);
+        $docsPorVencer = $this->documentos->filter(function($doc) use ($hoy, $limiteAlerta) {
+            return $doc->fecha_vencimiento && $doc->fecha_vencimiento->between($hoy, $limiteAlerta);
+        });
+
+        if ($docsPorVencer->count() > 0) {
+            return [
+                'status' => 'Por Vencer',
+                'bg' => 'bg-yellow-50',
+                'text' => 'text-yellow-700',
+                'border' => 'border-yellow-200',
+                'dot' => 'bg-yellow-400',
+                'msg' => 'Documentación próxima a expirar'
+            ];
+        }
+
+        // 3. Prioridad: Expediente Incompleto (Naranja/Rojo)
+        // Usamos el atributo que ya calculamos
+        if ($this->porcentaje_expediente < 100) {
+            return [
+                'status' => 'Incompleto',
+                'bg' => 'bg-orange-50',
+                'text' => 'text-orange-700',
+                'border' => 'border-orange-200',
+                'dot' => 'bg-orange-500',
+                'msg' => 'Faltan datos o documentos'
+            ];
+        }
+
+        // 4. Todo OK (Verde)
+        return [
+            'status' => 'Vigente',
+            'bg' => 'bg-emerald-50',
+            'text' => 'text-emerald-700',
+            'border' => 'border-emerald-200',
+            'dot' => 'bg-emerald-500',
+            'msg' => 'Expediente al día'
+        ];
     }
 }

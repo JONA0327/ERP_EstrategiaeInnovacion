@@ -19,6 +19,7 @@
                         // Variables PHP iniciales para renderizado server-side
                         $now = now();
                         $esTiempoDePlanear = $now->isMonday() && $now->hour < 11;
+                        //$esTiempoDePlanear = true;
                         if(isset($esDireccion) && $esDireccion) $esTiempoDePlanear = true; 
                     @endphp
 
@@ -449,7 +450,7 @@
                     </div>
                 @else
                     <div class="col-span-12 md:col-span-2">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente</label>
                         <input type="text" name="tipo_actividad" class="w-full text-xs rounded-lg border-slate-300 focus:ring-indigo-500" placeholder="Ej. Proyecto" required>
                     </div>
                     <div class="col-span-12 md:col-span-4">
@@ -463,7 +464,7 @@
                     <input type="date" name="fecha_compromiso" class="w-full text-xs rounded-lg border-slate-300 focus:ring-indigo-500" required>
                 </div>
                 <div class="col-span-12 md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prio</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prioridad</label>
                     <select name="prioridad" class="w-full text-xs rounded-lg border-slate-300 focus:ring-indigo-500">
                         <option value="Baja">Baja</option>
                         <option value="Media" selected>Media</option>
@@ -494,7 +495,7 @@
                             @endif
 
                             <th class="px-3 py-4 w-24">Tipo</th>
-                            <th class="px-3 py-4 w-28 text-center">Prio</th>
+                            <th class="px-3 py-4 w-28 text-center">Prioridad</th>
                             <th class="px-3 py-4 min-w-[250px]">Actividad</th>
                             <th class="px-3 py-4 w-20 text-center">Inicio</th>
                             <th class="px-3 py-4 w-20 text-center">Promesa</th>
@@ -505,6 +506,10 @@
                             <th class="px-3 py-4 w-40 text-center">Estatus</th>
                             <th class="px-2 py-4 w-16 text-center">Editar</th>
                             <th class="px-2 py-4 w-12 text-center">Log</th>
+                            {{-- NUEVA COLUMNA DE ELIMINAR --}}
+                            <th class="px-2 py-4 w-10 text-center text-red-300">
+                                <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -616,9 +621,40 @@
                                 </button>
                                 <textarea id="history-data-{{ $act->id }}" class="hidden">{{ json_encode($act->historial) }}</textarea>
                             </td>
+                            
+                            {{-- LÓGICA BOTÓN ELIMINAR --}}
+                            <td class="px-2 py-3 text-center">
+                                @php
+                                    $puedeEliminar = false;
+                                    $currentUser = Auth::user();
+                                    
+                                    // 1. Si es Dirección (Admin)
+                                    if (isset($esDireccion) && $esDireccion) {
+                                        $puedeEliminar = true;
+                                    }
+                                    // 2. Si es Supervisor directo del dueño de la actividad
+                                    elseif ($currentUser->empleado && $act->user->empleado && $currentUser->empleado->id === $act->user->empleado->supervisor_id) {
+                                        $puedeEliminar = true;
+                                    }
+                                    // 3. (Opcional) Si es el dueño y la actividad está "En blanco" (aún no iniciada)
+                                    elseif ($act->user_id === $currentUser->id && $act->estatus === 'En blanco') {
+                                        $puedeEliminar = true;
+                                    }
+                                @endphp
+
+                                @if($puedeEliminar)
+                                    <form action="{{ route('activities.destroy', $act->id) }}" method="POST" onsubmit="return confirm('⚠️ ¿Estás seguro de eliminar esta actividad?\n\nEsta acción no se puede deshacer.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-slate-300 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 group" title="Eliminar Actividad">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
                         </tr>
                         @empty
-                        <tr><td colspan="16" class="py-12 text-center text-slate-400 italic bg-slate-50/50 rounded-b-xl border-t border-slate-100">No hay actividades.</td></tr>
+                        <tr><td colspan="17" class="py-12 text-center text-slate-400 italic bg-slate-50/50 rounded-b-xl border-t border-slate-100">No hay actividades.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

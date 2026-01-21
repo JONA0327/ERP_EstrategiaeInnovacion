@@ -5,19 +5,20 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Models\Asistencia;
 use App\Models\Empleado;
-use App\Services\ProcesarAsistenciaService; // Asegúrate de tener este servicio o usa la lógica anterior
+use App\Services\ProcesarAsistenciaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB; // Importante para las transacciones
 use Carbon\Carbon;
 
 class RelojChecadorImportController extends Controller
 {
     public function index(Request $request)
     {
+        // ... (El código del index se mantiene igual) ...
         // 1. Definir Periodo
         $inicio = $request->input('fecha_inicio', now()->startOfMonth()->toDateString());
         $fin = $request->input('fecha_fin', now()->endOfMonth()->toDateString());
@@ -25,10 +26,8 @@ class RelojChecadorImportController extends Controller
         $start = Carbon::parse($inicio);
         $end = Carbon::parse($fin);
 
-        // 2. Generar Array de Fechas (Para la vista)
-        // Este loop genera las etiquetas visuales (Lunes 31, Domingo 30...)
+        // 2. Generar Array de Fechas
         $fechas = [];
-        // Clonamos $end para no afectar la fecha original que usaremos en el query
         $loopDate = $end->copy(); 
         
         while ($loopDate->gte($start)) {
@@ -38,9 +37,8 @@ class RelojChecadorImportController extends Controller
             $loopDate->subDay();
         }
 
-        // 3. Preparar Límites para la Base de Datos
-        // TRUCO: Para incluir TODO el día final, buscamos todo lo que sea MENOR al día siguiente.
-        $dbFechaFin = Carbon::parse($fin)->addDay()->format('Y-m-d'); // Ej: Si fin es 31-12, esto será 01-01
+        // 3. Preparar Límites BD
+        $dbFechaFin = Carbon::parse($fin)->addDay()->format('Y-m-d');
 
         // 4. Obtener Empleados
         $search = $request->input('search');
@@ -55,7 +53,6 @@ class RelojChecadorImportController extends Controller
                 });
             })
             ->orderBy('nombre')
-            // Cargamos asistencias con la lógica de "Menor al día siguiente"
             ->with(['asistencias' => function($q) use ($inicio, $dbFechaFin) {
                 $q->where('fecha', '>=', $inicio)
                   ->where('fecha', '<', $dbFechaFin);
@@ -63,7 +60,7 @@ class RelojChecadorImportController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // 5. Calcular KPIs Globales (Con la misma lógica de fechas)
+        // 5. KPIs
         $baseQuery = Asistencia::query()
             ->where('fecha', '>=', $inicio)
             ->where('fecha', '<', $dbFechaFin);
@@ -128,19 +125,23 @@ class RelojChecadorImportController extends Controller
             'comentarios' => 'nullable|string|max:255',
         ]);
 
-        $asistencia = Asistencia::findOrFail($id);
-        
-        $asistencia->update([
-            'tipo_registro' => $request->tipo_registro,
-            'comentarios' => $request->comentarios,
-            'es_justificado' => $request->has('es_justificado'),
-        ]);
+        // ATOMICIDAD: Aunque es un solo registro, buena práctica envolverlo.
+        DB::transaction(function () use ($request, $id) {
+            $asistencia = Asistencia::findOrFail($id);
+            
+            $asistencia->update([
+                'tipo_registro' => $request->tipo_registro,
+                'comentarios' => $request->comentarios,
+                'es_justificado' => $request->has('es_justificado'),
+            ]);
+        });
 
         return back()->with('success', 'Registro actualizado correctamente.');
     }
 
     /**
-     * Registra incidencias individuales o MASIVAS (Versión Corregida "Anti-Duplicados")
+     * Registra incidencias individuales o MASIVAS
+     * ATOMICIDAD APLICADA: Si falla el registro 99, se revierten los 98 anteriores.
      */
     public function store(Request $request)
     {
@@ -151,73 +152,72 @@ class RelojChecadorImportController extends Controller
             'tipo_registro' => 'required'
         ]);
 
-        $inicio = Carbon::parse($request->fecha_inicio);
-        $fin = $request->fecha_fin ? Carbon::parse($request->fecha_fin) : $inicio->copy();
-        
-        $targetEmpleados = collect();
+        return DB::transaction(function () use ($request) {
+            $inicio = Carbon::parse($request->fecha_inicio);
+            $fin = $request->fecha_fin ? Carbon::parse($request->fecha_fin) : $inicio->copy();
+            
+            $targetEmpleados = collect();
 
-        if ($request->empleado_id === 'all') {
-            $targetEmpleados = Empleado::all(); 
-        } else {
-            $emp = Empleado::find($request->empleado_id);
-            if ($emp) {
-                $targetEmpleados->push($emp);
-            }
-        }
-
-        if ($targetEmpleados->isEmpty()) {
-            return back()->with('error', 'No se encontraron empleados.');
-        }
-
-        $contador = 0;
-
-        foreach ($targetEmpleados as $empleado) {
-            $loopDate = $inicio->copy();
-
-            while ($loopDate->lte($fin)) {
-                
-                $registroExistente = Asistencia::where('empleado_id', $empleado->id)
-                    ->whereDate('fecha', $loopDate->toDateString())
-                    ->first();
-
-                // Datos base
-                $datosGuardar = [
-                    'empleado_id' => $empleado->id,
-                    'fecha' => $registroExistente ? $registroExistente->fecha : $loopDate->toDateString(),
-                    'empleado_no' => $empleado->id_empleado ?? 'S/N',
-                    'nombre' => $empleado->nombre . ' ' . $empleado->apellido_paterno,
-                    'tipo_registro' => $request->tipo_registro,
-                    'comentarios' => $request->comentarios,
-                    'es_justificado' => true,
-                    'es_retardo' => false,
-                    'updated_at' => now(),
-                ];
-
-                if ($registroExistente) {
-                    $registroExistente->update($datosGuardar);
-                } else {
-                    // Si es NUEVO, necesitamos estos campos obligatorios
-                    $datosGuardar['created_at'] = now();
-                    $datosGuardar['checadas'] = '[]'; // <--- ¡AQUÍ ESTABA EL ERROR! (Array JSON vacío)
-                    
-                    // Aseguramos que entrada/salida sean null si la BD los pide (aunque suelen ser nullable)
-                    $datosGuardar['entrada'] = null;
-                    $datosGuardar['salida'] = null;
-
-                    Asistencia::create($datosGuardar);
+            if ($request->empleado_id === 'all') {
+                $targetEmpleados = Empleado::all(); 
+            } else {
+                $emp = Empleado::find($request->empleado_id);
+                if ($emp) {
+                    $targetEmpleados->push($emp);
                 }
-                
-                $contador++;
-                $loopDate->addDay();
             }
-        }
 
-        return back()->with('success', "Proceso terminado. Se registraron {$contador} incidencias correctamente.");
+            if ($targetEmpleados->isEmpty()) {
+                return back()->with('error', 'No se encontraron empleados.');
+            }
+
+            $contador = 0;
+
+            foreach ($targetEmpleados as $empleado) {
+                $loopDate = $inicio->copy();
+
+                while ($loopDate->lte($fin)) {
+                    
+                    $registroExistente = Asistencia::where('empleado_id', $empleado->id)
+                        ->whereDate('fecha', $loopDate->toDateString())
+                        ->lockForUpdate() // Bloqueamos la fila para evitar condiciones de carrera
+                        ->first();
+
+                    // Datos base
+                    $datosGuardar = [
+                        'empleado_id' => $empleado->id,
+                        'fecha' => $registroExistente ? $registroExistente->fecha : $loopDate->toDateString(),
+                        'empleado_no' => $empleado->id_empleado ?? 'S/N',
+                        'nombre' => $empleado->nombre . ' ' . $empleado->apellido_paterno,
+                        'tipo_registro' => $request->tipo_registro,
+                        'comentarios' => $request->comentarios,
+                        'es_justificado' => true,
+                        'es_retardo' => false,
+                        'updated_at' => now(),
+                    ];
+
+                    if ($registroExistente) {
+                        $registroExistente->update($datosGuardar);
+                    } else {
+                        $datosGuardar['created_at'] = now();
+                        $datosGuardar['checadas'] = '[]';
+                        $datosGuardar['entrada'] = null;
+                        $datosGuardar['salida'] = null;
+
+                        Asistencia::create($datosGuardar);
+                    }
+                    
+                    $contador++;
+                    $loopDate->addDay();
+                }
+            }
+
+            return back()->with('success', "Proceso terminado. Se registraron {$contador} incidencias correctamente.");
+        });
     }
 
     /**
      * Proceso de Importación (Async con Cache)
-     * Este código ya estaba bien diseñado, solo lo mantenemos limpio.
      */
     public function start(Request $request)
     {
@@ -242,6 +242,8 @@ class RelojChecadorImportController extends Controller
 
             $service = new ProcesarAsistenciaService();
             
+            // La transacción está implementada DENTRO del servicio para no bloquear 
+            // la base de datos mientras se lee el archivo Excel (que es lento).
             $resultado = $service->process($fullPath, true, function ($estado) use ($key) {
                 $percent = ($estado['total'] > 0) ? round(($estado['indice'] / $estado['total']) * 100) : 0;
                 $this->updateProgress($key, 'procesando', max(5, $percent), "Procesando registros...");
@@ -258,7 +260,7 @@ class RelojChecadorImportController extends Controller
         }
     }
 
-    // Helper privado para limpiar código repetitivo en start()
+    // Helper privado
     private function updateProgress($key, $status, $percent, $msg, $finalizado = false) {
         Cache::put($key, [
             'status' => $status,
@@ -275,10 +277,7 @@ class RelojChecadorImportController extends Controller
 
     public function clear()
     {
-        // Se podría agregar validación de permisos de admin aquí
         Asistencia::truncate();
         return redirect()->route('rh.reloj.index')->with('success', 'Base de datos de asistencia vaciada correctamente.');
     }
-
-    
 }

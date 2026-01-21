@@ -100,7 +100,7 @@ class ExpedienteController extends Controller
         $path = $file->storeAs(
             "expedientes/{$empleado->id}", 
             $filename, 
-            'public'
+            'local' // <--- CAMBIO AQUÍ
         );
 
         EmpleadoDocumento::create([
@@ -121,8 +121,8 @@ class ExpedienteController extends Controller
     {
         $doc = EmpleadoDocumento::findOrFail($id);
         
-        if (Storage::disk('public')->exists($doc->ruta_archivo)) {
-            Storage::disk('public')->delete($doc->ruta_archivo);
+        if (Storage::disk('local')->exists($doc->ruta_archivo)) {
+            Storage::disk('local')->delete($doc->ruta_archivo);
         }
         
         $doc->delete();
@@ -158,7 +158,7 @@ class ExpedienteController extends Controller
         $path = $file->storeAs(
             "expedientes/{$empleado->id}", 
             $filename, 
-            'public'
+            'local'
         );
 
         // Registramos (o actualizamos) que ya entregó el "Formato ID"
@@ -260,5 +260,18 @@ class ExpedienteController extends Controller
             // Si falla la lectura, al menos el archivo ya se guardó
             return back()->with('warning', 'El archivo se guardó en el expediente, pero hubo un error leyendo los datos internos: ' . $e->getMessage());
         }
+    }
+
+    public function downloadDocument($id)
+    {
+        $doc = EmpleadoDocumento::findOrFail($id);
+
+        // Verificamos si existe en el disco privado
+        if (!Storage::disk('local')->exists($doc->ruta_archivo)) {
+            abort(404, 'El documento no existe.');
+        }
+
+        // Retorna el archivo para descarga/visualización
+        return Storage::disk('local')->response($doc->ruta_archivo);
     }
 }

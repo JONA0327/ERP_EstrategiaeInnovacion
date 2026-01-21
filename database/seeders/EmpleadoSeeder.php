@@ -16,7 +16,7 @@ class EmpleadoSeeder extends Seeder
             // ===== DIRECCIÓN =====
             [
                 'id_empleado' => '0',
-                'nombre' => 'Guillermo Aguilera',
+                'nombre' => 'Amos Guillermo Aguilera Gonzalez',
                 'correo' => 'guillermo.aguilera@empresa.com',
                 'area' => 'Estrategia e Innovacion',
                 'posicion' => 'Direccion',
@@ -282,7 +282,7 @@ class EmpleadoSeeder extends Seeder
                     $user = User::create([
                         'email' => $emp['correo'],
                         'name' => $emp['nombre'],
-                        'password' => Hash::make('Pass123456'),
+                        'password' => Hash::make('password'),
                     ]);
                 }
             }
