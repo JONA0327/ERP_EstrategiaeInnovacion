@@ -95,6 +95,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [CapacitacionController::class, 'index'])->name('index');
         Route::get('/ver/{id}', [CapacitacionController::class, 'show'])->name('show');
     });
+
+    // Evaluación
+    Route::prefix('capital-humano')->name('rh.')->controller(EvaluacionController::class)->group(function () {
+        Route::get('/evaluacion', 'index')->name('evaluacion.index');
+        Route::get('/evaluacion/{id}', 'show')->name('evaluacion.show');
+        Route::post('/evaluacion', 'store')->name('evaluacion.store');
+        Route::put('/evaluacion/{id}', 'update')->name('evaluacion.update');
+        Route::get('/evaluacion/{id}/resultados', 'resultados')->name('evaluacion.resultados');
+    });
 });
 
 
@@ -247,14 +256,7 @@ Route::middleware(['auth', 'area.rh'])->group(function () {
         Route::delete('/adjunto/{id}', 'destroyAdjunto')->name('destroyAdjunto');
     });
 
-    // Evaluación
-    Route::prefix('capital-humano')->name('rh.')->controller(EvaluacionController::class)->group(function () {
-        Route::get('/evaluacion', 'index')->name('evaluacion.index');
-        Route::get('/evaluacion/{id}', 'show')->name('evaluacion.show');
-        Route::post('/evaluacion', 'store')->name('evaluacion.store');
-        Route::put('/evaluacion/{id}', 'update')->name('evaluacion.update');
-        Route::get('/evaluacion/{id}/resultados', 'resultados')->name('evaluacion.resultados');
-    });
+    
 });
 
 

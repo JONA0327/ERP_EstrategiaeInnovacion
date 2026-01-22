@@ -127,7 +127,6 @@
                             <p class="text-xs text-red-600 mt-1 font-medium bg-red-100 px-2 py-0.5 rounded inline-block">Motivo: {{ $rej->motivo_rechazo }}</p>
                         </div>
                     </div>
-                    {{-- Permitimos editar todo (true) porque es corrección --}}
                     <button onclick='openNotes(@json($rej), true)' class="bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-red-600 hover:text-white transition shadow-sm">
                         Corregir Ahora
                     </button>
@@ -152,13 +151,15 @@
 
             {{-- Botones de Acción --}}
             <div class="flex gap-3 w-full sm:w-auto">
-                @if($targetUser->id === Auth::id() && $necesitaCliente)
+                {{-- BOTÓN PLANIFICAR: SOLO SI PUEDE PLANIFICAR (Anexo 24 / Post-Op) --}}
+                @if($targetUser->id === Auth::id() && $puedePlanificar)
                     <button onclick="openPlanModal()" class="flex-1 sm:flex-none bg-white text-indigo-600 border border-indigo-200 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-indigo-50 hover:shadow-md transition flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         Planificar Semana
                     </button>
                 @endif
                 
+                {{-- BOTÓN CREAR: DISPONIBLE PARA TODOS --}}
                 @if($esSupervisor || $esDireccion || $targetUser->id === Auth::id())
                     <button onclick="document.getElementById('quickCreateModal').classList.remove('hidden')" class="flex-1 sm:flex-none bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition transform flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> 
@@ -196,17 +197,14 @@
                     <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
                         <tr>
                             <th class="px-4 py-4 w-10 text-center">#</th>
-                            <th class="px-4 py-4 w-20 text-center text-slate-400">F. Inicio</th> {{-- NUEVA --}}
+                            <th class="px-4 py-4 w-20 text-center text-slate-400">F. Asignación</th>
                             <th class="px-4 py-4 w-16 text-center">Prio</th>
                             <th class="px-4 py-4 min-w-[280px]">Descripción</th>
                             <th class="px-4 py-4 w-32">Cliente/Área</th>
                             <th class="px-4 py-4 w-24 text-center">Promesa</th>
-                            
-                            {{-- KPI COLUMNS --}}
                             <th class="px-2 py-4 w-20 text-center bg-slate-100/50 text-slate-600 border-l border-slate-100">Fin Real</th>
                             <th class="px-2 py-4 w-16 text-center bg-slate-100/50 text-slate-600">Días</th>
                             <th class="px-2 py-4 w-16 text-center bg-slate-100/50 text-slate-600 border-r border-slate-100">% Efic.</th>
-                            
                             <th class="px-4 py-4 w-32 text-center">Estatus</th>
                             <th class="px-4 py-4 w-32 text-center">Acciones</th>
                         </tr>
@@ -274,7 +272,7 @@
                                     </div>
                                 </td>
 
-                                {{-- KPI: Fin Real --}}
+                                {{-- Fin Real --}}
                                 <td class="px-2 py-4 text-center border-l border-slate-100">
                                     @if($act->fecha_final)
                                         <span class="text-[10px] font-mono text-slate-600 block">{{ $act->fecha_final->format('d M') }}</span>
@@ -284,7 +282,7 @@
                                     @endif
                                 </td>
 
-                                {{-- KPI: Días --}}
+                                {{-- Días Reales --}}
                                 <td class="px-2 py-4 text-center">
                                     @php
                                         $dias = $act->resultado_dias;
@@ -297,7 +295,7 @@
                                     <span class="text-[11px] {{ $color }}">{{ $dias ?? '-' }}</span>
                                 </td>
 
-                                {{-- KPI: Porcentaje --}}
+                                {{-- Porcentaje --}}
                                 <td class="px-2 py-4 text-center border-r border-slate-100">
                                     @if(isset($act->porcentaje))
                                         <span class="text-[10px] font-black {{ $act->porcentaje < 100 ? 'text-orange-500' : 'text-slate-700' }}">
@@ -573,8 +571,8 @@
     </div>
 </div>
 
-{{-- 4. MODAL PLANIFICADOR (DISEÑO PREMIUM) --}}
-@if($necesitaCliente)
+{{-- 4. MODAL PLANIFICADOR (SOLO SI TIENE PERMISO Y REDISEÑADO) --}}
+@if($puedePlanificar)
 <div id="planModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('planModal').classList.add('hidden')"></div>
     <div class="fixed inset-0 z-10 flex items-center justify-center p-4 sm:p-6">
@@ -596,27 +594,37 @@
                         <input type="date" name="semana_inicio" id="weekPicker" class="border-none bg-white text-slate-700 text-sm font-bold rounded-lg focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer hover:text-indigo-600 transition" value="{{ now()->startOfWeek()->format('Y-m-d') }}" onchange="updateWeekLabels()">
                     </div>
                 </div>
-                <div class="flex-1 overflow-x-auto overflow-y-hidden bg-slate-50/50 relative">
-                    <div class="h-full min-w-[1200px] grid grid-cols-5 divide-x divide-slate-200/60">
-                        @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] as $index => $dia)
-                        <div class="flex flex-col h-full group hover:bg-slate-50 transition-colors">
-                            <div class="p-4 text-center border-b border-slate-100 bg-white sticky top-0 z-10">
-                                <h4 class="text-sm font-black text-slate-700 uppercase tracking-wide">{{ $dia }}</h4>
-                                <span class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 inline-block" id="label-date-{{ $index }}">--/--</span>
+                
+                {{-- BODY: TABLERO KANBAN CON COLUMNAS INDEPENDIENTES --}}
+                <div class="flex-1 overflow-hidden relative bg-slate-100">
+                    <div class="h-full overflow-x-auto custom-scrollbar">
+                        <div class="flex h-full min-w-max">
+                            @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] as $index => $dia)
+                            <div class="w-[320px] flex flex-col h-full border-r border-slate-200 bg-slate-50/50 group transition-colors hover:bg-slate-100/50">
+                                {{-- Cabecera del Día --}}
+                                <div class="p-4 text-center border-b border-slate-200 bg-white sticky top-0 z-10 shadow-sm">
+                                    <h4 class="text-sm font-black text-slate-700 uppercase tracking-wide">{{ $dia }}</h4>
+                                    <span class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 inline-block" id="label-date-{{ $index }}">--/--</span>
+                                </div>
+                                
+                                {{-- Contenedor de Tarjetas (Scroll Vertical) --}}
+                                <div class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar" id="container-day-{{ $index }}">
+                                    {{-- JS inyecta aquí --}}
+                                </div>
+                                
+                                {{-- Botón Agregar (Fijo abajo) --}}
+                                <div class="p-3 bg-white border-t border-slate-200 sticky bottom-0 z-10">
+                                    <button type="button" onclick="addTaskCard({{ $index }})" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-xs font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-slate-50 transition-all flex justify-center items-center gap-2">
+                                        <div class="bg-slate-200 rounded-full p-0.5 text-white group-hover:bg-indigo-500 transition-colors"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg></div>
+                                        Agregar Tarea
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar" id="container-day-{{ $index }}">
-                                {{-- JS inyecta tarjetas aquí --}}
-                            </div>
-                            <div class="p-3 bg-slate-50/80 backdrop-blur border-t border-slate-100">
-                                <button type="button" onclick="addTaskCard({{ $index }})" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-xs font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm transition-all flex justify-center items-center gap-2 group-btn">
-                                    <div class="bg-slate-200 rounded-full p-0.5 text-white group-hover:bg-indigo-500 transition-colors"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg></div>
-                                    Agregar Tarea
-                                </button>
-                            </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                 </div>
+
                 <div class="px-8 py-5 border-t border-slate-200 bg-white flex justify-between items-center z-20">
                     <button type="button" onclick="document.getElementById('planModal').classList.add('hidden')" class="text-slate-500 hover:text-slate-800 font-bold text-sm px-4 transition">Cancelar</button>
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5 transition flex items-center gap-2">
@@ -676,7 +684,6 @@
         document.getElementById('modal-supervisor').innerText = supervisorName;
 
         // BLINDAJE DE CAMPOS (Gris si no es jefe)
-        // Agregamos 'modal-area' y 'modal-cliente' a la lista de bloqueos
         const inputsToLock = ['modal-activity-name', 'modal-fecha', 'modal-prioridad', 'modal-hora-inicio', 'modal-hora-fin', 'modal-area', 'modal-cliente'];
         inputsToLock.forEach(id => {
             const el = document.getElementById(id);
@@ -723,8 +730,8 @@
                         <span class="text-slate-300 text-[10px]">-</span>
                         <div class="flex-1 flex items-center bg-slate-50 rounded-lg px-2 py-1 border border-slate-100 focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-100 transition"><input type="time" name="plan[${dayIndex}][${cardIndex}][end_time]" class="w-full text-[10px] font-bold border-0 bg-transparent p-0 focus:ring-0 text-slate-600 h-4 leading-none text-center"></div>
                     </div>
-                    <div class="relative"><input type="text" name="plan[${dayIndex}][${cardIndex}][cliente]" class="w-full text-[10px] font-bold text-indigo-600 placeholder-indigo-300 border-0 border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 py-1 bg-transparent transition" placeholder="+ Agregar Cliente (Opcional)"></div>
-                    <textarea name="plan[${dayIndex}][${cardIndex}][actividad]" rows="2" class="w-full text-xs text-slate-700 font-medium border-0 bg-slate-50/50 rounded-lg p-2 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:shadow-sm resize-none transition placeholder-slate-400" placeholder="Describe la actividad..." required></textarea>
+                    <div class="relative"><input type="text" name="plan[${dayIndex}][${cardIndex}][cliente]" class="w-full text-[10px] font-bold text-indigo-600 placeholder-indigo-300 border-0 border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 px-0 py-1 bg-transparent transition" placeholder="+ Cliente"></div>
+                    <textarea name="plan[${dayIndex}][${cardIndex}][actividad]" rows="2" class="w-full text-xs text-slate-700 font-medium border-0 bg-slate-50/50 rounded-lg p-2 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:shadow-sm resize-none transition placeholder-slate-400" placeholder="Actividad..." required></textarea>
                 </div>
             </div>`;
         container.insertAdjacentHTML('beforeend', cardHTML);
@@ -778,7 +785,7 @@
     .animate-fade-in-up { animation: fadeInUp 0.3s ease-out; }
     @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

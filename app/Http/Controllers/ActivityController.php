@@ -20,16 +20,20 @@ class ActivityController extends Controller
         $user = Auth::user(); 
         $miEmpleado = $user->empleado; 
 
-        // 1. CONFIGURACIÓN DE PERMISOS Y JERARQUÍA
+        // 1. CONFIGURACIÓN DE PERMISOS
         $esDireccion = false;
         $esSupervisor = false;
-        $necesitaCliente = false; // (Opcional: puedes dejarlo true siempre si todos usan clientes)
+        $puedePlanificar = false; // Por defecto nadie planifica semanalmente
         $idsVisibles = [$user->id]; 
 
         if ($miEmpleado) {
             $posicionLower = mb_strtolower($miEmpleado->posicion, 'UTF-8');
-            // Regla: Define aquí qué puestos ven filtros de cliente específicos si lo deseas
-            $necesitaCliente = true; 
+
+            // --- REGLA DE NEGOCIO: SOLO ESTAS POSICIONES USAN EL PLANIFICADOR SEMANAL ---
+            // El resto solo crea actividades sueltas ("bomberazos")
+            if (Str::contains($posicionLower, ['anexo 24', 'anexo24', 'post-operacion', 'post operacion', 'post operación'])) {
+                $puedePlanificar = true;
+            }
 
             if (str_contains($posicionLower, 'direccion') || str_contains($posicionLower, 'dirección')) {
                 $esDireccion = true;
@@ -45,7 +49,7 @@ class ActivityController extends Controller
             }
         }
 
-        // 2. CONTEXTO (SELECTOR DE USUARIO)
+        // 2. CONTEXTO
         $targetUserId = $user->id;
         if (($esSupervisor || $esDireccion) && $request->filled('user_id')) {
             if ($esDireccion || in_array($request->user_id, $idsVisibles)) {
@@ -54,19 +58,18 @@ class ActivityController extends Controller
         }
         $targetUser = User::findOrFail($targetUserId);
 
-        // 3. GESTIÓN DE FECHAS
+        // 3. FECHAS
         $viewDate = $request->has('week_view') ? Carbon::parse($request->week_view) : now();
         $startOfWeek = $viewDate->copy()->startOfWeek();
         $endOfWeek = $viewDate->copy()->endOfWeek();
         $isHistoryView = $endOfWeek->lt(now()->startOfWeek());
         $verTodo = $request->has('ver_historial') && $request->ver_historial == '1';
 
-        // 4. CONSULTA PRINCIPAL
+        // 4. CONSULTA
         $query = Activity::with(['user.empleado.supervisor', 'historial.user'])
             ->where('user_id', $targetUserId) 
             ->whereBetween('fecha_compromiso', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')]);
 
-        // Filtro visual: Ocultar completados/rechazados si no se pide ver historial
         if (!$verTodo && !$isHistoryView) {
             $query->whereNotIn('estatus', ['Completado', 'Rechazado']);
         }
@@ -79,22 +82,19 @@ class ActivityController extends Controller
             });
         }
 
-        // --- ORDENAMIENTO ESTRICTO (TU REQUERIMIENTO) ---
+        // Ordenamiento
         $weeklyActivities = $query
-            // 1. Completados siempre al final
             ->orderByRaw("CASE estatus WHEN 'Completado' THEN 2 ELSE 1 END")
-            // 2. PRIORIDAD (Alta -> Media -> Baja)
             ->orderByRaw("CASE prioridad 
                             WHEN 'Alta' THEN 1 
                             WHEN 'Media' THEN 2 
                             WHEN 'Baja' THEN 3 
                             ELSE 4 END")
-            // 3. Fecha y Hora
             ->orderBy('fecha_compromiso')
             ->orderBy('hora_inicio_programada')
             ->get();
 
-        // 5. RESCATE DE PENDIENTES (Mostrar siempre lo "Por Aprobar" aunque no sea de esta semana)
+        // 5. PENDIENTES
         $pendingActivities = collect();
         if (!$isHistoryView) { 
             $pendingActivities = Activity::with(['user.empleado', 'historial.user'])
@@ -105,7 +105,7 @@ class ActivityController extends Controller
 
         $mainActivities = $weeklyActivities->merge($pendingActivities)->unique('id');
 
-        // 6. DATOS AUXILIARES
+        // 6. EXTRAS
         $teamUsers = collect();
         if ($esDireccion) {
             $teamUsers = User::orderBy('name')->get();
@@ -113,7 +113,6 @@ class ActivityController extends Controller
             $teamUsers = User::whereIn('id', $idsVisibles)->orderBy('name')->get();
         }
 
-        // Alerta: ¿Hay pendientes en otros usuarios?
         $globalPendingCount = 0;
         if ($esSupervisor || $esDireccion) {
             $q = Activity::where('estatus', 'Por Aprobar')->where('user_id', '!=', $targetUserId);
@@ -121,10 +120,9 @@ class ActivityController extends Controller
             $globalPendingCount = $q->count();
         }
 
-        // Alerta Personal: Rechazos
         $misRechazos = Activity::where('user_id', $user->id)->where('estatus', 'Rechazado')->get();
 
-        // KPIs Rápidos
+        // NOTA: Ya no pasamos $necesitaCliente porque ahora Cliente/Área son para todos
         $kpiBase = $weeklyActivities; 
         $kpis = [
             'total'       => $kpiBase->count(),
@@ -136,7 +134,7 @@ class ActivityController extends Controller
 
         return view('activities.index', compact(
             'mainActivities', 'teamUsers', 'targetUser', 'kpis', 
-            'esDireccion', 'esSupervisor', 'necesitaCliente', 
+            'esDireccion', 'esSupervisor', 'puedePlanificar', // Nueva variable de control
             'globalPendingCount', 'misRechazos', 
             'startOfWeek', 'endOfWeek', 'isHistoryView', 'verTodo'
         ));
