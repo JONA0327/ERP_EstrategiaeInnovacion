@@ -20,36 +20,44 @@ class ActivityController extends Controller
         $user = Auth::user(); 
         $miEmpleado = $user->empleado; 
 
-        // 1. CONFIGURACIÓN DE PERMISOS
+        // 1. CARGA DINÁMICA DE POSICIONES
+        $areasSistema = Empleado::where('es_activo', true)
+            ->whereNotNull('posicion')->where('posicion', '!=', '')
+            ->distinct()->orderBy('posicion')->pluck('posicion');
+
+        if ($areasSistema->isEmpty()) {
+            $areasSistema = collect(['General', 'Operativo', 'Administrativo']);
+        }
+
+        // LISTA DE USUARIOS PARA ASIGNAR (Todos)
+        $empleadosAsignables = User::whereHas('empleado', function($q) {
+            $q->where('es_activo', true);
+        })->orderBy('name')->get();
+
+        // 2. PERMISOS
         $esDireccion = false;
         $esSupervisor = false;
-        $puedePlanificar = false; // Por defecto nadie planifica semanalmente
+        $esPuestoPlanificador = false;
+        $esHorarioPermitido = false;
+        $puedePlanificar = false; 
         $idsVisibles = [$user->id]; 
 
         if ($miEmpleado) {
             $posicionLower = mb_strtolower($miEmpleado->posicion, 'UTF-8');
+            $esPuestoPlanificador = Str::contains($posicionLower, ['anexo 24', 'anexo24', 'post-operacion', 'post operacion']);
+            $esHorarioPermitido = now()->isMonday() && now()->hour >= 9 && now()->hour < 11;
 
-            // --- REGLA DE NEGOCIO: SOLO ESTAS POSICIONES USAN EL PLANIFICADOR SEMANAL ---
-            // El resto solo crea actividades sueltas ("bomberazos")
-            if (Str::contains($posicionLower, ['anexo 24', 'anexo24', 'post-operacion', 'post operacion', 'post operación'])) {
-                $puedePlanificar = true;
-            }
+            if ($esPuestoPlanificador && $esHorarioPermitido) $puedePlanificar = true;
+            if (str_contains($posicionLower, 'direcc')) $esDireccion = true;
 
-            if (str_contains($posicionLower, 'direccion') || str_contains($posicionLower, 'dirección')) {
-                $esDireccion = true;
-            }
-
-            // Obtener subordinados
-            $subordinadosIds = Empleado::where('supervisor_id', $miEmpleado->id)
-                                        ->pluck('user_id')->filter()->toArray();
-            
+            $subordinadosIds = Empleado::where('supervisor_id', $miEmpleado->id)->pluck('user_id')->filter()->toArray();
             if (count($subordinadosIds) > 0) {
                 $esSupervisor = true;
                 $idsVisibles = array_merge($idsVisibles, $subordinadosIds);
             }
         }
 
-        // 2. CONTEXTO
+        // 3. CONTEXTO
         $targetUserId = $user->id;
         if (($esSupervisor || $esDireccion) && $request->filled('user_id')) {
             if ($esDireccion || in_array($request->user_id, $idsVisibles)) {
@@ -58,21 +66,23 @@ class ActivityController extends Controller
         }
         $targetUser = User::findOrFail($targetUserId);
 
-        // 3. FECHAS
+        // 4. FECHAS Y CONSULTAS
         $viewDate = $request->has('week_view') ? Carbon::parse($request->week_view) : now();
         $startOfWeek = $viewDate->copy()->startOfWeek();
         $endOfWeek = $viewDate->copy()->endOfWeek();
         $isHistoryView = $endOfWeek->lt(now()->startOfWeek());
         $verTodo = $request->has('ver_historial') && $request->ver_historial == '1';
 
-        // 4. CONSULTA
+        // --- CORRECCIÓN 1: LÓGICA DE VISUALIZACIÓN DE FECHAS ---
+        // Aparece si se asignó esta semana O si vence esta semana
         $query = Activity::with(['user.empleado.supervisor', 'historial.user'])
             ->where('user_id', $targetUserId) 
-            ->whereBetween('fecha_compromiso', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')]);
+            ->where(function($q) use ($startOfWeek, $endOfWeek) {
+                $q->whereBetween('fecha_compromiso', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                  ->orWhereBetween('fecha_inicio', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')]);
+            });
 
-        if (!$verTodo && !$isHistoryView) {
-            $query->whereNotIn('estatus', ['Completado', 'Rechazado']);
-        }
+        if (!$verTodo && !$isHistoryView) $query->whereNotIn('estatus', ['Completado', 'Rechazado']);
         
         if ($request->search) {
             $query->where(function($q) use ($request) {
@@ -82,19 +92,13 @@ class ActivityController extends Controller
             });
         }
 
-        // Ordenamiento
         $weeklyActivities = $query
             ->orderByRaw("CASE estatus WHEN 'Completado' THEN 2 ELSE 1 END")
-            ->orderByRaw("CASE prioridad 
-                            WHEN 'Alta' THEN 1 
-                            WHEN 'Media' THEN 2 
-                            WHEN 'Baja' THEN 3 
-                            ELSE 4 END")
+            ->orderByRaw("CASE prioridad WHEN 'Alta' THEN 1 WHEN 'Media' THEN 2 ELSE 4 END")
             ->orderBy('fecha_compromiso')
             ->orderBy('hora_inicio_programada')
             ->get();
 
-        // 5. PENDIENTES
         $pendingActivities = collect();
         if (!$isHistoryView) { 
             $pendingActivities = Activity::with(['user.empleado', 'historial.user'])
@@ -105,7 +109,7 @@ class ActivityController extends Controller
 
         $mainActivities = $weeklyActivities->merge($pendingActivities)->unique('id');
 
-        // 6. EXTRAS
+        // 5. VARIABLES DE EQUIPO Y ALERTAS ESPECÍFICAS
         $teamUsers = collect();
         if ($esDireccion) {
             $teamUsers = User::orderBy('name')->get();
@@ -113,30 +117,46 @@ class ActivityController extends Controller
             $teamUsers = User::whereIn('id', $idsVisibles)->orderBy('name')->get();
         }
 
+        // --- CORRECCIÓN 2: OBTENER IDS EXACTOS DE QUIÉN TIENE PENDIENTES ---
         $globalPendingCount = 0;
+        $usersWithPending = []; // Array para guardar IDs de usuarios con pendientes
+
         if ($esSupervisor || $esDireccion) {
-            $q = Activity::where('estatus', 'Por Aprobar')->where('user_id', '!=', $targetUserId);
-            if (!$esDireccion) $q->whereIn('user_id', $idsVisibles);
-            $globalPendingCount = $q->count();
+            // Base query para buscar pendientes bajo mi supervisión
+            $alertQuery = Activity::where('estatus', 'Por Aprobar');
+            
+            if (!$esDireccion) {
+                // Si soy supervisor, solo busco en mis ids visibles
+                $alertQuery->whereIn('user_id', $idsVisibles);
+            }
+            // Excluir mis propias tareas de la alerta global (opcional, pero recomendado)
+            // $alertQuery->where('user_id', '!=', $user->id);
+
+            // Contamos totales
+            $globalPendingCount = $alertQuery->count();
+            
+            // Obtenemos la lista de IDs únicos que tienen pendientes
+            $usersWithPending = $alertQuery->pluck('user_id')->unique()->toArray();
         }
 
         $misRechazos = Activity::where('user_id', $user->id)->where('estatus', 'Rechazado')->get();
 
-        // NOTA: Ya no pasamos $necesitaCliente porque ahora Cliente/Área son para todos
-        $kpiBase = $weeklyActivities; 
         $kpis = [
-            'total'       => $kpiBase->count(),
-            'completadas' => $kpiBase->where('estatus', 'Completado')->count(),
-            'proceso'     => $kpiBase->where('estatus', 'En proceso')->count(),
-            'pendientes'  => $kpiBase->where('estatus', 'En blanco')->count(),
-            'retardos'    => $kpiBase->where('estatus', 'Retardo')->count(),
+            'total' => $weeklyActivities->count(),
+            'completadas' => $weeklyActivities->where('estatus', 'Completado')->count(),
+            'proceso' => $weeklyActivities->where('estatus', 'En proceso')->count(),
+            'pendientes' => $weeklyActivities->where('estatus', 'En blanco')->count(),
+            'retardos' => $weeklyActivities->where('estatus', 'Retardo')->count(),
         ];
 
         return view('activities.index', compact(
             'mainActivities', 'teamUsers', 'targetUser', 'kpis', 
-            'esDireccion', 'esSupervisor', 'puedePlanificar', // Nueva variable de control
+            'esDireccion', 'esSupervisor', 
+            'puedePlanificar', 'esPuestoPlanificador', 'esHorarioPermitido',
             'globalPendingCount', 'misRechazos', 
-            'startOfWeek', 'endOfWeek', 'isHistoryView', 'verTodo'
+            'startOfWeek', 'endOfWeek', 'isHistoryView', 'verTodo',
+            'areasSistema', 'empleadosAsignables', 
+            'usersWithPending' // <--- PASAMOS LA VARIABLE NUEVA A LA VISTA
         ));
     }
 
@@ -149,26 +169,58 @@ class ActivityController extends Controller
         ]);
 
         $data = $request->all();
+        $currentUser = Auth::user();
 
-        // Si soy jefe y asigno a otro
-        if ($request->filled('assigned_to')) {
-            // Aquí podrías validar permisos extra si quisieras
-            $data['user_id'] = $request->assigned_to;
-        } else {
-            $data['user_id'] = Auth::id();
-        }
-
-        $data['fecha_inicio'] = now(); // Fecha de Asignación (Creación)
-        $data['estatus'] = 'En blanco';
+        // Determinar destinatario
+        $targetUserId = $request->filled('assigned_to') ? $request->assigned_to : $currentUser->id;
+        $data['user_id'] = $targetUserId;
+        $data['fecha_inicio'] = now(); 
         $data['metrico'] = 1;
+
+        // --- REGLA DE JERARQUÍA (HIERARCHY RULE) ---
+        if ($targetUserId == $currentUser->id) {
+            // 1. Auto-asignación: Se crea como borrador
+            $data['estatus'] = 'En blanco';
+        } else {
+            // 2. Asignación a terceros (Requiere chequeo de rango)
+            
+            // Check si soy Dirección
+            $soyDireccion = $currentUser->empleado && Str::contains(strtolower($currentUser->empleado->posicion), 'direcc');
+            
+            // Check si soy el Supervisor Directo del destinatario
+            $targetUser = User::with('empleado')->find($targetUserId);
+            $soySuJefe = false;
+            if ($targetUser && $targetUser->empleado && $currentUser->empleado) {
+                if ($targetUser->empleado->supervisor_id === $currentUser->empleado->id) {
+                    $soySuJefe = true;
+                }
+            }
+
+            if ($soyDireccion || $soySuJefe) {
+                // JEFE A SUBORDINADO: Pasa directo (Autoridad)
+                $data['estatus'] = 'Planeado'; 
+            } else {
+                // PAR A PAR (o SUBORDINADO A JEFE): Requiere Aprobación (Pimponeo Controlado)
+                // Esto generará una alerta en el dashboard del supervisor del destinatario
+                $data['estatus'] = 'Por Aprobar'; 
+            }
+        }
 
         Activity::create($data);
 
-        return redirect()->back()->with('success', 'Actividad creada correctamente.');
+        $msg = ($data['estatus'] == 'Por Aprobar') 
+            ? 'Tarea enviada a validación del supervisor.' 
+            : 'Actividad asignada correctamente.';
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function storeBatch(Request $request)
     {
+        if (! (now()->isMonday() && now()->hour >= 9 && now()->hour < 11) ) {
+            return redirect()->back()->with('error', 'El periodo de planificación semanal ha cerrado.');
+        }
+
         $request->validate(['semana_inicio' => 'required|date', 'plan' => 'array']);
         
         return DB::transaction(function () use ($request) {
@@ -185,15 +237,16 @@ class ActivityController extends Controller
                     $nombre = trim($tarea['actividad'] ?? '');
                     if (empty($nombre)) continue;
 
+                    // El batch es auto-planificación, va a 'Por Aprobar' para que el jefe revise la semana entera
                     Activity::create([
-                        'user_id'          => Auth::id(), // Batch es personal
+                        'user_id'          => Auth::id(), 
                         'area'             => $tarea['area'] ?? 'General',
                         'cliente'          => $tarea['cliente'] ?? null,
                         'tipo_actividad'   => $tarea['tipo'] ?? 'Operativo',
                         'nombre_actividad' => $nombre,
                         'hora_inicio_programada' => $tarea['start_time'] ?? null,
                         'hora_fin_programada'    => $tarea['end_time'] ?? null,
-                        'fecha_inicio'     => now(), // Fecha Asignación
+                        'fecha_inicio'     => now(),
                         'fecha_compromiso' => $fechaReal,
                         'prioridad'        => 'Media',
                         'estatus'          => 'Por Aprobar',
@@ -206,40 +259,30 @@ class ActivityController extends Controller
         });
     }
 
-    // --- UPDATE INTELIGENTE (LOGS Y PERMISOS) ---
     public function update(Request $request, $id)
     {
         $activity = Activity::findOrFail($id);
         $user = Auth::user();
         
-        // 1. Validar Permisos
         $esDireccion = $user->empleado && str_contains(strtolower($user->empleado->posicion), 'direcc');
         $esSupervisor = false;
         
-        // ¿Soy su supervisor directo?
         if ($user->empleado && $activity->user->empleado && $user->empleado->id === $activity->user->empleado->supervisor_id) {
             $esSupervisor = true;
         }
-        // ¿Soy el dueño y es un borrador?
         $esDuenoBorrador = ($activity->user_id === $user->id && $activity->estatus === 'En blanco');
 
         $puedeEditarTodo = $esDireccion || $esSupervisor || $esDuenoBorrador;
 
-        $original = $activity->toArray(); // Guardar estado anterior
+        $original = $activity->toArray(); 
 
-        // 2. Asignar datos según permisos
         if ($puedeEditarTodo) {
-            // Jefe: Puede cambiar todo
             $activity->fill($request->except(['evidencia']));
         } else {
-            // Empleado: Solo puede cambiar estatus y comentarios.
-            // Ignoramos cambios en fechas/prioridad que vengan del request
             $activity->estatus = $request->estatus;
             $activity->comentarios = $request->comentarios;
-            // No hacemos fill de lo demás para proteger integridad
         }
 
-        // 3. DETECTOR DE CAMBIOS (LOG DETALLADO)
         $mapaCampos = [
             'nombre_actividad' => 'Actividad', 
             'estatus' => 'Estatus', 
@@ -258,12 +301,10 @@ class ActivityController extends Controller
             $nombreLegible = $mapaCampos[$campo];
             $valorAnterior = $original[$campo] ?? '-';
 
-            // Formato limpio para fechas
             if (str_contains($campo, 'fecha') && $valorAnterior !== '-') {
                 $valorAnterior = \Carbon\Carbon::parse($valorAnterior)->format('Y-m-d');
                 $nuevoValor = \Carbon\Carbon::parse($nuevoValor)->format('Y-m-d');
             }
-            // Formato limpio para horas
             if (str_contains($campo, 'hora') && $valorAnterior !== '-') {
                 $valorAnterior = substr($valorAnterior, 0, 5);
                 $nuevoValor = substr($nuevoValor, 0, 5);
@@ -283,7 +324,6 @@ class ActivityController extends Controller
             ]);
         }
 
-        // 4. Lógica de Estados y Fechas Finales
         if ($activity->estatus == 'Completado' && $original['estatus'] != 'Completado') {
             $activity->fecha_final = now();
         }
@@ -292,14 +332,11 @@ class ActivityController extends Controller
             $activity->resultado_dias = null;
             $activity->porcentaje = null;
         }
-        // Auto-corrección de rechazo
+        
         if ($activity->estatus === 'Rechazado' && $original['estatus'] === 'Rechazado') {
-            // Sigue rechazado
-        } elseif ($activity->estatus === 'Rechazado') {
-            $activity->estatus = 'Por Aprobar';
+            // Lógica opcional para rechazos repetidos
         }
 
-        // Archivos
         if ($request->hasFile('evidencia')) {
             if ($activity->evidencia_path) Storage::disk('public')->delete($activity->evidencia_path);
             $activity->evidencia_path = $request->file('evidencia')->store('evidencias', 'public');
@@ -353,7 +390,7 @@ class ActivityController extends Controller
     {
         $act = Activity::findOrFail($id);
         $act->estatus = 'En proceso';
-        $act->fecha_inicio = now(); // Actualiza fecha real de inicio de ejecución (opcional, o mantienes la de creación)
+        $act->fecha_inicio = now(); 
         $act->save();
         ActivityHistory::create(['activity_id'=>$id, 'user_id'=>Auth::id(), 'action'=>'updated', 'details'=>'Inició ejecución']);
         return back()->with('success', 'Iniciada.');
