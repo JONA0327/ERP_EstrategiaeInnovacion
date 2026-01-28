@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Sistemas_IT\Ticket;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,15 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        // Definir gates para acceso a paneles por posición
+        Gate::define('ver_rh', function ($user) {
+            return $user->isRH();
+        });
+
+        Gate::define('ver_logistica', function ($user) {
+            return $user->isLogistica();
+        });
 
         View::composer('components.authenticated-actions', function ($view) {
             if (!Auth::check() || Auth::user()->isAdmin()) {

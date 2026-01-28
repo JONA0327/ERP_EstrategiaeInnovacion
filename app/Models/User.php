@@ -105,6 +105,7 @@ class User extends Authenticatable
             $valoresAChecar[] = $this->empleado->departamento ?? '';
             $valoresAChecar[] = $this->empleado->puesto ?? '';
             $valoresAChecar[] = $this->empleado->area ?? '';
+            $valoresAChecar[] = $this->empleado->posicion ?? '';
         }
 
         // 2. Palabras clave aceptadas
@@ -166,20 +167,11 @@ class User extends Authenticatable
      */
     public function getPanelInfo(): array
     {
-        // Si no es admin, no tiene panel
-        if (!$this->isAdmin()) {
-            return [
-                'available' => false,
-                'route' => null,
-                'label' => null,
-            ];
-        }
-
         // Obtener posición normalizada
         $posicion = $this->normalizeString($this->empleado->posicion ?? '');
 
         // Determinar panel según posición (orden específico para evitar coincidencias parciales)
-        // Primero checar logística porque contiene "ti" dentro
+        // Logística: cualquier usuario con posición "logistica" puede acceder (no requiere admin)
         if (str_contains($posicion, 'logistica') || str_contains($posicion, 'operaciones') || str_contains($posicion, 'aduana')) {
             return [
                 'available' => true,
@@ -188,7 +180,16 @@ class User extends Authenticatable
             ];
         }
 
-        // Luego checar IT/TI con búsqueda más específica
+        // Los demás paneles SÍ requieren ser admin
+        if (!$this->isAdmin()) {
+            return [
+                'available' => false,
+                'route' => null,
+                'label' => null,
+            ];
+        }
+
+        // IT/TI con búsqueda más específica
         if (str_contains($posicion, ' ti') || str_contains($posicion, 'ti ') || $posicion === 'ti' || $posicion === 'it' || str_contains($posicion, 'sistemas')) {
             return [
                 'available' => true,
@@ -197,6 +198,7 @@ class User extends Authenticatable
             ];
         }
 
+        // RH
         if (str_contains($posicion, 'administracion rh')) {
             return [
                 'available' => true,
