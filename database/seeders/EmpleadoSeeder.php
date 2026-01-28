@@ -317,6 +317,20 @@ class EmpleadoSeeder extends Seeder
             }
 
             $mapaEmpleados[$emp['nombre']] = $empleado->id;
+            
+            // 5. ASIGNAR ROL ADMIN SI ES NECESARIO
+            // Solo: Nancy (jefe de logística), Administración RH, y TI
+            $posicionNorm = strtolower(trim($emp['posicion']));
+            $nombreNorm = strtolower(trim($emp['nombre']));
+            
+            // Nancy es la única admin de logística
+            if ($nombreNorm === 'nancy beatriz gomez hernandez') {
+                $user->update(['role' => 'admin']);
+            }
+            // Administración RH y TI también son admin
+            elseif (str_contains($posicionNorm, 'administracion rh') || str_contains($posicionNorm, 'ti')) {
+                $user->update(['role' => 'admin']);
+            }
         }
 
         // Asignar Supervisores

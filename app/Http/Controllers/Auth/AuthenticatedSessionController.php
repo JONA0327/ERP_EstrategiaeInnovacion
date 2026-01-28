@@ -35,19 +35,22 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('login');
         }
 
-        // 2. Normalizar el área para evitar errores por mayúsculas o espacios
+        // 2. Normalizar el área y posición para evitar errores por mayúsculas o espacios
         $areaRaw = optional($user->empleado)->area;
         $area = $areaRaw ? mb_strtolower(preg_replace('/\s+/u', ' ', $areaRaw), 'UTF-8') : null;
+        
+        $posicionRaw = optional($user->empleado)->posicion;
+        $posicion = $posicionRaw ? mb_strtolower(preg_replace('/\s+/u', ' ', $posicionRaw), 'UTF-8') : null;
 
         // --- A. REDIRECCIONES A "CUEVAS" ESPECÍFICAS ---
 
-        // RH -> Su Dashboard
-        if ($area === 'rh' || $area === 'recursos humanos') {
+        // RH -> Su Dashboard (por área o posición)
+        if ($area === 'rh' || $area === 'recursos humanos' || ($posicion && str_contains($posicion, 'administracion rh'))) {
             return redirect()->route('recursos-humanos.index');
         }
 
-        // Logística -> Su Dashboard
-        if ($area === 'logistica' || $area === 'logística') {
+        // Logística -> Su Dashboard (por área o posición)
+        if ($area === 'logistica' || $area === 'logística' || ($posicion && str_contains($posicion, 'logistica'))) {
             return redirect()->route('logistica.index');
         }
 
