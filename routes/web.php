@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Actividades
+    Route::put('/activities/{activity}/validate', [App\Http\Controllers\ActivityController::class, 'validateCompletion'])->name('activities.validate');
+    Route::get('/activities/client-report', [App\Http\Controllers\ActivityController::class, 'generateClientReport'])->name('activities.client_report');
     Route::resource('activities', ActivityController::class);
     Route::post('/activities/batch', [ActivityController::class, 'storeBatch'])->name('activities.storeBatch');
     Route::put('/activities/{id}/approve', [ActivityController::class, 'approve'])->name('activities.approve');
