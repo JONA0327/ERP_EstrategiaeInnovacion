@@ -3,27 +3,10 @@
 @section('title', 'Tablero de Actividades')
 
 @section('content')
-{{-- ======================================================= --}}
-{{-- 1. LÓGICA INICIAL Y VARIABLES DE VISUALIZACIÓN          --}}
-{{-- ======================================================= --}}
-@php
-    $posicionUser = strtolower(Auth::user()->empleado->posicion ?? '');
-    
-    // Validar si tiene puesto de Planificación
-    $esPuestoPlanificador = isset($esPuestoPlanificador) ? $esPuestoPlanificador : \Illuminate\Support\Str::contains($posicionUser, ['anexo 24', 'anexo24', 'post-operacion', 'post operacion', 'post operación']);
-    
-    // Validar Horario (Lunes 9:00 - 11:00)
-    $esHorarioPermitido = isset($esHorarioPermitido) ? $esHorarioPermitido : (now()->isMonday() && now()->hour >= 9 && now()->hour < 11);
-    
-    // Datos Dinámicos
-    $areasDisponibles = isset($areasSistema) ? $areasSistema : collect(['General', 'Operativo', 'Administrativo']);
-    $usersList = isset($empleadosAsignables) ? $empleadosAsignables : collect([]);
-    $usersWithPending = isset($usersWithPending) ? $usersWithPending : [];
+    {{-- ======================================================= --}}
+    {{-- VISTA DE ACTIVIDADES (Refactorizado)                    --}}
+    {{-- ======================================================= --}}
 
-    // Variables de Filtro
-    $filterOrigin = request('filter_origin', 'todos');
-    // Las variables $startDate, $endDate vienen del controlador
-@endphp
 
 <div class="min-h-screen bg-slate-50/50 py-8" x-data="{ showFilters: false }">
     <div class="max-w-[98%] mx-auto space-y-6">
@@ -256,32 +239,35 @@
                                 } elseif ($isMine && !$isSelfAssigned) {
                                     $rowType = 'recibida';
                                     $rowClass = 'border-l-4 border-blue-400 bg-blue-50/30 hover:bg-blue-50/60';
-                                } elseif (!$isMine && $isSelfAssigned) {
                                     $rowType = 'delegada';
                                     $rowClass = 'border-l-4 border-purple-400 bg-purple-50/30 hover:bg-purple-50/60';
+                                } else {
+                                    $rowClass = ($index % 2 == 0) ? 'bg-white' : 'bg-slate-50';
                                 }
+                                
+                                // Lógica de Retardo Visual (Calculada)
+                                $isDelayed = ($act->estatus != 'Completado' && $act->estatus != 'Rechazado' && $act->estatus != 'Por Validar' && $act->fecha_compromiso->endOfDay()->isPast());
 
-                                // Estilos extra
-                                if ($act->estatus == 'Completado') $rowClass .= ' opacity-60 bg-slate-50/50';
-                                if ($act->estatus == 'Por Aprobar') $rowClass .= ' bg-orange-50/30';
-                                if ($act->estatus == 'Por Validar') $rowClass .= ' bg-purple-50/20'; // Fondo tenue para validación
+                                if ($isDelayed) $rowClass .= ' bg-red-50/50'; // Fondo sutil rojo
+                                if ($act->estatus == 'Por Aprobar') $rowClass .= ' bg-orange-50/50';
+                                if ($act->estatus == 'Por Validar') $rowClass .= ' bg-purple-50/20';
                             @endphp
 
-                            <tr class="transition-colors group {{ $rowClass }}">
-                                <td class="px-4 py-3 text-center text-slate-400 font-mono">{{ $index + 1 }}</td>
+                            <tr class="transition-colors group {{ $rowClass }} hover:shadow-sm">
+                                <td class="px-4 py-3 text-center text-slate-400 font-mono group-hover:text-indigo-500 transition-colors">{{ $index + 1 }}</td>
                                 
                                 <td class="px-4 py-3 text-center">
                                     @if($rowType == 'personal')
-                                        <div class="flex flex-col items-center justify-center" title="Personal"><div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div></div>
+                                        <div class="flex flex-col items-center justify-center transform group-hover:scale-110 transition-transform" title="Personal"><div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div></div>
                                     @elseif($rowType == 'recibida')
-                                        <div class="flex flex-col items-center justify-center" title="De: {{ $act->asignador->name ?? '?' }}"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center animate-pulse"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg></div></div>
+                                        <div class="flex flex-col items-center justify-center transform group-hover:scale-110 transition-transform" title="De: {{ $act->asignador->name ?? '?' }}"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center animate-pulse"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg></div></div>
                                     @elseif($rowType == 'delegada')
-                                        <div class="flex flex-col items-center justify-center" title="Para: {{ $act->user->name }}"><div class="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></div></div>
+                                        <div class="flex flex-col items-center justify-center transform group-hover:scale-110 transition-transform" title="Para: {{ $act->user->name }}"><div class="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></div></div>
                                     @endif
                                 </td>
 
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-bold text-white shadow-sm
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-bold text-white shadow-sm ring-2 ring-white
                                         {{ $act->prioridad == 'Alta' ? 'bg-red-500' : ($act->prioridad == 'Media' ? 'bg-amber-400' : 'bg-blue-300') }}">
                                         {{ substr($act->prioridad, 0, 1) }}
                                     </span>
@@ -289,7 +275,7 @@
 
                                 <td class="px-4 py-3">
                                     <div class="flex flex-col">
-                                        <span class="{{ $act->estatus == 'Completado' ? 'line-through text-slate-400' : 'text-slate-800 font-semibold' }} text-xs leading-snug">
+                                        <span class="{{ $act->estatus == 'Completado' ? 'line-through text-slate-400' : 'text-slate-800 font-semibold group-hover:text-indigo-700 transition-colors' }} text-xs leading-snug">
                                             {{ $act->nombre_actividad }}
                                         </span>
                                         <div class="flex flex-wrap items-center gap-1 mt-0.5">
@@ -298,7 +284,7 @@
                                             @if($act->hora_inicio_programada) <span class="text-[9px] text-slate-500 font-mono bg-slate-100 px-1 rounded">{{ \Carbon\Carbon::parse($act->hora_inicio_programada)->format('H:i') }}</span> @endif
                                         </div>
                                         @if($act->comentarios)
-                                            <div class="flex items-center gap-1 text-[9px] text-indigo-400 truncate max-w-[250px] mt-0.5" title="{{ $act->comentarios }}">
+                                            <div class="flex items-center gap-1 text-[9px] text-indigo-400 truncate max-w-[250px] mt-0.5 group-hover:text-indigo-600 transition-colors" title="{{ $act->comentarios }}">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                                                 {{ $act->comentarios }}
                                             </div>
@@ -314,8 +300,9 @@
                                 </td>
 
                                 <td class="px-4 py-3 text-center">
-                                    <span class="font-bold text-[10px] {{ $act->fecha_compromiso->isToday() ? 'text-indigo-600 bg-indigo-50 px-1 rounded' : 'text-slate-600' }}">
+                                    <span class="font-bold text-[10px] {{ ($isDelayed) ? 'text-red-600 animate-pulse' : ($act->fecha_compromiso->isToday() ? 'text-indigo-600 bg-indigo-50 px-1 rounded ring-1 ring-indigo-100' : 'text-slate-600') }}">
                                         {{ $act->fecha_compromiso->format('d M') }}
+                                        @if($isDelayed) ⚠️ @endif
                                     </span>
                                 </td>
 
@@ -335,42 +322,49 @@
                                 <td class="px-4 py-3 text-center">
                                     @php
                                         $badges = [
-                                            'Por Aprobar'=>'bg-orange-100 text-orange-700', 
-                                            'Por Validar'=>'bg-purple-100 text-purple-700 animate-pulse', // Nuevo Badge
-                                            'Planeado'=>'bg-indigo-100 text-indigo-700', 
-                                            'En proceso'=>'bg-blue-100 text-blue-700', 
-                                            'Completado'=>'bg-emerald-100 text-emerald-700', 
-                                            'Retardo'=>'bg-red-100 text-red-700', 
-                                            'En blanco'=>'bg-slate-100 text-slate-500', 
-                                            'Rechazado'=>'bg-red-200 text-red-800'
+                                            'Por Aprobar'=>'bg-orange-100 text-orange-700 ring-1 ring-orange-200', 
+                                            'Por Validar'=>'bg-purple-100 text-purple-700 ring-1 ring-purple-200 animate-pulse', 
+                                            'Planeado'=>'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200', 
+                                            'En proceso'=>'bg-blue-100 text-blue-700 ring-1 ring-blue-200', 
+                                            'Completado'=>'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200', 
+                                            'Retardo'=>'bg-red-100 text-red-700 ring-1 ring-red-200', 
+                                            'En blanco'=>'bg-slate-100 text-slate-500 ring-1 ring-slate-200', 
+                                            'Rechazado'=>'bg-red-200 text-red-800 ring-1 ring-red-300'
                                         ];
+                                        // Override si es Retardo Visual
+                                        $finalBadge = $badges[$act->estatus] ?? 'bg-gray-100';
+                                        if ($isDelayed) {
+                                            $finalBadge = 'bg-red-50 text-red-600 ring-1 ring-red-100 font-black'; // Estilo alerta
+                                        }
                                     @endphp
-                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase {{ $badges[$act->estatus] ?? 'bg-gray-100' }}">{{ $act->estatus }}</span>
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase {{ $finalBadge }}">{{ $act->estatus }}</span>
                                 </td>
 
                                 <td class="px-4 py-3 text-center">
-                                    <div class="flex justify-center items-center gap-1">
+                                    <div class="flex justify-center items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                                         
                                         {{-- CASO 1: APROBACIÓN DE ASIGNACIÓN --}}
                                         @if($act->estatus == 'Por Aprobar')
                                             @php
                                                 $canApprove = false;
-                                                if ($esDireccion) $canApprove = true;
-                                                elseif ($esSupervisor) {
-                                                    $isSupToSup = (\App\Models\Empleado::where('user_id', $act->asignado_por)->exists() && \App\Models\Empleado::where('supervisor_id', \App\Models\Empleado::where('user_id', $act->asignado_por)->value('id'))->exists()) 
-                                                                  && (\App\Models\Empleado::where('user_id', $act->user_id)->exists() && \App\Models\Empleado::where('supervisor_id', \App\Models\Empleado::where('user_id', $act->user_id)->value('id'))->exists());
-                                                    if (!$isSupToSup) {
-                                                        $targetEmp = $act->user->empleado ?? null;
-                                                        $myEmpId = Auth::user()->empleado->id ?? null;
-                                                        if ($targetEmp && $myEmpId && $targetEmp->supervisor_id === $myEmpId) $canApprove = true;
+                                                if ($esDireccion) {
+                                                    $canApprove = true;
+                                                } elseif ($esSupervisor) {
+                                                    $targetEmp = $act->user->empleado ?? null;
+                                                    $myEmpId = Auth::user()->empleado->id ?? null;
+                                                    
+                                                    // Regla: Supervisor Directo
+                                                    if ($targetEmp && $myEmpId && $targetEmp->supervisor_id === $myEmpId) {
+                                                        $canApprove = true;
                                                     }
                                                 }
+                                                // No aprobarse a sí mismo
                                                 if ($act->user_id === Auth::id()) $canApprove = false;
                                             @endphp
 
                                             @if($canApprove)
-                                                <form action="{{ route('activities.approve', $act->id) }}" method="POST">@csrf @method('PUT')<button class="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded" title="Aprobar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button></form>
-                                                <button onclick="rejectActivity({{ $act->id }})" class="text-red-500 hover:bg-red-50 p-1.5 rounded" title="Rechazar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                                <form action="{{ route('activities.approve', $act->id) }}" method="POST">@csrf @method('PUT')<button class="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded transform hover:scale-110 transition-transform" title="Aprobar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button></form>
+                                                <button onclick="rejectActivity({{ $act->id }})" class="text-red-500 hover:bg-red-50 p-1.5 rounded transform hover:scale-110 transition-transform" title="Rechazar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                                             @else
                                                 <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" title="Esperando autorización de nivel superior"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                             @endif
@@ -380,32 +374,42 @@
                                             @if($esSupervisor || $esDireccion)
                                                 {{-- Botón validar cierre --}}
                                                 <form action="{{ route('activities.validate', $act->id) }}" method="POST">@csrf @method('PUT')
-                                                    <button class="bg-purple-600 text-white px-2 py-0.5 rounded text-[9px] font-bold hover:bg-purple-700 shadow-sm flex items-center gap-1" title="Validar Cierre">
+                                                    <button class="bg-purple-600 text-white px-2 py-0.5 rounded text-[9px] font-bold hover:bg-purple-700 shadow-sm flex items-center gap-1 transform hover:scale-105 transition-transform" title="Validar Cierre">
                                                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> VALIDAR
                                                     </button>
                                                 </form>
-                                                <button onclick="rejectActivity({{ $act->id }})" class="text-red-400 hover:text-red-600 p-1" title="Rechazar entrega"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                                <button onclick="rejectActivity({{ $act->id }})" class="text-red-400 hover:text-red-600 p-1 transform hover:scale-110 transition-transform" title="Rechazar entrega"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                                             @else
                                                 <span class="text-[9px] text-purple-400 italic font-medium flex items-center gap-1"><svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Revisión</span>
                                             @endif
 
                                         {{-- CASO 3: FLUJO NORMAL --}}
                                         @elseif($act->estatus == 'Planeado' && !$isHistoryView && $act->user_id == Auth::id())
-                                            <form action="{{ route('activities.start', $act->id) }}" method="POST">@csrf @method('PUT')<button class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[9px] font-bold hover:bg-indigo-700">INICIAR</button></form>
+                                            <form action="{{ route('activities.start', $act->id) }}" method="POST">@csrf @method('PUT')<button class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[9px] font-bold hover:bg-indigo-700 transform hover:scale-105 transition-transform">INICIAR</button></form>
                                         @else
-                                            <button onclick='openNotes(@json($act), {{ ($esSupervisor || $esDireccion) ? "true" : "false" }})' class="text-slate-400 hover:text-indigo-600 p-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+                                            <button onclick='openNotes(@json($act), {{ ($esSupervisor || $esDireccion) ? "true" : "false" }})' class="text-slate-400 hover:text-indigo-600 p-1.5 transform hover:scale-110 transition-transform"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
                                             @if(($esSupervisor || $esDireccion) || $act->estatus == 'En blanco' || ($act->asignado_por == Auth::id()))
-                                                <form action="{{ route('activities.destroy', $act->id) }}" method="POST" onsubmit="return confirm('¿Eliminar?')" class="inline">@csrf @method('DELETE')<button class="text-slate-300 hover:text-red-500 p-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
+                                                <form action="{{ route('activities.destroy', $act->id) }}" method="POST" onsubmit="return confirm('¿Eliminar?')" class="inline">@csrf @method('DELETE')<button class="text-slate-300 hover:text-red-500 p-1.5 transform hover:scale-110 transition-transform"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
                                             @endif
                                         @endif
 
-                                        <button onclick="openHistory({{ $act->id }})" class="text-slate-300 hover:text-indigo-500 p-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>
+                                        <button onclick="openHistory({{ $act->id }})" class="text-slate-300 hover:text-indigo-500 p-1.5 transform hover:scale-110 transition-transform"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>
                                         <script id="history-json-{{ $act->id }}" type="application/json">@json($act->historial)</script>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="py-12 text-center text-slate-400">Sin actividades en este rango.</td></tr>
+                            <tr>
+                                <td colspan="11" class="py-12 text-center text-slate-400">
+                                    <div class="flex flex-col items-center justify-center opacity-50">
+                                        <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                        <p class="text-sm font-medium">Sin actividades en este rango.</p>
+                                        <p class="text-xs">¡Buen trabajo! O intenta ajustar los filtros.</p>
+                                    </div>
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -414,16 +418,26 @@
     </div>
 </div>
 
+{{-- ESTILOS DE ANIMACIÓN --}}
+<style>
+    /* Animación de entrada para los Modales */
+    .modal-enter { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes modalPop {
+        from { opacity: 0; transform: scale(0.95) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+</style>
+
 {{-- ======================================================= --}}
 {{-- 6. MODALES (COMPLETOS)                                  --}}
 {{-- ======================================================= --}}
 
 {{-- Modal Crear --}}
 <div id="quickCreateModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onclick="this.parentElement.classList.add('hidden')"></div>
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="this.parentElement.classList.add('hidden')"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:w-full sm:max-w-lg border border-slate-200">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:w-full sm:max-w-lg border border-slate-100 modal-enter">
                 <form action="{{ route('activities.store') }}" method="POST">
                     @csrf
                     <div class="bg-white px-8 py-8">
@@ -435,7 +449,7 @@
                             <label class="block text-xs font-bold text-indigo-800 uppercase mb-2 tracking-wide">Asignar tarea a:</label>
                             <select name="assigned_to" class="w-full rounded-lg border-indigo-200 text-sm focus:ring-indigo-500 bg-white shadow-sm text-slate-700 py-2.5">
                                 <option value="{{ Auth::id() }}">Mí mismo ({{ Auth::user()->name }})</option>
-                                @foreach($usersList as $u) @if($u->id !== Auth::id()) <option value="{{ $u->id }}" {{ $targetUser->id == $u->id ? 'selected' : '' }}>{{ $u->name }}</option> @endif @endforeach
+                                @foreach($empleadosAsignables as $u) @if($u->id !== Auth::id()) <option value="{{ $u->id }}" {{ $targetUser->id == $u->id ? 'selected' : '' }}>{{ $u->name }}</option> @endif @endforeach
                             </select>
                         </div>
                         <div class="space-y-5">
@@ -449,7 +463,7 @@
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fin (Opcional)</label><input type="time" name="hora_fin_programada" class="w-full rounded-lg border-slate-300 text-sm py-2.5"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-5">
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Área</label><select name="area" class="w-full rounded-lg border-slate-300 text-sm py-2.5 bg-white focus:ring-indigo-500">@foreach($areasDisponibles as $areaOp) <option value="{{ $areaOp }}" {{ $areaOp == 'General' ? 'selected' : '' }}>{{ $areaOp }}</option> @endforeach</select></div>
+                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Área</label><select name="area" class="w-full rounded-lg border-slate-300 text-sm py-2.5 bg-white focus:ring-indigo-500">@foreach($areasSistema as $areaOp) <option value="{{ $areaOp }}" {{ $areaOp == 'General' ? 'selected' : '' }}>{{ $areaOp }}</option> @endforeach</select></div>
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cliente</label><input type="text" name="cliente" class="w-full rounded-lg border-slate-300 text-sm py-2.5" placeholder="Opcional"></div>
                             </div>
                         </div>
@@ -468,7 +482,7 @@
     <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onclick="closeNotes()"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:w-full sm:max-w-lg border border-slate-200">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:w-full sm:max-w-lg border border-slate-200 modal-enter">
                 <form id="notesForm" method="POST" enctype="multipart/form-data">
                     @csrf @method('PUT')
                     <div class="bg-white px-8 py-8">
@@ -484,7 +498,7 @@
                         <div class="space-y-5">
                             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Descripción</label><textarea name="nombre_actividad" id="modal-activity-name" rows="2" class="w-full text-sm rounded-lg border-slate-300 bg-slate-50 py-2.5"></textarea></div>
                             <div class="grid grid-cols-2 gap-5">
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fecha</label><input type="date" name="fecha_compromiso" id="modal-fecha" class="w-full text-sm rounded-lg border-slate-300 py-2.5"></div>
+                                <div class="relative"><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fecha</label><input type="date" name="fecha_compromiso" id="modal-fecha" class="w-full text-sm rounded-lg border-slate-300 py-2.5"></div>
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Prioridad</label><select name="prioridad" id="modal-prioridad" class="w-full text-sm rounded-lg border-slate-300 py-2.5"><option value="Alta">Alta 🔥</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
                             </div>
                             <div class="grid grid-cols-2 gap-5">
@@ -492,17 +506,19 @@
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fin</label><input type="time" name="hora_fin_programada" id="modal-hora-fin" class="w-full text-sm rounded-lg border-slate-300 py-2.5"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-5">
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Área</label><select name="area" id="modal-area" class="w-full text-sm rounded-lg border-slate-300 py-2.5 bg-white">@foreach($areasDisponibles as $areaOp)<option value="{{ $areaOp }}">{{ $areaOp }}</option>@endforeach</select></div>
+                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Área</label><select name="area" id="modal-area" class="w-full text-sm rounded-lg border-slate-300 py-2.5 bg-white">@foreach($areasSistema as $areaOp)<option value="{{ $areaOp }}">{{ $areaOp }}</option>@endforeach</select></div>
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cliente</label><input type="text" name="cliente" id="modal-cliente" class="w-full text-sm rounded-lg border-slate-300 py-2.5"></div>
                             </div>
                             <div id="div-estatus-selector">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Estatus</label>
                                 <select name="estatus" id="modal-estatus" class="w-full text-sm rounded-lg border-slate-300 py-2.5 font-bold text-slate-700">
                                     <option value="En proceso">En proceso</option>
-                                    <option value="Completado">Completado</option>
-                                    <option value="Retardo">Retardo</option>
-                                    <option value="Por Aprobar">Por Aprobar (Revisión)</option>
                                     <option value="Por Validar">Por Validar (Revisión de Cierre)</option>
+                                    
+                                    @if($esSupervisor || $esDireccion)
+                                        <option value="Completado">Completado</option>
+                                        <option value="Por Aprobar">Por Aprobar (Revisión)</option>
+                                    @endif
                                 </select>
                             </div>
                             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Comentarios</label><textarea name="comentarios" id="modal-comentarios" rows="3" class="w-full text-sm rounded-lg border-slate-300 placeholder-slate-400 py-2.5"></textarea></div>
@@ -522,7 +538,7 @@
     <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onclick="document.getElementById('rejectModal').classList.add('hidden')"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:w-full sm:max-w-md border border-red-200">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:w-full sm:max-w-md border border-red-200 modal-enter">
                 <form id="rejectForm" method="POST">
                     @csrf @method('PUT')
                     <div class="bg-white px-6 py-6">
@@ -543,8 +559,8 @@
 <div id="reportModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('reportModal').classList.add('hidden')"></div>
     <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all">
-            <form action="{{ route('activities.client_report') }}" method="GET" target="_blank"> {{-- target_blank abre en nueva pestaña --}}
+        <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all modal-enter">
+            <form action="{{ route('activities.client_report') }}" method="GET" target="_blank"> 
                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                     <h3 class="font-bold text-slate-700">Generar Reporte Cliente</h3>
                     <button type="button" onclick="document.getElementById('reportModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -578,7 +594,7 @@
 <div id="planModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('planModal').classList.add('hidden')"></div>
     <div class="fixed inset-0 z-10 flex items-center justify-center p-4 sm:p-6">
-        <div class="relative w-full max-w-[95vw] h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+        <div class="relative w-full max-w-[95vw] h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 modal-enter">
             <form action="{{ route('activities.storeBatch') }}" method="POST" class="flex flex-col h-full" onsubmit="return submitPlan(event)">
                 @csrf
                 <div class="px-8 py-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white z-20">
@@ -620,7 +636,7 @@
 <div id="historyModal" class="fixed inset-0 z-50 hidden" aria-hidden="true" role="dialog">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="document.getElementById('historyModal').classList.add('hidden')"></div>
     <div class="flex items-center justify-center min-h-screen px-4 pointer-events-none">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden pointer-events-auto border border-slate-100 transform transition-all">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden pointer-events-auto border border-slate-100 transform transition-all modal-enter">
             <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="font-bold text-slate-700">Historial</h3>
                 <button onclick="document.getElementById('historyModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
