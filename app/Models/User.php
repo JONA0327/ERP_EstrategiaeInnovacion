@@ -66,7 +66,8 @@ class User extends Authenticatable
      */
     private function normalizeString(?string $value): string
     {
-        if (empty($value)) return '';
+        if (empty($value))
+            return '';
         // Convierte a minúsculas y reemplaza acentos comunes
         $value = mb_strtolower(trim($value), 'UTF-8');
         $replacements = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n'];
@@ -89,45 +90,40 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    /**
-     * Verificar si el usuario es de RH (Busca en Rol, Area, Departamento y Puesto)
-     */
-    public function isRh(): bool
-    {
-        // 1. Obtener todos los valores posibles donde podría decir "RH"
-        $valoresAChecar = [
-            $this->role,
-            $this->area ?? '',
-        ];
+    // Palabras clave normalizadas (sin acentos, minúsculas)
+    public const KEYWORDS_RH = ['rh', 'recursos humanos', 'capital humano', 'administracion rh', 'human resources'];
+    public const KEYWORDS_LOGISTICA = ['logistica', 'operaciones', 'aduana', 'trafico', 'comercio exterior'];
 
-        // Si tiene relación con empleado, checar sus datos también
+    /**
+     * Verificar si el usuario tiene un rol/puesto que coincida con las palabras clave.
+     */
+    public function hasPositionLike(array $keywords): bool
+    {
+        // 1. Valores a checar (Rol, Area)
+        $valores = [$this->role, $this->area];
+
+        // 2. Si tiene empleado, agregar sus datos
         if ($this->empleado) {
-            $valoresAChecar[] = $this->empleado->departamento ?? '';
-            $valoresAChecar[] = $this->empleado->puesto ?? '';
-            $valoresAChecar[] = $this->empleado->area ?? '';
-            $valoresAChecar[] = $this->empleado->posicion ?? '';
+            $valores = array_merge($valores, [
+                $this->empleado->departamento,
+                $this->empleado->puesto,
+                $this->empleado->posicion,
+                $this->empleado->area
+            ]);
         }
 
-        // 2. Palabras clave aceptadas
-        $palabrasClave = ['rh', 'recursos humanos', 'capital humano', 'administracion rh', 'human resources'];
+        // 3. Normalizar y verificar
+        foreach ($valores as $valor) {
+            if (empty($valor))
+                continue;
 
-        // 3. Revisar cada valor
-        foreach ($valoresAChecar as $valor) {
             $normalizado = $this->normalizeString($valor);
-            
-            // Si el valor normalizado está en la lista exacta
-            if (in_array($normalizado, $palabrasClave)) {
-                return true;
-            }
 
-            // O si contiene la frase (ej: "Gerente de Recursos Humanos")
-            if (str_contains($normalizado, 'recursos humanos') || str_contains($normalizado, 'capital humano')) {
-                return true;
-            }
-            
-            // Caso especial para "Administracion RH" que mencionaste
-            if (str_contains($normalizado, 'administracion rh')) {
-                return true;
+            foreach ($keywords as $keyword) {
+                // Coincidencia exacta o parcial segura
+                if (str_contains($normalizado, $keyword)) {
+                    return true;
+                }
             }
         }
 
@@ -135,30 +131,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Verificar si el usuario es de RH
+     */
+    public function isRh(): bool
+    {
+        return $this->hasPositionLike(self::KEYWORDS_RH);
+    }
+
+    /**
      * Verificar si el usuario es de Logística
      */
     public function isLogistica(): bool
     {
-        $valoresAChecar = [
-            $this->role,
-            $this->area ?? '',
-        ];
-
-        if ($this->empleado) {
-            $valoresAChecar[] = $this->empleado->departamento ?? '';
-            $valoresAChecar[] = $this->empleado->puesto ?? '';
-            // Ahora también checamos la posición
-            $valoresAChecar[] = $this->empleado->posicion ?? '';
-        }
-
-        foreach ($valoresAChecar as $valor) {
-            $normalizado = $this->normalizeString($valor);
-            if (str_contains($normalizado, 'logistica') || str_contains($normalizado, 'operaciones') || str_contains($normalizado, 'aduana')) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->hasPositionLike(self::KEYWORDS_LOGISTICA);
     }
 
     /**

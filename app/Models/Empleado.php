@@ -37,22 +37,22 @@ class Empleado extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class , 'user_id');
     }
 
     public function supervisor()
     {
-        return $this->belongsTo(Empleado::class, 'supervisor_id');
+        return $this->belongsTo(Empleado::class , 'supervisor_id');
     }
 
     public function subordinados()
     {
-        return $this->hasMany(Empleado::class, 'supervisor_id');
+        return $this->hasMany(Empleado::class , 'supervisor_id');
     }
 
     public function asistencias()
     {
-        return $this->hasMany(Asistencia::class, 'empleado_id');
+        return $this->hasMany(Asistencia::class , 'empleado_id');
     }
 
     public function documentos()
@@ -78,31 +78,36 @@ class Empleado extends Model
 
         if ($this->es_practicante) {
             $datosRequeridos[] = 'curp';
-        } else {
-            $datosRequeridos[] = 'nss'; $datosRequeridos[] = 'rfc'; $datosRequeridos[] = 'curp';
+        }
+        else {
+            $datosRequeridos[] = 'nss';
+            $datosRequeridos[] = 'rfc';
+            $datosRequeridos[] = 'curp';
         }
 
         $puntosPosibles = count($docsRequeridos) + count($datosRequeridos);
         $puntosObtenidos = 0;
 
         foreach ($datosRequeridos as $campo) {
-            if (!empty($this->$campo)) $puntosObtenidos++;
+            if (!empty($this->$campo))
+                $puntosObtenidos++;
         }
 
-        $docsSubidos = $this->documentos->map(fn($doc) => Str::lower($doc->nombre));
+        // Obtenemos los nombres de los documentos subidos (normalizados)
+        $docsSubidosNombres = $this->documentos->map(fn($doc) => Str::lower($doc->nombre));
 
         foreach ($docsRequeridos as $req) {
             $reqLower = Str::lower($req);
-            if ($req === 'Titulo') {
-                if ($docsSubidos->contains(fn($d) => Str::contains($d, ['titulo', 'cedula', 'pasante', 'profesional']))) $puntosObtenidos++;
-            } elseif ($req === 'NSS') {
-                if ($docsSubidos->contains(fn($d) => Str::contains($d, ['nss', 'imss', 'seguro']))) $puntosObtenidos++;
-            } else {
-                if ($docsSubidos->contains(fn($d) => Str::contains($d, $reqLower))) $puntosObtenidos++;
+
+            // Validación estricta: El nombre guardado en BD debe coincidir con el requisito
+            // Ya no buscamos "palabras dentro del string", sino el tipo de documento exacto.
+            if ($docsSubidosNombres->contains($reqLower)) {
+                $puntosObtenidos++;
             }
         }
 
-        if ($puntosPosibles == 0) return 0;
+        if ($puntosPosibles == 0)
+            return 0;
         return round(($puntosObtenidos / $puntosPosibles) * 100);
     }
 
@@ -114,7 +119,7 @@ class Empleado extends Model
     {
         // 1. Prioridad: Documentos Vencidos (Rojo Crítico)
         $hoy = Carbon::now();
-        $docsVencidos = $this->documentos->filter(function($doc) use ($hoy) {
+        $docsVencidos = $this->documentos->filter(function ($doc) use ($hoy) {
             return $doc->fecha_vencimiento && $doc->fecha_vencimiento->lt($hoy);
         });
 
@@ -131,7 +136,7 @@ class Empleado extends Model
 
         // 2. Prioridad: Documentos por Vencer (Amarillo Alerta)
         $limiteAlerta = Carbon::now()->addDays(30);
-        $docsPorVencer = $this->documentos->filter(function($doc) use ($hoy, $limiteAlerta) {
+        $docsPorVencer = $this->documentos->filter(function ($doc) use ($hoy, $limiteAlerta) {
             return $doc->fecha_vencimiento && $doc->fecha_vencimiento->between($hoy, $limiteAlerta);
         });
 
