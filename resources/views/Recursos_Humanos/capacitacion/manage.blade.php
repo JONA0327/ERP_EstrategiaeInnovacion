@@ -18,8 +18,13 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Archivo de Video (MP4)</label>
-                    <input type="file" name="video" accept="video/*" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    <p class="text-xs text-gray-500 mt-1">Máximo según configuración del servidor (Recomendado < 50MB).</p>
+                    <input type="file" name="video" accept="video/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    <p class="text-xs text-gray-500 mt-1">Sube un archivo O usa el link de YouTube abajo.</p>
+                </div>
+                <div>
+                     <label class="block text-sm font-medium text-gray-700 mb-1">Link de YouTube (Opcional)</label>
+                     <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                     <p class="text-xs text-gray-500 mt-1">Si pegas un link, no es necesario subir archivo.</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>

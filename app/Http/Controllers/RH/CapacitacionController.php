@@ -19,7 +19,7 @@ class CapacitacionController extends Controller
         $videos = Capacitacion::where('activo', true)
             ->orderBy('created_at', 'desc')
             ->paginate(9); // Usamos paginación para evitar carga lenta
-            
+
         return view('Recursos_Humanos.capacitacion.index', compact('videos'));
     }
 
@@ -45,18 +45,25 @@ class CapacitacionController extends Controller
         $request->validate([
             'titulo' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'video' => 'required|mimes:mp4,mov,ogg,qt|max:200000', // 200MB
-            'adjuntos.*' => 'nullable|file|max:10240' // 10MB por adjunto
+            'youtube_url' => 'nullable|url',
+            // Video requerido solo si NO hay youtube_url
+            'video' => 'required_without:youtube_url|mimes:mp4,mov,ogg,qt|max:200000',
+            'adjuntos.*' => 'nullable|file|max:10240'
         ]);
 
         try {
-            // Guardar video
-            $path = $request->file('video')->store('capacitacion', 'public');
+            $path = null;
+
+            // Si subió video físico
+            if ($request->hasFile('video')) {
+                $path = $request->file('video')->store('capacitacion', 'public');
+            }
 
             $capacitacion = Capacitacion::create([
                 'titulo' => $request->titulo,
                 'descripcion' => $request->descripcion,
-                'archivo_path' => $path,
+                'archivo_path' => $path, // Puede ser null
+                'youtube_url' => $request->youtube_url, // Puede ser null
                 'subido_por' => Auth::id(),
             ]);
 
@@ -72,7 +79,8 @@ class CapacitacionController extends Controller
             }
 
             return redirect()->route('rh.capacitacion.manage')->with('success', 'Video subido correctamente.');
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return back()->with('error', 'Error al subir: ' . $e->getMessage());
         }
     }
@@ -94,6 +102,7 @@ class CapacitacionController extends Controller
         $request->validate([
             'titulo' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
+            'youtube_url' => 'nullable|url',
             'video' => 'nullable|mimes:mp4,mov,ogg,qt|max:200000',
             'adjuntos.*' => 'nullable|file|max:10240'
         ]);
@@ -102,16 +111,31 @@ class CapacitacionController extends Controller
         $video->update([
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
+            'youtube_url' => $request->youtube_url,
         ]);
 
-        // 2. Reemplazar video (solo si se subió uno nuevo)
+        // 2. Reemplazar video (si se subió uno nuevo)
+        // NOTA: Si suben un video físico, borramos el link de youtube para evitar confusión de cuál mostrar.
+        // O si ponen link de youtube, podríamos borrar el video físico para ahorrar espacio.
+        // Aquí priorizaremos: Si suben video, se usa video. Si ponen link, se usa link.
+
         if ($request->hasFile('video')) {
-            // Borrar viejo
-            if (Storage::disk('public')->exists($video->archivo_path)) {
+            // Borrar viejo físico
+            if ($video->archivo_path && Storage::disk('public')->exists($video->archivo_path)) {
                 Storage::disk('public')->delete($video->archivo_path);
             }
             // Subir nuevo
             $video->archivo_path = $request->file('video')->store('capacitacion', 'public');
+            $video->youtube_url = null; // Limpiamos URL si subieron archivo
+            $video->save();
+        }
+        elseif ($request->youtube_url) {
+            // Si pusieron URL de YouTube, y tenían video físico, ¿Lo borramos?
+            // Para ahorrar espacio, sí.
+            if ($video->archivo_path && Storage::disk('public')->exists($video->archivo_path)) {
+                Storage::disk('public')->delete($video->archivo_path);
+                $video->archivo_path = null;
+            }
             $video->save();
         }
 
@@ -133,10 +157,10 @@ class CapacitacionController extends Controller
     public function destroy($id)
     {
         $video = Capacitacion::findOrFail($id);
-        
+
         // Laravel borra los adjuntos de la BD automáticamente si configuraste cascade, 
         // pero limpiamos los archivos físicos de los adjuntos primero:
-        foreach($video->adjuntos as $adjunto) {
+        foreach ($video->adjuntos as $adjunto) {
             if (Storage::disk('public')->exists($adjunto->archivo_path)) {
                 Storage::disk('public')->delete($adjunto->archivo_path);
             }
@@ -146,7 +170,7 @@ class CapacitacionController extends Controller
         if (Storage::disk('public')->exists($video->archivo_path)) {
             Storage::disk('public')->delete($video->archivo_path);
         }
-        
+
         $video->delete(); // Esto borra el registro y los adjuntos en cascada (si la migración está bien)
         return back()->with('success', 'Video y adjuntos eliminados.');
     }
@@ -155,11 +179,11 @@ class CapacitacionController extends Controller
     public function destroyAdjunto($id)
     {
         $adjunto = CapacitacionAdjunto::findOrFail($id);
-        
+
         if (Storage::disk('public')->exists($adjunto->archivo_path)) {
             Storage::disk('public')->delete($adjunto->archivo_path);
         }
-        
+
         $adjunto->delete();
         return back()->with('success', 'Documento eliminado.');
     }

@@ -27,7 +27,17 @@
             <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
                 <label class="block text-yellow-800 font-bold mb-2">Reemplazar Video (Opcional)</label>
                 <p class="text-sm text-yellow-600 mb-2">Sube un archivo solo si quieres cambiar el video actual.</p>
-                <input type="file" name="video" accept="video/*" class="w-full text-sm">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Archivo Local</label>
+                        <input type="file" name="video" accept="video/*" class="w-full text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Link de YouTube</label>
+                        <input type="url" name="youtube_url" value="{{ $video->youtube_url }}" class="w-full border rounded px-2 py-1" placeholder="https://youtube.com/...">
+                    </div>
+                </div>
             </div>
 
             {{-- Gestión de Documentos --}}

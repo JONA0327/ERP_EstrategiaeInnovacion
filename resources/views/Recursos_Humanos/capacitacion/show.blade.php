@@ -9,10 +9,19 @@
     </div>
 
     <div class="bg-black rounded-xl overflow-hidden shadow-2xl">
-        <video controls class="w-full aspect-video" controlsList="nodownload">
-            <source src="{{ asset('storage/' . $video->archivo_path) }}" type="video/mp4">
-            Tu navegador no soporta la reproducción de video.
-        </video>
+        @if($video->isYoutube())
+            <iframe class="w-full aspect-video" 
+                    src="https://www.youtube.com/embed/{{ $video->getYoutubeId() }}" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen>
+            </iframe>
+        @else
+            <video controls class="w-full aspect-video" controlsList="nodownload">
+                <source src="{{ asset('storage/' . $video->archivo_path) }}" type="video/mp4">
+                Tu navegador no soporta la reproducción de video.
+            </video>
+        @endif
     </div>
 
     <div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
