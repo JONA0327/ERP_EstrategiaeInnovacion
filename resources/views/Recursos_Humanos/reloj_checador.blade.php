@@ -169,177 +169,190 @@
                 </div>
             </div>
 
-            {{-- TABLA DE ASISTENCIA --}}
+            {{-- TABLA RESUMEN POR EMPLEADO (VISTA RECUPERADA & MEJORADA) --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
                         <thead class="bg-gray-50/80">
                             <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Empleado</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Entrada</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Salida</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Hrs</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Asistencias</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Retardos</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Faltas</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Hrs Totales</th>
+                                <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-50">
-                            @php 
-                                $currentMonth = null; 
-                            @endphp
+                            @foreach($empleados as $empleado)
+                                @php
+                                    // 1. Indexar asistencias por fecha para acceso rápido y seguro
+                                    $asistenciasMap = $empleado->asistencias->keyBy(function($item) {
+                                        return $item->fecha instanceof \Carbon\Carbon 
+                                            ? $item->fecha->format('Y-m-d') 
+                                            : substr($item->fecha, 0, 10);
+                                    });
 
-                            {{-- 1. Iteramos por las FECHAS --}}
-                            @foreach($fechas as $fechaObj)
-                                
-                                {{-- Separador de Mes --}}
-                                @if($currentMonth !== $fechaObj->format('Y-m'))
-                                    @php $currentMonth = $fechaObj->format('Y-m'); @endphp
-                                    <tr class="bg-gray-100">
-                                        <td colspan="7" class="px-6 py-2 text-xs font-bold text-indigo-600 uppercase tracking-widest border-l-4 border-indigo-400">
-                                            {{ $fechaObj->isoFormat('MMMM YYYY') }}
-                                        </td>
-                                    </tr>
-                                @endif
+                                    // 2. Cálculos Estadísticos
+                                    $totalAsistencias = $empleado->asistencias->where('tipo_registro', 'asistencia')->count();
+                                    $totalRetardos = $empleado->asistencias->where('es_retardo', true)->where('es_justificado', false)->count();
+                                    $totalFaltas = $empleado->asistencias->where('tipo_registro', 'falta')->where('es_justificado', false)->count();
+                                    
+                                    // 3. Calcular Horas
+                                    $minutosEmpleado = 0;
+                                    foreach($empleado->asistencias as $asis) {
+                                        if($asis->entrada && $asis->salida) {
+                                            $e = \Carbon\Carbon::parse($asis->entrada);
+                                            $s = \Carbon\Carbon::parse($asis->salida);
+                                            if($s->gt($e)) $minutosEmpleado += $e->diffInMinutes($s);
+                                        }
+                                    }
+                                    $horasEmp = floor($minutosEmpleado / 60);
+                                    $minsEmp = $minutosEmpleado % 60;
+                                @endphp
 
-                                {{-- 2. Iteramos por los EMPLEADOS --}}
-                                @foreach($empleados as $empleado)
-                                    @php
-                                        // Buscar registro exacto para empleado y fecha
-                                        $asistencia = $empleado->asistencias->first(function($item) use ($fechaObj) {
-                                            return \Carbon\Carbon::parse($item->fecha)->format('Y-m-d') === $fechaObj->format('Y-m-d');
-                                        });
-                                    @endphp
-
-                                    <tr class="hover:bg-gray-50/80 transition-colors group">
-                                        {{-- Empleado --}}
-                                        <td class="px-6 py-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-indigo-100 to-white flex items-center justify-center text-indigo-700 text-xs font-bold border border-indigo-100 shadow-sm">
-                                                    {{ substr($empleado->nombre, 0, 1) }}
-                                                </div>
-                                                <div class="ml-3">
-                                                    <div class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition">{{ $empleado->nombre }}</div>
-                                                    <div class="text-[10px] text-gray-400 uppercase tracking-wide">{{ $empleado->id_empleado ?? 'S/N' }}</div>
+                                <tr x-data="{ expanded: false }" class="hover:bg-gray-50/50 transition-colors border-b border-gray-50 group">
+                                    {{-- ROW PRINCIPAL --}}
+                                    <td colspan="7" class="p-0">
+                                        <div class="flex items-center w-full">
+                                            {{-- Toggle Button --}}
+                                            <div class="px-6 py-4 whitespace-nowrap cursor-pointer text-gray-400 group-hover:text-indigo-600 transition" @click="expanded = !expanded">
+                                                <svg class="w-5 h-5 transform transition-transform duration-200" :class="{'rotate-90': expanded}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                            </div>
+                                            {{-- Empleado Datos --}}
+                                            <div class="px-6 py-4 whitespace-nowrap flex-1">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-white flex items-center justify-center text-indigo-700 text-sm font-bold border border-indigo-100 shadow-sm">
+                                                        {{ substr($empleado->nombre, 0, 1) }}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-bold text-gray-900">{{ $empleado->nombre }} {{ $empleado->apellido_paterno }}</div>
+                                                        <div class="text-xs text-gray-500 uppercase tracking-wide">{{ $empleado->posicion ?? 'N/A' }} • ID: {{ $empleado->id_empleado ?? 'S/N' }}</div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </td>
-                                        
-                                        {{-- Fecha --}}
-                                        <td class="px-6 py-3 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-700">{{ $fechaObj->format('d/m') }}</div>
-                                            <div class="text-xs text-gray-400">
-                                                {{ $fechaObj->isoFormat('dddd') }}
+                                            {{-- Stats --}}
+                                            <div class="px-6 py-4 whitespace-nowrap text-center w-32">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {{ $totalAsistencias }}
+                                                </span>
                                             </div>
-                                        </td>
-
-                                        @if($asistencia)
-                                            {{-- CASO 1: SÍ HAY REGISTRO --}}
-                                            @if($asistencia->tipo_registro == 'asistencia')
-                                                <td class="px-6 py-3 whitespace-nowrap text-center">
-                                                    <span class="font-mono text-sm {{ $asistencia->es_retardo && !$asistencia->es_justificado ? 'text-red-600 font-bold' : 'text-gray-600' }}">
-                                                        {{ $asistencia->entrada ? substr($asistencia->entrada, 0, 5) : '--:--' }}
-                                                    </span>
-                                                    @if($asistencia->es_retardo && !$asistencia->es_justificado)
-                                                        <span class="block text-[9px] text-red-400 font-medium mt-0.5">Tarde</span>
-                                                    @endif
-                                                </td>
-                                                <td class="px-6 py-3 whitespace-nowrap text-center text-gray-600 font-mono text-sm">
-                                                    {{ $asistencia->salida ? substr($asistencia->salida, 0, 5) : '--:--' }}
-                                                </td>
-                                                <td class="px-6 py-3 whitespace-nowrap text-center">
-                                                    @php
-                                                        $horasRegistro = '--';
-                                                        if($asistencia->entrada && $asistencia->salida) {
-                                                            $entrada = \Carbon\Carbon::parse($asistencia->entrada);
-                                                            $salida = \Carbon\Carbon::parse($asistencia->salida);
-                                                            if($salida->gt($entrada)) {
-                                                                $diffMins = $entrada->diffInMinutes($salida);
-                                                                $h = floor($diffMins / 60);
-                                                                $m = $diffMins % 60;
-                                                                $horasRegistro = sprintf('%02d:%02d', $h, $m);
-                                                            }
-                                                        }
-                                                    @endphp
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 font-mono">
-                                                        {{ $horasRegistro }}
-                                                    </span>
-                                                </td>
-                                            @else
-                                                {{-- Vacaciones, Incapacidad, Falta, etc --}}
-                                                <td colspan="3" class="px-6 py-3 text-center">
-                                                    <span class="text-sm text-gray-400 italic flex items-center justify-center gap-1">
-                                                        @if($asistencia->tipo_registro == 'vacaciones') 🌴
-                                                        @elseif($asistencia->tipo_registro == 'incapacidad') 🏥
-                                                        @elseif($asistencia->tipo_registro == 'falta') ❌
-                                                        @endif
-                                                        {{ ucfirst($asistencia->tipo_registro) }}
-                                                    </span>
-                                                </td>
-                                            @endif
-
-                                            {{-- ESTADO (BADGE) --}}
-                                            <td class="px-6 py-3 whitespace-nowrap text-center">
-                                                @php
-                                                    $badgeClass = match($asistencia->tipo_registro) {
-                                                        'vacaciones' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                                        'incapacidad' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                                        'falta' => ($asistencia->es_justificado) 
-                                                            ? 'bg-orange-50 text-orange-700 border-orange-200' // Falta Justificada (Naranja)
-                                                            : 'bg-red-50 text-red-700 border-red-200',         // Falta Injustificada (Rojo)
-                                                        'descanso' => 'bg-gray-100 text-gray-600 border-gray-200',
-                                                        default => ($asistencia->es_retardo && !$asistencia->es_justificado) 
-                                                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                                            : (($asistencia->es_justificado) ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-green-50 text-green-700 border-green-200')
-                                                    };
-                                                    
-                                                    $statusText = match($asistencia->tipo_registro) {
-                                                        'asistencia' => ($asistencia->es_retardo && !$asistencia->es_justificado) ? 'Retardo' : (($asistencia->es_justificado) ? 'Justificado' : 'A Tiempo'),
-                                                        'falta' => ($asistencia->es_justificado) ? 'Falta Justif.' : 'Falta', // Texto personalizado
-                                                        default => ucfirst($asistencia->tipo_registro)
-                                                    };
-                                                @endphp
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $badgeClass }}">
-                                                    {{ $statusText }}
+                                            <div class="px-6 py-4 whitespace-nowrap text-center w-32">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $totalRetardos > 0 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800' }}">
+                                                    {{ $totalRetardos }}
                                                 </span>
-                                            </td>
-
-                                            <td class="px-6 py-3 whitespace-nowrap text-right">
-                                                <button onclick="abrirModalEdicion({{ $asistencia }})" class="text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100" title="Editar Registro">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                </button>
-                                            </td>
-
-                                        @else
-                                            {{-- CASO 2: NO HAY REGISTRO (SIN CHECADA) --}}
-                                            <td colspan="3" class="px-6 py-3 text-center bg-red-50/30">
-                                                <span class="text-xs text-red-400 italic">-- Sin checada --</span>
-                                            </td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-center bg-red-50/30">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-                                                    Sin Registro
+                                            </div>
+                                            <div class="px-6 py-4 whitespace-nowrap text-center w-32">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $totalFaltas > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
+                                                    {{ $totalFaltas }}
                                                 </span>
-                                            </td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-right bg-red-50/30">
-                                                {{-- Botón para CREAR justificación en este día vacío --}}
-                                                <button onclick="abrirModalIncidencia({{ $empleado->id }}, '{{ $fechaObj->toDateString() }}')" class="text-red-300 hover:text-red-600 transition p-1 rounded-full hover:bg-red-50" title="Justificar Ausencia">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </div>
+                                            <div class="px-6 py-4 whitespace-nowrap text-center w-32">
+                                                <span class="text-sm font-mono text-gray-600 font-bold">{{ sprintf('%d:%02d', $horasEmp, $minsEmp) }} hrs</span>
+                                            </div>
+                                            {{-- Toggle Action --}}
+                                            <div class="px-6 py-4 whitespace-nowrap text-right w-32">
+                                                <button @click="expanded = !expanded" class="text-xs text-indigo-600 hover:text-indigo-900 font-medium hover:underline focus:outline-none">
+                                                    <span x-text="expanded ? 'Ocultar Detalle' : 'Ver Detalle'"></span>
                                                 </button>
-                                            </td>
-                                        @endif
-                                    </tr>
-                                @endforeach
-                            @endforeach
+                                            </div>
+                                        </div>
 
-                            @if(empty($fechas))
-                                <tr>
-                                    <td colspan="7" class="px-6 py-12 text-center">
-                                        <div class="flex flex-col items-center justify-center text-gray-400">
-                                            <p class="text-sm font-medium">No hay fechas que mostrar</p>
+                                        {{-- DETALLE EXPANDIBLE (HISTORIAL) --}}
+                                        <div x-show="expanded" x-collapse class="bg-gray-50/50 border-t border-gray-100 shadow-inner">
+                                            <div class="px-4 py-4 sm:px-6">
+                                                <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                                    <table class="min-w-full divide-y divide-gray-200">
+                                                        <thead class="bg-gray-50">
+                                                            <tr>
+                                                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                                                                <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Entrada</th>
+                                                                <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Salida</th>
+                                                                <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Horas</th>
+                                                                <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Estado</th>
+                                                                <th class="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase">Acción</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-gray-100">
+                                                            @foreach($fechas as $fechaObj)
+                                                                @php
+                                                                    // Recuperamos usando el Y-m-d del objeto fecha
+                                                                    $dia = $asistenciasMap->get($fechaObj->format('Y-m-d'));
+                                                                @endphp
+                                                                <tr class="hover:bg-indigo-50/30 transition-colors">
+                                                                    <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-700">
+                                                                        <span class="font-bold">{{ $fechaObj->format('d/m') }}</span> 
+                                                                        <span class="text-gray-400 ml-1">{{ $fechaObj->isoFormat('ddd') }}</span>
+                                                                    </td>
+                                                                    @if($dia)
+                                                                        {{-- Entrada --}}
+                                                                        <td class="px-4 py-2 whitespace-nowrap text-center text-xs font-mono {{ $dia->es_retardo && !$dia->es_justificado ? 'text-red-600 font-bold' : 'text-gray-600' }}">
+                                                                            {{ $dia->entrada ? substr($dia->entrada, 0, 5) : '--:--' }}
+                                                                            @if($dia->es_retardo && !$dia->es_justificado)<span class="text-[9px] text-red-400 block leading-none mt-0.5">Tarde</span>@endif
+                                                                        </td>
+                                                                        {{-- Salida --}}
+                                                                        <td class="px-4 py-2 whitespace-nowrap text-center text-xs font-mono text-gray-600">
+                                                                            {{ $dia->salida ? substr($dia->salida, 0, 5) : '--:--' }}
+                                                                        </td>
+                                                                        {{-- Horas Diarias --}}
+                                                                        <td class="px-4 py-2 whitespace-nowrap text-center text-xs font-mono text-gray-500">
+                                                                            @if($dia->entrada && $dia->salida)
+                                                                                @php
+                                                                                    $e = \Carbon\Carbon::parse($dia->entrada);
+                                                                                    $s = \Carbon\Carbon::parse($dia->salida);
+                                                                                    $diff = ($s->gt($e)) ? $e->diff($s)->format('%H:%I') : '--';
+                                                                                @endphp
+                                                                                {{ $diff }}
+                                                                            @else
+                                                                                --
+                                                                            @endif
+                                                                        </td>
+                                                                        {{-- Estado Badge --}}
+                                                                        <td class="px-4 py-2 whitespace-nowrap text-center">
+                                                                             @php
+                                                                                $statusColor = match($dia->tipo_registro) {
+                                                                                    'falta' => ($dia->es_justificado ? 'text-orange-700 bg-orange-50 border-orange-200' : 'text-red-700 bg-red-50 border-red-200'),
+                                                                                    'asistencia' => ($dia->es_retardo && !$dia->es_justificado) ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-green-700 bg-green-50 border-green-200',
+                                                                                    'vacaciones' => 'text-blue-700 bg-blue-50 border-blue-200',
+                                                                                    'incapacidad' => 'text-purple-700 bg-purple-50 border-purple-200',
+                                                                                    default => 'text-gray-700 bg-gray-50 border-gray-200'
+                                                                                };
+                                                                                $statusLabel = match($dia->tipo_registro) {
+                                                                                    'asistencia' => ($dia->es_retardo && !$dia->es_justificado) ? 'Retardo' : 'OK',
+                                                                                    'falta' => ($dia->es_justificado) ? 'Justificada' : 'Falta',
+                                                                                    default => ucfirst($dia->tipo_registro)
+                                                                                };
+                                                                             @endphp
+                                                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $statusColor }}">
+                                                                                {{ $statusLabel }}
+                                                                             </span>
+                                                                        </td>
+                                                                        {{-- Botón Editar --}}
+                                                                        <td class="px-4 py-2 whitespace-nowrap text-right text-xs">
+                                                                            <button onclick="abrirModalEdicion({{ $dia }})" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline p-1">
+                                                                                Editar
+                                                                            </button>
+                                                                        </td>
+                                                                    @else
+                                                                        {{-- Sin Registro --}}
+                                                                        <td colspan="4" class="px-4 py-2 text-center text-xs text-gray-300 italic">-- Sin registro --</td>
+                                                                        <td class="px-4 py-2 text-right text-xs">
+                                                                            <button onclick="abrirModalIncidencia({{ $empleado->id }}, '{{ $fechaObj->toDateString() }}')" class="text-gray-400 hover:text-gray-600 font-medium hover:underline text-[10px] whitespace-nowrap">
+                                                                                + Justificar
+                                                                            </button>
+                                                                        </td>
+                                                                    @endif
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
-                            @endif
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -347,6 +360,7 @@
                     {{ $empleados->links() }}
                 </div>
             </div>
+
         </div>
     </div>
 

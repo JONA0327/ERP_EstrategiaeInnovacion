@@ -158,7 +158,7 @@
                 {{-- Switch Tipo Empleado --}}
                 <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
                     <div>
-                        <h4 class="text-sm font-bold text-slate-700">Tipo</h4>
+                        <h4 class="text-sm font-bold text-slate-700">{{ $empleado->es_practicante ? 'Practicante' : 'Empleado' }}</h4>
                         <p class="text-[10px] text-slate-400">Define requisitos.</p>
                     </div>
                     <form action="{{ route('rh.expedientes.update', $empleado->id) }}" method="POST" id="form-toggle-tipo">
@@ -196,7 +196,7 @@
                 </div>
 
                 {{-- Carga Manual --}}
-                <div class="bg-blue-50 rounded-xl border border-blue-100 p-5 shadow-sm">
+                <div class="bg-blue-50 rounded-xl border border-blue-100 p-5 shadow-sm" x-data="{ tipoDoc: '' }">
                     <h3 class="font-bold text-blue-900 mb-4 flex items-center gap-2 text-sm">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                         Subir Manual
@@ -204,7 +204,7 @@
                     <form action="{{ route('rh.expedientes.upload', $empleado->id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                         @csrf
                         <div>
-                            <select name="nombre" class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5">
+                            <select name="nombre" x-model="tipoDoc" class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5">
                                 <option value="">-- Seleccionar Requisito --</option>
                                 @foreach($checklistDocs as $doc)
                                     <option value="{{ $doc }}">{{ $doc }}</option>
@@ -212,6 +212,11 @@
                                 <option value="Otro">Otro (Escribir manual)</option>
                             </select>
                         </div>
+                        
+                        <div x-show="tipoDoc === 'Otro'" x-transition class="mt-2">
+                             <input type="text" name="nombre_manual" placeholder="Escribe el nombre del documento..." class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5 placeholder-slate-400" />
+                        </div>
+
                         <div>
                             <select name="categoria" class="w-full text-xs rounded-lg border-blue-200 focus:ring-blue-500 bg-white py-1.5">
                                 <option value="Identificación">Identificación</option>
@@ -289,11 +294,7 @@
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            @if(Route::has('rh.expedientes.download'))
-                                                <a href="{{ route('rh.expedientes.download', $doc->id) }}" target="_blank" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 hover:text-blue-600">Ver</a>
-                                            @else
-                                                 <a href="{{ asset('storage/'.$doc->ruta_archivo) }}" target="_blank" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 hover:text-blue-600">Ver</a>
-                                            @endif
+                                            <a href="{{ route('rh.expedientes.download', $doc->id) }}" target="_blank" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 hover:text-blue-600">Ver</a>
                                             
                                             <form action="{{ route('rh.expedientes.delete-doc', $doc->id) }}" method="POST" onsubmit="return confirm('¿Eliminar?')">
                                                 @csrf @method('DELETE')
